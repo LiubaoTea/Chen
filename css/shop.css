@@ -404,18 +404,20 @@
 }
 
 .product-actions {
-    position: absolute;
-    top: 10px;
-    right: 10px;
     display: flex;
-    flex-direction: column;
     gap: 10px;
-    opacity: 0;
-    transition: opacity 0.3s ease;
+    margin-top: 10px;
+    justify-content: flex-end;
 }
 
-.product-card:hover .product-actions {
-    opacity: 1;
+.product-card {
+    cursor: pointer;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.product-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
 }
 
 .action-btn {
