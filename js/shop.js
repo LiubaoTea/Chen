@@ -6,6 +6,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // 初始化购物车
     initCart();
     
+    // 加载商品数据
+    loadProducts();
+    
     // 初始化产品筛选
     initProductFilter();
     
@@ -18,6 +21,89 @@ document.addEventListener('DOMContentLoaded', function() {
     // 初始化结算
     initCheckout();
 });
+
+// 从API加载商品数据
+async function loadProducts() {
+    try {
+        const productGrid = document.getElementById('productGrid');
+        if (!productGrid) return;
+        
+        // 清空现有内容
+        productGrid.innerHTML = '<div class="loading">正在加载商品...</div>';
+        
+        // 从API获取商品数据
+        const products = await getProducts();
+        
+        if (!products || products.length === 0) {
+            productGrid.innerHTML = '<div class="no-products">暂无商品</div>';
+            return;
+        }
+        
+        // 清空加载提示
+        productGrid.innerHTML = '';
+        
+        // 渲染商品列表
+        products.forEach(product => {
+            // 创建商品卡片
+            const productCard = document.createElement('div');
+            productCard.className = 'product-card';
+            productCard.setAttribute('data-category', product.category || 'all');
+            productCard.setAttribute('data-price', product.price);
+            productCard.setAttribute('data-year', product.aging_years);
+            
+            // 构建商品图片URL - 使用R2存储中的图片
+            // 格式：Goods_1.png, Goods_2.png, ...
+            const imageUrl = `${API_BASE_URL}/image/Goods/Goods_${product.product_id}.png`;
+            
+            // 设置商品卡片内容
+            productCard.innerHTML = `
+                <div class="product-image">
+                    <img src="${imageUrl}" alt="${product.name}">
+                    <div class="product-tag">${product.category || ''}</div>
+                    <div class="product-actions">
+                        <button class="action-btn add-to-cart" data-id="${product.product_id}" data-name="${product.name}" data-price="${product.price}" data-image="${imageUrl}">
+                            <i class="fas fa-shopping-cart"></i>
+                        </button>
+                        <button class="action-btn quick-view" data-id="${product.product_id}">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="product-info">
+                    <h3>${product.name}</h3>
+                    <p class="product-desc">${product.description}</p>
+                    <div class="product-meta">
+                        <span class="product-weight">规格：${product.specifications}</span>
+                        <span class="product-year">年份：${product.aging_years}年</span>
+                    </div>
+                    <div class="product-price">
+                        <span class="price">¥${product.price.toFixed(2)}</span>
+                    </div>
+                </div>
+            `;
+            
+            // 添加到商品网格
+            productGrid.appendChild(productCard);
+        });
+        
+        // 更新产品计数
+        const productCount = document.querySelector('.product-count');
+        if (productCount) {
+            productCount.innerHTML = `<span>显示 ${products.length} 个产品中的 1-${products.length} 个</span>`;
+        }
+        
+        // 重新初始化快速查看和添加到购物车按钮
+        initQuickView();
+        initAddToCartButtons();
+        
+    } catch (error) {
+        console.error('加载商品失败:', error);
+        const productGrid = document.getElementById('productGrid');
+        if (productGrid) {
+            productGrid.innerHTML = '<div class="error">加载商品失败，请刷新页面重试</div>';
+        }
+    }
+}
 
 // 搜索框功能
 function initSearch() {
@@ -363,14 +449,18 @@ async function fetchProducts(filters = {}) {
     
     // 产品筛选功能
     function initProductFilter() {
-        const categoryCheckboxes = document.querySelectorAll('.category-filter input[type="checkbox"]');
-        const yearCheckboxes = document.querySelectorAll('.year-filter input[type="checkbox"]');
+        const categoryCheckboxes = document.querySelectorAll('input[name="category"]');
+        const yearCheckboxes = document.querySelectorAll('input[name="year"]');
         const minPriceInput = document.getElementById('minPrice');
         const maxPriceInput = document.getElementById('maxPrice');
-        const productCards = document.querySelectorAll('.product-card');
+        const priceRangeSlider = document.getElementById('priceRange');
+        const applyPriceButton = document.getElementById('applyPrice');
         
         // 筛选函数
         function filterProducts() {
+            const productCards = document.querySelectorAll('.product-card');
+            if (!productCards || productCards.length === 0) return;
+            
             // 获取选中的分类
             const selectedCategories = [];
             categoryCheckboxes.forEach(checkbox => {
@@ -460,6 +550,21 @@ async function fetchProducts(filters = {}) {
             minPriceInput.addEventListener('change', filterProducts);
             maxPriceInput.addEventListener('change', filterProducts);
         }
+        
+        // 价格范围滑块事件
+        if (priceRangeSlider) {
+            priceRangeSlider.addEventListener('input', function() {
+                const value = this.value;
+                maxPriceInput.value = value;
+            });
+        }
+        
+        // 应用价格筛选
+        if (applyPriceButton) {
+            applyPriceButton.addEventListener('click', function() {
+                filterProducts();
+            });
+        }
     }
 
 
@@ -472,6 +577,8 @@ function initProductSort() {
         sortSelect.addEventListener('change', function() {
             const sortValue = this.value;
             const productCards = Array.from(document.querySelectorAll('.product-card'));
+            
+            if (!productCards || productCards.length === 0) return;
             
             // 根据选择的排序方式排序产品
             productCards.sort((a, b) => {
@@ -487,9 +594,66 @@ function initProductSort() {
                 }
             });
             
+            // 清空产品网格
+            productGrid.innerHTML = '';
+            
             // 重新添加排序后的产品卡片
             productCards.forEach(card => {
                 productGrid.appendChild(card);
+            });
+            
+            // 重新初始化快速查看和添加到购物车按钮
+            initQuickView();
+        });
+    }
+}
+
+// 初始化添加到购物车按钮
+function initAddToCartButtons() {
+    const addToCartButtons = document.querySelectorAll('.add-to-cart');
+    const cartSidebar = document.getElementById('cartSidebar');
+    const cartOverlay = document.getElementById('cartOverlay');
+    
+    if (addToCartButtons && cartSidebar && cartOverlay) {
+        addToCartButtons.forEach(button => {
+            button.addEventListener('click', async function() {
+                try {
+                    const token = localStorage.getItem('userToken');
+                    if (!token) {
+                        alert('请先登录');
+                        return;
+                    }
+
+                    const productId = this.getAttribute('data-id');
+                    
+                    const response = await fetch(`${API_BASE_URL}/api/cart/add`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({
+                            productId: parseInt(productId),
+                            quantity: 1
+                        })
+                    });
+
+                    if (!response.ok) {
+                        const error = await response.json();
+                        throw new Error(error.error || '添加到购物车失败');
+                    }
+
+                    // 显示购物车
+                    cartSidebar.classList.add('active');
+                    cartOverlay.classList.add('active');
+                    document.body.style.overflow = 'hidden';
+                    
+                    // 更新购物车UI
+                    await updateCartUI();
+                } catch (error) {
+                    console.error('添加到购物车失败:', error);
+                    alert(error.message);
+                }
             });
         });
     }
@@ -515,39 +679,56 @@ function initQuickView() {
     // 打开快速查看弹窗
     if (quickViewButtons && quickViewModal && modalOverlay) {
         quickViewButtons.forEach(button => {
-            button.addEventListener('click', function() {
+            button.addEventListener('click', async function() {
                 const productId = this.getAttribute('data-id');
                 const productCard = this.closest('.product-card');
                 
-                // 获取产品信息
-                const productImage = productCard.querySelector('.product-image img').src;
-                const productName = productCard.querySelector('h3').textContent;
-                const productPrice = productCard.querySelector('.price').textContent;
-                const productWeight = productCard.querySelector('.product-weight').textContent;
-                const productYear = productCard.querySelector('.product-year').textContent;
-                const productDesc = productCard.querySelector('.product-desc').textContent;
-                
-                // 更新弹窗内容
-                modalProductImage.src = productImage;
-                modalProductName.textContent = productName;
-                modalProductPrice.textContent = productPrice;
-                modalProductWeight.textContent = productWeight;
-                modalProductYear.textContent = productYear;
-                modalProductDesc.textContent = productDesc;
-                
-                // 重置数量
-                quantity.value = 1;
-                
-                // 设置添加到购物车按钮的数据
-                modalAddToCart.setAttribute('data-id', productId);
-                modalAddToCart.setAttribute('data-name', productName);
-                modalAddToCart.setAttribute('data-price', productCard.getAttribute('data-price'));
-                modalAddToCart.setAttribute('data-image', productImage);
-                
-                // 显示弹窗
-                quickViewModal.classList.add('active');
-                modalOverlay.classList.add('active');
-                document.body.style.overflow = 'hidden';
+                try {
+                    // 显示加载中状态
+                    modalProductName.textContent = '加载中...';
+                    modalProductDesc.textContent = '';
+                    modalProductPrice.textContent = '';
+                    modalProductWeight.textContent = '';
+                    modalProductYear.textContent = '';
+                    modalProductImage.src = '';
+                    
+                    // 显示弹窗
+                    quickViewModal.classList.add('active');
+                    modalOverlay.classList.add('active');
+                    document.body.style.overflow = 'hidden';
+                    
+                    // 从API获取产品详情
+                    const product = await getProductDetails(productId);
+                    
+                    if (!product) {
+                        throw new Error('获取商品详情失败');
+                    }
+                    
+                    // 构建商品图片URL - 使用R2存储中的图片
+                    const imageUrl = `${API_BASE_URL}/image/Goods/Goods_${product.product_id}.png`;
+                    
+                    // 更新弹窗内容
+                    modalProductImage.src = imageUrl;
+                    modalProductName.textContent = product.name;
+                    modalProductPrice.textContent = `¥${product.price.toFixed(2)}`;
+                    modalProductWeight.textContent = `规格：${product.specifications}`;
+                    modalProductYear.textContent = `年份：${product.aging_years}年`;
+                    modalProductDesc.textContent = product.description;
+                    
+                    // 重置数量
+                    quantity.value = 1;
+                    
+                    // 设置添加到购物车按钮的数据
+                    modalAddToCart.setAttribute('data-id', product.product_id);
+                    modalAddToCart.setAttribute('data-name', product.name);
+                    modalAddToCart.setAttribute('data-price', product.price);
+                    modalAddToCart.setAttribute('data-image', imageUrl);
+                    
+                } catch (error) {
+                    console.error('获取商品详情失败:', error);
+                    modalProductName.textContent = '获取商品详情失败';
+                    modalProductDesc.textContent = '请刷新页面重试';
+                }
             });
         });
     }
