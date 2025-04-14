@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>产品展示 - 陳記六堡茶</title>
+    <link rel="stylesheet" href="./css/style.css">
+    <link rel="stylesheet" href="./css/responsive.css">
+    <link rel="stylesheet" href="./css/contact-modal.css">
+    <!-- 引入字体图标库 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="logo-container">
+                <img src="./image/liubaotea_logo.png" alt="陳記六堡茶" class="logo">
+                <h1 class="brand-name">陳記六堡茶</h1>
+            </div>
+            <nav class="main-nav">
+                <button class="menu-toggle" id="menuToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <ul class="nav-list" id="navList">
+                    <li><a href="index.html">首页</a></li>
+                    <li><a href="products.html" class="active">产品展示</a></li>
+                    <li><a href="brand-story.html">品牌故事</a></li>
+                    <li><a href="tea-culture.html">农家茶文化</a></li>
+                    <li><a href="shop.html">在线商城</a></li>
+                    <li><a href="contact.html">联系我们</a></li>
+                    <li><a href="user-center.html">用户中心</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <!-- 页面标题 -->
+        <section class="page-header">
+            <div class="container">
+                <h1>产品展示</h1>
+                <p>精选六堡茶系列，传承百年工艺，品质保证</p>
+            </div>
+        </section>
+
+        <!-- 产品分类 -->
+        <section class="product-categories">
+            <div class="container">
+                <div class="category-tabs">
+                    <button class="category-tab active" data-category="all">全部产品</button>
+                    <button class="category-tab" data-category="traditional">传统系列</button>
+                    <button class="category-tab" data-category="seasonal">季节特供</button>
+                    <button class="category-tab" data-category="limited">限量版</button>
+                    <button class="category-tab" data-category="gift">礼盒装</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 产品列表 -->
+        <section class="product-listing">
+            <div class="container">
+                <div class="product-grid">
+                    <!-- 产品1 -->
+                    <div class="product-card" data-category="traditional">
+                        <div class="product-image">
+                            <img src="./image/Goods/Goods_1.png" alt="传统工艺六堡茶">
+                            <div class="product-tag">热销</div>
+                        </div>
+                        <div class="product-info">
+                            <h3>传统工艺六堡茶</h3>
+                            <p class="product-desc">采用传统工艺制作，口感醇厚，香气独特，回甘持久</p>
+                            <div class="product-meta">
+                                <span class="product-weight">规格：250g/罐</span>
+                                <span class="product-year">年份：3年陈化</span>
+                            </div>
+                            <div class="product-price">
+                                <span class="price">¥188.00</span>
+                                <a href="shop.html" class="btn-small">立即购买</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 产品2 -->
+                    <div class="product-card" data-category="limited">
+                        <div class="product-image">
+                            <img src="./image/Goods/Goods_2.png" alt="陈年六堡茶饼">
+                            <div class="product-tag">限量</div>
+                        </div>
+                        <div class="product-info">
+                            <h3>陈年六堡茶饼</h3>
+                            <p class="product-desc">精选原料，陈化多年，香气浓郁，滋味醇厚，回甘明显</p>
+                            <div class="product-meta">
+                                <span class="product-weight">规格：357g/饼</span>
+                                <span class="product-year">年份：5年陈化</span>
+                            </div>
+                            <div class="product-price">
+                                <span class="price">¥288.00</span>
+                                <a href="shop.html" class="btn-small">立即购买</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 产品3 -->
+                    <div class="product-card" data-category="traditional">
+                        <div class="product-image">
+                            <img src="./image/Goods/Goods_3.png" alt="特级六堡散茶">
+                            <div class="product-tag">新品</div>
+                        </div>
+                        <div class="product-info">
+                            <h3>特级六堡散茶</h3>
+                            <p class="product-desc">特级茶叶，散装便于冲泡，醇香回甘，茶气十足</p>
+                            <div class="product-meta">
+                                <span class="product-weight">规格：150g/罐</span>
+                                <span class="product-year">年份：2年陈化</span>
+                            </div>
+                            <div class="product-price">
+                                <span class="price">¥168.00</span>
+                                <a href="shop.html" class="btn-small">立即购买</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 产品4 -->
+                    <div class="product-card" data-category="gift">
+                        <div class="product-image">
+                            <img src="./image/Goods/Goods_4.png" alt="六堡茶礼盒装">
+                            <div class="product-tag">礼盒</div>
+                        </div>
+                        <div class="product-info">
+                            <h3>六堡茶礼盒装</h3>
+                            <p class="product-desc">精美礼盒包装，内含多种六堡茶，送礼自用两相宜</p>
+                            <div class="product-meta">
+                                <span class="product-weight">规格：600g/盒</span>
+                                <span class="product-year">年份：多种年份</span>
+                            </div>
+                            <div class="product-price">
+                                <span class="price">¥368.00</span>
+                                <a href="shop.html" class="btn-small">立即购买</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 产品5 -->
+                    <div class="product-card" data-category="seasonal">
+                        <div class="product-image">
+                            <img src="./image/Goods/Goods_1.png" alt="春茶特供">
+                            <div class="product-tag">春茶</div>
+                        </div>
+                        <div class="product-info">
+                            <h3>春茶特供六堡茶</h3>
+                            <p class="product-desc">春季采摘，鲜爽甘醇，茶香四溢，口感清新</p>
+                            <div class="product-meta">
+                                <span class="product-weight">规格：200g/罐</span>
+                                <span class="product-year">年份：1年新茶</span>
+                            </div>
+                            <div class="product-price">
+                                <span class="price">¥198.00</span>
+                                <a href="shop.html" class="btn-small">立即购买</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 产品6 -->
+                    <div class="product-card" data-category="limited">
+                        <div class="product-image">
+                            <img src="./image/Goods/Goods_2.png" alt="十年陈六堡茶">
+                            <div class="product-tag">珍藏</div>
+                        </div>
+                        <div class="product-info">
+                            <h3>十年陈六堡茶</h3>
+                            <p class="product-desc">十年陈化，香气独特，滋味醇厚，回甘持久，收藏佳品</p>
+                            <div class="product-meta">
+                                <span class="product-weight">规格：357g/饼</span>
+                                <span class="product-year">年份：10年陈化</span>
+                            </div>
+                            <div class="product-price">
+                                <span class="price">¥688.00</span>
+                                <a href="shop.html" class="btn-small">立即购买</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 产品7 -->
+                    <div class="product-card" data-category="seasonal">
+                        <div class="product-image">
+                            <img src="./image/Goods/Goods_3.png" alt="秋茶特供">
+                            <div class="product-tag">秋茶</div>
+                        </div>
+                        <div class="product-info">
+                            <h3>秋茶特供六堡茶</h3>
+                            <p class="product-desc">秋季采摘，香气浓郁，口感醇厚，回甘明显</p>
+                            <div class="product-meta">
+                                <span class="product-weight">规格：200g/罐</span>
+                                <span class="product-year">年份：1年新茶</span>
+                            </div>
+                            <div class="product-price">
+                                <span class="price">¥188.00</span>
+                                <a href="shop.html" class="btn-small">立即购买</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 产品8 -->
+                    <div class="product-card" data-category="gift">
+                        <div class="product-image">
+                            <img src="./image/Goods/Goods_4.png" alt="六堡茶尊享礼盒">
+                            <div class="product-tag">尊享</div>
+                        </div>
+                        <div class="product-info">
+                            <h3>六堡茶尊享礼盒</h3>
+                            <p class="product-desc">高档礼盒包装，内含多种珍稀六堡茶，送礼佳选</p>
+                            <div class="product-meta">
+                                <span class="product-weight">规格：800g/盒</span>
+                                <span class="product-year">年份：多种年份</span>
+                            </div>
+                            <div class="product-price">
+                                <span class="price">¥688.00</span>
+                                <a href="shop.html" class="btn-small">立即购买</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 产品特点介绍 -->
+        <section class="product-features">
+            <div class="container">
+                <h2 class="section-title">六堡茶的特点</h2>
+                <div class="features-content">
+                    <div class="feature-text">
+                        <h3>独特的品质特点</h3>
+                        <p>六堡茶是中国传统的特种黑茶，产于广西梧州市苍梧县六堡镇一带。它具有"红、浓、陈、醇"的特点，汤色红浓，香气独特，滋味醇厚，回甘持久。</p>
+                        <p>六堡茶的独特之处在于其越陈越香的特性，经过适当的陈化，茶叶中的物质会发生变化，形成独特的陈香和药香，滋味更加醇厚甘爽。</p>
+                        <h3>制作工艺</h3>
+                        <p>六堡茶的制作工艺独特，主要包括采摘、晒青、杀青、揉捻、渥堆发酵、烘干等工序。其中渥堆发酵是形成六堡茶特有品质的关键工序。</p>
+                        <p>陳記六堡茶坚持传统工艺，每一道工序都严格把控，确保茶叶的品质和口感达到最佳状态。</p>
+                    </div>
+                    <div class="feature-image">
+                        <img src="./image/image_2.png" alt="六堡茶特点展示">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 冲泡指南 -->
+        <section class="brewing-guide">
+            <div class="container">
+                <h2 class="section-title">六堡茶冲泡指南</h2>
+                <div class="guide-steps">
+                    <div class="guide-step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <h3>准备茶具</h3>
+                            <p>建议使用紫砂壶或盖碗，能更好地展现六堡茶的香气和滋味。</p>
+                        </div>
+                    </div>
+                    <div class="guide-step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <h3>洗茶</h3>
+                            <p>用95℃左右的热水快速冲泡5-10秒后倒掉，这一步可以洗去茶叶表面的杂质，并唤醒茶叶。</p>
+                        </div>
+                    </div>
+                    <div class="guide-step">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <h3>正式冲泡</h3>
+                            <p>第一泡建议浸泡20-30秒，后续可根据个人口感喜好逐渐延长时间。</p>
+                        </div>
+                    </div>
+                    <div class="guide-step">
+                        <div class="step-number">4</div>
+                        <div class="step-content">
+                            <h3>品鉴</h3>
+                            <p>六堡茶可以冲泡多次，一般可冲泡8-12次，每次品鉴其不同的风味变化。</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 订阅区域 -->
+        <section class="subscribe">
+            <div class="container">
+                <div class="subscribe-content">
+                    <h2>订阅我们的最新资讯</h2>
+                    <p>获取最新的产品信息、促销活动和六堡茶文化知识</p>
+                    <form class="subscribe-form">
+                        <input type="email" placeholder="请输入您的邮箱" required>
+                        <button type="submit" class="btn">订阅</button>
+                    </form>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-logo">
+                    <img src="./image/liubaotea_logo.png" alt="陳記六堡茶" class="logo">
+                    <h2>陳記六堡茶</h2>
+                    <p>古色古香，茶香缭绕</p>
+                </div>
+                <div class="footer-links">
+                    <div class="footer-section">
+                        <h3>快速链接</h3>
+                        <ul>
+                            <li><a href="index.html">首页</a></li>
+                            <li><a href="products.html">产品展示</a></li>
+                            <li><a href="brand-story.html">品牌故事</a></li>
+                            <li><a href="tea-culture.html">农家茶文化</a></li>
+                            <li><a href="shop.html">在线商城</a></li>
+                            <li><a href="contact.html">联系我们</a></li>
+                        </ul>
+                    </div>
+                    <div class="footer-section">
+                        <h3>联系方式</h3>
+                        <ul>
+                            <li><i class="fas fa-map-marker-alt"></i> 广西梧州市苍梧县六堡镇</li>
+                            <li><i class="fas fa-phone"></i> 联系电话：15078145161</li>
+                            <li><i class="fab fa-weixin"></i> 微信公众号：陳記六堡茶</li>
+                        </ul>
+                    </div>
+                    <div class="footer-section">
+                        <h3>关注我们</h3>
+                        <div class="social-links">
+                            <a href="#" class="social-link"><i class="fab fa-weixin"></i></a>
+                            <a href="#" class="social-link"><i class="fab fa-weibo"></i></a>
+                            <a href="#" class="social-link"><i class="fab fa-tiktok"></i></a>
+                        </div>
+                        <div class="qrcode">
+                            <img src="./image/gongzhonghao_image.png" alt="微信公众号二维码" style="width: 80px; height: 80px;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2023 陈记六堡农家茶 版权所有</p>
+                <p>地址：广西梧州市苍梧县六堡镇 | 微信公众号：陳記六堡茶</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="./js/main.js"></script>
+    <script src="./js/products.js"></script>
+    <script src="./js/contact-modal.js"></script>
+</body>
+</html>

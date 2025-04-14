@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>在线商城 - 陳記六堡茶</title>
+    <link rel="stylesheet" href="./css/style.css">
+    <link rel="stylesheet" href="./css/responsive.css">
+    <link rel="stylesheet" href="./css/shop.css">
+    <link rel="stylesheet" href="./css/modal.css">
+    <link rel="stylesheet" href="./css/contact-modal.css">
+    <!-- 引入字体图标库 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="logo-container">
+                <img src="./image/liubaotea_logo.png" alt="陳記六堡茶" class="logo">
+                <h1 class="brand-name">陳記六堡茶</h1>
+            </div>
+            <nav class="main-nav">
+                <button class="menu-toggle" id="menuToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <ul class="nav-list" id="navList">
+                    <li><a href="index.html">首页</a></li>
+                    <li><a href="products.html">产品展示</a></li>
+                    <li><a href="brand-story.html">品牌故事</a></li>
+                    <li><a href="tea-culture.html">农家茶文化</a></li>
+                    <li><a href="shop.html" class="active">在线商城</a></li>
+                    <li><a href="contact.html">联系我们</a></li>
+                    <li><a href="user-center.html">用户中心</a></li>
+                </ul>
+            </nav>
+            <div class="shop-icons">
+                <a href="#" class="shop-icon" id="searchToggle">
+                    <i class="fas fa-search"></i>
+                </a>
+                <a href="#" class="shop-icon" id="cartToggle">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span class="cart-count">0</span>
+                </a>
+                <a href="#" class="shop-icon" id="userToggle">
+                    <i class="fas fa-user"></i>
+                </a>
+            </div>
+        </div>
+        <!-- 搜索框 -->
+        <div class="search-container" id="searchContainer">
+            <div class="container">
+                <form class="search-form">
+                    <input type="text" placeholder="搜索产品..." class="search-input">
+                    <button type="submit" class="search-btn">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </header>
+
+    <!-- 购物车侧边栏 -->
+    <div class="cart-sidebar" id="cartSidebar">
+        <div class="cart-header">
+            <h3>购物车</h3>
+            <button class="close-cart" id="closeCart">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="cart-items" id="cartItems">
+            <!-- 购物车为空时显示 -->
+            <div class="empty-cart" id="emptyCart">
+                <i class="fas fa-shopping-cart"></i>
+                <p>您的购物车是空的</p>
+                <a href="#" class="btn">去购物</a>
+            </div>
+            <!-- 购物车有商品时显示 -->
+            <div class="cart-item-list" id="cartItemList">
+                <!-- 购物车商品会通过JavaScript动态添加 -->
+            </div>
+        </div>
+        <div class="cart-footer" id="cartFooter">
+            <div class="cart-total">
+                <span>总计:</span>
+                <span class="total-price">¥0.00</span>
+            </div>
+            <div class="cart-buttons">
+                <a href="#" class="btn btn-outline" id="clearCart">清空购物车</a>
+                <a href="#" class="btn" id="checkout">结算</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 购物车遮罩层 -->
+    <div class="cart-overlay" id="cartOverlay"></div>
+
+    <main>
+        <!-- 页面标题 -->
+        <section class="page-header">
+            <div class="container">
+                <h1>在线商城</h1>
+                <p>选购优质六堡茶，品味传统茶文化</p>
+            </div>
+        </section>
+
+        <!-- 商城主体 -->
+        <section class="shop-main">
+            <div class="container">
+                <div class="shop-layout">
+                    <!-- 侧边栏筛选 -->
+                    <aside class="shop-sidebar">
+                        <div class="filter-section">
+                            <h3>产品分类</h3>
+                            <ul class="filter-list">
+                                <li>
+                                    <label class="filter-item">
+                                        <input type="checkbox" name="category" value="all" checked>
+                                        <span>全部产品</span>
+                                    </label>
+                                </li>
+                                <li>
+                                    <label class="filter-item">
+                                        <input type="checkbox" name="category" value="traditional">
+                                        <span>传统系列</span>
+                                    </label>
+                                </li>
+                                <li>
+                                    <label class="filter-item">
+                                        <input type="checkbox" name="category" value="seasonal">
+                                        <span>季节特供</span>
+                                    </label>
+                                </li>
+                                <li>
+                                    <label class="filter-item">
+                                        <input type="checkbox" name="category" value="limited">
+                                        <span>限量版</span>
+                                    </label>
+                                </li>
+                                <li>
+                                    <label class="filter-item">
+                                        <input type="checkbox" name="category" value="gift">
+                                        <span>礼盒装</span>
+                                    </label>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="filter-section">
+                            <h3>价格区间</h3>
+                            <div class="price-range">
+                                <input type="range" id="priceRange" min="0" max="1000" step="10" value="500">
+                                <div class="price-inputs">
+                                    <input type="number" id="minPrice" placeholder="最低价" min="0" max="1000">
+                                    <span>-</span>
+                                    <input type="number" id="maxPrice" placeholder="最高价" min="0" max="1000">
+                                </div>
+                                <button class="btn-small" id="applyPrice">应用</button>
+                            </div>
+                        </div>
+                        <div class="filter-section">
+                            <h3>年份</h3>
+                            <ul class="filter-list">
+                                <li>
+                                    <label class="filter-item">
+                                        <input type="checkbox" name="year" value="1">
+                                        <span>1年新茶</span>
+                                    </label>
+                                </li>
+                                <li>
+                                    <label class="filter-item">
+                                        <input type="checkbox" name="year" value="3">
+                                        <span>3年陈化</span>
+                                    </label>
+                                </li>
+                                <li>
+                                    <label class="filter-item">
+                                        <input type="checkbox" name="year" value="5">
+                                        <span>5年陈化</span>
+                                    </label>
+                                </li>
+                                <li>
+                                    <label class="filter-item">
+                                        <input type="checkbox" name="year" value="10">
+                                        <span>10年以上</span>
+                                    </label>
+                                </li>
+                            </ul>
+                        </div>
+                    </aside>
+
+                    <!-- 商品列表 -->
+                    <div class="shop-content">
+                        <div class="shop-toolbar">
+                            <div class="product-count">
+                                <span>显示 8 个产品中的 1-8 个</span>
+                            </div>
+                            <div class="product-sort">
+                                <label for="sortBy">排序方式:</label>
+                                <select id="sortBy">
+                                    <option value="default">默认排序</option>
+                                    <option value="price-low">价格从低到高</option>
+                                    <option value="price-high">价格从高到低</option>
+                                    <option value="name">名称</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="product-grid" id="productGrid">
+                            <!-- 商品将通过JavaScript动态加载 -->
+                        </div>甘持久</p>
+                                    <div class="product-meta">
+                                        <span class="product-weight">规格：357g/饼</span>
+                                        <span class="product-year">年份：10年陈化</span>
+                                    </div>
+                                    <div class="product-price">
+                                        <span class="price">¥688.00</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 产品7 -->
+                            <div class="product-card" data-category="seasonal" data-price="188" data-year="1">
+                                <div class="product-image">
+                                    <img src="./image/Goods/Goods_3.png" alt="秋茶特供">
+                                    <div class="product-tag">秋茶</div>
+                                    <div class="product-actions">
+                                        <button class="action-btn add-to-cart" data-id="7" data-name="秋茶特供六堡茶" data-price="188" data-image="./image/Goods/Goods_3.png">
+                                            <i class="fas fa-shopping-cart"></i>
+                                        </button>
+                                        <button class="action-btn quick-view" data-id="7">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="product-info">
+                                    <h3>秋茶特供六堡茶</h3>
+                                    <p class="product-desc">秋季采摘，香气浓郁，口感醇厚</p>
+                                    <div class="product-meta">
+                                        <span class="product-weight">规格：200g/罐</span>
+                                        <span class="product-year">年份：1年新茶</span>
+                                    </div>
+                                    <div class="product-price">
+                                        <span class="price">¥188.00</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 产品8 -->
+                            <div class="product-card" data-category="gift" data-price="688" data-year="5">
+                                <div class="product-image">
+                                    <img src="./image/Goods/Goods_4.png" alt="六堡茶尊享礼盒">
+                                    <div class="product-tag">尊享</div>
+                                    <div class="product-actions">
+                                        <button class="action-btn add-to-cart" data-id="8" data-name="六堡茶尊享礼盒" data-price="688" data-image="./image/Goods/Goods_4.png">
+                                            <i class="fas fa-shopping-cart"></i>
+                                        </button>
+                                        <button class="action-btn quick-view" data-id="8">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="product-info">
+                                    <h3>六堡茶尊享礼盒</h3>
+                                    <p class="product-desc">高档礼盒包装，内含多种珍稀六堡茶</p>
+                                    <div class="product-meta">
+                                        <span class="product-weight">规格：800g/盒</span>
+                                        <span class="product-year">年份：多种年份</span>
+                                    </div>
+                                    <div class="product-price">
+                                        <span class="price">¥688.00</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 分页 -->
+                        <div class="pagination">
+                            <a href="#" class="active">1</a>
+                            <a href="#">2</a>
+                            <a href="#">3</a>
+                            <a href="#" class="next"><i class="fas fa-chevron-right"></i></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 快速查看产品弹窗 -->
+        <div class="quick-view-modal" id="quickViewModal">
+            <div class="modal-content">
+                <button class="close-modal" id="closeModal">
+                    <i class="fas fa-times"></i>
+                </button>
+                <div class="product-quick-view">
+                    <div class="product-quick-image">
+                        <img src="" alt="产品图片" id="modalProductImage">
+                    </div>
+                    <div class="product-quick-info">
+                        <h2 id="modalProductName"></h2>
+                        <div class="product-quick-price">
+                            <span id="modalProductPrice"></span>
+                        </div>
+                        <div class="product-quick-meta">
+                            <p id="modalProductWeight"></p>
+                            <p id="modalProductYear"></p>
+                        </div>
+                        <p class="product-quick-desc" id="modalProductDesc"></p>
+                        <div class="product-quick-quantity">
+                            <label for="quantity">数量:</label>
+                            <div class="quantity-selector">
+                                <button class="quantity-btn minus" id="quantityMinus">-</button>
+                                <input type="number" id="quantity" value="1" min="1" max="99">
+                                <button class="quantity-btn plus" id="quantityPlus">+</button>
+                            </div>
+                        </div>
+                        <button class="btn" id="modalAddToCart">加入购物车</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 快速查看遮罩层 -->
+        <div class="modal-overlay" id="modalOverlay"></div>
+
+        <!-- 结算弹窗 -->
+        <div class="checkout-modal" id="checkoutModal">
+            <div class="modal-content">
+                <button class="close-modal" id="closeCheckoutModal">
+                    <i class="fas fa-times"></i>
+                </button>
+                <h2>结算</h2>
+                <div class="checkout-form">
+                    <div class="form-group">
+                        <label for="name">姓名</label>
+                        <input type="text" id="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="phone">电话</label>
+                        <input type="tel" id="phone" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="address">地址</label>
+                        <textarea id="address" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>支付方式</label>
+                        <div class="payment-methods">
+                            <label class="payment-method">
+                                <input type="radio" name="payment" value="wechat" checked>
+                                <span class="payment-icon"><i class="fab fa-weixin"></i></span>
+                                <span>微信支付</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="checkout-summary">
+                        <h3>订单摘要</h3>
+                        <div class="checkout-items" id="checkoutItems">
+                            <!-- 结算商品会通过JavaScript动态添加 -->
+                        </div>
+                        <div class="checkout-total">
+                            <span>总计:</span>
+                            <span id="checkoutTotal">¥0.00</span>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn" id="placeOrder">提交订单</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 结算遮罩层 -->
+        <div class="checkout-overlay" id="checkoutOverlay"></div>
+
+        <!-- 订单成功弹窗 -->
+        <div class="order-success-modal" id="orderSuccessModal">
+            <div class="modal-content">
+                <div class="success-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <h2>订单提交成功！</h2>
+                <p>感谢您的购买，我们将尽快处理您的订单。</p>
+                <p>订单号: <span id="orderNumber"></span></p>
+                <button class="btn" id="continueShoppingBtn">继续购物</button>
+            </div>
+        </div>
+
+        <!-- 订单成功遮罩层 -->
+        <div class="order-success-overlay" id="orderSuccessOverlay"></div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-logo">
+                    <img src="./image/liubaotea_logo.png" alt="陳記六堡茶" class="logo">
+                    <h2>陳記六堡茶</h2>
+                    <p>古色古香，茶香缭绕</p>
+                </div>
+                <div class="footer-links">
+                    <div class="footer-section">
+                        <h3>快速链接</h3>
+                        <ul>
+                            <li><a href="index.html">首页</a></li>
+                            <li><a href="products.html">产品展示</a></li>
+                            <li><a href="brand-story.html">品牌故事</a></li>
+                            <li><a href="tea-culture.html">农家茶文化</a></li>
+                            <li><a href="shop.html">在线商城</a></li>
+                            <li><a href="contact.html">联系我们</a></li>
+                        </ul>
+                    </div>
+                    <div class="footer-section">
+                        <h3>联系方式</h3>
+                        <ul>
+                            <li><i class="fas fa-map-marker-alt"></i> 广西梧州市苍梧县六堡镇</li>
+                            <li><i class="fas fa-phone"></i> 联系电话：15078145161</li>
+                            <li><i class="fab fa-weixin"></i> 微信公众号：陳記六堡茶</li>
+                        </ul>
+                    </div>
+                    <div class="footer-section">
+                        <h3>关注我们</h3>
+                        <div class="social-links">
+                            <a href="#" class="social-link"><i class="fab fa-weixin"></i></a>
+                            <a href="#" class="social-link"><i class="fab fa-weibo"></i></a>
+                            <a href="#" class="social-link"><i class="fab fa-tiktok"></i></a>
+                        </div>
+                        <div class="qrcode">
+                            <img src="./image/gongzhonghao_image.png" alt="微信公众号二维码" style="width: 80px; height: 80px;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2023 陈记六堡农家茶 版权所有</p>
+                <p>地址：广西梧州市苍梧县六堡镇 | 微信公众号：陳記六堡茶</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="./js/main.js"></script>
+    <script src="./js/shop.js"></script>
+    <script src="./js/auth.js"></script>
+    <script src="./js/contact-modal.js"></script>
+</body>
+</html>
+            

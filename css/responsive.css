@@ -1,0 +1,201 @@
+/* 响应式设计样式 */
+
+/* 大型设备 (大型桌面, 1200px 及以上) */
+@media (min-width: 1200px) {
+    .container {
+        max-width: 1140px;
+    }
+}
+
+/* 中型设备 (桌面, 992px 及以上) */
+@media (max-width: 1199px) {
+    .container {
+        max-width: 960px;
+    }
+    
+    .hero-slider {
+        height: 500px;
+    }
+    
+    .feature-grid,
+    .product-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+/* 小型设备 (平板, 768px 及以上) */
+@media (max-width: 991px) {
+    .container {
+        max-width: 720px;
+    }
+    
+    .hero-slider {
+        height: 400px;
+    }
+    
+    .slide-content {
+        max-width: 400px;
+    }
+    
+    .slide-content h2 {
+        font-size: 2rem;
+    }
+    
+    .slide-content p {
+        font-size: 1rem;
+    }
+    
+    .feature-grid,
+    .product-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+    }
+    
+    .brand-story .container {
+        flex-direction: column;
+    }
+    
+    .story-content,
+    .story-image {
+        flex: none;
+        width: 100%;
+    }
+    
+    .story-image {
+        margin-top: 30px;
+        max-width: 600px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    
+    .footer-content {
+        flex-direction: column;
+        gap: 30px;
+    }
+    
+    .footer-logo,
+    .footer-links {
+        flex: none;
+        width: 100%;
+    }
+}
+
+/* 超小设备 (手机, 576px 及以上) */
+@media (max-width: 767px) {
+    .container {
+        max-width: 540px;
+    }
+    
+    .header .container {
+        flex-wrap: wrap;
+    }
+    
+    .logo-container {
+        margin-bottom: 10px;
+    }
+    
+    .main-nav {
+        width: 100%;
+    }
+    
+    .menu-toggle {
+        display: block;
+        margin-left: auto;
+    }
+    
+    .nav-list {
+        display: none;
+        flex-direction: column;
+        width: 100%;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        background-color: var(--background-color);
+        box-shadow: 0 5px 10px var(--shadow-color);
+        padding: 20px;
+        z-index: 1000;
+    }
+    
+    .nav-list.active {
+        display: flex;
+    }
+    
+    .nav-list li {
+        margin: 10px 0;
+        margin-left: 0;
+    }
+    
+    .hero-slider {
+        height: 350px;
+    }
+    
+    .slide-content {
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+        width: 90%;
+        max-width: none;
+        padding: 20px;
+    }
+    
+    .feature-grid,
+    .product-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .subscribe-form {
+        flex-direction: column;
+    }
+    
+    .subscribe-form input {
+        border-radius: 4px;
+        margin-bottom: 10px;
+    }
+    
+    .subscribe-form .btn {
+        border-radius: 4px;
+        width: 100%;
+    }
+    
+    .footer-links {
+        flex-direction: column;
+    }
+    
+    .footer-section {
+        margin-bottom: 20px;
+    }
+}
+
+/* 极小设备 (小型手机, 575px 以下) */
+@media (max-width: 575px) {
+    .container {
+        padding: 0 15px;
+    }
+    
+    .hero-slider {
+        height: 300px;
+    }
+    
+    .slide-content h2 {
+        font-size: 1.5rem;
+    }
+    
+    .slide-content p {
+        font-size: 0.9rem;
+        margin-bottom: 15px;
+    }
+    
+    .section-title {
+        font-size: 1.5rem;
+    }
+    
+    .prev-btn, .next-btn {
+        width: 30px;
+        height: 30px;
+    }
+    
+    .dot {
+        width: 8px;
+        height: 8px;
+    }
+}

@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户注册 - 陳記六堡茶</title>
+    <link rel="stylesheet" href="./css/style.css">
+    <link rel="stylesheet" href="./css/responsive.css">
+    <link rel="stylesheet" href="./css/contact-modal.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        .auth-container {
+            max-width: 400px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .auth-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .form-group label {
+            font-weight: 500;
+            color: #333;
+        }
+        .form-group input {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        .auth-btn {
+            background: #8B4513;
+            color: white;
+            padding: 12px;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .auth-btn:hover {
+            background: #6B3410;
+        }
+        .auth-links {
+            text-align: center;
+            margin-top: 15px;
+        }
+        .auth-links a {
+            color: #8B4513;
+            text-decoration: none;
+        }
+        .auth-links a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="logo-container">
+                <img src="./image/liubaotea_logo.png" alt="陳記六堡茶" class="logo">
+                <h1 class="brand-name">陳記六堡茶</h1>
+            </div>
+            <nav class="main-nav">
+                <button class="menu-toggle" id="menuToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <ul class="nav-list" id="navList">
+                    <li><a href="index.html">首页</a></li>
+                    <li><a href="products.html">产品展示</a></li>
+                    <li><a href="brand-story.html">品牌故事</a></li>
+                    <li><a href="tea-culture.html">农家茶文化</a></li>
+                    <li><a href="shop.html">在线商城</a></li>
+                    <li><a href="contact.html">联系我们</a></li>
+                    <li><a href="user-center.html">用户中心</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <div class="auth-container">
+            <h2 style="text-align: center; margin-bottom: 20px;">用户注册</h2>
+            <form class="auth-form" id="registerForm">
+                <div class="form-group">
+                    <label for="username">用户名</label>
+                    <input type="text" id="username" name="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="email">电子邮箱</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">密码</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                <div class="form-group">
+                    <label for="confirmPassword">确认密码</label>
+                    <input type="password" id="confirmPassword" name="confirmPassword" required>
+                </div>
+                <button type="submit" class="auth-btn">注册</button>
+            </form>
+            <div class="auth-links">
+                <p>已有账号？<a href="login.html">立即登录</a></p>
+            </div>
+        </div>
+    </main>
+
+    <script src="./js/auth.js"></script>
+    <script src="./js/contact-modal.js"></script>
+    <script src="./js/api.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const registerForm = document.getElementById('registerForm');
+            
+            registerForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const username = document.getElementById('username').value.trim();
+                const email = document.getElementById('email').value.trim();
+                const password = document.getElementById('password').value.trim();
+                const confirmPassword = document.getElementById('confirmPassword').value.trim();
+                
+                if (!username || !email || !password || !confirmPassword) {
+                    alert('请填写完整的注册信息');
+                    return;
+                }
+                
+                if (password !== confirmPassword) {
+                    alert('两次输入的密码不一致');
+                    return;
+                }
+                
+                try {
+                    const result = await registerUser(username, email, password);
+                    alert('注册成功！请登录');
+                    window.location.href = 'login.html';
+                } catch (error) {
+                    alert(error.message || '注册失败，请重试');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

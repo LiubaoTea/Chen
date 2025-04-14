@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>商品详情 - 陳記六堡茶</title>
+    <link rel="stylesheet" href="./css/style.css">
+    <link rel="stylesheet" href="./css/responsive.css">
+    <link rel="stylesheet" href="./css/shop.css">
+    <link rel="stylesheet" href="./css/modal.css">
+    <link rel="stylesheet" href="./css/contact-modal.css">
+    <!-- 引入字体图标库 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="logo-container">
+                <img src="./image/liubaotea_logo.png" alt="陳記六堡茶" class="logo">
+                <h1 class="brand-name">陳記六堡茶</h1>
+            </div>
+            <nav class="main-nav">
+                <button class="menu-toggle" id="menuToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <ul class="nav-list" id="navList">
+                    <li><a href="index.html">首页</a></li>
+                    <li><a href="products.html">产品展示</a></li>
+                    <li><a href="brand-story.html">品牌故事</a></li>
+                    <li><a href="tea-culture.html">农家茶文化</a></li>
+                    <li><a href="shop.html">在线商城</a></li>
+                    <li><a href="contact.html">联系我们</a></li>
+                    <li><a href="user-center.html">用户中心</a></li>
+                </ul>
+            </nav>
+            <div class="shop-icons">
+                <a href="#" class="shop-icon" id="searchToggle">
+                    <i class="fas fa-search"></i>
+                </a>
+                <a href="#" class="shop-icon" id="cartToggle">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span class="cart-count">0</span>
+                </a>
+                <a href="#" class="shop-icon" id="userToggle">
+                    <i class="fas fa-user"></i>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="product-detail-page">
+        <div class="container">
+            <!-- 商品详情主体 -->
+            <div class="product-detail-main">
+                <!-- 商品图片展示区 -->
+                <div class="product-gallery">
+                    <div class="main-image">
+                        <img id="productImage" src="" alt="商品图片">
+                    </div>
+                </div>
+                
+                <!-- 商品信息区 -->
+                <div class="product-info">
+                    <h1 id="productName" class="product-title"></h1>
+                    <p id="productDescription" class="product-description"></p>
+                    
+                    <div class="product-meta">
+                        <div class="specifications">
+                            <span class="label">规格：</span>
+                            <span id="productSpecifications"></span>
+                        </div>
+                        <div class="aging-years">
+                            <span class="label">年份：</span>
+                            <span id="productAgingYears"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="product-price">
+                        <span class="price-label">价格：</span>
+                        <span class="price" id="productPrice"></span>
+                    </div>
+                    
+                    <div class="product-quantity">
+                        <span class="quantity-label">数量：</span>
+                        <div class="quantity-control">
+                            <button class="quantity-btn minus">-</button>
+                            <input type="number" value="1" min="1" id="quantity">
+                            <button class="quantity-btn plus">+</button>
+                        </div>
+                        <span class="stock" id="productStock"></span>
+                    </div>
+                    
+                    <div class="product-actions">
+                        <button class="btn btn-primary" id="addToCart">
+                            <i class="fas fa-shopping-cart"></i> 加入购物车
+                        </button>
+                        <button class="btn btn-secondary" id="buyNow">
+                            立即购买
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 商品详情标签页 -->
+            <div class="product-tabs">
+                <div class="tab-header">
+                    <button class="tab-btn active" data-tab="detail">商品详情</button>
+                    <button class="tab-btn" data-tab="culture">茶文化</button>
+                </div>
+                <div class="tab-content">
+                    <div class="tab-pane active" id="detail">
+                        <!-- 商品详情内容将通过JavaScript动态加载 -->
+                    </div>
+                    <div class="tab-pane" id="culture">
+                        <!-- 茶文化内容将从tea-culture.html动态加载 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 相关推荐 -->
+            <div class="related-products">
+                <h2 class="section-title">相关推荐</h2>
+                <div class="product-grid" id="relatedProducts">
+                    <!-- 相关商品将通过JavaScript动态加载 -->
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>联系我们</h3>
+                    <p>电话：+86 123 4567 8901</p>
+                    <p>邮箱：info@liubaotea.com</p>
+                    <p>地址：广西梧州市苍梧县六堡镇</p>
+                </div>
+                <div class="footer-section">
+                    <h3>关注我们</h3>
+                    <div class="social-links">
+                        <a href="#" class="social-link">
+                            <i class="fab fa-weixin"></i>
+                        </a>
+                        <a href="#" class="social-link">
+                            <i class="fab fa-weibo"></i>
+                        </a>
+                    </div>
+                </div>
+                <div class="footer-section">
+                    <h3>快速链接</h3>
+                    <ul class="quick-links">
+                        <li><a href="about.html">关于我们</a></li>
+                        <li><a href="products.html">产品展示</a></li>
+                        <li><a href="tea-culture.html">茶文化</a></li>
+                        <li><a href="contact.html">联系方式</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 陳記六堡茶 版权所有</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- 购物车侧边栏 -->
+    <div class="cart-sidebar" id="cartSidebar">
+        <div class="cart-header">
+            <h3>购物车</h3>
+            <button class="close-cart" id="closeCart">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="cart-items" id="cartItems">
+            <!-- 购物车内容将通过JavaScript动态加载 -->
+        </div>
+        <div class="cart-footer" id="cartFooter">
+            <div class="cart-total">
+                <span>总计:</span>
+                <span class="total-price">¥0.00</span>
+            </div>
+            <div class="cart-buttons">
+                <button class="btn btn-outline" id="clearCart">清空购物车</button>
+                <button class="btn btn-primary" id="checkout">结算</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 购物车遮罩层 -->
+    <div class="cart-overlay" id="cartOverlay"></div>
+
+    <!-- JavaScript 文件 -->
+    <script src="./js/main.js"></script>
+    <script src="./js/api.js"></script>
+    <script src="./js/shop.js"></script>
+    <script src="./js/product-detail.js"></script>
+</body>
+</html>

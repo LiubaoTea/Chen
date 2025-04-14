@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户中心 - 陳記六堡茶</title>
+    <link rel="stylesheet" href="./css/style.css">
+    <link rel="stylesheet" href="./css/responsive.css">
+    <link rel="stylesheet" href="./css/contact-modal.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        .user-container {
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .user-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+        .user-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background-color: #8B4513;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            margin-right: 20px;
+        }
+        .user-info h2 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+        .user-info p {
+            margin: 0;
+            color: #666;
+        }
+        .user-section {
+            margin-bottom: 30px;
+        }
+        .user-section h3 {
+            color: #8B4513;
+            border-bottom: 2px solid #8B4513;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        .order-list {
+            list-style: none;
+            padding: 0;
+        }
+        .order-item {
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .order-info {
+            flex-grow: 1;
+        }
+        .order-actions button {
+            background: #8B4513;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+        .order-actions button:hover {
+            background: #6B3410;
+        }
+        .user-settings {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .setting-card {
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .setting-card:hover {
+            border-color: #8B4513;
+            box-shadow: 0 2px 8px rgba(139, 69, 19, 0.2);
+        }
+        .setting-card i {
+            color: #8B4513;
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        .logout-btn {
+            background: #f44336;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        .logout-btn:hover {
+            background: #d32f2f;
+        }
+        @media (max-width: 768px) {
+            .user-settings {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="logo-container">
+                <img src="./image/liubaotea_logo.png" alt="陳記六堡茶" class="logo">
+                <h1 class="brand-name">陳記六堡茶</h1>
+            </div>
+            <nav class="main-nav">
+                <button class="menu-toggle" id="menuToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <ul class="nav-list" id="navList">
+                    <li><a href="index.html">首页</a></li>
+                    <li><a href="products.html">产品展示</a></li>
+                    <li><a href="brand-story.html">品牌故事</a></li>
+                    <li><a href="tea-culture.html">农家茶文化</a></li>
+                    <li><a href="shop.html">在线商城</a></li>
+                    <li><a href="contact.html">联系我们</a></li>
+                    <li><a href="user-center.html" class="active">用户中心</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <div class="user-container">
+            <div class="user-header">
+                <div class="user-avatar">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div class="user-info">
+                    <h2 id="username">用户名</h2>
+                    <p id="userEmail">用户邮箱</p>
+                </div>
+            </div>
+            
+            <div class="user-section">
+                <h3>我的订单</h3>
+                <ul class="order-list" id="orderList">
+                    <!-- 订单列表将通过JavaScript动态生成 -->
+                    <li class="order-item">
+                        <div class="order-info">
+                            <h4>订单号: 202305120001</h4>
+                            <p>下单时间: 2023-05-12</p>
+                            <p>订单状态: 已发货</p>
+                        </div>
+                        <div class="order-actions">
+                            <button>查看详情</button>
+                        </div>
+                    </li>
+                    <li class="order-item">
+                        <div class="order-info">
+                            <h4>订单号: 202305100002</h4>
+                            <p>下单时间: 2023-05-10</p>
+                            <p>订单状态: 已完成</p>
+                        </div>
+                        <div class="order-actions">
+                            <button>查看详情</button>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="user-section">
+                <h3>账户设置</h3>
+                <div class="user-settings">
+                    <div class="setting-card">
+                        <i class="fas fa-user-edit"></i>
+                        <h4>个人资料</h4>
+                        <p>修改您的个人信息</p>
+                    </div>
+                    <div class="setting-card">
+                        <i class="fas fa-lock"></i>
+                        <h4>安全设置</h4>
+                        <p>修改密码和安全选项</p>
+                    </div>
+                    <div class="setting-card">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <h4>收货地址</h4>
+                        <p>管理您的收货地址</p>
+                    </div>
+                    <div class="setting-card">
+                        <i class="fas fa-bell"></i>
+                        <h4>通知设置</h4>
+                        <p>管理您的通知偏好</p>
+                    </div>
+                </div>
+            </div>
+            
+            <button class="logout-btn" id="logoutBtn">退出登录</button>
+        </div>
+    </main>
+
+    <script src="./js/auth.js"></script>
+    <script src="./js/contact-modal.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 检查用户是否已登录
+            if (!checkAuthStatus()) {
+                return; // 如果未登录，checkAuthStatus会重定向到登录页面
+            }
+            
+            // 获取用户信息（这里使用模拟数据，实际应用中应从服务器获取）
+            const userData = {
+                username: localStorage.getItem('username') || '用户名',
+                email: localStorage.getItem('userEmail') || 'user@example.com'
+            };
+            
+            // 更新页面上的用户信息
+            document.getElementById('username').textContent = userData.username;
+            document.getElementById('userEmail').textContent = userData.email;
+            
+            // 设置退出登录按钮
+            document.getElementById('logoutBtn').addEventListener('click', () => {
+                // 清除本地存储中的用户信息
+                localStorage.removeItem('userToken');
+                localStorage.removeItem('username');
+                localStorage.removeItem('userEmail');
+                
+                // 重定向到登录页面
+                window.location.href = 'login.html';
+            });
+        });
+    </script>
+</body>
+</html>
