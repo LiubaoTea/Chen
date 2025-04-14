@@ -1,5 +1,4 @@
 // 引入API函数
-import { getProducts } from './api.js';
 const API_BASE_URL = 'https://liubaotea.cyuan52.workers.dev';
 
 // 等待DOM加载完成
