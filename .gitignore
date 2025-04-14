@@ -52,3 +52,7 @@ pids
 
 # Yarn Integrity file
 .yarn-integrity
+
+# Excel files and design assets
+products.xls
+Design_Assets/
