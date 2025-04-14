@@ -1,3 +1,6 @@
+// 引入API函数
+const API_BASE_URL = 'https://liubaotea.cyuan52.workers.dev';
+
 // 等待DOM加载完成
 document.addEventListener('DOMContentLoaded', function() {
     // 初始化搜索框
@@ -965,18 +968,3 @@ function initCheckout() {
         });
     }
 }
-    
-    // 价格范围滑块事件
-    if (priceRangeSlider) {
-        priceRangeSlider.addEventListener('input', function() {
-            const value = this.value;
-            maxPriceInput.value = value;
-        });
-    }
-    
-    // 应用价格筛选
-    if (applyPriceButton) {
-        applyPriceButton.addEventListener('click', function() {
-            filterProducts();
-        });
-    }
