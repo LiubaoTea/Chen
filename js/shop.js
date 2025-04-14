@@ -72,12 +72,10 @@ async function loadProducts() {
                     </div>
                     <div class="product-price">
                         <span class="price">¥${product.price.toFixed(2)}</span>
-                        <div class="product-actions">
-                            <button class="action-btn add-to-cart" data-id="${product.product_id}" data-name="${product.name}" data-price="${product.price}" data-image="${imageUrl}">
-                                <i class="fas fa-shopping-cart"></i>
-                            </button>
-                            <button class="action-btn quick-view" data-id="${product.product_id}">
-                                <i class="fas fa-shopping-bag"></i>
+                    </div>
+                    <div class="product-actions">
+                        <button class="action-btn add-to-cart" data-id="${product.product_id}" data-name="${product.name}" data-price="${product.price}" data-image="${imageUrl}">加入购物车</button>
+                        <button class="action-btn quick-view" data-id="${product.product_id}">立即购买</button>
                             </button>
                         </div>
                     </div>
@@ -107,8 +105,10 @@ async function loadProducts() {
                     return;
                 }
                 
-                const productId = this.querySelector('.add-to-cart').getAttribute('data-id');
-                window.location.href = `product-detail.html?id=${productId}`;
+                const productId = this.querySelector('.quick-view').getAttribute('data-id');
+                if (productId) {
+                    window.location.href = `product-detail.html?id=${productId}`;
+                }
             });
         });
         
