@@ -1,5 +1,4 @@
-// 引入API函数
-const API_BASE_URL = 'https://liubaotea.cyuan52.workers.dev';
+// 使用api.js中定义的API_BASE_URL
 
 // 等待DOM加载完成
 document.addEventListener('DOMContentLoaded', function() {
