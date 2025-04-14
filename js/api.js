@@ -1,7 +1,10 @@
 // API交互函数库
 
 // API基础URL，根据实际部署环境修改
-const API_BASE_URL = 'https://liubaotea.cyuan52.workers.dev';
+//const API_BASE_URL = 'https://liubaotea.cyuan52.workers.dev';
+
+// 使用相对路径，这样请求会发送到当前服务器
+const API_BASE_URL = '';
 
 // 用户注册
 async function registerUser(username, email, password) {
