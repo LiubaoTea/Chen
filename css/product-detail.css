@@ -327,6 +327,11 @@
         flex: 0 0 100%;
     }
 
+    .product-gallery,
+    .product-info {
+        flex: 0 0 100%;
+    }
+
     .product-grid {
         grid-template-columns: repeat(2, 1fr);
         gap: 1rem;
@@ -360,6 +365,10 @@
 }
 
 @media (max-width: 480px) {
+    .product-detail-main {
+        flex-direction: column;
+    }
+    
     .product-title {
         font-size: 1.5rem;
     }
