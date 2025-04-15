@@ -7,6 +7,8 @@
     gap: 3rem;
     margin-bottom: 3rem;
     align-items: flex-start;
+    flex-direction: row;
+    justify-content: space-between;
 }
 
 .product-gallery {
@@ -70,6 +72,7 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    justify-content: flex-start;
 }
 
 .price-label {
@@ -96,11 +99,16 @@
 .quantity-control {
     display: flex;
     align-items: center;
+    gap: 0.5rem;
 }
 
 .quantity-btn {
-    width: 32px;
-    height: 32px;
+    width: 24px;
+    height: 24px;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     border: 1px solid #ddd;
     background: #fff;
     cursor: pointer;
