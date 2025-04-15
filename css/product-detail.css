@@ -4,19 +4,23 @@
 
 .product-detail-main {
     display: flex;
-    gap: 3rem;
+    gap: 2rem;
     margin-bottom: 3rem;
-    align-items: flex-start;
-    flex-direction: row;
-    justify-content: space-between;
+    align-items: stretch;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+    padding: 2rem;
 }
 
 .product-gallery {
-    flex: 0 0 45%;
+    flex: 0 0 40%;
 }
 
 .product-info {
-    flex: 0 0 50%;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
 }
 
 .product-gallery {
@@ -72,7 +76,6 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    justify-content: flex-start;
 }
 
 .price-label {
@@ -86,25 +89,24 @@
 }
 
 .product-quantity {
-    display: flex;
-    align-items: center;
     margin-bottom: 1.5rem;
-    gap: 0.5rem;
 }
 
 .quantity-label {
     color: #666;
+    display: inline-block;
+    margin-right: 0.5rem;
 }
 
 .quantity-control {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
+    vertical-align: middle;
 }
 
 .quantity-btn {
-    width: 24px;
-    height: 24px;
+    width: 32px;
+    height: 32px;
     font-size: 1rem;
     display: flex;
     align-items: center;
@@ -112,11 +114,9 @@
     border: 1px solid #ddd;
     background: #fff;
     cursor: pointer;
-    font-size: 1rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     padding: 0;
+    border-radius: 4px;
+    margin: 0 4px;
 }
 
 .quantity-btn:hover {
@@ -128,7 +128,9 @@
     height: 32px;
     text-align: center;
     border: 1px solid #ddd;
+    border-radius: 4px;
     margin: 0;
+    vertical-align: middle;
 }
 
 .stock {
