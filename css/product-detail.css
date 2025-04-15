@@ -80,6 +80,7 @@
     margin-bottom: 0.8rem;
     display: flex;
     align-items: center;
+    text-align: left;
 }
 
 .price {
