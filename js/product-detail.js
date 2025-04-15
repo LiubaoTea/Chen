@@ -7,13 +7,20 @@ function getProductId() {
 // 从D1数据库获取商品详情
 async function fetchProductDetail(productId) {
     try {
-        const response = await fetch(`/api/products/${productId}`);
+        const response = await fetch(`${API_BASE_URL}/api/products/${productId}`);
         if (!response.ok) {
-            throw new Error('商品数据获取失败');
+            const error = await response.json();
+            throw new Error(error.error || '商品数据获取失败');
         }
-        return await response.json();
+        const data = await response.json();
+        if (!data) {
+            throw new Error('商品不存在');
+        }
+        return data;
     } catch (error) {
         console.error('获取商品详情失败:', error);
+        alert(error.message);
+        window.location.href = 'shop.html';
         return null;
     }
 }
