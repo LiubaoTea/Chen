@@ -113,7 +113,60 @@ function displayRelatedProducts(products) {
             </div>
         </div>
     `).join('');
+
+    // 添加商品卡片点击事件
+    const productCards = container.querySelectorAll('.product-card');
+    productCards.forEach(card => {
+        // 商品卡片点击跳转到商品详情页
+        card.addEventListener('click', (e) => {
+            if (!e.target.closest('.action-btn')) {
+                const productId = card.dataset.id;
+                window.location.href = `product-detail.html?id=${productId}`;
+            }
+        });
+
+        // 加入购物车按钮点击事件
+        const addToCartBtn = card.querySelector('.add-to-cart');
+        addToCartBtn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const productId = addToCartBtn.dataset.id;
+            try {
+                const response = await fetch('/api/cart/add', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        productId,
+                        quantity: 1
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('添加到购物车失败');
+                }
+
+                // 更新购物车图标数量
+                updateCartCount();
+                
+                // 显示成功提示
+                alert('成功加入购物车！');
+            } catch (error) {
+                console.error('添加到购物车失败:', error);
+                alert('添加到购物车失败，请稍后重试');
+            }
+        });
+
+        // 快速查看按钮点击事件
+        const quickViewBtn = card.querySelector('.quick-view');
+        quickViewBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const productId = quickViewBtn.dataset.id;
+            window.location.href = `product-detail.html?id=${productId}`;
+        });
+    });
 }
+
 
 // 数量控制
 function initQuantityControl() {
