@@ -1,11 +1,102 @@
 // 等待DOM加载完成
 document.addEventListener('DOMContentLoaded', function() {
-    // 初始化产品分类筛选
-    initProductFilter();
+    // 加载商品数据
+    loadProducts();
     
     // 初始化移动端菜单
     initMobileMenu();
 });
+
+// 从API加载商品数据
+async function loadProducts() {
+    try {
+        const productGrid = document.querySelector('.product-grid');
+        if (!productGrid) return;
+        
+        // 清空现有内容
+        productGrid.innerHTML = '<div class="loading">正在加载商品...</div>';
+        
+        // 从API获取商品数据
+        const products = await getProducts();
+        
+        if (!products || products.length === 0) {
+            productGrid.innerHTML = '<div class="no-products">暂无商品</div>';
+            return;
+        }
+        
+        // 清空加载提示
+        productGrid.innerHTML = '';
+        
+        // 渲染商品列表
+        products.forEach(product => {
+            // 创建商品卡片
+            const productCard = document.createElement('div');
+            productCard.className = 'product-card';
+            productCard.setAttribute('data-category', product.category || 'all');
+            
+            // 构建商品图片URL
+            const imageUrl = `${API_BASE_URL}/image/Goods/Goods_${product.product_id}.png`;
+            
+            // 设置商品标签
+            let tagText = '';
+            if (product.is_hot) tagText = '热销';
+            else if (product.is_limited) tagText = '限量';
+            else if (product.is_new) tagText = '新品';
+            
+            // 设置商品卡片内容
+            productCard.innerHTML = `
+                <div class="product-image">
+                    <img src="${imageUrl}" alt="${product.name}">
+                    ${tagText ? `<div class="product-tag">${tagText}</div>` : ''}
+                </div>
+                <div class="product-info">
+                    <h3>${product.name}</h3>
+                    <p class="product-desc">${product.description}</p>
+                    <div class="product-meta">
+                        <span class="product-weight">规格：${product.specifications}</span>
+                        <span class="product-year">年份：${product.aging_years}年</span>
+                    </div>
+                    <div class="product-price">
+                        <span class="price">¥${product.price.toFixed(2)}</span>
+                        <a href="shop.html?id=${product.product_id}" class="btn-small">立即购买</a>
+                    </div>
+                </div>
+            `;
+            
+            // 添加到商品网格
+            productGrid.appendChild(productCard);
+        });
+        
+        // 初始化产品分类筛选
+        initProductFilter();
+        
+        // 为商品卡片添加点击事件
+        const productCards = document.querySelectorAll('.product-card');
+        productCards.forEach(card => {
+            card.addEventListener('click', function(e) {
+                // 如果点击的是按钮，则不跳转
+                if (e.target.closest('.btn-small')) {
+                    return;
+                }
+                
+                const productLink = this.querySelector('.btn-small');
+                if (productLink) {
+                    const productId = new URL(productLink.href).searchParams.get('id');
+                    if (productId) {
+                        window.location.href = `product-detail.html?id=${productId}`;
+                    }
+                }
+            });
+        });
+        
+    } catch (error) {
+        console.error('加载商品失败:', error);
+        const productGrid = document.querySelector('.product-grid');
+        if (productGrid) {
+            productGrid.innerHTML = '<div class="error">加载商品失败，请刷新页面重试</div>';
+        }
+    }
+}
 
 // 产品分类筛选功能
 function initProductFilter() {
