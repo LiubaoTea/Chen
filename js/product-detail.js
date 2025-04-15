@@ -45,7 +45,12 @@ async function loadTeaCulture() {
         const parser = new DOMParser();
         const doc = parser.parseFromString(html, 'text/html');
         const teaCultureContent = doc.querySelector('.tea-culture-content');
-        document.getElementById('culture').innerHTML = teaCultureContent.innerHTML;
+        const cultureTab = document.getElementById('culture');
+        if (cultureTab && teaCultureContent) {
+            cultureTab.innerHTML = teaCultureContent.innerHTML;
+        } else {
+            console.warn('茶文化内容加载失败：找不到目标元素');
+        }
     } catch (error) {
         console.error('加载茶文化内容失败:', error);
     }
@@ -195,8 +200,57 @@ function initBuyNow() {
 document.addEventListener('DOMContentLoaded', async () => {
     const productId = getProductId();
     if (!productId) {
-        window.location.href = '/shop.html';
+        alert('商品ID不存在');
+        window.location.href = 'shop.html';
         return;
+    }
+
+    try {
+        // 获取并显示商品详情
+        const product = await fetchProductDetail(productId);
+        if (!product) {
+            alert('商品不存在');
+            window.location.href = 'shop.html';
+            return;
+        }
+        updateProductDetail(product);
+
+        // 初始化各个功能模块
+        initQuantityControl();
+        initTabs();
+        initAddToCart();
+        initBuyNow();
+
+        // 加载茶文化内容
+        await loadTeaCulture();
+
+        // 获取相关推荐商品
+        await fetchRelatedProducts(productId);
+
+        // 加载商品详情内容
+        const detailContent = document.getElementById('detail');
+        if (detailContent) {
+            detailContent.innerHTML = `
+                <div class="product-detail-content">
+                    <h3>商品详情</h3>
+                    <div class="detail-section">
+                        <h4>产品特点</h4>
+                        <p>${product.description}</p>
+                    </div>
+                    <div class="detail-section">
+                        <h4>储存方法</h4>
+                        <p>请将茶叶存放在阴凉干燥处，避免阳光直射和潮湿环境。</p>
+                    </div>
+                    <div class="detail-section">
+                        <h4>冲泡建议</h4>
+                        <p>水温：95-100℃<br>时间：3-5分钟<br>比例：5-8克/150ml</p>
+                    </div>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('初始化商品详情页失败:', error);
+        alert('加载商品详情失败，请刷新页面重试');
     }
 
     // 获取并显示商品详情
