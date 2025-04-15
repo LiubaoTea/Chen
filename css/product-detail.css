@@ -11,11 +11,10 @@
     border-radius: 12px;
     box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
     padding: 2rem;
-    flex-direction: row;
 }
 
 .product-gallery {
-    flex: 0 0 50%;
+    flex: 0 0 45%;
     position: relative;
 }
 
@@ -75,10 +74,13 @@
 
 .product-price {
     margin-bottom: 0.8rem;
+    display: flex;
+    align-items: center;
 }
 
 .price-label {
     color: #666;
+    min-width: 60px;
     margin-right: 0.5rem;
 }
 
@@ -90,32 +92,19 @@
 
 .product-quantity {
     margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
 }
 
 .quantity-label {
     color: #666;
+    min-width: 60px;
     margin-right: 0.5rem;
 }
 
 .quantity-control {
-    display: inline-flex;
-    align-items: center;
-    margin-left: 0.5rem;
-}
-
-.quantity-btn {
-    width: 28px;
-    height: 28px;
-    font-size: 1rem;
     display: flex;
     align-items: center;
-    justify-content: center;
-    border: 1px solid #ddd;
-    background: #fff;
-    cursor: pointer;
-    padding: 0;
-    border-radius: 4px;
-    margin: 0 4px;
 }
 
 .quantity-btn {
