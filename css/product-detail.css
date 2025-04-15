@@ -4,14 +4,13 @@
 
 .product-detail-main {
     display: flex;
-    flex-direction: row;
     gap: 2rem;
     margin-bottom: 3rem;
+    align-items: flex-start;
     background: #fff;
     border-radius: 12px;
     box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
     padding: 2rem;
-    position: relative;
 }
 
 .product-gallery {
@@ -75,43 +74,27 @@
 
 .product-price {
     margin-bottom: 0.8rem;
-}
-
-.price-label {
-    color: #666;
-    min-width: 60px;
-    margin-right: 0.5rem;
+    display: flex;
+    align-items: center;
 }
 
 .price {
     font-size: 1.2rem;
     color: #e53935;
     font-weight: bold;
+    margin-left: 0.5rem;
 }
 
 .product-quantity {
     margin-bottom: 1.5rem;
     display: flex;
     align-items: center;
-}
-
-.quantity-label {
-    color: #666;
-    min-width: 60px;
-    margin-right: 0.5rem;
-}
-
-.quantity-control {
-    display: inline-flex;
-    align-items: center;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    padding: 2px;
+    gap: 0.5rem;
 }
 
 .quantity-btn {
-    width: 28px;
-    height: 28px;
+    width: 24px;
+    height: 24px;
     font-size: 1rem;
     display: flex;
     align-items: center;
@@ -129,15 +112,15 @@
 
 #quantity {
     width: 50px;
-    height: 28px;
+    height: 24px;
     text-align: center;
-    border: none;
-    margin: 0 4px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin: 0;
 }
 
 .stock {
     color: #666;
-    margin-left: 1rem;
 }
 
 .product-actions {

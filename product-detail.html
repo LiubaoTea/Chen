@@ -52,14 +52,14 @@
         <div class="container">
             <!-- 商品详情主体 -->
             <div class="product-detail-main">
-                <!-- 商品图片展示区 -->
+                <!-- 左侧商品图片区 -->
                 <div class="product-gallery">
                     <div class="main-image">
                         <img id="productImage" src="" alt="商品图片">
                     </div>
                 </div>
                 
-                <!-- 商品信息区 -->
+                <!-- 右侧商品信息区 -->
                 <div class="product-info">
                     <h1 id="productName" class="product-title"></h1>
                     <p id="productDescription" class="product-description"></p>
@@ -73,20 +73,17 @@
                             <span class="label">年份：</span>
                             <span id="productAgingYears"></span>
                         </div>
-                    </div>
-                    
-                    <div class="product-meta-item">
-                        <span class="label">价格：</span>
-                        <span class="price" id="productPrice"></span>
-                    </div>
-                    <div class="product-meta-item">
-                        <span class="label">数量：</span>
-                        <div class="quantity-control">
+                        <div class="product-price">
+                            <span class="label">价格：</span>
+                            <span class="price" id="productPrice"></span>
+                        </div>
+                        <div class="product-quantity">
+                            <span class="label">数量：</span>
                             <button class="quantity-btn minus">-</button>
                             <input type="number" value="1" min="1" id="quantity">
                             <button class="quantity-btn plus">+</button>
+                            <span class="stock" id="productStock"></span>
                         </div>
-                        <span class="stock" id="productStock"></span>
                     </div>
                     
                     <div class="product-actions">
