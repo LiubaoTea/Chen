@@ -118,7 +118,31 @@ function initProductFilter() {
                 
                 // 显示或隐藏产品卡片
                 productCards.forEach(card => {
-                    if (selectedCategory === 'all' || card.getAttribute('data-category') === selectedCategory) {
+                    const productName = card.querySelector('h3').textContent;
+                    let shouldShow = false;
+
+                    switch(selectedCategory) {
+                        case 'all':
+                            shouldShow = true;
+                            break;
+                        case 'traditional':
+                            shouldShow = productName.includes('传统');
+                            break;
+                        case 'seasonal':
+                            shouldShow = ['春茶', '夏茶', '秋茶', '冬茶'].some(season => productName.includes(season));
+                            break;
+                        case 'limited':
+                            shouldShow = productName.includes('特惠') || productName.includes('促销');
+                            break;
+                        case 'aged':
+                            shouldShow = productName.includes('十年');
+                            break;
+                        case 'gift':
+                            shouldShow = productName.includes('礼盒');
+                            break;
+                    }
+
+                    if (shouldShow) {
                         card.style.display = 'block';
                         // 添加动画效果
                         setTimeout(() => {
