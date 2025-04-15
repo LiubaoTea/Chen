@@ -38,10 +38,15 @@ function updateProductDetail(product) {
     document.getElementById('productSpecifications').textContent = product.specifications;
     document.getElementById('productAgingYears').textContent = `${product.aging_years}年陈化`;
     document.getElementById('productPrice').textContent = `¥${product.price.toFixed(2)}`;
-    document.getElementById('productStock').textContent = `库存：${product.stock}件`;
+    document.getElementById('productStock').textContent = `${product.stock}`;
 
     // 更新页面标题
     document.title = `${product.name} - 陳記六堡茶`;
+
+    // 初始化数量控制
+    const quantityInput = document.getElementById('quantity');
+    quantityInput.max = product.stock;
+    quantityInput.value = 1;
 }
 
 // 加载茶文化内容
