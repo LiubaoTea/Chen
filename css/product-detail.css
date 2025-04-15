@@ -4,13 +4,14 @@
 
 .product-detail-main {
     display: flex;
+    flex-direction: row;
     gap: 2rem;
     margin-bottom: 3rem;
-    align-items: flex-start;
     background: #fff;
     border-radius: 12px;
     box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
     padding: 2rem;
+    position: relative;
 }
 
 .product-gallery {
@@ -74,8 +75,6 @@
 
 .product-price {
     margin-bottom: 0.8rem;
-    display: flex;
-    align-items: center;
 }
 
 .price-label {
@@ -103,8 +102,11 @@
 }
 
 .quantity-control {
-    display: flex;
+    display: inline-flex;
     align-items: center;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 2px;
 }
 
 .quantity-btn {
@@ -129,8 +131,7 @@
     width: 50px;
     height: 28px;
     text-align: center;
-    border: 1px solid #ddd;
-    border-radius: 4px;
+    border: none;
     margin: 0 4px;
 }
 
