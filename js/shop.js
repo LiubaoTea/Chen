@@ -188,11 +188,6 @@ function initCart() {
     // 更新购物车UI
     async function updateCartUI() {
         try {
-            const token = localStorage.getItem('userToken');
-            if (!token) {
-                alert('请先登录');
-                return;
-            }
 
             // 从API获取购物车数据
             const response = await fetch('/api/cart', {

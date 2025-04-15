@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <button class="contact-modal-close" id="closeContactModal">
                     <i class="fas fa-times"></i>
                 </button>
-                <img src="./image/gongzhonghao_image.png" alt="微信公众号二维码">
+                <img src="https://r2liubaotea.liubaotea.online/image/Design_Assets/gongzhonghao_image.png" alt="微信公众号二维码">
             </div>
         </div>
     `;
