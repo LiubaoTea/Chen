@@ -51,10 +51,12 @@ async function loadTeaCulture() {
         const html = await response.text();
         const parser = new DOMParser();
         const doc = parser.parseFromString(html, 'text/html');
-        const teaCultureContent = doc.querySelector('.tea-culture-content');
+        const mainContent = doc.querySelector('main');
         const cultureTab = document.getElementById('culture');
-        if (cultureTab && teaCultureContent) {
-            cultureTab.innerHTML = teaCultureContent.innerHTML;
+        if (cultureTab && mainContent) {
+            // 移除不需要的导航和页脚部分
+            const contentToDisplay = mainContent.innerHTML;
+            cultureTab.innerHTML = `<div class="tea-culture-content">${contentToDisplay}</div>`;
         } else {
             console.warn('茶文化内容加载失败：找不到目标元素');
         }
@@ -66,12 +68,17 @@ async function loadTeaCulture() {
 // 获取相关推荐商品
 async function fetchRelatedProducts(currentProductId) {
     try {
-        const response = await fetch(`/api/products/related/${currentProductId}`);
+        const response = await fetch(`${API_BASE_URL}/api/products`);
         if (!response.ok) {
-            throw new Error('获取相关商品失败');
+            throw new Error('获取商品列表失败');
         }
-        const products = await response.json();
-        displayRelatedProducts(products);
+        const allProducts = await response.json();
+        // 随机选择4个不同的商品
+        const shuffledProducts = allProducts
+            .filter(product => product.product_id !== currentProductId)
+            .sort(() => Math.random() - 0.5)
+            .slice(0, 4);
+        displayRelatedProducts(shuffledProducts);
     } catch (error) {
         console.error('获取相关商品失败:', error);
     }
