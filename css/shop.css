@@ -423,8 +423,8 @@
 
 .product-actions {
     display: flex;
-    gap: 10px;
-    margin-top: 15px;
+    gap: 8px;
+    margin-top: 12px;
     justify-content: center;
     width: 100%;
     padding: 0 15px 15px;
@@ -441,13 +441,15 @@
 }
 
 .action-btn {
-    padding: 8px 16px;
+    padding: 8px 12px;
     border-radius: 4px;
     font-size: 14px;
     cursor: pointer;
     transition: all 0.3s ease;
-    width: 120px;
     text-align: center;
+    white-space: nowrap;
+    min-width: 90px;
+    line-height: 1.5;
 }
 
 .add-to-cart {

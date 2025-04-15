@@ -76,8 +76,6 @@ async function loadProducts() {
                     <div class="product-actions">
                         <button class="action-btn add-to-cart" data-id="${product.product_id}" data-name="${product.name}" data-price="${product.price}" data-image="${imageUrl}">加入购物车</button>
                         <button class="action-btn quick-view" data-id="${product.product_id}">立即购买</button>
-                            </button>
-                        </div>
                     </div>
                 </div>
             `;
@@ -188,6 +186,8 @@ function initCart() {
     // 更新购物车UI
     async function updateCartUI() {
         try {
+            const token = localStorage.getItem('userToken');
+            if (!token) return;
 
             // 从API获取购物车数据
             const response = await fetch('/api/cart', {
@@ -196,9 +196,7 @@ function initCart() {
                 }
             });
 
-            if (!response.ok) {
-                throw new Error('获取购物车数据失败');
-            }
+            if (!response.ok) return;
 
             const cartItems = await response.json();
             
@@ -305,7 +303,6 @@ function initCart() {
             }
         } catch (error) {
             console.error('更新购物车失败:', error);
-            alert('更新购物车失败，请重试');
         }
     }
     
