@@ -214,36 +214,10 @@
         </div>
     </main>
 
+    <link rel="stylesheet" href="./css/modal.css">
+    <script src="./js/api.js"></script>
     <script src="./js/auth.js"></script>
     <script src="./js/contact-modal.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // 检查用户是否已登录
-            if (!checkAuthStatus()) {
-                return; // 如果未登录，checkAuthStatus会重定向到登录页面
-            }
-            
-            // 获取用户信息（这里使用模拟数据，实际应用中应从服务器获取）
-            const userData = {
-                username: localStorage.getItem('username') || '用户名',
-                email: localStorage.getItem('userEmail') || 'user@example.com'
-            };
-            
-            // 更新页面上的用户信息
-            document.getElementById('username').textContent = userData.username;
-            document.getElementById('userEmail').textContent = userData.email;
-            
-            // 设置退出登录按钮
-            document.getElementById('logoutBtn').addEventListener('click', () => {
-                // 清除本地存储中的用户信息
-                localStorage.removeItem('userToken');
-                localStorage.removeItem('username');
-                localStorage.removeItem('userEmail');
-                
-                // 重定向到登录页面
-                window.location.href = 'login.html';
-            });
-        });
-    </script>
+    <script src="./js/user-center.js"></script>
 </body>
 </html>
