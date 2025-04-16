@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>账户设置 - 六宝茶</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        .settings-container {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .settings-header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #8B4513;
+        }
+
+        .settings-header h2 {
+            color: #8B4513;
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 30px;
+            padding: 20px;
+        }
+
+        .settings-card {
+            background: #FFF9F0;
+            border: 2px solid #D2691E;
+            border-radius: 8px;
+            padding: 25px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .settings-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 15px rgba(139, 69, 19, 0.2);
+        }
+
+        .settings-card i {
+            font-size: 2.5em;
+            color: #8B4513;
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        .settings-card h3 {
+            color: #8B4513;
+            font-size: 1.5em;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #D2691E;
+            padding-bottom: 10px;
+        }
+
+        .settings-card p {
+            color: #6B4423;
+            line-height: 1.6;
+        }
+
+        .settings-content {
+            display: none;
+            padding: 20px;
+            background: #FFF9F0;
+            border: 1px solid #D2691E;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .settings-content.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            color: #8B4513;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #D2691E;
+            border-radius: 4px;
+            background: #FFF;
+        }
+
+        .btn-save {
+            background: #8B4513;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background 0.3s;
+        }
+
+        .btn-save:hover {
+            background: #6B3410;
+        }
+
+        @media (max-width: 768px) {
+            .settings-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <div class="logo">
+                <a href="index.html"><img src="image/liubaotea_logo.png" alt="六宝茶"></a>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="index.html">首页</a></li>
+                    <li><a href="products.html">产品展示</a></li>
+                    <li><a href="tea-culture.html">茶文化</a></li>
+                    <li><a href="brand-story.html">品牌故事</a></li>
+                    <li><a href="shop.html">在线商城</a></li>
+                    <li><a href="contact.html">联系我们</a></li>
+                    <li><a href="user-center.html">用户中心</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <div class="settings-container">
+            <div class="settings-header">
+                <h2>账户设置</h2>
+                <p>在这里管理您的个人信息和偏好设置</p>
+            </div>
+
+            <div class="settings-grid">
+                <div class="settings-card" id="profile-card">
+                    <i class="fas fa-user-edit"></i>
+                    <h3>个人资料</h3>
+                    <p>修改您的个人信息，包括用户名、头像等基本资料</p>
+                </div>
+
+                <div class="settings-card" id="security-card">
+                    <i class="fas fa-lock"></i>
+                    <h3>安全设置</h3>
+                    <p>管理您的账户安全信息，包括密码修改和安全验证</p>
+                </div>
+
+                <div class="settings-card" id="address-card">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <h3>收货地址</h3>
+                    <p>管理您的收货地址信息，添加或修改配送地址</p>
+                </div>
+
+                <div class="settings-card" id="notification-card">
+                    <i class="fas fa-bell"></i>
+                    <h3>通知设置</h3>
+                    <p>自定义您想接收的通知类型和方式</p>
+                </div>
+            </div>
+
+            <div id="settings-content" class="settings-content">
+                <!-- 设置内容将通过JavaScript动态加载 -->
+            </div>
+        </div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const settingsCards = document.querySelectorAll('.settings-card');
+            const settingsContent = document.getElementById('settings-content');
+
+            settingsCards.forEach(card => {
+                card.addEventListener('click', function() {
+                    const type = this.id.replace('-card', '');
+                    loadSettingsContent(type);
+                });
+            });
+
+            function loadSettingsContent(type) {
+                // 根据不同的设置类型加载对应的内容
+                let content = '';
+                switch(type) {
+                    case 'profile':
+                        content = `
+                            <h3>个人资料设置</h3>
+                            <div class="form-group">
+                                <label for="username">用户名</label>
+                                <input type="text" id="username" name="username">
+                            </div>
+                            <div class="form-group">
+                                <label for="email">电子邮箱</label>
+                                <input type="email" id="email" name="email">
+                            </div>
+                            <button class="btn-save">保存更改</button>
+                        `;
+                        break;
+                    case 'security':
+                        content = `
+                            <h3>安全设置</h3>
+                            <div class="form-group">
+                                <label for="current-password">当前密码</label>
+                                <input type="password" id="current-password" name="current-password">
+                            </div>
+                            <div class="form-group">
+                                <label for="new-password">新密码</label>
+                                <input type="password" id="new-password" name="new-password">
+                            </div>
+                            <div class="form-group">
+                                <label for="confirm-password">确认新密码</label>
+                                <input type="password" id="confirm-password" name="confirm-password">
+                            </div>
+                            <button class="btn-save">更新密码</button>
+                        `;
+                        break;
+                    case 'address':
+                        content = `
+                            <h3>收货地址管理</h3>
+                            <div class="form-group">
+                                <label for="receiver">收货人</label>
+                                <input type="text" id="receiver" name="receiver">
+                            </div>
+                            <div class="form-group">
+                                <label for="phone">联系电话</label>
+                                <input type="tel" id="phone" name="phone">
+                            </div>
+                            <div class="form-group">
+                                <label for="address">详细地址</label>
+                                <input type="text" id="address" name="address">
+                            </div>
+                            <button class="btn-save">保存地址</button>
+                        `;
+                        break;
+                    case 'notification':
+                        content = `
+                            <h3>通知设置</h3>
+                            <div class="form-group">
+                                <label>
+                                    <input type="checkbox" name="order-notification"> 订单状态通知
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <label>
+                                    <input type="checkbox" name="promotion-notification"> 促销活动通知
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <label>
+                                    <input type="checkbox" name="system-notification"> 系统消息通知
+                                </label>
+                            </div>
+                            <button class="btn-save">保存设置</button>
+                        `;
+                        break;
+                }
+
+                settingsContent.innerHTML = content;
+                settingsContent.classList.add('active');
+            }
+        });
+    </script>
+</body>
+</html>

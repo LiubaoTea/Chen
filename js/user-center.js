@@ -104,24 +104,12 @@ function viewOrderDetail(orderNumber) {
 
 // 初始化设置卡片点击事件
 function initSettingCards() {
-    // 个人资料设置
-    document.querySelector('.setting-card:nth-child(1)').addEventListener('click', () => {
-        showProfileSettings();
-    });
-    
-    // 安全设置
-    document.querySelector('.setting-card:nth-child(2)').addEventListener('click', () => {
-        showSecuritySettings();
-    });
-    
-    // 收货地址设置
-    document.querySelector('.setting-card:nth-child(3)').addEventListener('click', () => {
-        showAddressSettings();
-    });
-    
-    // 通知设置
-    document.querySelector('.setting-card:nth-child(4)').addEventListener('click', () => {
-        showNotificationSettings();
+    const settingCards = document.querySelectorAll('.setting-card');
+    settingCards.forEach((card, index) => {
+        card.addEventListener('click', () => {
+            // 跳转到账户设置页面
+            window.location.href = 'account-settings.html';
+        });
     });
 }
 

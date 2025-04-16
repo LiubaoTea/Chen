@@ -138,11 +138,17 @@ const handleProducts = async (request, env) => {
             // 构建SQL查询
             let sql = 'SELECT * FROM products';
             const params = [];
+            
+            console.log('开始执行商品查询');
+            console.log('初始SQL:', sql);
             const conditions = [];
+            
+            console.log('开始构建SQL查询');
             
             if (category && category !== 'all') {
                 conditions.push('category = ?');
                 params.push(category);
+                console.log('添加类别筛选:', category);
             }
             
             if (minPrice) {
@@ -165,21 +171,52 @@ const handleProducts = async (request, env) => {
             }
             
             // 执行查询
-            const products = await env.DB.prepare(sql).bind(...params).all();
+            console.log('执行SQL查询:', sql, '参数:', params);
+            let products;
+            try {
+                products = await env.DB.prepare(sql).bind(...params).all();
+                console.log('数据库查询结果:', products);
+            } catch (dbError) {
+                console.error('数据库查询错误:', dbError);
+                throw new Error(`数据库查询失败: ${dbError.message}`);
+            }
             
-            // 处理产品图片URL，将本地路径替换为R2存储路径
-            const productsWithImages = products.results.map(product => {
-                // 假设产品图片存储在R2的image/Goods目录下
-                const imageUrl = `https://${env.R2_DOMAIN}/image/Goods/${product.image_filename}`;
+            if (!products || !products.results) {
+                console.error('查询结果无效:', products);
+                throw new Error('查询结果为空或格式不正确');
+            }
+            
+            console.log('查询到商品数量:', products.results.length);
+            
+            // 处理产品图片URL，使用统一的命名规则
+           // const productsWithImages = products.results.map(product => {
+              //  const imageUrl = `https://${env.R2_DOMAIN}/image/Goods/Goods_${product.product_id}.png`;
+            //    return { ...product, image_url: imageUrl };
+          //  });
+
+             // 处理产品图片URL，将本地路径替换为R2存储路径
+             const productsWithImages = products.results.map(product => {
+             // 假设产品图片存储在R2的image/Goods目录下
+                 const imageUrl = `https://${env.R2_DOMAIN}/image/Goods/${product.image_filename}`;
                 return { ...product, image_url: imageUrl };
-            });
+              });
+
+
+
 
             return new Response(JSON.stringify(productsWithImages), {
                 status: 200,
                 headers: { 'Content-Type': 'application/json' }
             });
         } catch (error) {
-            return new Response(JSON.stringify({ error: '获取商品列表失败', details: error.message }), {
+            console.error('获取商品列表失败:', error);
+            const errorMessage = error.message || '未知错误';
+            const errorDetails = error.stack || '';
+            return new Response(JSON.stringify({
+                error: '获取商品列表失败',
+                message: errorMessage,
+                details: errorDetails
+            }), {
                 status: 500,
                 headers: { 'Content-Type': 'application/json' }
             });
