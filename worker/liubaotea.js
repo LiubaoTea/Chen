@@ -453,6 +453,590 @@ const handleImageRequest = async (request, env) => {
 };
 
 //==========================================================================
+// 用户地址管理API路由处理
+// 处理用户地址的添加、查询、更新和删除
+//==========================================================================
+const handleUserAddress = async (request, env) => {
+    const url = new URL(request.url);
+    const path = url.pathname;
+
+    // 验证用户身份
+    const authHeader = request.headers.get('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return new Response(JSON.stringify({ error: '未授权访问' }), {
+            status: 401,
+            headers: { 'Content-Type': 'application/json' }
+        });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const decoded = JSON.parse(atob(token));
+    const userId = decoded.userId;
+
+    // 添加新地址
+    if (path === '/api/addresses' && request.method === 'POST') {
+        try {
+            const { recipient_name, contact_phone, full_address, region, postal_code, is_default } = await request.json();
+            const timestamp = new Date().toISOString();
+
+            // 如果设置为默认地址，先将其他地址设置为非默认
+            if (is_default) {
+                await env.DB.prepare(
+                    'UPDATE user_addresses SET is_default = 0 WHERE user_id = ?'
+                ).bind(userId).run();
+            }
+
+            // 插入新地址
+            await env.DB.prepare(
+                'INSERT INTO user_addresses (user_id, recipient_name, contact_phone, full_address, region, postal_code, is_default, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+            ).bind(userId, recipient_name, contact_phone, full_address, region, postal_code, is_default ? 1 : 0, timestamp).run();
+
+            return new Response(JSON.stringify({ message: '地址添加成功' }), {
+                status: 201,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '添加地址失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+
+    // 获取用户地址列表
+    if (path === '/api/addresses' && request.method === 'GET') {
+        try {
+            const addresses = await env.DB.prepare(
+                'SELECT * FROM user_addresses WHERE user_id = ? ORDER BY is_default DESC, created_at DESC'
+            ).bind(userId).all();
+
+            return new Response(JSON.stringify(addresses.results), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '获取地址列表失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+
+    // 更新地址
+    if (path.match(/\/api\/addresses\/\d+$/) && request.method === 'PUT') {
+        try {
+            const addressId = path.split('/').pop();
+            const { recipient_name, contact_phone, full_address, region, postal_code, is_default } = await request.json();
+
+            // 验证地址所有权
+            const address = await env.DB.prepare(
+                'SELECT * FROM user_addresses WHERE address_id = ? AND user_id = ?'
+            ).bind(addressId, userId).first();
+
+            if (!address) {
+                return new Response(JSON.stringify({ error: '地址不存在或无权访问' }), {
+                    status: 404,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+
+            // 如果设置为默认地址，先将其他地址设置为非默认
+            if (is_default) {
+                await env.DB.prepare(
+                    'UPDATE user_addresses SET is_default = 0 WHERE user_id = ?'
+                ).bind(userId).run();
+            }
+
+            // 更新地址
+            await env.DB.prepare(
+                'UPDATE user_addresses SET recipient_name = ?, contact_phone = ?, full_address = ?, region = ?, postal_code = ?, is_default = ? WHERE address_id = ?'
+            ).bind(recipient_name, contact_phone, full_address, region, postal_code, is_default ? 1 : 0, addressId).run();
+
+            return new Response(JSON.stringify({ message: '地址更新成功' }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '更新地址失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+
+    // 删除地址
+    if (path.match(/\/api\/addresses\/\d+$/) && request.method === 'DELETE') {
+        try {
+            const addressId = path.split('/').pop();
+
+            // 验证地址所有权
+            const address = await env.DB.prepare(
+                'SELECT * FROM user_addresses WHERE address_id = ? AND user_id = ?'
+            ).bind(addressId, userId).first();
+
+            if (!address) {
+                return new Response(JSON.stringify({ error: '地址不存在或无权访问' }), {
+                    status: 404,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+
+            // 删除地址
+            await env.DB.prepare(
+                'DELETE FROM user_addresses WHERE address_id = ?'
+            ).bind(addressId).run();
+
+            return new Response(JSON.stringify({ message: '地址删除成功' }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '删除地址失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+
+    return new Response('Not Found', { status: 404 });
+};
+
+//==========================================================================
+// 用户设置API路由处理
+// 处理用户设置的查询和更新
+//==========================================================================
+const handleUserSettings = async (request, env) => {
+    const url = new URL(request.url);
+    const path = url.pathname;
+
+    // 验证用户身份
+    const authHeader = request.headers.get('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return new Response(JSON.stringify({ error: '未授权访问' }), {
+            status: 401,
+            headers: { 'Content-Type': 'application/json' }
+        });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const decoded = JSON.parse(atob(token));
+    const userId = decoded.userId;
+
+    // 获取用户设置
+    if (path === '/api/settings' && request.method === 'GET') {
+        try {
+            const settings = await env.DB.prepare(
+                'SELECT * FROM user_settings WHERE user_id = ?'
+            ).bind(userId).first();
+
+            if (!settings) {
+                // 如果没有设置记录，返回默认设置
+                return new Response(JSON.stringify({
+                    notification_prefs: '{}',
+                    privacy_settings: '{}'
+                }), {
+                    status: 200,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+
+            return new Response(JSON.stringify(settings), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '获取用户设置失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+
+    // 更新用户设置
+    if (path === '/api/settings' && request.method === 'PUT') {
+        try {
+            const { notification_prefs, privacy_settings } = await request.json();
+            const timestamp = new Date().toISOString();
+
+            // 检查是否已存在设置记录
+            const existingSettings = await env.DB.prepare(
+                'SELECT setting_id FROM user_settings WHERE user_id = ?'
+            ).bind(userId).first();
+
+            if (existingSettings) {
+                // 更新现有设置
+                await env.DB.prepare(
+                    'UPDATE user_settings SET notification_prefs = ?, privacy_settings = ?, updated_at = ? WHERE user_id = ?'
+                ).bind(JSON.stringify(notification_prefs), JSON.stringify(privacy_settings), timestamp, userId).run();
+            } else {
+                // 创建新设置记录
+                await env.DB.prepare(
+                    'INSERT INTO user_settings (user_id, notification_prefs, privacy_settings, created_at, updated_at) VALUES (?, ?, ?, ?, ?)'
+                ).bind(userId, JSON.stringify(notification_prefs), JSON.stringify(privacy_settings), timestamp, timestamp).run();
+            }
+
+            return new Response(JSON.stringify({ message: '设置更新成功' }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '更新用户设置失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+
+    return new Response('Not Found', { status: 404 });
+};
+
+//==========================================================================
+// 商品分类API路由处理
+// 处理商品分类的查询和管理
+//==========================================================================
+const handleProductCategories = async (request, env) => {
+    const url = new URL(request.url);
+    const path = url.pathname;
+
+    // 获取所有分类
+    if (path === '/api/categories' && request.method === 'GET') {
+        try {
+            const categories = await env.DB.prepare(
+                'SELECT * FROM product_categories ORDER BY parent_category_id NULLS FIRST, category_name'
+            ).all();
+
+            // 构建分类树结构
+            const categoryMap = new Map();
+            const rootCategories = [];
+
+            // 首先将所有分类添加到Map中
+            categories.results.forEach(category => {
+                category.children = [];
+                categoryMap.set(category.category_id, category);
+            });
+
+            // 构建树结构
+            categories.results.forEach(category => {
+                if (category.parent_category_id === null) {
+                    rootCategories.push(category);
+                } else {
+                    const parentCategory = categoryMap.get(category.parent_category_id);
+                    if (parentCategory) {
+                        parentCategory.children.push(category);
+                    }
+                }
+            });
+
+            return new Response(JSON.stringify(rootCategories), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '获取分类列表失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+
+    // 获取特定分类及其商品
+    if (path.match(/\/api\/categories\/\d+\/products$/) && request.method === 'GET') {
+        try {
+            const categoryId = path.split('/')[3];
+
+            // 获取分类信息
+            const category = await env.DB.prepare(
+                'SELECT * FROM product_categories WHERE category_id = ?'
+            ).bind(categoryId).first();
+
+            if (!category) {
+                return new Response(JSON.stringify({ error: '分类不存在' }), {
+                    status: 404,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+
+            // 获取该分类下的商品
+            const products = await env.DB.prepare(
+                'SELECT * FROM products WHERE category_id = ?'
+            ).bind(categoryId).all();
+
+            return new Response(JSON.stringify({
+                category,
+                products: products.results
+            }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '获取分类商品失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+
+    return new Response('Not Found', { status: 404 });
+};
+
+//==========================================================================
+// 商品评价API路由处理
+// 处理商品评价的添加、查询和管理
+//==========================================================================
+const handleProductReviews = async (request, env) => {
+    const url = new URL(request.url);
+    const path = url.pathname;
+
+    // 添加商品评价
+    if (path === '/api/reviews' && request.method === 'POST') {
+        try {
+            // 验证用户身份
+            const authHeader = request.headers.get('Authorization');
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
+                    status: 401,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+
+            const token = authHeader.split(' ')[1];
+            const decoded = JSON.parse(atob(token));
+            const userId = decoded.userId;
+
+            const { product_id, rating, review_content } = await request.json();
+            const timestamp = new Date().toISOString();
+
+            // 验证用户是否购买过该商品
+            const orderItem = await env.DB.prepare(
+                `SELECT oi.* FROM order_items oi
+                JOIN orders o ON oi.order_id = o.order_id
+                WHERE o.user_id = ? AND oi.product_id = ? AND o.status = 'completed'`
+            ).bind(userId, product_id).first();
+
+            if (!orderItem) {
+                return new Response(JSON.stringify({ error: '只有购买过的商品才能评价' }), {
+                    status: 403,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+
+            // 检查是否已经评价过
+            const existingReview = await env.DB.prepare(
+                'SELECT review_id FROM product_reviews WHERE user_id = ? AND product_id = ?'
+            ).bind(userId, product_id).first();
+
+            if (existingReview) {
+                return new Response(JSON.stringify({ error: '您已经评价过该商品' }), {
+                    status: 400,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+
+            // 添加评价
+            await env.DB.prepare(
+                'INSERT INTO product_reviews (user_id, product_id, rating, review_content, status, created_at) VALUES (?, ?, ?, ?, ?, ?)'
+            ).bind(userId, product_id, rating, review_content, 'published', timestamp).run();
+
+            return new Response(JSON.stringify({ message: '评价添加成功' }), {
+                status: 201,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '添加评价失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+
+    // 获取商品评价列表
+    if (path.match(/\/api\/products\/\d+\/reviews$/) && request.method === 'GET') {
+        try {
+            const productId = path.split('/')[3];
+
+            // 获取评价列表
+            const reviews = await env.DB.prepare(
+                `SELECT pr.*, u.username 
+                FROM product_reviews pr
+                JOIN users u ON pr.user_id = u.user_id
+                WHERE pr.product_id = ? AND pr.status = 'published'
+                ORDER BY pr.created_at DESC`
+            ).bind(productId).all();
+
+            return new Response(JSON.stringify(reviews.results), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '获取评价列表失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+
+    return new Response('Not Found', { status: 404 });
+};
+
+//==========================================================================
+// 购物会话API路由处理
+// 处理购物会话的创建、更新和管理
+//==========================================================================
+const handleShoppingSession = async (request, env) => {
+    const url = new URL(request.url);
+    const path = url.pathname;
+
+    // 验证用户身份
+    const authHeader = request.headers.get('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return new Response(JSON.stringify({ error: '未授权访问' }), {
+            status: 401,
+            headers: { 'Content-Type': 'application/json' }
+        });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const decoded = JSON.parse(atob(token));
+    const userId = decoded.userId;
+
+    // 创建或更新购物会话
+    if (path === '/api/shopping-session' && (request.method === 'POST' || request.method === 'PUT')) {
+        try {
+            const { cart_data } = await request.json();
+            const timestamp = new Date().toISOString();
+            const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 24小时后过期
+
+            // 检查是否存在活跃会话
+            const activeSession = await env.DB.prepare(
+                "SELECT session_id FROM shopping_sessions WHERE user_id = ? AND status = 'active'"
+            ).bind(userId).first();
+
+            if (activeSession) {
+                // 更新现有会话
+                await env.DB.prepare(
+                    'UPDATE shopping_sessions SET cart_data = ?, expires_at = ? WHERE session_id = ?'
+                ).bind(JSON.stringify(cart_data), expiresAt, activeSession.session_id).run();
+            } else {
+                // 创建新会话
+                await env.DB.prepare(
+                    'INSERT INTO shopping_sessions (user_id, cart_data, status, expires_at, created_at) VALUES (?, ?, ?, ?, ?)'
+                ).bind(userId, JSON.stringify(cart_data), 'active', expiresAt, timestamp).run();
+            }
+
+            return new Response(JSON.stringify({ message: '购物会话更新成功' }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '更新购物会话失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+
+    // 获取当前购物会话
+    if (path === '/api/shopping-session' && request.method === 'GET') {
+        try {
+            const session = await env.DB.prepare(
+                "SELECT * FROM shopping_sessions WHERE user_id = ? AND status = 'active' AND expires_at > datetime('now')"
+            ).bind(userId).first();
+
+            if (!session) {
+                return new Response(JSON.stringify({ cart_data: '{}' }), {
+                    status: 200,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+
+            return new Response(JSON.stringify(session), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '获取购物会话失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+
+    return new Response('Not Found', { status: 404 });
+}
+
+//==========================================================================
+// 购物车相关API路由处理
+// 处理购物车添加商品、查看购物车和更新购物车的相关请求
+//==========================================================================
+
+// 主函数：处理所有API请求
+const handleRequest = {
+    async fetch(request, env, ctx) {
+        try {
+            const url = new URL(request.url);
+            const path = url.pathname;
+
+            // 处理图片请求
+            if (path.startsWith('/image/')) {
+                return handleImageRequest(request, env);
+            }
+
+            // 处理用户认证相关请求
+            if (path.startsWith('/api/register') || path.startsWith('/api/login') || path.startsWith('/api/user')) {
+                return handleUserAuth(request, env);
+            }
+
+            // 处理商品相关请求
+            if (path.startsWith('/api/products')) {
+                return handleProducts(request, env);
+            }
+
+            // 处理订单相关请求
+            if (path.startsWith('/api/orders')) {
+                return handleOrders(request, env);
+            }
+
+            // 处理购物车相关请求
+            if (path.startsWith('/api/cart')) {
+                return handleCart(request, env);
+            }
+
+            // 处理用户地址相关请求
+            if (path.startsWith('/api/addresses')) {
+                return handleUserAddress(request, env);
+            }
+
+            // 处理用户设置相关请求
+            if (path.startsWith('/api/settings')) {
+                return handleUserSettings(request, env);
+            }
+
+            // 处理商品分类相关请求
+            if (path.startsWith('/api/categories')) {
+                return handleProductCategories(request, env);
+            }
+
+            // 处理商品评价相关请求
+            if (path.startsWith('/api/reviews') || path.match(/\/api\/products\/\d+\/reviews$/)) {
+                return handleProductReviews(request, env);
+            }
+
+            // 处理购物会话相关请求
+            if (path.startsWith('/api/shopping-session')) {
+                return handleShoppingSession(request, env);
+            }
+
+            return new Response('Not Found', { status: 404 });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '服务器错误', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+};
+
+//==========================================================================
 // 购物车相关API路由处理
 // 处理购物车添加商品、查看购物车和更新购物车的相关请求
 //==========================================================================
