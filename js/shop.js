@@ -493,12 +493,37 @@ async function fetchProducts(filters = {}) {
             let visibleProducts = 0;
             
             productCards.forEach(card => {
-                const category = card.getAttribute('data-category');
+                const productName = card.querySelector('h3').textContent;
                 const price = parseInt(card.getAttribute('data-price'));
                 const year = card.getAttribute('data-year');
                 
-                // 检查是否符合筛选条件
-                const categoryMatch = selectedCategories.length === 0 || selectedCategories.includes(category);
+                // 检查分类匹配
+                let categoryMatch = selectedCategories.length === 0; // 如果没有选中分类，则默认匹配
+                
+                if (selectedCategories.length > 0) {
+                    for (const category of selectedCategories) {
+                        switch (category) {
+                            case '传统系列':
+                                if (productName.includes('传统')) categoryMatch = true;
+                                break;
+                            case '季节特供':
+                                if (productName.includes('春茶') || productName.includes('秋茶') || 
+                                    productName.includes('夏茶') || productName.includes('冬茶')) categoryMatch = true;
+                                break;
+                            case '限量版':
+                                if (productName.includes('特惠') || productName.includes('促销')) categoryMatch = true;
+                                break;
+                            case '十年老茶':
+                                if (productName.includes('十')) categoryMatch = true;
+                                break;
+                            case '礼盒装':
+                                if (productName.includes('礼盒')) categoryMatch = true;
+                                break;
+                        }
+                        if (categoryMatch) break; // 如果已经匹配，就不需要继续检查其他分类
+                    }
+                }
+                
                 const yearMatch = selectedYears.length === 0 || selectedYears.includes(year);
                 const priceMatch = price >= minPrice && price <= maxPrice;
                 
