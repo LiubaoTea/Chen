@@ -1254,55 +1254,9 @@ const handleProductReviews = async (request, env) => {
 };
 
 //==========================================================================
-//                           十一、主路由处理函数
-// 根据请求路径分发到不同的处理函数
+//                           十一、CORS头处理函数
+// 处理跨域请求的CORS头
 //==========================================================================
-async function handleRequest(request, env) {
-    const url = new URL(request.url);
-    const path = url.pathname;
-
-    // 设置CORS头
-    const corsHeaders = {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization'
-    };
-
-    // 处理预检请求
-    if (request.method === 'OPTIONS') {
-        return new Response(null, {
-            headers: corsHeaders
-        });
-    }
-
-    // 根据路径前缀分发到不同的处理函数
-    if (path.startsWith('/api/products')) {
-        const response = await handleProducts(request, env);
-        return addCorsHeaders(response, corsHeaders);
-    }
-
-    if (path.startsWith('/api/orders')) {
-        const response = await handleOrders(request, env);
-        return addCorsHeaders(response, corsHeaders);
-    }
-
-    if (['/api/register', '/api/login', '/api/user'].includes(path)) {
-        const response = await handleUserAuth(request, env);
-        return addCorsHeaders(response, corsHeaders);
-    }
-
-    if (path.startsWith('/api/cart')) {
-        const response = await handleCart(request, env);
-        return addCorsHeaders(response, corsHeaders);
-    }
-
-    if (path.startsWith('/api/user/') || path.startsWith('/api/addresses')) {
-        const response = await handleUserCenter(request, env);
-        return addCorsHeaders(response, corsHeaders);
-    }
-
-    return new Response('Not Found', { status: 404 });
-}
 
 // 添加CORS头的辅助函数
 function addCorsHeaders(response, corsHeaders) {
@@ -1701,64 +1655,52 @@ export default {
     async fetch(request, env, ctx) {
         const url = new URL(request.url);
         
-        // 处理CORS预检请求
-        if (request.method === 'OPTIONS') {
-            return new Response(null, {
-                headers: {
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-                    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-                }
-            });
-        }
-
-        // 添加CORS头
+        // 设置CORS头
         const corsHeaders = {
             'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization',
             'Content-Type': 'application/json'
         };
 
+        // 处理预检请求
+        if (request.method === 'OPTIONS') {
+            return new Response(null, { headers: corsHeaders });
+        }
+
         try {
             // 路由分发
+            let response;
+
             if (url.pathname.startsWith('/api/products')) {
-                const response = await handleProducts(request, env);
-                return new Response(response.body, {
-                    status: response.status,
-                    headers: { ...corsHeaders, ...response.headers }
-                });
-            }
-
-            if (url.pathname.startsWith('/api/cart')) {
-                const response = await handleCartOperations(request, env);
-                return new Response(response.body, {
-                    status: response.status,
-                    headers: { ...corsHeaders, ...response.headers }
-                });
-            }
-
-            if (url.pathname.startsWith('/api/orders')) {
-                const response = await handleOrders(request, env);
-                return new Response(response.body, {
-                    status: response.status,
-                    headers: { ...corsHeaders, ...response.headers }
-                });
-            }
-
-            if (url.pathname.startsWith('/api')) {
-                const response = await handleUserAuth(request, env);
-                return new Response(response.body, {
-                    status: response.status,
-                    headers: { ...corsHeaders, ...response.headers }
-                });
-            }
-
-            if (url.pathname.startsWith('/image/')) {
+                response = await handleProducts(request, env);
+            } else if (url.pathname.startsWith('/api/cart')) {
+                response = await handleCartOperations(request, env);
+            } else if (url.pathname.startsWith('/api/orders')) {
+                response = await handleOrders(request, env);
+            } else if (url.pathname.startsWith('/api/user/') || url.pathname.startsWith('/api/addresses')) {
+                response = await handleUserCenter(request, env);
+            } else if (['/api/register', '/api/login', '/api/user'].includes(url.pathname)) {
+                response = await handleUserAuth(request, env);
+            } else if (url.pathname.startsWith('/image/')) {
                 return await handleImageRequest(request, env);
+            } else {
+                return new Response('Not Found', { 
+                    status: 404,
+                    headers: corsHeaders
+                });
             }
 
-            return new Response('Not Found', { status: 404 });
+            // 添加CORS头到响应
+            return new Response(response.body, {
+                status: response.status,
+                headers: { ...corsHeaders, ...response.headers }
+            });
         } catch (error) {
-            return new Response(JSON.stringify({ error: '服务器错误', details: error.message }), {
+            return new Response(JSON.stringify({ 
+                error: '服务器错误', 
+                details: error.message 
+            }), {
                 status: 500,
                 headers: corsHeaders
             });
