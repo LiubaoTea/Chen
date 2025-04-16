@@ -120,24 +120,21 @@ async function fetchRelatedProducts(currentProductId) {
             <div class="product-card" data-id="${product.product_id}">
                 <div class="product-image">
                     <img src="/image/Goods/Goods_${product.product_id}.png" alt="${product.name}">
-                    <div class="product-actions">
-                        <button class="action-btn add-to-cart" data-id="${product.product_id}" title="加入购物车">
-                            <i class="fas fa-shopping-cart"></i>
-                        </button>
-                        <a href="product-detail.html?id=${product.product_id}" class="action-btn buy-now" title="立即购买">
-                            <i class="fas fa-shopping-bag"></i>
-                        </a>
-                    </div>
+                    <div class="product-tag">${product.category || ''}</div>
                 </div>
                 <div class="product-info">
                     <h3>${product.name}</h3>
                     <p class="product-desc">${product.description}</p>
                     <div class="product-meta">
-                        <span class="product-weight">${product.specifications}</span>
-                        <span class="product-year">${product.aging_years}年陈化</span>
+                        <span class="product-weight">规格：${product.specifications}</span>
+                        <span class="product-year">年份：${product.aging_years}年</span>
                     </div>
                     <div class="product-price">
                         <span class="price">¥${product.price.toFixed(2)}</span>
+                    </div>
+                    <div class="product-actions">
+                        <button class="action-btn add-to-cart" data-id="${product.product_id}" data-name="${product.name}" data-price="${product.price}">加入购物车</button>
+                        <button class="action-btn quick-view" data-id="${product.product_id}">立即购买</button>
                     </div>
                 </div>
             </div>
