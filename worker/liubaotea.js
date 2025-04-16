@@ -444,7 +444,210 @@ const handleCartOperations = async (request, env) => {
 };
 
 //==========================================================================
-//                            四、用户中心相关API路由处理
+//                         四、订单和支付相关API路由处理
+// 处理订单创建、订单状态更新和支付处理等功能
+//==========================================================================
+const handleOrderOperations = async (request, env) => {
+    const url = new URL(request.url);
+    const path = url.pathname;
+
+    // 获取用户ID
+    const authHeader = request.headers.get('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return new Response(JSON.stringify({ error: '未授权访问' }), {
+            status: 401,
+            headers: { 'Content-Type': 'application/json' }
+        });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const decoded = JSON.parse(atob(token));
+    const userId = decoded.userId;
+
+    // 创建订单
+    if (path === '/api/orders' && request.method === 'POST') {
+        try {
+            const { addressId, paymentMethod } = await request.json();
+
+            // 获取购物车商品
+            const cartItems = await env.DB.prepare(
+                `SELECT c.*, p.name, p.price 
+                FROM carts c 
+                JOIN products p ON c.product_id = p.product_id 
+                WHERE c.user_id = ?`
+            ).bind(userId).all();
+
+            if (!cartItems.results || cartItems.results.length === 0) {
+                return new Response(JSON.stringify({ error: '购物车为空' }), {
+                    status: 400,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+
+            // 计算订单总金额
+            const total = cartItems.results.reduce((sum, item) => sum + item.price * item.quantity, 0);
+            const shipping = total >= 199 ? 0 : 10; // 满199包邮
+            const orderTotal = total + shipping;
+
+            // 创建订单
+            const timestamp = new Date().toISOString();
+            const orderResult = await env.DB.prepare(
+                `INSERT INTO orders 
+                (user_id, address_id, payment_method, total_amount, shipping_fee, status, created_at) 
+                VALUES (?, ?, ?, ?, ?, ?, ?)`
+            ).bind(
+                userId,
+                addressId,
+                paymentMethod,
+                orderTotal,
+                shipping,
+                'pending',
+                timestamp
+            ).run();
+
+            const orderId = orderResult.lastRowId;
+
+            // 添加订单商品
+            for (const item of cartItems.results) {
+                await env.DB.prepare(
+                    `INSERT INTO order_items 
+                    (order_id, product_id, quantity, price) 
+                    VALUES (?, ?, ?, ?)`
+                ).bind(orderId, item.product_id, item.quantity, item.price).run();
+            }
+
+            // 清空购物车
+            await env.DB.prepare('DELETE FROM carts WHERE user_id = ?').bind(userId).run();
+
+            return new Response(JSON.stringify({
+                orderId,
+                total: orderTotal,
+                status: 'pending'
+            }), {
+                status: 201,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '创建订单失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+
+    // 获取订单列表
+    if (path === '/api/orders' && request.method === 'GET') {
+        try {
+            const orders = await env.DB.prepare(
+                `SELECT o.*, a.recipient_name, a.contact_phone, a.full_address 
+                FROM orders o 
+                LEFT JOIN user_addresses a ON o.address_id = a.address_id 
+                WHERE o.user_id = ? 
+                ORDER BY o.created_at DESC`
+            ).bind(userId).all();
+
+            return new Response(JSON.stringify(orders.results), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '获取订单列表失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+
+    // 获取订单详情
+    const orderMatch = path.match(/^\/api\/orders\/(\d+)$/);
+    if (orderMatch && request.method === 'GET') {
+        try {
+            const orderId = orderMatch[1];
+
+            // 获取订单基本信息
+            const order = await env.DB.prepare(
+                `SELECT o.*, a.recipient_name, a.contact_phone, a.full_address 
+                FROM orders o 
+                LEFT JOIN user_addresses a ON o.address_id = a.address_id 
+                WHERE o.order_id = ? AND o.user_id = ?`
+            ).bind(orderId, userId).first();
+
+            if (!order) {
+                return new Response(JSON.stringify({ error: '订单不存在' }), {
+                    status: 404,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+
+            // 获取订单商品
+            const orderItems = await env.DB.prepare(
+                `SELECT oi.*, p.name, p.image_filename 
+                FROM order_items oi 
+                JOIN products p ON oi.product_id = p.product_id 
+                WHERE oi.order_id = ?`
+            ).bind(orderId).all();
+
+            // 处理商品图片URL
+            const itemsWithImages = orderItems.results.map(item => {
+                const imageUrl = `https://${env.R2_DOMAIN}/image/Goods/${item.image_filename}`;
+                return { ...item, image_url: imageUrl };
+            });
+
+            return new Response(JSON.stringify({
+                ...order,
+                items: itemsWithImages
+            }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '获取订单详情失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+
+    // 更新订单状态
+    if (path.match(/^\/api\/orders\/\d+\/status$/) && request.method === 'PUT') {
+        try {
+            const orderId = path.split('/')[3];
+            const { status } = await request.json();
+
+            // 验证订单所属权
+            const order = await env.DB.prepare(
+                'SELECT * FROM orders WHERE order_id = ? AND user_id = ?'
+            ).bind(orderId, userId).first();
+
+            if (!order) {
+                return new Response(JSON.stringify({ error: '订单不存在' }), {
+                    status: 404,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+
+            // 更新状态
+            await env.DB.prepare(
+                'UPDATE orders SET status = ? WHERE order_id = ?'
+            ).bind(status, orderId).run();
+
+            return new Response(JSON.stringify({ message: '更新成功' }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '更新订单状态失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+
+    return new Response('Not Found', { status: 404 });
+};
+
+//==========================================================================
+//                            五、用户中心相关API路由处理
 // 处理用户信息更新、地址管理和通知设置等功能
 //==========================================================================
 const handleUserCenter = async (request, env) => {

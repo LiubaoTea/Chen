@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>订单支付 - 陳記六堡茶</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        .payment-container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .payment-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .payment-header h1 {
+            color: #8B4513;
+            font-size: 1.8em;
+            margin-bottom: 10px;
+        }
+
+        .payment-header p {
+            color: #6B4423;
+            font-size: 1.2em;
+        }
+
+        .order-info {
+            background: #FFF9F0;
+            border: 2px solid #D2691E;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .order-info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            color: #6B4423;
+        }
+
+        .order-info-row:last-child {
+            margin-bottom: 0;
+            padding-top: 15px;
+            border-top: 1px solid #D2691E;
+            font-weight: bold;
+            color: #8B4513;
+        }
+
+        .qr-code-container {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .qr-code {
+            width: 200px;
+            height: 200px;
+            margin: 0 auto;
+            background: #FFF;
+            padding: 10px;
+            border: 1px solid #D2691E;
+            border-radius: 4px;
+        }
+
+        .payment-instructions {
+            background: #FFF9F0;
+            border: 2px solid #D2691E;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .payment-instructions h2 {
+            color: #8B4513;
+            font-size: 1.4em;
+            margin-bottom: 15px;
+        }
+
+        .payment-instructions ol {
+            color: #6B4423;
+            padding-left: 20px;
+        }
+
+        .payment-instructions li {
+            margin-bottom: 10px;
+        }
+
+        .payment-status {
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        .payment-status .status {
+            font-size: 1.2em;
+            color: #8B4513;
+            margin-bottom: 15px;
+        }
+
+        .payment-status .timer {
+            font-size: 1.1em;
+            color: #D2691E;
+        }
+
+        .btn-return {
+            display: block;
+            width: 200px;
+            margin: 30px auto 0;
+            padding: 12px 24px;
+            background: #8B4513;
+            color: white;
+            text-align: center;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background 0.3s;
+        }
+
+        .btn-return:hover {
+            background: #6B3410;
+        }
+
+        @media (max-width: 768px) {
+            .payment-container {
+                margin: 20px;
+                padding: 15px;
+            }
+
+            .qr-code {
+                width: 150px;
+                height: 150px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="logo-container">
+                <img src="https://r2liubaotea.liubaotea.online/image/Design_Assets/liubaotea_logo.png" alt="陳記六堡茶" class="logo">
+                <h1 class="brand-name">陳記六堡茶</h1>
+            </div>
+            <nav class="main-nav">
+                <button class="menu-toggle" id="menuToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <ul class="nav-list" id="navList">
+                    <li><a href="index.html">首页</a></li>
+                    <li><a href="products.html">产品展示</a></li>
+                    <li><a href="brand-story.html">品牌故事</a></li>
+                    <li><a href="tea-culture.html">农家茶文化</a></li>
+                    <li><a href="shop.html">在线商城</a></li>
+                    <li><a href="contact.html">联系我们</a></li>
+                    <li><a href="user-center.html">用户中心</a></li>
+                </ul>
+            </nav>
+            <div class="shop-icons">
+                <a href="#" class="shop-icon" id="searchToggle">
+                    <i class="fas fa-search"></i>
+                </a>
+                <a href="#" class="shop-icon" id="cartToggle">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span class="cart-count">0</span>
+                </a>
+                <a href="#" class="shop-icon" id="userToggle">
+                    <i class="fas fa-user"></i>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <div class="payment-container">
+            <div class="payment-header">
+                <h1>订单支付</h1>
+                <p>请在15分钟内完成支付</p>
+            </div>
+
+            <div class="order-info">
+                <div class="order-info-row">
+                    <span>订单编号</span>
+                    <span id="orderId">--</span>
+                </div>
+                <div class="order-info-row">
+                    <span>支付方式</span>
+                    <span id="paymentMethod">--</span>
+                </div>
+                <div class="order-info-row">
+                    <span>应付金额</span>
+                    <span id="totalAmount">¥0.00</span>
+                </div>
+            </div>
+
+            <div class="qr-code-container">
+                <div class="qr-code" id="qrCode">
+                    <!-- 支付二维码将通过JavaScript动态生成 -->
+                </div>
+            </div>
+
+            <div class="payment-instructions">
+                <h2>支付说明</h2>
+                <ol>
+                    <li>请使用手机扫描上方二维码进行支付</li>
+                    <li>支付完成后，请勿关闭页面，系统会自动验证支付状态</li>
+                    <li>如遇支付问题，请联系客服处理</li>
+                </ol>
+            </div>
+
+            <div class="payment-status">
+                <div class="status" id="paymentStatus">等待支付...</div>
+                <div class="timer" id="paymentTimer">剩余支付时间：15:00</div>
+            </div>
+
+            <a href="user-center.html" class="btn-return">返回用户中心</a>
+        </div>
+    </main>
+
+    <script src="js/payment.js"></script>
+</body>
+</html>
