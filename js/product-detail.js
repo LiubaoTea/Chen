@@ -334,42 +334,31 @@ function initAddToCart() {
     addToCartBtn.addEventListener('click', async () => {
         const productId = getProductId();
         const quantity = parseInt(document.getElementById('quantity').value);
-        
-        try {
-            const response = await fetch('/api/cart/add', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    productId,
-                    quantity
-                })
-            });
-
-            if (!response.ok) {
-                throw new Error('添加到购物车失败');
-            }
-
-            // 更新购物车图标数量
-            updateCartCount();
-            
-            // 显示成功提示
-            alert('成功加入购物车！');
-        } catch (error) {
-            console.error('添加到购物车失败:', error);
-            alert('添加到购物车失败，请稍后重试');
-        }
+        await addToCart(productId, quantity);
     });
 }
 
 // 立即购买
 function initBuyNow() {
     const buyNowBtn = document.getElementById('buyNow');
-    buyNowBtn.addEventListener('click', () => {
+    buyNowBtn.addEventListener('click', async () => {
         const productId = getProductId();
-        const quantity = document.getElementById('quantity').value;
-        window.location.href = `/checkout.html?product=${productId}&quantity=${quantity}`;
+        const quantity = parseInt(document.getElementById('quantity').value);
+        
+        try {
+            // 检查用户是否登录
+            const token = localStorage.getItem('userToken');
+            if (!token) {
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            // 跳转到结算页面
+            window.location.href = `checkout.html?product=${productId}&quantity=${quantity}`;
+        } catch (error) {
+            console.error('处理立即购买失败:', error);
+            alert('处理失败，请稍后重试');
+        }
     });
 }
 
