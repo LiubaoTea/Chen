@@ -176,22 +176,38 @@
     </style>
 </head>
 <body>
-    <header>
-        <div class="header-container">
-            <div class="logo">
-                <a href="index.html"><img src="image/liubaotea_logo.png" alt="六宝茶"></a>
+    <header class="header">
+        <div class="container">
+            <div class="logo-container">
+                <img src="https://r2liubaotea.liubaotea.online/image/Design_Assets/liubaotea_logo.png" alt="陳記六堡茶" class="logo">
+                <h1 class="brand-name">陳記六堡茶</h1>
             </div>
-            <nav>
-                <ul>
+            <nav class="main-nav">
+                <button class="menu-toggle" id="menuToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <ul class="nav-list" id="navList">
                     <li><a href="index.html">首页</a></li>
                     <li><a href="products.html">产品展示</a></li>
-                    <li><a href="tea-culture.html">茶文化</a></li>
                     <li><a href="brand-story.html">品牌故事</a></li>
+                    <li><a href="tea-culture.html">农家茶文化</a></li>
                     <li><a href="shop.html">在线商城</a></li>
                     <li><a href="contact.html">联系我们</a></li>
                     <li><a href="user-center.html">用户中心</a></li>
                 </ul>
             </nav>
+            <div class="shop-icons">
+                <a href="#" class="shop-icon" id="searchToggle">
+                    <i class="fas fa-search"></i>
+                </a>
+                <a href="#" class="shop-icon" id="cartToggle">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span class="cart-count">0</span>
+                </a>
+                <a href="#" class="shop-icon" id="userToggle">
+                    <i class="fas fa-user"></i>
+                </a>
+            </div>
         </div>
     </header>
 

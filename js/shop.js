@@ -503,20 +503,20 @@ async function fetchProducts(filters = {}) {
                 if (selectedCategories.length > 0) {
                     for (const category of selectedCategories) {
                         switch (category) {
-                            case '传统系列':
+                            case 'traditional':
                                 if (productName.includes('传统')) categoryMatch = true;
                                 break;
-                            case '季节特供':
+                            case 'seasonal':
                                 if (productName.includes('春茶') || productName.includes('秋茶') || 
                                     productName.includes('夏茶') || productName.includes('冬茶')) categoryMatch = true;
                                 break;
-                            case '限量版':
+                            case 'limited':
                                 if (productName.includes('特惠') || productName.includes('促销')) categoryMatch = true;
                                 break;
-                            case '十年老茶':
+                            case 'aged':
                                 if (productName.includes('十')) categoryMatch = true;
                                 break;
-                            case '礼盒装':
+                            case 'gift':
                                 if (productName.includes('礼盒')) categoryMatch = true;
                                 break;
                         }
