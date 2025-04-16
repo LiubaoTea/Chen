@@ -105,14 +105,95 @@ async function fetchRelatedProducts(currentProductId) {
             throw new Error('获取商品列表失败');
         }
         const allProducts = await response.json();
-        // 随机选择4个不同的商品
+        
+        // 过滤掉当前商品并随机选择4个商品
         const shuffledProducts = allProducts
             .filter(product => product.product_id !== currentProductId)
             .sort(() => Math.random() - 0.5)
             .slice(0, 4);
-        displayRelatedProducts(shuffledProducts);
+            
+        // 渲染相关推荐商品
+        const container = document.getElementById('relatedProducts');
+        if (!container) return;
+        
+        container.innerHTML = shuffledProducts.map(product => `
+            <div class="product-card" data-id="${product.product_id}">
+                <div class="product-image">
+                    <img src="/image/Goods/Goods_${product.product_id}.png" alt="${product.name}">
+                    <div class="product-actions">
+                        <button class="action-btn add-to-cart" data-id="${product.product_id}" title="加入购物车">
+                            <i class="fas fa-shopping-cart"></i>
+                        </button>
+                        <a href="product-detail.html?id=${product.product_id}" class="action-btn buy-now" title="立即购买">
+                            <i class="fas fa-shopping-bag"></i>
+                        </a>
+                    </div>
+                </div>
+                <div class="product-info">
+                    <h3>${product.name}</h3>
+                    <p class="product-desc">${product.description}</p>
+                    <div class="product-meta">
+                        <span class="product-weight">${product.specifications}</span>
+                        <span class="product-year">${product.aging_years}年陈化</span>
+                    </div>
+                    <div class="product-price">
+                        <span class="price">¥${product.price.toFixed(2)}</span>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+
+        // 添加商品卡片点击事件
+        const productCards = container.querySelectorAll('.product-card');
+        productCards.forEach(card => {
+            // 商品卡片点击跳转到商品详情页
+            card.addEventListener('click', (e) => {
+                // 如果点击的是操作按钮，则不跳转
+                if (e.target.closest('.product-actions')) {
+                    return;
+                }
+                const productId = card.dataset.id;
+                window.location.href = `product-detail.html?id=${productId}`;
+            });
+
+            // 加入购物车按钮点击事件
+            const addToCartBtn = card.querySelector('.add-to-cart');
+            addToCartBtn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const productId = addToCartBtn.dataset.id;
+                try {
+                    const response = await fetch('/api/cart/add', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            productId,
+                            quantity: 1
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('添加到购物车失败');
+                    }
+
+                    // 更新购物车图标数量
+                    updateCartCount();
+                    
+                    // 显示成功提示
+                    alert('成功加入购物车！');
+                } catch (error) {
+                    console.error('添加到购物车失败:', error);
+                    alert('添加到购物车失败，请稍后重试');
+                }
+            });
+        });
     } catch (error) {
         console.error('获取相关商品失败:', error);
+        const container = document.getElementById('relatedProducts');
+        if (container) {
+            container.innerHTML = '<div class="error">加载相关商品失败，请刷新页面重试</div>';
+        }
     }
 }
 
