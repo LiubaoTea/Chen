@@ -159,10 +159,17 @@ async function fetchRelatedProducts(currentProductId) {
                 e.stopPropagation();
                 const productId = addToCartBtn.dataset.id;
                 try {
-                    const response = await fetch('/api/cart/add', {
+                    const token = localStorage.getItem('userToken');
+                    if (!token) {
+                        alert('请先登录');
+                        window.location.href = 'login.html';
+                        return;
+                    }
+                    const response = await fetch(`${API_BASE_URL}/api/cart/add`, {
                         method: 'POST',
                         headers: {
-                            'Content-Type': 'application/json'
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
                         },
                         body: JSON.stringify({
                             productId,

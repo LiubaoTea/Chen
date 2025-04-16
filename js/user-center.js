@@ -126,26 +126,56 @@ function initSettingCards() {
 }
 
 // 显示个人资料设置
-function showProfileSettings() {
-    const content = `
-        <h3>个人资料设置</h3>
-        <form id="profileForm">
-            <div class="form-group">
-                <label for="nickname">昵称</label>
-                <input type="text" id="nickname" name="nickname" required>
-            </div>
-            <div class="form-group">
-                <label for="phone">手机号码</label>
-                <input type="tel" id="phone" name="phone" required>
-            </div>
-            <div class="form-group">
-                <label for="bio">个人简介</label>
-                <textarea id="bio" name="bio" rows="3"></textarea>
-            </div>
-            <button type="submit" class="btn-primary">保存修改</button>
-        </form>
-    `;
-    showSettingsModal(content);
+async function showProfileSettings() {
+    try {
+        const userData = await getUserInfo();
+        const content = `
+            <h3>个人资料设置</h3>
+            <form id="profileForm">
+                <div class="form-group">
+                    <label for="nickname">昵称</label>
+                    <input type="text" id="nickname" name="nickname" value="${userData.username}" required>
+                </div>
+                <div class="form-group">
+                    <label for="phone">手机号码</label>
+                    <input type="tel" id="phone" name="phone" value="${userData.phone || ''}" required>
+                </div>
+                <div class="form-group">
+                    <label for="bio">个人简介</label>
+                    <textarea id="bio" name="bio" rows="3">${userData.bio || ''}</textarea>
+                </div>
+                <button type="submit" class="btn-primary">保存修改</button>
+            </form>
+        `;
+        showSettingsModal(content);
+
+        // 添加表单提交事件
+        const form = document.getElementById('profileForm');
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                const formData = new FormData(form);
+                const response = await fetch(`${API_BASE_URL}/api/user/profile`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('userToken')}`
+                    },
+                    body: JSON.stringify(Object.fromEntries(formData))
+                });
+
+                if (!response.ok) throw new Error('更新个人资料失败');
+                alert('个人资料更新成功');
+                location.reload();
+            } catch (error) {
+                console.error('更新个人资料失败:', error);
+                alert('更新个人资料失败，请重试');
+            }
+        });
+    } catch (error) {
+        console.error('加载个人资料失败:', error);
+        alert('加载个人资料失败，请重试');
+    }
 }
 
 // 显示安全设置
@@ -169,10 +199,46 @@ function showSecuritySettings() {
         </form>
     `;
     showSettingsModal(content);
+
+    // 添加表单提交事件
+    const form = document.getElementById('securityForm');
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const newPassword = form.newPassword.value;
+        const confirmPassword = form.confirmPassword.value;
+
+        if (newPassword !== confirmPassword) {
+            alert('两次输入的密码不一致');
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/user/password`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('userToken')}`
+                },
+                body: JSON.stringify({
+                    oldPassword: form.oldPassword.value,
+                    newPassword: newPassword
+                })
+            });
+
+            if (!response.ok) throw new Error('修改密码失败');
+            alert('密码修改成功，请重新登录');
+            localStorage.removeItem('userToken');
+            window.location.href = 'login.html';
+        } catch (error) {
+            console.error('修改密码失败:', error);
+            alert('修改密码失败，请重试');
+        }
+    });
+}
 }
 
 // 显示收货地址设置
-function showAddressSettings() {
+async function showAddressSettings() {
     const content = `
         <h3>收货地址管理</h3>
         <div id="addressList">
@@ -181,7 +247,184 @@ function showAddressSettings() {
         <button id="addAddressBtn" class="btn-primary">添加新地址</button>
     `;
     showSettingsModal(content);
-    loadAddressList();
+    await loadAddressList();
+
+    // 添加新地址按钮事件
+    document.getElementById('addAddressBtn').addEventListener('click', showAddAddressForm);
+}
+
+// 加载地址列表
+async function loadAddressList() {
+    try {
+        const addresses = await getUserAddresses();
+        const addressList = document.getElementById('addressList');
+        
+        if (!addresses || addresses.length === 0) {
+            addressList.innerHTML = '<p>暂无收货地址</p>';
+            return;
+        }
+
+        addressList.innerHTML = addresses.map(address => `
+            <div class="address-item ${address.is_default ? 'default' : ''}">
+                <div class="address-info">
+                    <p><strong>${address.recipient_name}</strong> ${address.contact_phone}</p>
+                    <p>${address.region} ${address.full_address}</p>
+                    <p>邮编：${address.postal_code}</p>
+                </div>
+                <div class="address-actions">
+                    ${!address.is_default ? `<button class="btn-text" onclick="setDefaultAddress(${address.address_id})">设为默认</button>` : ''}
+                    <button class="btn-text" onclick="editAddress(${address.address_id})">编辑</button>
+                    <button class="btn-text" onclick="deleteAddress(${address.address_id})">删除</button>
+                </div>
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('加载地址列表失败:', error);
+        document.getElementById('addressList').innerHTML = '<p class="error">加载地址列表失败，请重试</p>';
+    }
+}
+
+// 显示添加地址表单
+function showAddAddressForm() {
+    const content = `
+        <h3>添加新地址</h3>
+        <form id="addressForm">
+            <div class="form-group">
+                <label for="recipientName">收货人姓名</label>
+                <input type="text" id="recipientName" name="recipient_name" required>
+            </div>
+            <div class="form-group">
+                <label for="contactPhone">联系电话</label>
+                <input type="tel" id="contactPhone" name="contact_phone" required>
+            </div>
+            <div class="form-group">
+                <label for="region">所在地区</label>
+                <input type="text" id="region" name="region" required>
+            </div>
+            <div class="form-group">
+                <label for="fullAddress">详细地址</label>
+                <textarea id="fullAddress" name="full_address" required></textarea>
+            </div>
+            <div class="form-group">
+                <label for="postalCode">邮政编码</label>
+                <input type="text" id="postalCode" name="postal_code" required>
+            </div>
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" name="is_default"> 设为默认地址
+                </label>
+            </div>
+            <button type="submit" class="btn-primary">保存地址</button>
+        </form>
+    `;
+    showSettingsModal(content);
+
+    // 添加表单提交事件
+    const form = document.getElementById('addressForm');
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        try {
+            const formData = new FormData(form);
+            const addressData = Object.fromEntries(formData);
+            addressData.is_default = formData.get('is_default') === 'on';
+
+            await addUserAddress(addressData);
+            alert('添加地址成功');
+            showAddressSettings(); // 重新加载地址列表
+        } catch (error) {
+            console.error('添加地址失败:', error);
+            alert('添加地址失败，请重试');
+        }
+    });
+}
+
+// 设置默认地址
+async function setDefaultAddress(addressId) {
+    try {
+        await updateUserAddress(addressId, { is_default: true });
+        await loadAddressList(); // 重新加载地址列表
+    } catch (error) {
+        console.error('设置默认地址失败:', error);
+        alert('设置默认地址失败，请重试');
+    }
+}
+
+// 编辑地址
+async function editAddress(addressId) {
+    try {
+        const addresses = await getUserAddresses();
+        const address = addresses.find(a => a.address_id === addressId);
+        if (!address) throw new Error('地址不存在');
+
+        const content = `
+            <h3>编辑地址</h3>
+            <form id="addressForm">
+                <div class="form-group">
+                    <label for="recipientName">收货人姓名</label>
+                    <input type="text" id="recipientName" name="recipient_name" value="${address.recipient_name}" required>
+                </div>
+                <div class="form-group">
+                    <label for="contactPhone">联系电话</label>
+                    <input type="tel" id="contactPhone" name="contact_phone" value="${address.contact_phone}" required>
+                </div>
+                <div class="form-group">
+                    <label for="region">所在地区</label>
+                    <input type="text" id="region" name="region" value="${address.region}" required>
+                </div>
+                <div class="form-group">
+                    <label for="fullAddress">详细地址</label>
+                    <textarea id="fullAddress" name="full_address" required>${address.full_address}</textarea>
+                </div>
+                <div class="form-group">
+                    <label for="postalCode">邮政编码</label>
+                    <input type="text" id="postalCode" name="postal_code" value="${address.postal_code}" required>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" name="is_default" ${address.is_default ? 'checked' : ''}> 设为默认地址
+                    </label>
+                </div>
+                <button type="submit" class="btn-primary">保存修改</button>
+            </form>
+        `;
+        showSettingsModal(content);
+
+        // 添加表单提交事件
+        const form = document.getElementById('addressForm');
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                const formData = new FormData(form);
+                const addressData = Object.fromEntries(formData);
+                addressData.is_default = formData.get('is_default') === 'on';
+
+                await updateUserAddress(addressId, addressData);
+                alert('更新地址成功');
+                showAddressSettings(); // 重新加载地址列表
+            } catch (error) {
+                console.error('更新地址失败:', error);
+                alert('更新地址失败，请重试');
+            }
+        });
+    } catch (error) {
+        console.error('加载地址信息失败:', error);
+        alert('加载地址信息失败，请重试');
+    }
+}
+
+// 删除地址
+async function deleteAddress(addressId) {
+    if (!confirm('确定要删除这个地址吗？')) return;
+    
+    try {
+        await deleteUserAddress(addressId);
+        alert('删除地址成功');
+        await loadAddressList(); // 重新加载地址列表
+    } catch (error) {
+        console.error('删除地址失败:', error);
+        alert('删除地址失败，请重试');
+    }
+}
 }
 
 // 显示通知设置

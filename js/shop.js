@@ -190,7 +190,7 @@ function initCart() {
             if (!token) return;
 
             // 从API获取购物车数据
-            const response = await fetch('/api/cart', {
+            const response = await fetch(`${API_BASE_URL}/api/cart`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
