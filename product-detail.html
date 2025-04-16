@@ -51,50 +51,8 @@
     <main class="product-detail-page">
         <div class="container">
             <!-- 商品详情主体 -->
-            <div class="product-detail-main">
-                <!-- 左侧商品图片区 -->
-                <div class="product-gallery">
-                    <div class="main-image">
-                        <img id="productImage" src="" alt="商品图片">
-                    </div>
-                </div>
-                
-                <!-- 右侧商品信息区 -->
-                <div class="product-info">
-                    <h1 id="productName" class="product-title"></h1>
-                    <p id="productDescription" class="product-description"></p>
-                    
-                    <div class="product-meta">
-                        <div class="specifications">
-                            <span class="label">规格：</span>
-                            <span id="productSpecifications"></span>
-                        </div>
-                        <div class="aging-years">
-                            <span class="label">年份：</span>
-                            <span id="productAgingYears"></span>
-                        </div>
-                        <div class="product-price">
-                            <span class="label">价格：</span>
-                            <span class="price" id="productPrice"></span>
-                        </div>
-                        <div class="product-quantity">
-                            <span class="label">数量：</span>
-                            <button class="quantity-btn minus">-</button>
-                            <input type="number" value="1" min="1" id="quantity">
-                            <button class="quantity-btn plus">+</button>
-                            <span class="stock" id="productStock"></span>
-                        </div>
-                    </div>
-                    
-                    <div class="product-actions">
-                        <button class="btn btn-primary" id="addToCart">
-                            <i class="fas fa-shopping-cart"></i> 加入购物车
-                        </button>
-                        <button class="btn btn-secondary" id="buyNow">
-                            立即购买
-                        </button>
-                    </div>
-                </div>
+            <div class="product-detail-main" id="productDetailMain">
+                <!-- 商品详情内容将通过JavaScript动态加载 -->
             </div>
 
             <!-- 商品详情标签页 -->

@@ -27,21 +27,14 @@ async function fetchProductDetail(productId) {
 
 // 更新商品详情页面
 function updateProductDetail(product) {
-    // 更新商品图片
-    const productImage = document.getElementById('productImage');
-    productImage.src = `/image/Goods/Goods_${product.product_id}.png`;
-    productImage.alt = product.name;
-
-    // 更新商品信息
-    document.getElementById('productName').textContent = product.name;
-    document.getElementById('productDescription').textContent = product.description;
-    document.getElementById('productSpecifications').textContent = product.specifications;
-    document.getElementById('productAgingYears').textContent = `${product.aging_years}年陈化`;
-    document.getElementById('productPrice').textContent = `¥${product.price.toFixed(2)}`;
-    document.getElementById('productStock').textContent = `库存：${product.stock}件`;
-
     // 更新页面标题
     document.title = `${product.name} - 陳記六堡茶`;
+    
+    // 更新商品详情主体
+    const productDetailMain = document.getElementById('productDetailMain');
+    if (productDetailMain) {
+        productDetailMain.innerHTML = '';
+    }
 }
 
 // 加载茶文化内容
