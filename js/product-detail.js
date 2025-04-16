@@ -33,7 +33,46 @@ function updateProductDetail(product) {
     // 更新商品详情主体
     const productDetailMain = document.getElementById('productDetailMain');
     if (productDetailMain) {
-        productDetailMain.innerHTML = '';
+        productDetailMain.innerHTML = `
+            <div class="product-gallery">
+                <div class="main-image">
+                    <img src="/image/Goods/Goods_${product.product_id}.png" alt="${product.name}">
+                </div>
+            </div>
+            <div class="product-info">
+                <h1 class="product-title">${product.name}</h1>
+                <p class="product-description">${product.description}</p>
+                <div class="product-meta">
+                    <div>
+                        <span class="label">规格：</span>
+                        <span>${product.specifications}</span>
+                    </div>
+                    <div>
+                        <span class="label">年份：</span>
+                        <span>${product.aging_years}年陈化</span>
+                    </div>
+                    <div>
+                        <span class="label">库存：</span>
+                        <span id="productStock">${product.stock}件</span>
+                    </div>
+                </div>
+                <div class="product-price">
+                    <span class="label">价格：</span>
+                    <span class="price">¥${product.price.toFixed(2)}</span>
+                </div>
+                <div class="product-quantity">
+                    <span class="label">数量：</span>
+                    <button class="quantity-btn minus">-</button>
+                    <input type="number" id="quantity" value="1" min="1" max="${product.stock}">
+                    <button class="quantity-btn plus">+</button>
+                    <span class="stock">库存${product.stock}件</span>
+                </div>
+                <div class="product-actions">
+                    <button class="btn btn-secondary" id="addToCart">加入购物车</button>
+                    <button class="btn btn-primary" id="buyNow">立即购买</button>
+                </div>
+            </div>
+        `;
     }
 }
 

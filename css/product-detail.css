@@ -11,22 +11,24 @@
     border-radius: 12px;
     box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
     padding: 2rem;
-    flex-direction: row;
+    flex-direction: row; /* 确保是水平方向的布局 */
 }
 
+/* 左侧商品图片区域 */
 .product-gallery {
-    flex: 0 0 45%;
+    flex: 0 0 45%; /* 固定宽度为45% */
     position: relative;
     margin-right: 2rem;
 }
 
+/* 右侧商品信息区域 */
 .product-info {
-    flex: 0 0 55%;
+    flex: 0 0 50%; /* 减小宽度以防止溢出 */
     display: flex;
     flex-direction: column;
-    padding: 0;
     border-left: 1px solid #eee;
-    padding-left: 2rem;
+    padding: 0 0 0 2rem; /* 只保留左侧padding */
+    box-sizing: border-box; /* 确保padding包含在宽度内 */
 }
 
 .main-image {
@@ -41,10 +43,6 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
-}
-
-.product-info {
-    padding: 1rem;
 }
 
 .product-title {
@@ -80,6 +78,7 @@
     display: flex;
     align-items: center;
     margin-bottom: 0.8rem;
+    justify-content: flex-start; /* 确保价格左对齐 */
 }
 
 .price {
@@ -87,6 +86,7 @@
     color: #e53935;
     font-weight: bold;
     margin-left: 0.5rem;
+    text-align: left; /* 确保价格文本左对齐 */
 }
 
 .product-quantity {
@@ -284,6 +284,7 @@
 
 .product-card .product-info {
     padding: 1rem;
+    border-left: none; /* 移除卡片中的左边框 */
 }
 
 .product-card h3 {
