@@ -1,0 +1,4 @@
+# worker/wrangler.toml
+name = "liubaotea-worker"
+main = "./liubaotea.js"  # 必须添加 "./" 前缀
+compatibility_date = "2025-04-16"
