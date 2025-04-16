@@ -235,7 +235,7 @@ function showSecuritySettings() {
         }
     });
 }
-}
+
 
 // 显示收货地址设置
 async function showAddressSettings() {
@@ -425,7 +425,7 @@ async function deleteAddress(addressId) {
         alert('删除地址失败，请重试');
     }
 }
-}
+
 
 // 显示通知设置
 function showNotificationSettings() {
