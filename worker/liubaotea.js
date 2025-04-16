@@ -1,7 +1,7 @@
 // Cloudflare Worker for 陳記六堡茶
 
 //==========================================================================
-// 用户相关API路由处理
+//                         一、用户相关API路由处理
 // 处理用户注册、登录和获取用户信息的相关请求
 //==========================================================================
 const handleUserAuth = async (request, env) => {
@@ -120,7 +120,7 @@ const handleUserAuth = async (request, env) => {
 };
 
 //==========================================================================
-// 商品相关API路由处理
+//                      二、商品相关API路由处理
 // 处理商品列表、商品详情、商品筛选和相关商品推荐的请求
 //==========================================================================
 const handleProducts = async (request, env) => {
@@ -260,7 +260,382 @@ const handleProducts = async (request, env) => {
 };
 
 //==========================================================================
-// 订单相关API路由处理
+//                       三、购物车相关API路由处理
+// 处理购物车的添加、删除、更新和查询操作
+//==========================================================================
+const handleCartOperations = async (request, env) => {
+    const url = new URL(request.url);
+    const path = url.pathname;
+
+    // 获取用户ID
+    const authHeader = request.headers.get('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return new Response(JSON.stringify({ error: '未授权访问' }), {
+            status: 401,
+            headers: { 'Content-Type': 'application/json' }
+        });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const decoded = JSON.parse(atob(token));
+    const userId = decoded.userId;
+
+    // 获取购物车内容
+    if (path === '/api/cart' && request.method === 'GET') {
+        try {
+            const cartItems = await env.DB.prepare(
+                `SELECT c.*, p.name, p.price, p.image_filename 
+                FROM carts c 
+                JOIN products p ON c.product_id = p.product_id 
+                WHERE c.user_id = ?`
+            ).bind(userId).all();
+
+            // 处理产品图片URL
+            const itemsWithImages = cartItems.results.map(item => {
+                const imageUrl = `https://${env.R2_DOMAIN}/image/Goods/${item.image_filename}`;
+                return { ...item, image_url: imageUrl };
+            });
+
+            return new Response(JSON.stringify(itemsWithImages), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '获取购物车失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+
+    // 添加商品到购物车
+    if (path === '/api/cart/add' && request.method === 'POST') {
+        try {
+            const { productId, quantity } = await request.json();
+
+            // 检查商品是否已在购物车中
+            const existingItem = await env.DB.prepare(
+                'SELECT * FROM carts WHERE user_id = ? AND product_id = ?'
+            ).bind(userId, productId).first();
+
+            if (existingItem) {
+                // 更新数量
+                await env.DB.prepare(
+                    'UPDATE carts SET quantity = quantity + ? WHERE user_id = ? AND product_id = ?'
+                ).bind(quantity, userId, productId).run();
+            } else {
+                // 添加新商品
+                await env.DB.prepare(
+                    'INSERT INTO carts (user_id, product_id, quantity, added_at) VALUES (?, ?, ?, ?)'
+                ).bind(userId, productId, quantity, new Date().toISOString()).run();
+            }
+
+            return new Response(JSON.stringify({ message: '添加成功' }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '添加到购物车失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+
+    // 从购物车移除商品
+    if (path === '/api/cart/remove' && request.method === 'POST') {
+        try {
+            const { productId } = await request.json();
+
+            await env.DB.prepare(
+                'DELETE FROM carts WHERE user_id = ? AND product_id = ?'
+            ).bind(userId, productId).run();
+
+            return new Response(JSON.stringify({ message: '移除成功' }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '从购物车移除失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+
+    // 更新购物车商品数量
+    if (path === '/api/cart/update' && request.method === 'POST') {
+        try {
+            const { productId, quantity } = await request.json();
+
+            await env.DB.prepare(
+                'UPDATE carts SET quantity = ? WHERE user_id = ? AND product_id = ?'
+            ).bind(quantity, userId, productId).run();
+
+            return new Response(JSON.stringify({ message: '更新成功' }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '更新购物车失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+
+    // 清空购物车
+    if (path === '/api/cart/clear' && request.method === 'POST') {
+        try {
+            await env.DB.prepare(
+                'DELETE FROM carts WHERE user_id = ?'
+            ).bind(userId).run();
+
+            return new Response(JSON.stringify({ message: '清空成功' }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '清空购物车失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+
+    return new Response('Not Found', { status: 404 });
+};
+
+//==========================================================================
+//                            四、用户中心相关API路由处理
+// 处理用户信息更新、地址管理和通知设置等功能
+//==========================================================================
+const handleUserCenter = async (request, env) => {
+    const url = new URL(request.url);
+    const path = url.pathname;
+
+    // 获取用户ID
+    const authHeader = request.headers.get('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return new Response(JSON.stringify({ error: '未授权访问' }), {
+            status: 401,
+            headers: { 'Content-Type': 'application/json' }
+        });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const decoded = JSON.parse(atob(token));
+    const userId = decoded.userId;
+
+    // 获取用户个人资料
+    if (path === '/api/user/profile' && request.method === 'GET') {
+        try {
+            const user = await env.DB.prepare(
+                'SELECT user_id, username, email, created_at FROM users WHERE user_id = ?'
+            ).bind(userId).first();
+
+            if (!user) {
+                return new Response(JSON.stringify({ error: '用户不存在' }), {
+                    status: 404,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+
+            return new Response(JSON.stringify(user), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '获取用户信息失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+
+    // 更新用户个人资料
+    if (path === '/api/user/profile' && request.method === 'PUT') {
+        try {
+            const { username, email } = await request.json();
+
+            await env.DB.prepare(
+                'UPDATE users SET username = ?, email = ? WHERE user_id = ?'
+            ).bind(username, email, userId).run();
+
+            return new Response(JSON.stringify({ message: '更新成功' }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '更新用户信息失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+
+    // 更新用户密码
+    if (path === '/api/user/password' && request.method === 'PUT') {
+        try {
+            const { oldPassword, newPassword } = await request.json();
+
+            // 验证旧密码
+            const user = await env.DB.prepare(
+                'SELECT * FROM users WHERE user_id = ? AND password_hash = ?'
+            ).bind(userId, oldPassword).first();
+
+            if (!user) {
+                return new Response(JSON.stringify({ error: '旧密码错误' }), {
+                    status: 400,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+
+            // 更新密码
+            await env.DB.prepare(
+                'UPDATE users SET password_hash = ? WHERE user_id = ?'
+            ).bind(newPassword, userId).run();
+
+            return new Response(JSON.stringify({ message: '密码更新成功' }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '更新密码失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+
+    // 获取用户地址列表
+    if (path === '/api/addresses' && request.method === 'GET') {
+        try {
+            const addresses = await env.DB.prepare(
+                'SELECT * FROM user_addresses WHERE user_id = ? ORDER BY is_default DESC'
+            ).bind(userId).all();
+
+            return new Response(JSON.stringify(addresses.results), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '获取地址列表失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+
+    // 添加新地址
+    if (path === '/api/addresses' && request.method === 'POST') {
+        try {
+            const addressData = await request.json();
+            const timestamp = new Date().toISOString();
+
+            // 如果设置为默认地址，先将其他地址设置为非默认
+            if (addressData.is_default) {
+                await env.DB.prepare(
+                    'UPDATE user_addresses SET is_default = 0 WHERE user_id = ?'
+                ).bind(userId).run();
+            }
+
+            // 添加新地址
+            await env.DB.prepare(
+                `INSERT INTO user_addresses 
+                (user_id, recipient_name, contact_phone, full_address, region, postal_code, is_default, created_at) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+            ).bind(
+                userId,
+                addressData.recipient_name,
+                addressData.contact_phone,
+                addressData.full_address,
+                addressData.region,
+                addressData.postal_code,
+                addressData.is_default ? 1 : 0,
+                timestamp
+            ).run();
+
+            return new Response(JSON.stringify({ message: '添加地址成功' }), {
+                status: 201,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '添加地址失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+
+    // 更新地址
+    if (path.match(/\/api\/addresses\/\d+$/) && request.method === 'PUT') {
+        try {
+            const addressId = path.split('/').pop();
+            const addressData = await request.json();
+
+            // 如果设置为默认地址，先将其他地址设置为非默认
+            if (addressData.is_default) {
+                await env.DB.prepare(
+                    'UPDATE user_addresses SET is_default = 0 WHERE user_id = ?'
+                ).bind(userId).run();
+            }
+
+            // 更新地址
+            await env.DB.prepare(
+                `UPDATE user_addresses SET 
+                recipient_name = ?, contact_phone = ?, full_address = ?, 
+                region = ?, postal_code = ?, is_default = ? 
+                WHERE address_id = ? AND user_id = ?`
+            ).bind(
+                addressData.recipient_name,
+                addressData.contact_phone,
+                addressData.full_address,
+                addressData.region,
+                addressData.postal_code,
+                addressData.is_default ? 1 : 0,
+                addressId,
+                userId
+            ).run();
+
+            return new Response(JSON.stringify({ message: '更新地址成功' }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '更新地址失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+
+    // 删除地址
+    if (path.match(/\/api\/addresses\/\d+$/) && request.method === 'DELETE') {
+        try {
+            const addressId = path.split('/').pop();
+
+            await env.DB.prepare(
+                'DELETE FROM user_addresses WHERE address_id = ? AND user_id = ?'
+            ).bind(addressId, userId).run();
+
+            return new Response(JSON.stringify({ message: '删除地址成功' }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '删除地址失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+
+    return new Response('Not Found', { status: 404 });
+};
+
+//==========================================================================
+//                           五、订单相关API路由处理
 // 处理订单创建、订单列表查询和订单详情的相关请求
 //==========================================================================
 const handleOrders = async (request, env) => {
@@ -420,7 +795,7 @@ const handleOrders = async (request, env) => {
 };
 
 //==========================================================================
-// 图片处理API
+//                                六、图片处理API
 // 处理从R2存储获取商品图片的请求
 //==========================================================================
 const handleImageRequest = async (request, env) => {
@@ -453,7 +828,7 @@ const handleImageRequest = async (request, env) => {
 };
 
 //==========================================================================
-// 用户地址管理API路由处理
+//                         七、用户地址管理API路由处理
 // 处理用户地址的添加、查询、更新和删除
 //==========================================================================
 const handleUserAddress = async (request, env) => {
@@ -602,7 +977,7 @@ const handleUserAddress = async (request, env) => {
 };
 
 //==========================================================================
-// 用户设置API路由处理
+//                            八、用户设置API路由处理
 // 处理用户设置的查询和更新
 //==========================================================================
 const handleUserSettings = async (request, env) => {
@@ -691,7 +1066,7 @@ const handleUserSettings = async (request, env) => {
 };
 
 //==========================================================================
-// 商品分类API路由处理
+//                              九、商品分类API路由处理
 // 处理商品分类的查询和管理
 //==========================================================================
 const handleProductCategories = async (request, env) => {
@@ -780,7 +1155,7 @@ const handleProductCategories = async (request, env) => {
 };
 
 //==========================================================================
-// 商品评价API路由处理
+//                              十、商品评价API路由处理
 // 处理商品评价的添加、查询和管理
 //==========================================================================
 const handleProductReviews = async (request, env) => {
@@ -879,7 +1254,71 @@ const handleProductReviews = async (request, env) => {
 };
 
 //==========================================================================
-// 购物会话API路由处理
+//                           十一、主路由处理函数
+// 根据请求路径分发到不同的处理函数
+//==========================================================================
+async function handleRequest(request, env) {
+    const url = new URL(request.url);
+    const path = url.pathname;
+
+    // 设置CORS头
+    const corsHeaders = {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+    };
+
+    // 处理预检请求
+    if (request.method === 'OPTIONS') {
+        return new Response(null, {
+            headers: corsHeaders
+        });
+    }
+
+    // 根据路径前缀分发到不同的处理函数
+    if (path.startsWith('/api/products')) {
+        const response = await handleProducts(request, env);
+        return addCorsHeaders(response, corsHeaders);
+    }
+
+    if (path.startsWith('/api/orders')) {
+        const response = await handleOrders(request, env);
+        return addCorsHeaders(response, corsHeaders);
+    }
+
+    if (['/api/register', '/api/login', '/api/user'].includes(path)) {
+        const response = await handleUserAuth(request, env);
+        return addCorsHeaders(response, corsHeaders);
+    }
+
+    if (path.startsWith('/api/cart')) {
+        const response = await handleCart(request, env);
+        return addCorsHeaders(response, corsHeaders);
+    }
+
+    if (path.startsWith('/api/user/') || path.startsWith('/api/addresses')) {
+        const response = await handleUserCenter(request, env);
+        return addCorsHeaders(response, corsHeaders);
+    }
+
+    return new Response('Not Found', { status: 404 });
+}
+
+// 添加CORS头的辅助函数
+function addCorsHeaders(response, corsHeaders) {
+    const newHeaders = new Headers(response.headers);
+    Object.keys(corsHeaders).forEach(key => {
+        newHeaders.set(key, corsHeaders[key]);
+    });
+    return new Response(response.body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: newHeaders
+    });
+}
+
+//==========================================================================
+//                           十二、购物会话API路由处理
 // 处理购物会话的创建、更新和管理
 //==========================================================================
 const handleShoppingSession = async (request, env) => {
@@ -965,7 +1404,7 @@ const handleShoppingSession = async (request, env) => {
 }
 
 //==========================================================================
-// 购物车相关API路由处理
+//                              十三、购物车相关API路由处理
 // 处理购物车添加商品、查看购物车和更新购物车的相关请求
 //==========================================================================
 
@@ -1037,7 +1476,7 @@ const handleRequest = {
 };
 
 //==========================================================================
-// 购物车相关API路由处理
+//                         十四、购物车相关API路由处理
 // 处理购物车添加商品、查看购物车和更新购物车的相关请求
 //==========================================================================
 const handleCart = async (request, env) => {
@@ -1257,7 +1696,7 @@ const handleCart = async (request, env) => {
     return new Response('Not Found', { status: 404 });
 };
 
-// Worker主处理函数
+//                      十五、Worker主处理函数
 export default {
     async fetch(request, env, ctx) {
         const url = new URL(request.url);
@@ -1290,7 +1729,7 @@ export default {
             }
 
             if (url.pathname.startsWith('/api/cart')) {
-                const response = await handleCart(request, env);
+                const response = await handleCartOperations(request, env);
                 return new Response(response.body, {
                     status: response.status,
                     headers: { ...corsHeaders, ...response.headers }
