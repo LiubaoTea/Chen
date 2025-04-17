@@ -364,7 +364,7 @@ const handleCartOperations = async (request, env) => {
                 return { ...item, image_url: imageUrl };
             });
 
-            return new Response(JSON.stringify({ items: itemsWithImages }), {
+            return new Response(JSON.stringify(itemsWithImages), {
                 status: 200,
                 headers: { 'Content-Type': 'application/json' }
             });

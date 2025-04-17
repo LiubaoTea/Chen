@@ -258,12 +258,12 @@ async function removeFromCart(cartId) {
         }
 
         const response = await fetch(`${API_BASE_URL}/api/cart/remove`, {
-            method: 'DELETE',
+            method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify({ cartId })
+            body: JSON.stringify({ productId: cartId })
         });
 
         if (!response.ok) {
@@ -287,13 +287,13 @@ async function updateCartItemQuantity(cartId, quantity) {
         }
 
         const response = await fetch(`${API_BASE_URL}/api/cart/update`, {
-            method: 'PUT',
+            method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
             },
             body: JSON.stringify({
-                cartId,
+                productId: cartId,
                 quantity
             })
         });
