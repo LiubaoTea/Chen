@@ -1,4 +1,6 @@
-// 使用api.js中定义的API_BASE_URL
+// 导入必要的函数和变量
+import { API_BASE_URL, getProducts } from './api.js';
+import { initCart } from './cart.js';
 
 // 等待DOM加载完成
 document.addEventListener('DOMContentLoaded', function() {
@@ -380,8 +382,8 @@ function initProductSort() {
     }
 }
 
-// 导入购物车模块
-import cartModule from './cart.js';
+// 初始化购物车功能
+initCart();
 
 // 初始化添加到购物车按钮
 function initAddToCartButtons() {
