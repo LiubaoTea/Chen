@@ -317,6 +317,18 @@ const handleCartOperations = async (request, env) => {
     const decoded = JSON.parse(atob(token));
     const userId = decoded.userId;
 
+    // 检查或创建购物车会话
+    const timestamp = new Date().toISOString();
+    const session = await env.DB.prepare(
+        'SELECT * FROM shopping_sessions WHERE user_id = ? AND status = "active"'
+    ).bind(userId).first();
+
+    if (!session) {
+        await env.DB.prepare(
+            'INSERT INTO shopping_sessions (user_id, status, created_at, expires_at) VALUES (?, ?, ?, ?)'
+        ).bind(userId, 'active', timestamp, new Date(Date.now() + 24*60*60*1000).toISOString()).run();
+    }
+
     // 获取购物车内容
     if (path === '/api/cart' && request.method === 'GET') {
         try {
@@ -324,7 +336,8 @@ const handleCartOperations = async (request, env) => {
                 `SELECT c.*, p.name, p.price, p.image_filename 
                 FROM carts c 
                 JOIN products p ON c.product_id = p.product_id 
-                WHERE c.user_id = ?`
+                JOIN shopping_sessions s ON c.user_id = s.user_id 
+                WHERE c.user_id = ? AND s.status = 'active'`
             ).bind(userId).all();
 
             // 处理产品图片URL
@@ -350,6 +363,18 @@ const handleCartOperations = async (request, env) => {
     if (path === '/api/cart/add' && request.method === 'POST') {
         try {
             const { productId, quantity } = await request.json();
+
+            // 检查购物车会话是否有效
+            const session = await env.DB.prepare(
+                'SELECT * FROM shopping_sessions WHERE user_id = ? AND status = "active"'
+            ).bind(userId).first();
+
+            if (!session) {
+                return new Response(JSON.stringify({ error: '购物车会话已过期' }), {
+                    status: 400,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
 
             // 检查商品是否已在购物车中
             const existingItem = await env.DB.prepare(
@@ -385,6 +410,18 @@ const handleCartOperations = async (request, env) => {
         try {
             const { productId } = await request.json();
 
+            // 检查购物车会话是否有效
+            const session = await env.DB.prepare(
+                'SELECT * FROM shopping_sessions WHERE user_id = ? AND status = "active"'
+            ).bind(userId).first();
+
+            if (!session) {
+                return new Response(JSON.stringify({ error: '购物车会话已过期' }), {
+                    status: 400,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+
             await env.DB.prepare(
                 'DELETE FROM carts WHERE user_id = ? AND product_id = ?'
             ).bind(userId, productId).run();
@@ -405,6 +442,18 @@ const handleCartOperations = async (request, env) => {
     if (path === '/api/cart/update' && request.method === 'POST') {
         try {
             const { productId, quantity } = await request.json();
+
+            // 检查购物车会话是否有效
+            const session = await env.DB.prepare(
+                'SELECT * FROM shopping_sessions WHERE user_id = ? AND status = "active"'
+            ).bind(userId).first();
+
+            if (!session) {
+                return new Response(JSON.stringify({ error: '购物车会话已过期' }), {
+                    status: 400,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
 
             await env.DB.prepare(
                 'UPDATE carts SET quantity = ? WHERE user_id = ? AND product_id = ?'
