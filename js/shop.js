@@ -171,23 +171,7 @@ function initSearch() {
 
 // 购物车功能已移至cart.js
 
-// 获取商品列表
-async function fetchProducts(filters = {}) {
-    try {
-        let url = '/api/products';
-        if (Object.keys(filters).length > 0) {
-            url = '/api/products/filter?' + new URLSearchParams(filters);
-        }
-        const response = await fetch(url);
-        if (!response.ok) {
-            throw new Error('获取商品列表失败');
-        }
-        return await response.json();
-    } catch (error) {
-        console.error('获取商品列表失败:', error);
-        return [];
-    }
-}
+// 使用api.js中定义的getProducts函数
     
     // 产品筛选功能
     function initProductFilter() {
