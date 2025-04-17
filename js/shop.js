@@ -1,8 +1,4 @@
-// 导入API相关函数和配置
-import { API_BASE_URL, getProducts } from './api.js';
-
-// 导入购物车功能
-import { addToCart, initCart } from './cart.js';
+// 使用api.js中定义的API_BASE_URL
 
 // 等待DOM加载完成
 document.addEventListener('DOMContentLoaded', function() {
@@ -173,18 +169,7 @@ function initSearch() {
     }
 }
 
-// 初始化添加到购物车按钮
-function initAddToCartButtons() {
-    const addToCartButtons = document.querySelectorAll('.add-to-cart');
-    if (addToCartButtons) {
-        addToCartButtons.forEach(button => {
-            button.addEventListener('click', async function() {
-                const productId = this.getAttribute('data-id');
-                await addToCart(parseInt(productId), 1);
-            });
-        });
-    }
-}
+// 购物车功能已移至cart.js
 
 // 获取商品列表
 async function fetchProducts(filters = {}) {
