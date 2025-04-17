@@ -350,14 +350,15 @@ const handleCartOperations = async (request, env) => {
 
     // 检查或创建购物车会话
     const timestamp = new Date().toISOString();
-    const session = await env.DB.prepare(
-        'SELECT * FROM shopping_sessions WHERE user_id = ? AND status = "active"'
-    ).bind(userId).first();
+    let session = await env.DB.prepare(
+        'SELECT * FROM shopping_sessions WHERE user_id = ? AND status = "active" AND expires_at > ?'
+    ).bind(userId, timestamp).first();
 
     if (!session) {
-        await env.DB.prepare(
-            'INSERT INTO shopping_sessions (user_id, status, created_at, expires_at) VALUES (?, ?, ?, ?)'
-        ).bind(userId, 'active', timestamp, new Date(Date.now() + 24*60*60*1000).toISOString()).run();
+        const result = await env.DB.prepare(
+            'INSERT INTO shopping_sessions (user_id, status, created_at, expires_at) VALUES (?, ?, ?, ?) RETURNING *'
+        ).bind(userId, 'active', timestamp, new Date(Date.now() + 24*60*60*1000).toISOString()).first();
+        session = result;
     }
 
     // 获取购物车内容
@@ -414,15 +415,17 @@ const handleCartOperations = async (request, env) => {
             const { productId, quantity } = await request.json();
 
             // 检查购物车会话是否有效
-            const session = await env.DB.prepare(
-                'SELECT * FROM shopping_sessions WHERE user_id = ? AND status = "active"'
-            ).bind(userId).first();
+            const timestamp = new Date().toISOString();
+            let session = await env.DB.prepare(
+                'SELECT * FROM shopping_sessions WHERE user_id = ? AND status = "active" AND expires_at > ?'
+            ).bind(userId, timestamp).first();
 
             if (!session) {
-                return new Response(JSON.stringify({ error: '购物车会话已过期' }), {
-                    status: 400,
-                    headers: { 'Content-Type': 'application/json' }
-                });
+                // 创建新的购物车会话
+                const result = await env.DB.prepare(
+                    'INSERT INTO shopping_sessions (user_id, status, created_at, expires_at) VALUES (?, ?, ?, ?) RETURNING *'
+                ).bind(userId, 'active', timestamp, new Date(Date.now() + 24*60*60*1000).toISOString()).first();
+                session = result;
             }
 
             // 检查商品是否已在购物车中
@@ -439,7 +442,7 @@ const handleCartOperations = async (request, env) => {
                 // 添加新商品
                 await env.DB.prepare(
                     'INSERT INTO carts (user_id, product_id, quantity, added_at, session_id) VALUES (?, ?, ?, ?, ?)'
-                ).bind(userId, productId, quantity, new Date().toISOString(), session.session_id).run();
+                ).bind(userId, productId, quantity, timestamp, session.session_id).run();
             }
 
             return new Response(JSON.stringify({ message: '添加成功' }), {
