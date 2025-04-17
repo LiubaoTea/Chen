@@ -32,7 +32,7 @@ async function getCartStatus() {
 async function updateCartCount() {
     try {
         const cartData = await getCartStatus();
-        const cartCount = cartData.items.reduce((total, item) => total + item.quantity, 0);
+        const cartCount = cartData.reduce((total, item) => total + item.quantity, 0);
         
         // 更新购物车图标上的数量显示
         const cartCountElement = document.querySelector('.cart-count');

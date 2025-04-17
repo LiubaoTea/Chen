@@ -333,7 +333,8 @@ const handleCartOperations = async (request, env) => {
                 return { ...item, image_url: imageUrl };
             });
 
-            return new Response(JSON.stringify(itemsWithImages), {
+            // 返回符合前端期望的数据结构
+            return new Response(JSON.stringify({ items: itemsWithImages }), {
                 status: 200,
                 headers: { 'Content-Type': 'application/json' }
             });

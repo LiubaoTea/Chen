@@ -15,7 +15,29 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadOrderItems();
     initPaymentMethods();
     initSubmitOrder();
+    initNavigation();
 });
+
+// 初始化导航切换功能
+function initNavigation() {
+    const navItems = document.querySelectorAll('.nav-item');
+    const contentSections = document.querySelectorAll('.content-section');
+
+    navItems.forEach(item => {
+        item.addEventListener('click', () => {
+            // 移除所有导航项的active类
+            navItems.forEach(nav => nav.classList.remove('active'));
+            // 为当前点击的导航项添加active类
+            item.classList.add('active');
+
+            // 隐藏所有内容区域
+            contentSections.forEach(section => section.classList.remove('active'));
+            // 显示对应的内容区域
+            const sectionId = item.getAttribute('data-section');
+            document.getElementById(`${sectionId}-section`).classList.add('active');
+        });
+    });
+}
 
 // 加载收货地址列表
 async function loadAddresses() {
@@ -95,9 +117,15 @@ async function loadAddresses() {
 
 // 显示地址编辑模态框
 function showAddressModal(address = null) {
+    // 检查是否已存在模态框
+    let modal = document.getElementById('addressModal');
+    if (modal) {
+        modal.remove();
+    }
+
     const modalHtml = `
-        <div class="modal" id="addressModal">
-            <div class="modal-content">
+        <div class="modal" id="addressModal" style="position: fixed; top: 0; right: 0; bottom: 0; width: 400px; background: white; box-shadow: -2px 0 5px rgba(0,0,0,0.1); overflow-y: auto; z-index: 1000;">
+            <div class="modal-content" style="padding: 20px;">
                 <h2>${address ? '编辑地址' : '新增地址'}</h2>
                 <form id="addressForm">
                     <div class="form-group">
@@ -135,7 +163,7 @@ function showAddressModal(address = null) {
 
     document.body.insertAdjacentHTML('beforeend', modalHtml);
 
-    const modal = document.getElementById('addressModal');
+    modal = document.getElementById('addressModal');
     const form = document.getElementById('addressForm');
 
     // 关闭模态框
