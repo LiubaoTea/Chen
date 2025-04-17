@@ -332,13 +332,31 @@ const handleCartOperations = async (request, env) => {
     // 获取购物车内容
     if (path === '/api/cart' && request.method === 'GET') {
         try {
+            // 检查购物车会话是否存在且有效
+            const session = await env.DB.prepare(
+                'SELECT * FROM shopping_sessions WHERE user_id = ? AND status = "active" AND expires_at > ?'
+            ).bind(userId, new Date().toISOString()).first();
+
+            if (!session) {
+                // 创建新的购物车会话
+                await env.DB.prepare(
+                    'INSERT INTO shopping_sessions (user_id, status, created_at, expires_at) VALUES (?, ?, ?, ?)'
+                ).bind(userId, 'active', new Date().toISOString(), new Date(Date.now() + 24*60*60*1000).toISOString()).run();
+            }
+
             const cartItems = await env.DB.prepare(
                 `SELECT c.*, p.name, p.price, p.image_filename 
                 FROM carts c 
                 JOIN products p ON c.product_id = p.product_id 
-                JOIN shopping_sessions s ON c.user_id = s.user_id 
-                WHERE c.user_id = ? AND s.status = 'active'`
+                WHERE c.user_id = ?`
             ).bind(userId).all();
+
+            if (!cartItems.results) {
+                return new Response(JSON.stringify({ items: [] }), {
+                    status: 200,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
 
             // 处理产品图片URL
             const itemsWithImages = cartItems.results.map(item => {
@@ -346,7 +364,6 @@ const handleCartOperations = async (request, env) => {
                 return { ...item, image_url: imageUrl };
             });
 
-            // 返回符合前端期望的数据结构
             return new Response(JSON.stringify({ items: itemsWithImages }), {
                 status: 200,
                 headers: { 'Content-Type': 'application/json' }

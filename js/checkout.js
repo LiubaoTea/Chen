@@ -1,6 +1,16 @@
 // API基础URL
 const API_BASE_URL = 'https://workers.liubaotea.online';
 
+// 生成订单编号
+function generateOrderNumber() {
+    const date = new Date();
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+    return `LB${year}${month}${day}${random}`;
+}
+
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', async () => {
     // 检查用户是否登录
@@ -9,6 +19,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.location.href = 'login.html';
         return;
     }
+
+    // 生成并显示订单编号
+    const orderNumber = generateOrderNumber();
+    document.getElementById('orderNumber').textContent = `订单编号：${orderNumber}`;
 
     // 初始化各个功能模块
     await loadAddresses();

@@ -240,6 +240,14 @@
             border-radius: 6px;
         }
 
+        .order-number {
+            font-size: 1.1em;
+            color: #8B4513;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px dashed #D2691E;
+        }
+
         .summary-row {
             display: flex;
             justify-content: space-between;
@@ -386,6 +394,7 @@
                 <div class="content-section" id="summary-section">
                     <h2 class="section-title">订单总结</h2>
                     <div class="order-summary">
+                        <div class="order-number" id="orderNumber">订单编号：</div>
                         <div class="summary-row">
                             <span>商品总价</span>
                             <span id="subtotal">¥0.00</span>
