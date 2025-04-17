@@ -335,6 +335,29 @@ async function clearCartItems() {
     }
 }
 
+// 显示购物车侧边栏
+function showCart() {
+    const cartSidebar = document.getElementById('cartSidebar');
+    const cartOverlay = document.getElementById('cartOverlay');
+    if (cartSidebar && cartOverlay) {
+        cartSidebar.classList.add('active');
+        cartOverlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+        updateCartUI();
+    }
+}
+
+// 隐藏购物车侧边栏
+function hideCart() {
+    const cartSidebar = document.getElementById('cartSidebar');
+    const cartOverlay = document.getElementById('cartOverlay');
+    if (cartSidebar && cartOverlay) {
+        cartSidebar.classList.remove('active');
+        cartOverlay.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+}
+
 // 导出函数到全局作用域
 window.showCart = showCart;
 window.hideCart = hideCart;
