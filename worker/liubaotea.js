@@ -413,6 +413,24 @@ const handleCartOperations = async (request, env) => {
     if (path === '/api/cart/add' && request.method === 'POST') {
         try {
             const { productId, quantity } = await request.json();
+            if (!productId || !quantity || typeof productId !== 'number' || typeof quantity !== 'number') {
+                return new Response(JSON.stringify({ error: '无效的商品ID或数量' }), {
+                    status: 400,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                });
+            }
+
+            // 检查商品是否存在
+            const product = await env.DB.prepare(
+                'SELECT * FROM products WHERE product_id = ?'
+            ).bind(productId).first();
+
+            if (!product) {
+                return new Response(JSON.stringify({ error: '商品不存在' }), {
+                    status: 404,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                });
+            }
 
             // 检查购物车会话是否有效
             const timestamp = new Date().toISOString();
@@ -422,10 +440,9 @@ const handleCartOperations = async (request, env) => {
 
             if (!session) {
                 // 创建新的购物车会话
-                const result = await env.DB.prepare(
+                session = await env.DB.prepare(
                     'INSERT INTO shopping_sessions (user_id, status, created_at, expires_at) VALUES (?, ?, ?, ?) RETURNING *'
                 ).bind(userId, 'active', timestamp, new Date(Date.now() + 24*60*60*1000).toISOString()).first();
-                session = result;
             }
 
             // 检查商品是否已在购物车中
@@ -447,7 +464,7 @@ const handleCartOperations = async (request, env) => {
 
             return new Response(JSON.stringify({ message: '添加成功' }), {
                 status: 200,
-                headers: { 'Content-Type': 'application/json' }
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             });
         } catch (error) {
             return new Response(JSON.stringify({ error: '添加到购物车失败', details: error.message }), {

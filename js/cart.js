@@ -229,8 +229,8 @@ async function addToCart(productId, quantity = 1) {
                 'Authorization': `Bearer ${token}`
             },
             body: JSON.stringify({
-                productId,
-                quantity
+                productId: parseInt(productId),
+                quantity: parseInt(quantity)
             })
         });
 
@@ -263,7 +263,7 @@ async function removeFromCart(cartId) {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify({ productId: cartId })
+            body: JSON.stringify({ productId: parseInt(cartId) })
         });
 
         if (!response.ok) {
@@ -293,8 +293,8 @@ async function updateCartItemQuantity(cartId, quantity) {
                 'Authorization': `Bearer ${token}`
             },
             body: JSON.stringify({
-                productId: cartId,
-                quantity
+                productId: parseInt(cartId),
+                quantity: parseInt(quantity)
             })
         });
 
