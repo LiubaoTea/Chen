@@ -48,6 +48,7 @@ async function loadProducts() {
             productCard.setAttribute('data-year', product.aging_years);
             
             // 构建商品图片URL - 使用R2存储中的图片
+            // 格式：Goods_1.png, Goods_2.png, ...
             const imageUrl = `${API_BASE_URL}/image/Goods/Goods_${product.product_id}.png`;
             
             // 设置商品卡片内容
@@ -67,8 +68,8 @@ async function loadProducts() {
                         <span class="price">¥${product.price.toFixed(2)}</span>
                     </div>
                     <div class="product-actions">
-                        <button class="action-btn add-to-cart" data-product-id="${product.product_id}" data-name="${product.name}" data-price="${product.price}" data-image="${imageUrl}">加入购物车</button>
-                        <button class="action-btn quick-view" data-product-id="${product.product_id}">立即购买</button>
+                        <button class="action-btn add-to-cart" data-id="${product.product_id}" data-name="${product.name}" data-price="${product.price}" data-image="${imageUrl}">加入购物车</button>
+                        <button class="action-btn quick-view" data-id="${product.product_id}">立即购买</button>
                     </div>
                 </div>
             `;
@@ -83,8 +84,9 @@ async function loadProducts() {
             productCount.innerHTML = `<span>显示 ${products.length} 个产品中的 1-${products.length} 个</span>`;
         }
         
-        // 重新初始化快速查看
+        // 重新初始化快速查看和添加到购物车按钮
         initQuickView();
+        initAddToCartButtons();
         
         // 为商品卡片添加点击事件，点击跳转到商品详情页
         const productCards = document.querySelectorAll('.product-card');
@@ -95,7 +97,7 @@ async function loadProducts() {
                     return;
                 }
                 
-                const productId = this.querySelector('.quick-view').getAttribute('data-product-id');
+                const productId = this.querySelector('.quick-view').getAttribute('data-id');
                 if (productId) {
                     window.location.href = `product-detail.html?id=${productId}`;
                 }
@@ -161,19 +163,17 @@ function initSearch() {
     }
 }
 
-// 初始化购物车功能
-function initCart() {
-    // 引入购物车UI相关功能
-    const script = document.createElement('script');
-    script.src = 'js/cart-ui.js';
-    document.head.appendChild(script);
-
-    // 初始化购物车UI
-    script.onload = () => {
-        if (typeof updateCartUI === 'function') {
-            updateCartUI();
-        }
-    };
+// 初始化商品卡片中的"加入购物车"按钮
+function initAddToCartButtons() {
+    const addToCartButtons = document.querySelectorAll('.add-to-cart');
+    if (addToCartButtons) {
+        addToCartButtons.forEach(button => {
+            button.addEventListener('click', async function() {
+                const productId = this.getAttribute('data-id');
+                await window.addToCart(productId, 1);
+            });
+        });
+    }
 }
 
 // 获取商品列表
