@@ -333,23 +333,25 @@ const handleCartOperations = async (request, env) => {
     if (path === '/api/cart' && request.method === 'GET') {
         try {
             // 检查购物车会话是否存在且有效
-            const session = await env.DB.prepare(
+            let session = await env.DB.prepare(
                 'SELECT * FROM shopping_sessions WHERE user_id = ? AND status = "active" AND expires_at > ?'
             ).bind(userId, new Date().toISOString()).first();
 
             if (!session) {
                 // 创建新的购物车会话
-                await env.DB.prepare(
-                    'INSERT INTO shopping_sessions (user_id, status, created_at, expires_at) VALUES (?, ?, ?, ?)'
-                ).bind(userId, 'active', new Date().toISOString(), new Date(Date.now() + 24*60*60*1000).toISOString()).run();
+                const result = await env.DB.prepare(
+                    'INSERT INTO shopping_sessions (user_id, status, created_at, expires_at) VALUES (?, ?, ?, ?) RETURNING *'
+                ).bind(userId, 'active', new Date().toISOString(), new Date(Date.now() + 24*60*60*1000).toISOString()).first();
+                session = result;
             }
 
             const cartItems = await env.DB.prepare(
                 `SELECT c.*, p.name, p.price, p.image_filename 
                 FROM carts c 
                 JOIN products p ON c.product_id = p.product_id 
-                WHERE c.user_id = ?`
-            ).bind(userId).all();
+                JOIN shopping_sessions s ON c.user_id = s.user_id
+                WHERE c.user_id = ? AND s.session_id = ? AND s.status = 'active'`
+            ).bind(userId, session.session_id).all();
 
             if (!cartItems.results) {
                 return new Response(JSON.stringify({ items: [] }), {
@@ -401,13 +403,13 @@ const handleCartOperations = async (request, env) => {
             if (existingItem) {
                 // 更新数量
                 await env.DB.prepare(
-                    'UPDATE carts SET quantity = quantity + ? WHERE user_id = ? AND product_id = ?'
-                ).bind(quantity, userId, productId).run();
+                    'UPDATE carts SET quantity = quantity + ? WHERE user_id = ? AND product_id = ? AND session_id = ?'
+                ).bind(quantity, userId, productId, session.session_id).run();
             } else {
                 // 添加新商品
                 await env.DB.prepare(
-                    'INSERT INTO carts (user_id, product_id, quantity, added_at) VALUES (?, ?, ?, ?)'
-                ).bind(userId, productId, quantity, new Date().toISOString()).run();
+                    'INSERT INTO carts (user_id, product_id, quantity, added_at, session_id) VALUES (?, ?, ?, ?, ?)'
+                ).bind(userId, productId, quantity, new Date().toISOString(), session.session_id).run();
             }
 
             return new Response(JSON.stringify({ message: '添加成功' }), {
@@ -440,8 +442,8 @@ const handleCartOperations = async (request, env) => {
             }
 
             await env.DB.prepare(
-                'DELETE FROM carts WHERE user_id = ? AND product_id = ?'
-            ).bind(userId, productId).run();
+                'DELETE FROM carts WHERE user_id = ? AND product_id = ? AND session_id = ?'
+            ).bind(userId, productId, session.session_id).run();
 
             return new Response(JSON.stringify({ message: '移除成功' }), {
                 status: 200,
@@ -491,9 +493,21 @@ const handleCartOperations = async (request, env) => {
     // 清空购物车
     if (path === '/api/cart/clear' && request.method === 'POST') {
         try {
+            // 检查购物车会话是否有效
+            const session = await env.DB.prepare(
+                'SELECT * FROM shopping_sessions WHERE user_id = ? AND status = "active"'
+            ).bind(userId).first();
+
+            if (!session) {
+                return new Response(JSON.stringify({ error: '购物车会话已过期' }), {
+                    status: 400,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+
             await env.DB.prepare(
-                'DELETE FROM carts WHERE user_id = ?'
-            ).bind(userId).run();
+                'DELETE FROM carts WHERE user_id = ? AND session_id = ?'
+            ).bind(userId, session.session_id).run();
 
             return new Response(JSON.stringify({ message: '清空成功' }), {
                 status: 200,
