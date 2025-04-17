@@ -25,6 +25,16 @@ async function fetchProductDetail(productId) {
     }
 }
 
+// 初始化购物车功能
+document.addEventListener('DOMContentLoaded', function() {
+    // 初始化购物车
+    if (typeof window.initCart === 'function') {
+        window.initCart();
+    } else {
+        console.error('购物车功能未加载完成');
+    }
+});
+
 // 更新商品详情页面
 function updateProductDetail(product) {
     // 更新页面标题
@@ -181,8 +191,16 @@ async function fetchRelatedProducts(currentProductId) {
                         throw new Error('添加到购物车失败');
                     }
 
-                    // 更新购物车图标数量
-                    updateCartCount();
+                    // 更新购物车UI
+                    if (typeof window.updateCartUI === 'function') {
+                        await window.updateCartUI();
+                        // 显示购物车侧边栏
+                        if (typeof window.showCart === 'function') {
+                            window.showCart();
+                        }
+                    } else {
+                        console.error('购物车功能未加载完成');
+                    }
                     
                     // 显示成功提示
                     alert('成功加入购物车！');

@@ -1,30 +1,21 @@
-// 导入必要的函数和变量
-import { API_BASE_URL, getProducts } from './api.js';
-import { initCart } from './cart.js';
+// 使用api.js中定义的API_BASE_URL
 
 // 等待DOM加载完成
-document.addEventListener('DOMContentLoaded', async function() {
-    try {
-        // 初始化购物车
-        await initCart();
-        
-        // 初始化搜索框
-        initSearch();
-        
-        // 加载商品数据
-        await loadProducts();
-        
-        // 初始化产品筛选
-        initProductFilter();
-        
-        // 初始化产品排序
-        initProductSort();
-        
-        // 初始化快速查看
-        initQuickView();
-    } catch (error) {
-        console.error('初始化商城页面失败:', error);
-    }
+document.addEventListener('DOMContentLoaded', function() {
+    // 初始化搜索框
+    initSearch();
+    
+    // 加载商品数据
+    loadProducts();
+    
+    // 初始化产品筛选
+    initProductFilter();
+    
+    // 初始化产品排序
+    initProductSort();
+    
+    // 初始化快速查看
+    initQuickView();
 });
 
 // 从API加载商品数据
@@ -389,9 +380,6 @@ function initProductSort() {
     }
 }
 
-// 初始化购物车功能
-initCart();
-
 // 初始化添加到购物车按钮
 function initAddToCartButtons() {
     const addToCartButtons = document.querySelectorAll('.add-to-cart');
@@ -407,8 +395,6 @@ function initAddToCartButtons() {
                     }
 
                     const productId = this.getAttribute('data-id');
-                    await cartModule.addToCart(productId, 1);
-                    await cartModule.updateCartUI();
                     
                     const response = await fetch(`${API_BASE_URL}/api/cart/add`, {
                         method: 'POST',
@@ -427,13 +413,9 @@ function initAddToCartButtons() {
                         throw new Error(error.error || '添加到购物车失败');
                     }
 
-                    // 显示购物车
-                    cartSidebar.classList.add('active');
-                    cartOverlay.classList.add('active');
-                    document.body.style.overflow = 'hidden';
-                    
-                    // 更新购物车UI
-                    await updateCartUI();
+                    // 调用cart.js中的显示购物车和更新UI方法
+                    window.showCart();
+                    await window.updateCartUI();
                 } catch (error) {
                     console.error('添加到购物车失败:', error);
                     alert(error.message);
@@ -448,17 +430,19 @@ function initQuickView() {
     const quickViewButtons = document.querySelectorAll('.quick-view');
     const quickViewModal = document.getElementById('quickViewModal');
     const modalOverlay = document.getElementById('modalOverlay');
-    const closeModalBtn = document.getElementById('closeModal');
+    const closeModal = document.getElementById('closeModal');
+    const modalProductImage = document.getElementById('modalProductImage');
+    const modalProductName = document.getElementById('modalProductName');
+    const modalProductPrice = document.getElementById('modalProductPrice');
+    const modalProductWeight = document.getElementById('modalProductWeight');
+    const modalProductYear = document.getElementById('modalProductYear');
+    const modalProductDesc = document.getElementById('modalProductDesc');
+    const quantityMinus = document.getElementById('quantityMinus');
+    const quantityPlus = document.getElementById('quantityPlus');
+    const quantity = document.getElementById('quantity');
+    const modalAddToCart = document.getElementById('modalAddToCart');
     
-    // 定义关闭模态框函数
-    function closeModal() {
-        if (quickViewModal && modalOverlay) {
-            quickViewModal.classList.remove('active');
-            modalOverlay.classList.remove('active');
-            document.body.style.overflow = '';
-        }
-    }
-    
+    // 立即购买按钮点击事件
     if (quickViewButtons) {
         quickViewButtons.forEach(button => {
             button.addEventListener('click', function(e) {
@@ -469,16 +453,7 @@ function initQuickView() {
             });
         });
     }
-    
-    // 关闭模态框
-    if (closeModalBtn) {
-        closeModalBtn.addEventListener('click', closeModal);
     }
-    
-    if (modalOverlay) {
-        modalOverlay.addEventListener('click', closeModal);
-    }
-}
     
     // 关闭快速查看弹窗
     if (closeModal && quickViewModal && modalOverlay) {
