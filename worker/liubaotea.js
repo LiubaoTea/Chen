@@ -1,6 +1,9 @@
 // Cloudflare Worker for 陳記六堡茶
 
 // CORS配置
+//==========================================================================
+//                         总、CORS配置
+//==========================================================================
 const corsHeaders = {
     'Access-Control-Allow-Origin': 'https://www.liubaotea.online',
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
@@ -8,7 +11,10 @@ const corsHeaders = {
     'Access-Control-Max-Age': '86400'
 };
 
-// 处理OPTIONS预检请求
+
+//==========================================================================
+//                       处理OPTIONS预检请求
+//==========================================================================
 const handleOptions = (request) => {
     return new Response(null, {
         headers: corsHeaders,
@@ -374,8 +380,7 @@ const handleCartOperations = async (request, env) => {
                 `SELECT c.*, p.name, p.price, p.image_filename 
                 FROM carts c 
                 JOIN products p ON c.product_id = p.product_id 
-                JOIN shopping_sessions s ON c.user_id = s.user_id
-                WHERE c.user_id = ? AND s.session_id = ? AND s.status = 'active'`
+                WHERE c.user_id = ? AND c.session_id = ?`
             ).bind(userId, session.session_id).all();
 
             if (!cartItems.results) {
@@ -422,8 +427,8 @@ const handleCartOperations = async (request, env) => {
 
             // 检查商品是否已在购物车中
             const existingItem = await env.DB.prepare(
-                'SELECT * FROM carts WHERE user_id = ? AND product_id = ?'
-            ).bind(userId, productId).first();
+                'SELECT * FROM carts WHERE user_id = ? AND product_id = ? AND session_id = ?'
+            ).bind(userId, productId, session.session_id).first();
 
             if (existingItem) {
                 // 更新数量
@@ -500,8 +505,8 @@ const handleCartOperations = async (request, env) => {
             }
 
             await env.DB.prepare(
-                'UPDATE carts SET quantity = ? WHERE user_id = ? AND product_id = ?'
-            ).bind(quantity, userId, productId).run();
+                'UPDATE carts SET quantity = ? WHERE user_id = ? AND product_id = ? AND session_id = ?'
+            ).bind(quantity, userId, productId, session.session_id).run();
 
             return new Response(JSON.stringify({ message: '更新成功' }), {
                 status: 200,
