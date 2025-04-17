@@ -5,9 +5,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // 初始化搜索框
     initSearch();
     
-    // 初始化购物车
-    initCart();
-    
     // 加载商品数据
     loadProducts();
     
@@ -19,9 +16,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 初始化快速查看
     initQuickView();
-    
-    // 初始化结算
-    initCheckout();
 });
 
 // 从API加载商品数据
@@ -54,7 +48,6 @@ async function loadProducts() {
             productCard.setAttribute('data-year', product.aging_years);
             
             // 构建商品图片URL - 使用R2存储中的图片
-            // 格式：Goods_1.png, Goods_2.png, ...
             const imageUrl = `${API_BASE_URL}/image/Goods/Goods_${product.product_id}.png`;
             
             // 设置商品卡片内容
@@ -74,8 +67,8 @@ async function loadProducts() {
                         <span class="price">¥${product.price.toFixed(2)}</span>
                     </div>
                     <div class="product-actions">
-                        <button class="action-btn add-to-cart" data-id="${product.product_id}" data-name="${product.name}" data-price="${product.price}" data-image="${imageUrl}">加入购物车</button>
-                        <button class="action-btn quick-view" data-id="${product.product_id}">立即购买</button>
+                        <button class="action-btn add-to-cart" data-product-id="${product.product_id}" data-name="${product.name}" data-price="${product.price}" data-image="${imageUrl}">加入购物车</button>
+                        <button class="action-btn quick-view" data-product-id="${product.product_id}">立即购买</button>
                     </div>
                 </div>
             `;
@@ -90,9 +83,8 @@ async function loadProducts() {
             productCount.innerHTML = `<span>显示 ${products.length} 个产品中的 1-${products.length} 个</span>`;
         }
         
-        // 重新初始化快速查看和添加到购物车按钮
+        // 重新初始化快速查看
         initQuickView();
-        initAddToCartButtons();
         
         // 为商品卡片添加点击事件，点击跳转到商品详情页
         const productCards = document.querySelectorAll('.product-card');
@@ -103,7 +95,7 @@ async function loadProducts() {
                     return;
                 }
                 
-                const productId = this.querySelector('.quick-view').getAttribute('data-id');
+                const productId = this.querySelector('.quick-view').getAttribute('data-product-id');
                 if (productId) {
                     window.location.href = `product-detail.html?id=${productId}`;
                 }
@@ -169,9 +161,38 @@ function initSearch() {
     }
 }
 
-// 购物车功能已移至cart.js
+// 初始化购物车功能
+function initCart() {
+    // 引入购物车UI相关功能
+    const script = document.createElement('script');
+    script.src = 'js/cart-ui.js';
+    document.head.appendChild(script);
 
-// 使用api.js中定义的getProducts函数
+    // 初始化购物车UI
+    script.onload = () => {
+        if (typeof updateCartUI === 'function') {
+            updateCartUI();
+        }
+    };
+}
+
+// 获取商品列表
+async function fetchProducts(filters = {}) {
+    try {
+        let url = '/api/products';
+        if (Object.keys(filters).length > 0) {
+            url = '/api/products/filter?' + new URLSearchParams(filters);
+        }
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error('获取商品列表失败');
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('获取商品列表失败:', error);
+        return [];
+    }
+}
     
     // 产品筛选功能
     function initProductFilter() {
