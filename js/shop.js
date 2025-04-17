@@ -380,13 +380,14 @@ function initProductSort() {
     }
 }
 
+// 导入购物车模块
+import cartModule from './cart.js';
+
 // 初始化添加到购物车按钮
 function initAddToCartButtons() {
     const addToCartButtons = document.querySelectorAll('.add-to-cart');
-    const cartSidebar = document.getElementById('cartSidebar');
-    const cartOverlay = document.getElementById('cartOverlay');
     
-    if (addToCartButtons && cartSidebar && cartOverlay) {
+    if (addToCartButtons) {
         addToCartButtons.forEach(button => {
             button.addEventListener('click', async function() {
                 try {
@@ -397,6 +398,8 @@ function initAddToCartButtons() {
                     }
 
                     const productId = this.getAttribute('data-id');
+                    await cartModule.addToCart(productId, 1);
+                    await cartModule.updateCartUI();
                     
                     const response = await fetch(`${API_BASE_URL}/api/cart/add`, {
                         method: 'POST',
@@ -436,19 +439,17 @@ function initQuickView() {
     const quickViewButtons = document.querySelectorAll('.quick-view');
     const quickViewModal = document.getElementById('quickViewModal');
     const modalOverlay = document.getElementById('modalOverlay');
-    const closeModal = document.getElementById('closeModal');
-    const modalProductImage = document.getElementById('modalProductImage');
-    const modalProductName = document.getElementById('modalProductName');
-    const modalProductPrice = document.getElementById('modalProductPrice');
-    const modalProductWeight = document.getElementById('modalProductWeight');
-    const modalProductYear = document.getElementById('modalProductYear');
-    const modalProductDesc = document.getElementById('modalProductDesc');
-    const quantityMinus = document.getElementById('quantityMinus');
-    const quantityPlus = document.getElementById('quantityPlus');
-    const quantity = document.getElementById('quantity');
-    const modalAddToCart = document.getElementById('modalAddToCart');
+    const closeModalBtn = document.getElementById('closeModal');
     
-    // 立即购买按钮点击事件
+    // 定义关闭模态框函数
+    function closeModal() {
+        if (quickViewModal && modalOverlay) {
+            quickViewModal.classList.remove('active');
+            modalOverlay.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+    }
+    
     if (quickViewButtons) {
         quickViewButtons.forEach(button => {
             button.addEventListener('click', function(e) {
@@ -459,7 +460,16 @@ function initQuickView() {
             });
         });
     }
+    
+    // 关闭模态框
+    if (closeModalBtn) {
+        closeModalBtn.addEventListener('click', closeModal);
     }
+    
+    if (modalOverlay) {
+        modalOverlay.addEventListener('click', closeModal);
+    }
+}
     
     // 关闭快速查看弹窗
     if (closeModal && quickViewModal && modalOverlay) {

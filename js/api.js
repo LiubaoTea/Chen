@@ -2,7 +2,15 @@
 
 // API基础URL，根据实际部署环境修改
 // 使用相对路径，这样请求会发送到当前服务器
-const API_BASE_URL = 'https://workers.liubaotea.online';
+export const API_BASE_URL = 'https://workers.liubaotea.online';
+
+// 导出所有API函数
+export {
+    registerUser,
+    loginUser,
+    getUserInfo,
+    getProducts
+};
 
 // 用户注册
 async function registerUser(username, email, password) {

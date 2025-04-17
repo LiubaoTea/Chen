@@ -336,6 +336,14 @@ async function clearCartItems() {
 }
 
 // 导出函数
-window.initCart = initCart;
-window.addToCart = addToCart;
-window.updateCartUI = updateCartUI;
+const cartModule = {
+    initCart,
+    addToCart,
+    updateCartUI,
+    getCartStatus,
+    removeFromCart,
+    updateCartItemQuantity,
+    clearCartItems
+};
+
+export default cartModule;

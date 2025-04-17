@@ -1,9 +1,8 @@
 // 用户认证状态检查
-function checkAuthStatus() {
-    // 检查本地存储中是否有用户token
+// 检查认证状态
+export function checkAuthStatus() {
     const token = localStorage.getItem('userToken');
     if (!token) {
-        // 如果没有token，重定向到登录页面
         window.location.href = 'login.html';
         return false;
     }
@@ -11,18 +10,14 @@ function checkAuthStatus() {
 }
 
 // 跳转到用户中心
-function goToUserCenter() {
+export function goToUserCenter() {
     if (checkAuthStatus()) {
         window.location.href = 'user-center.html';
     }
-    // 如果未登录，checkAuthStatus会重定向到登录页面
 }
 
-// 事件监听器设置
-document.addEventListener('DOMContentLoaded', () => {
-    // 用户图标和用户中心链接的事件监听已经足够，不需要重复的二维码显示逻辑
-
-    // 设置用户图标的点击事件
+// 初始化认证相关的事件监听器
+export function initAuthListeners() {
     const userIcon = document.getElementById('userToggle');
     if (userIcon) {
         userIcon.onclick = (e) => {
@@ -31,15 +26,16 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
     
-    // 设置用户中心导航链接的点击事件
     const userCenterLinks = document.querySelectorAll('a[href="user-center.html"]');
     userCenterLinks.forEach(link => {
         link.onclick = (e) => {
-            // 只有在非用户中心页面才需要阻止默认行为并检查登录状态
             if (!window.location.href.includes('user-center.html')) {
                 e.preventDefault();
                 goToUserCenter();
             }
         };
     });
-});
+}
+
+// 自动初始化认证监听器
+document.addEventListener('DOMContentLoaded', initAuthListeners);
