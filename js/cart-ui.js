@@ -1,5 +1,5 @@
 // 购物车UI相关功能
-const API_BASE_URL = 'https://workers.liubaotea.online';
+import { API_BASE_URL } from './config.js';
 
 // 更新购物车UI
 async function updateCartUI() {
