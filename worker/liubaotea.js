@@ -1,10 +1,30 @@
 // Cloudflare Worker for 陳記六堡茶
 
+// CORS配置
+const corsHeaders = {
+    'Access-Control-Allow-Origin': 'https://www.liubaotea.online',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Max-Age': '86400'
+};
+
+// 处理OPTIONS预检请求
+const handleOptions = (request) => {
+    return new Response(null, {
+        headers: corsHeaders,
+        status: 204
+    });
+};
+
 //==========================================================================
 //                         一、用户相关API路由处理
 // 处理用户注册、登录和获取用户信息的相关请求
 //==========================================================================
 const handleUserAuth = async (request, env) => {
+    // 处理OPTIONS预检请求
+    if (request.method === 'OPTIONS') {
+        return handleOptions(request);
+    }
     const url = new URL(request.url);
     const path = url.pathname;
 
@@ -37,7 +57,7 @@ const handleUserAuth = async (request, env) => {
         } catch (error) {
             return new Response(JSON.stringify({ error: '注册失败', details: error.message }), {
                 status: 500,
-                headers: { 'Content-Type': 'application/json' }
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             });
         }
     }
@@ -72,7 +92,7 @@ const handleUserAuth = async (request, env) => {
         } catch (error) {
             return new Response(JSON.stringify({ error: '登录失败', details: error.message }), {
                 status: 500,
-                headers: { 'Content-Type': 'application/json' }
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             });
         }
     }
@@ -111,7 +131,7 @@ const handleUserAuth = async (request, env) => {
         } catch (error) {
             return new Response(JSON.stringify({ error: '获取用户信息失败', details: error.message }), {
                 status: 500,
-                headers: { 'Content-Type': 'application/json' }
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             });
         }
     }
@@ -301,6 +321,11 @@ const handleProducts = async (request, env) => {
 // 处理购物车的添加、删除、更新和查询操作
 //==========================================================================
 const handleCartOperations = async (request, env) => {
+    // 处理OPTIONS预检请求
+    if (request.method === 'OPTIONS') {
+        return handleOptions(request);
+    }
+
     const url = new URL(request.url);
     const path = url.pathname;
 
@@ -309,7 +334,7 @@ const handleCartOperations = async (request, env) => {
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
         return new Response(JSON.stringify({ error: '未授权访问' }), {
             status: 401,
-            headers: { 'Content-Type': 'application/json' }
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
     }
 
@@ -373,7 +398,7 @@ const handleCartOperations = async (request, env) => {
         } catch (error) {
             return new Response(JSON.stringify({ error: '获取购物车失败', details: error.message }), {
                 status: 500,
-                headers: { 'Content-Type': 'application/json' }
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             });
         }
     }
@@ -419,7 +444,7 @@ const handleCartOperations = async (request, env) => {
         } catch (error) {
             return new Response(JSON.stringify({ error: '添加到购物车失败', details: error.message }), {
                 status: 500,
-                headers: { 'Content-Type': 'application/json' }
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             });
         }
     }
@@ -452,7 +477,7 @@ const handleCartOperations = async (request, env) => {
         } catch (error) {
             return new Response(JSON.stringify({ error: '从购物车移除失败', details: error.message }), {
                 status: 500,
-                headers: { 'Content-Type': 'application/json' }
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             });
         }
     }
@@ -485,7 +510,7 @@ const handleCartOperations = async (request, env) => {
         } catch (error) {
             return new Response(JSON.stringify({ error: '更新购物车失败', details: error.message }), {
                 status: 500,
-                headers: { 'Content-Type': 'application/json' }
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             });
         }
     }
@@ -537,7 +562,7 @@ const handleOrderOperations = async (request, env) => {
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
         return new Response(JSON.stringify({ error: '未授权访问' }), {
             status: 401,
-            headers: { 'Content-Type': 'application/json' }
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
     }
 
@@ -740,7 +765,7 @@ const handleUserCenter = async (request, env) => {
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
         return new Response(JSON.stringify({ error: '未授权访问' }), {
             status: 401,
-            headers: { 'Content-Type': 'application/json' }
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
     }
 
@@ -769,7 +794,7 @@ const handleUserCenter = async (request, env) => {
         } catch (error) {
             return new Response(JSON.stringify({ error: '获取用户信息失败', details: error.message }), {
                 status: 500,
-                headers: { 'Content-Type': 'application/json' }
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             });
         }
     }
@@ -1161,7 +1186,7 @@ const handleUserAddress = async (request, env) => {
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
         return new Response(JSON.stringify({ error: '未授权访问' }), {
             status: 401,
-            headers: { 'Content-Type': 'application/json' }
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
     }
 
@@ -1310,7 +1335,7 @@ const handleUserSettings = async (request, env) => {
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
         return new Response(JSON.stringify({ error: '未授权访问' }), {
             status: 401,
-            headers: { 'Content-Type': 'application/json' }
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
     }
 
@@ -1605,7 +1630,7 @@ const handleShoppingSession = async (request, env) => {
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
         return new Response(JSON.stringify({ error: '未授权访问' }), {
             status: 401,
-            headers: { 'Content-Type': 'application/json' }
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
     }
 
@@ -1821,7 +1846,7 @@ const handleCart = async (request, env) => {
         } catch (error) {
             return new Response(JSON.stringify({ error: '添加到购物车失败', details: error.message }), {
                 status: 500,
-                headers: { 'Content-Type': 'application/json' }
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             });
         }
     }
@@ -1863,7 +1888,7 @@ const handleCart = async (request, env) => {
         } catch (error) {
             return new Response(JSON.stringify({ error: '获取购物车失败', details: error.message }), {
                 status: 500,
-                headers: { 'Content-Type': 'application/json' }
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             });
         }
     }
@@ -1917,7 +1942,7 @@ const handleCart = async (request, env) => {
         } catch (error) {
             return new Response(JSON.stringify({ error: '更新购物车失败', details: error.message }), {
                 status: 500,
-                headers: { 'Content-Type': 'application/json' }
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             });
         }
     }

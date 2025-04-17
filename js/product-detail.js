@@ -1,4 +1,4 @@
-// 获取URL参数中的商品ID
+// 商品详情页——获取URL参数中的商品ID
 function getProductId() {
     const urlParams = new URLSearchParams(window.location.search);
     return urlParams.get('id');
