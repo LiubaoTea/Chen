@@ -3,21 +3,28 @@ import { API_BASE_URL, getProducts } from './api.js';
 import { initCart } from './cart.js';
 
 // 等待DOM加载完成
-document.addEventListener('DOMContentLoaded', function() {
-    // 初始化搜索框
-    initSearch();
-    
-    // 加载商品数据
-    loadProducts();
-    
-    // 初始化产品筛选
-    initProductFilter();
-    
-    // 初始化产品排序
-    initProductSort();
-    
-    // 初始化快速查看
-    initQuickView();
+document.addEventListener('DOMContentLoaded', async function() {
+    try {
+        // 初始化购物车
+        await initCart();
+        
+        // 初始化搜索框
+        initSearch();
+        
+        // 加载商品数据
+        await loadProducts();
+        
+        // 初始化产品筛选
+        initProductFilter();
+        
+        // 初始化产品排序
+        initProductSort();
+        
+        // 初始化快速查看
+        initQuickView();
+    } catch (error) {
+        console.error('初始化商城页面失败:', error);
+    }
 });
 
 // 从API加载商品数据
