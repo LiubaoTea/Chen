@@ -1,3 +1,6 @@
+// 导入API相关函数和配置
+import { API_BASE_URL, getProducts } from './api.js';
+
 // 导入购物车功能
 import { addToCart, initCart } from './cart.js';
 
