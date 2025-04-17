@@ -178,26 +178,38 @@ function initCart() {
     const clearCart = document.getElementById('clearCart');
     const checkout = document.getElementById('checkout');
     const addToCartButtons = document.querySelectorAll('.add-to-cart');
-    const cartItemList = document.getElementById('cartItemList');
-    const emptyCart = document.getElementById('emptyCart');
-    const cartFooter = document.getElementById('cartFooter');
-    const cartCount = document.querySelector('.cart-count');
-    
-    // 更新购物车UI
+    // 引入购物车UI相关功能
+    const script = document.createElement('script');
+    script.src = 'js/cart-ui.js';
+    document.head.appendChild(script);
+
+    // 初始化购物车UI
+    script.onload = () => {
+        if (typeof updateCartUI === 'function') {
+            updateCartUI();
+        }
+    };
+
     async function updateCartUI() {
         try {
             const token = localStorage.getItem('userToken');
-            if (!token) return;
-
-            // 从API获取购物车数据
+            if (!token) {
+                emptyCart.style.display = 'block';
+                cartItemList.style.display = 'none';
+                cartFooter.style.display = 'none';
+                return;
+            }
+    
             const response = await fetch(`${API_BASE_URL}/api/cart`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
             });
-
-            if (!response.ok) return;
-
+    
+            if (!response.ok) {
+                throw new Error('获取购物车信息失败');
+            }
+    
             const cartItems = await response.json();
             
             // 更新购物车数量
@@ -305,7 +317,7 @@ function initCart() {
             console.error('更新购物车失败:', error);
         }
     }
-    
+
     // 更新购物车商品数量
     async function updateCartItemQuantity(cartId, quantity) {
         try {

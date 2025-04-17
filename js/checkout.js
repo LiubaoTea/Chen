@@ -34,29 +34,195 @@ async function loadAddresses() {
         const addresses = await response.json();
         const addressList = document.getElementById('addressList');
         
-        if (addresses.length === 0) {
-            addressList.innerHTML = '<p>暂无收货地址，请先添加收货地址</p>';
-            return;
-        }
+        // 添加新增地址按钮
+        let addressHtml = `
+            <div class="address-card add-address">
+                <i class="fas fa-plus"></i>
+                <p>添加新地址</p>
+            </div>
+        `;
 
-        addressList.innerHTML = addresses.map((address, index) => `
+        // 添加现有地址
+        addressHtml += addresses.map((address, index) => `
             <div class="address-card ${index === 0 ? 'selected' : ''}" data-id="${address.id}">
                 <h3>${address.name} ${address.phone}</h3>
                 <p>${address.province}${address.city}${address.district}${address.detail}</p>
+                <div class="address-actions">
+                    <button class="edit-address" data-id="${address.id}">
+                        <i class="fas fa-edit"></i> 编辑
+                    </button>
+                    <button class="delete-address" data-id="${address.id}">
+                        <i class="fas fa-trash"></i> 删除
+                    </button>
+                </div>
             </div>
         `).join('');
 
+        addressList.innerHTML = addressHtml;
+
         // 添加地址选择事件
-        const addressCards = addressList.querySelectorAll('.address-card');
+        const addressCards = addressList.querySelectorAll('.address-card:not(.add-address)');
         addressCards.forEach(card => {
-            card.addEventListener('click', () => {
+            card.addEventListener('click', (e) => {
+                // 如果点击的是操作按钮，不触发选择事件
+                if (e.target.closest('.address-actions')) return;
+                
                 addressCards.forEach(c => c.classList.remove('selected'));
                 card.classList.add('selected');
             });
         });
+
+        // 添加新增地址事件
+        const addAddressBtn = addressList.querySelector('.add-address');
+        if (addAddressBtn) {
+            addAddressBtn.addEventListener('click', showAddressModal);
+        }
+
+        // 添加编辑和删除事件
+        addressList.querySelectorAll('.edit-address').forEach(btn => {
+            btn.addEventListener('click', () => editAddress(btn.dataset.id));
+        });
+
+        addressList.querySelectorAll('.delete-address').forEach(btn => {
+            btn.addEventListener('click', () => deleteAddress(btn.dataset.id));
+        });
+
     } catch (error) {
         console.error('加载地址失败:', error);
         alert('加载地址失败，请刷新页面重试');
+    }
+}
+
+// 显示地址编辑模态框
+function showAddressModal(address = null) {
+    const modalHtml = `
+        <div class="modal" id="addressModal">
+            <div class="modal-content">
+                <h2>${address ? '编辑地址' : '新增地址'}</h2>
+                <form id="addressForm">
+                    <div class="form-group">
+                        <label>收货人姓名</label>
+                        <input type="text" name="name" value="${address ? address.name : ''}" required>
+                    </div>
+                    <div class="form-group">
+                        <label>手机号码</label>
+                        <input type="tel" name="phone" value="${address ? address.phone : ''}" required>
+                    </div>
+                    <div class="form-group">
+                        <label>省份</label>
+                        <input type="text" name="province" value="${address ? address.province : ''}" required>
+                    </div>
+                    <div class="form-group">
+                        <label>城市</label>
+                        <input type="text" name="city" value="${address ? address.city : ''}" required>
+                    </div>
+                    <div class="form-group">
+                        <label>区/县</label>
+                        <input type="text" name="district" value="${address ? address.district : ''}" required>
+                    </div>
+                    <div class="form-group">
+                        <label>详细地址</label>
+                        <input type="text" name="detail" value="${address ? address.detail : ''}" required>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn-cancel">取消</button>
+                        <button type="submit" class="btn-submit">${address ? '保存' : '添加'}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    const modal = document.getElementById('addressModal');
+    const form = document.getElementById('addressForm');
+
+    // 关闭模态框
+    modal.querySelector('.btn-cancel').addEventListener('click', () => {
+        modal.remove();
+    });
+
+    // 提交表单
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(form);
+        const addressData = Object.fromEntries(formData.entries());
+
+        try {
+            const token = localStorage.getItem('userToken');
+            const url = address
+                ? `${API_BASE_URL}/api/addresses/${address.id}`
+                : `${API_BASE_URL}/api/addresses`;
+
+            const response = await fetch(url, {
+                method: address ? 'PUT' : 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(addressData)
+            });
+
+            if (!response.ok) {
+                throw new Error(address ? '更新地址失败' : '添加地址失败');
+            }
+
+            modal.remove();
+            await loadAddresses(); // 重新加载地址列表
+
+        } catch (error) {
+            console.error('保存地址失败:', error);
+            alert('保存地址失败，请重试');
+        }
+    });
+}
+
+// 编辑地址
+async function editAddress(addressId) {
+    try {
+        const token = localStorage.getItem('userToken');
+        const response = await fetch(`${API_BASE_URL}/api/addresses/${addressId}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('获取地址信息失败');
+        }
+
+        const address = await response.json();
+        showAddressModal(address);
+
+    } catch (error) {
+        console.error('编辑地址失败:', error);
+        alert('获取地址信息失败，请重试');
+    }
+}
+
+// 删除地址
+async function deleteAddress(addressId) {
+    if (!confirm('确定要删除这个地址吗？')) return;
+
+    try {
+        const token = localStorage.getItem('userToken');
+        const response = await fetch(`${API_BASE_URL}/api/addresses/${addressId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('删除地址失败');
+        }
+
+        await loadAddresses(); // 重新加载地址列表
+
+    } catch (error) {
+        console.error('删除地址失败:', error);
+        alert('删除地址失败，请重试');
     }
 }
 

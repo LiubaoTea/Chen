@@ -335,13 +335,23 @@ function initTabs() {
     });
 }
 
+// 引入购物车功能
+const cartScript = document.createElement('script');
+cartScript.src = 'js/cart.js';
+document.head.appendChild(cartScript);
+
 // 加入购物车
 function initAddToCart() {
     const addToCartBtn = document.getElementById('addToCart');
     addToCartBtn.addEventListener('click', async () => {
         const productId = getProductId();
         const quantity = parseInt(document.getElementById('quantity').value);
-        await addToCart(productId, quantity);
+        if (typeof window.addToCart === 'function') {
+            await window.addToCart(productId, quantity);
+        } else {
+            console.error('购物车功能未加载完成');
+            alert('系统错误，请刷新页面重试');
+        }
     });
 }
 
