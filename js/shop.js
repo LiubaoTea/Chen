@@ -34,8 +34,7 @@ async function loadProducts() {
         productGrid.innerHTML = '<div class="loading">正在加载商品...</div>';
         
         // 从API获取商品数据
-        const response = await getProducts();
-        const products = response.products || [];
+        const products = await window.getProducts();
         
         if (!products || products.length === 0) {
             productGrid.innerHTML = '<div class="no-products">暂无商品</div>';
