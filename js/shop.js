@@ -1,4 +1,4 @@
-import { API_BASE_URL } from './config.js';
+// 使用api.js中定义的API_BASE_URL
 
 // 等待DOM加载完成
 document.addEventListener('DOMContentLoaded', function() {
@@ -34,7 +34,7 @@ async function loadProducts() {
         productGrid.innerHTML = '<div class="loading">正在加载商品...</div>';
         
         // 从API获取商品数据
-        const products = await window.getProducts();
+        const products = await getProducts();
         
         if (!products || products.length === 0) {
             productGrid.innerHTML = '<div class="no-products">暂无商品</div>';
@@ -178,10 +178,17 @@ function initCart() {
     const clearCart = document.getElementById('clearCart');
     const checkout = document.getElementById('checkout');
     const addToCartButtons = document.querySelectorAll('.add-to-cart');
+    // 引入购物车UI相关功能
+    const script = document.createElement('script');
+    script.src = 'js/cart-ui.js';
+    document.head.appendChild(script);
+
     // 初始化购物车UI
-    if (typeof updateCartUI === 'function') {
-        updateCartUI();
-    }
+    script.onload = () => {
+        if (typeof updateCartUI === 'function') {
+            updateCartUI();
+        }
+    };
 
     async function updateCartUI() {
         try {

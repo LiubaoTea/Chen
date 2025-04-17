@@ -11,17 +11,53 @@
             max-width: 1200px;
             margin: 40px auto;
             padding: 20px;
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            display: flex;
+            gap: 20px;
         }
 
-        .checkout-section {
+        .checkout-nav {
+            flex: 0 0 250px;
             background: #FFF9F0;
             border-radius: 8px;
             padding: 20px;
-            margin-bottom: 20px;
             border: 2px solid #D2691E;
+            height: fit-content;
+        }
+
+        .nav-item {
+            padding: 15px;
+            margin-bottom: 10px;
+            color: #8B4513;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-item:hover,
+        .nav-item.active {
+            background: #FFF3E0;
+        }
+
+        .nav-item i {
+            margin-right: 10px;
+            width: 20px;
+            text-align: center;
+        }
+
+        .checkout-content {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .content-section {
+            display: none;
+        }
+
+        .content-section.active {
+            display: block;
         }
 
         .section-title {
@@ -51,10 +87,6 @@
         .address-card.selected {
             border: 2px solid #8B4513;
             background: #FFF3E0;
-        }
-
-        .order-items {
-            margin-bottom: 20px;
         }
 
         .order-item {
@@ -97,6 +129,33 @@
             color: #666;
         }
 
+        .payment-methods {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+        }
+
+        .payment-method {
+            background: #FFF;
+            border: 1px solid #D2691E;
+            border-radius: 6px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .payment-method.selected {
+            border: 2px solid #8B4513;
+            background: #FFF3E0;
+        }
+
+        .payment-method i {
+            font-size: 2em;
+            color: #8B4513;
+            margin-bottom: 10px;
+        }
+
         .order-summary {
             background: #FFF;
             padding: 15px;
@@ -136,37 +195,16 @@
             background: #6B3410;
         }
 
-        .payment-methods {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            gap: 15px;
-        }
-
-        .payment-method {
-            background: #FFF;
-            border: 1px solid #D2691E;
-            border-radius: 6px;
-            padding: 15px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .payment-method.selected {
-            border: 2px solid #8B4513;
-            background: #FFF3E0;
-        }
-
-        .payment-method i {
-            font-size: 2em;
-            color: #8B4513;
-            margin-bottom: 10px;
-        }
-
         @media (max-width: 768px) {
             .checkout-container {
+                flex-direction: column;
                 margin: 20px;
                 padding: 15px;
+            }
+
+            .checkout-nav {
+                flex: none;
+                width: 100%;
             }
 
             .address-list {
@@ -217,55 +255,74 @@
 
     <main>
         <div class="checkout-container">
-            <!-- 收货地址 -->
-            <div class="checkout-section">
-                <h2 class="section-title">收货地址</h2>
-                <div class="address-list" id="addressList">
-                    <!-- 地址列表将通过JavaScript动态加载 -->
+            <!-- 左侧导航 -->
+            <div class="checkout-nav">
+                <div class="nav-item active" data-section="address">
+                    <i class="fas fa-map-marker-alt"></i>收货地址
+                </div>
+                <div class="nav-item" data-section="order">
+                    <i class="fas fa-shopping-bag"></i>订单商品
+                </div>
+                <div class="nav-item" data-section="payment">
+                    <i class="fas fa-credit-card"></i>支付方式
+                </div>
+                <div class="nav-item" data-section="summary">
+                    <i class="fas fa-file-invoice-dollar"></i>订单总结
                 </div>
             </div>
 
-            <!-- 订单商品 -->
-            <div class="checkout-section">
-                <h2 class="section-title">订单商品</h2>
-                <div class="order-items" id="orderItems">
-                    <!-- 订单商品列表将通过JavaScript动态加载 -->
+            <!-- 右侧内容 -->
+            <div class="checkout-content">
+                <!-- 收货地址 -->
+                <div class="content-section active" id="address-section">
+                    <h2 class="section-title">收货地址</h2>
+                    <div class="address-list" id="addressList">
+                        <!-- 地址列表将通过JavaScript动态加载 -->
+                    </div>
                 </div>
-            </div>
 
-            <!-- 支付方式 -->
-            <div class="checkout-section">
-                <h2 class="section-title">支付方式</h2>
-                <div class="payment-methods">
-                    <div class="payment-method" data-method="alipay">
-                        <i class="fab fa-alipay"></i>
-                        <div>支付宝</div>
-                    </div>
-                    <div class="payment-method" data-method="wechat">
-                        <i class="fab fa-weixin"></i>
-                        <div>微信支付</div>
+                <!-- 订单商品 -->
+                <div class="content-section" id="order-section">
+                    <h2 class="section-title">订单商品</h2>
+                    <div class="order-items" id="orderItems">
+                        <!-- 订单商品列表将通过JavaScript动态加载 -->
                     </div>
                 </div>
-            </div>
 
-            <!-- 订单总结 -->
-            <div class="checkout-section">
-                <h2 class="section-title">订单总结</h2>
-                <div class="order-summary">
-                    <div class="summary-row">
-                        <span>商品总价</span>
-                        <span id="subtotal">¥0.00</span>
-                    </div>
-                    <div class="summary-row">
-                        <span>运费</span>
-                        <span id="shipping">¥0.00</span>
-                    </div>
-                    <div class="summary-row total-row">
-                        <span>应付总额</span>
-                        <span id="total">¥0.00</span>
+                <!-- 支付方式 -->
+                <div class="content-section" id="payment-section">
+                    <h2 class="section-title">支付方式</h2>
+                    <div class="payment-methods">
+                        <div class="payment-method" data-method="alipay">
+                            <i class="fab fa-alipay"></i>
+                            <div>支付宝</div>
+                        </div>
+                        <div class="payment-method" data-method="wechat">
+                            <i class="fab fa-weixin"></i>
+                            <div>微信支付</div>
+                        </div>
                     </div>
                 </div>
-                <button class="checkout-btn" id="submitOrder">提交订单</button>
+
+                <!-- 订单总结 -->
+                <div class="content-section" id="summary-section">
+                    <h2 class="section-title">订单总结</h2>
+                    <div class="order-summary">
+                        <div class="summary-row">
+                            <span>商品总价</span>
+                            <span id="subtotal">¥0.00</span>
+                        </div>
+                        <div class="summary-row">
+                            <span>运费</span>
+                            <span id="shipping">¥0.00</span>
+                        </div>
+                        <div class="summary-row total-row">
+                            <span>应付总额</span>
+                            <span id="total">¥0.00</span>
+                        </div>
+                    </div>
+                    <button class="checkout-btn" id="submitOrder">提交订单</button>
+                </div>
             </div>
         </div>
     </main>

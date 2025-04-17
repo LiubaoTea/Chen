@@ -245,76 +245,16 @@
             const menuItems = document.querySelectorAll('.settings-menu-item');
             const settingsContent = document.getElementById('settings-content');
 
-            // 初始化地址管理功能
-            function initAddressManagement() {
-                const addAddressBtn = document.getElementById('addAddressBtn');
-                const addressForm = document.getElementById('addressForm');
-                const newAddressForm = document.getElementById('newAddressForm');
-                const addressList = document.getElementById('addressList');
-
-                if (addAddressBtn) {
-                    addAddressBtn.addEventListener('click', function() {
-                        addressForm.style.display = 'block';
-                    });
-                }
-
-                if (newAddressForm) {
-                    newAddressForm.addEventListener('submit', async function(e) {
-                        e.preventDefault();
-                        
-                        const formData = {
-                            receiver: document.getElementById('receiver').value,
-                            phone: document.getElementById('phone').value,
-                            province: document.getElementById('province').value,
-                            city: document.getElementById('city').value,
-                            district: document.getElementById('district').value,
-                            address: document.getElementById('address').value,
-                            isDefault: document.getElementById('isDefault').checked
-                        };
-
-                        try {
-                            const token = localStorage.getItem('userToken');
-                            if (!token) {
-                                alert('请先登录');
-                                return;
-                            }
-
-                            const response = await fetch(`${API_BASE_URL}/api/address`, {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'Authorization': `Bearer ${token}`
-                                },
-                                body: JSON.stringify(formData)
-                            });
-
-                            if (!response.ok) {
-                                throw new Error('添加地址失败');
-                            }
-
-                            // 重新加载地址列表
-                            loadAddresses();
-                            
-                            // 清空并隐藏表单
-                            newAddressForm.reset();
-                            addressForm.style.display = 'none';
-                            
-                            alert('添加地址成功');
-                        } catch (error) {
-                            console.error('添加地址失败:', error);
-                            alert('添加地址失败，请重试');
-                        }
-                    });
-                }
-            }
-
             // 加载地址列表
-            async function loadAddresses() {
+            async function loadAddressList() {
                 try {
                     const token = localStorage.getItem('userToken');
-                    if (!token) return;
+                    if (!token) {
+                        alert('请先登录');
+                        return;
+                    }
 
-                    const response = await fetch(`${API_BASE_URL}/api/address`, {
+                    const response = await fetch(`${API_BASE_URL}/api/addresses`, {
                         headers: {
                             'Authorization': `Bearer ${token}`
                         }
@@ -326,35 +266,35 @@
 
                     const addresses = await response.json();
                     const addressList = document.getElementById('addressList');
-                    
                     if (addressList) {
-                        addressList.innerHTML = addresses.map(addr => `
-                            <div class="address-card">
-                                <h3>${addr.isDefault ? '默认地址' : '收货地址'}</h3>
-                                <p>${addr.receiver} ${addr.phone}</p>
-                                <p>${addr.province}${addr.city}${addr.district}${addr.address}</p>
+                        addressList.innerHTML = addresses.length ? addresses.map(address => `
+                            <div class="address-card ${address.is_default ? 'selected' : ''}">
+                                <h3>${address.is_default ? '默认地址' : '收货地址'}</h3>
+                                <p>${address.name} ${address.phone}</p>
+                                <p>${address.address}</p>
                                 <div style="margin-top: 10px;">
-                                    <a href="#" class="edit-address" data-id="${addr.id}" style="color: #8B4513; margin-right: 15px;">编辑</a>
-                                    <a href="#" class="delete-address" data-id="${addr.id}" style="color: #8B4513;">删除</a>
+                                    <a href="#" class="edit-address" data-id="${address.id}" style="color: #8B4513; margin-right: 15px;">编辑</a>
+                                    <a href="#" class="delete-address" data-id="${address.id}" style="color: #8B4513;">删除</a>
                                 </div>
                             </div>
-                        `).join('');
+                        `).join('') : '<p>暂无收货地址</p>';
 
                         // 添加编辑和删除事件监听
-                        document.querySelectorAll('.edit-address').forEach(btn => {
-                            btn.addEventListener('click', function(e) {
+                        addressList.querySelectorAll('.edit-address').forEach(btn => {
+                            btn.addEventListener('click', async (e) => {
                                 e.preventDefault();
+                                const addressId = btn.dataset.id;
                                 // TODO: 实现编辑地址功能
                             });
                         });
 
-                        document.querySelectorAll('.delete-address').forEach(btn => {
-                            btn.addEventListener('click', async function(e) {
+                        addressList.querySelectorAll('.delete-address').forEach(btn => {
+                            btn.addEventListener('click', async (e) => {
                                 e.preventDefault();
                                 if (confirm('确定要删除这个地址吗？')) {
+                                    const addressId = btn.dataset.id;
                                     try {
-                                        const addressId = this.getAttribute('data-id');
-                                        const response = await fetch(`${API_BASE_URL}/api/address/${addressId}`, {
+                                        const response = await fetch(`${API_BASE_URL}/api/addresses/${addressId}`, {
                                             method: 'DELETE',
                                             headers: {
                                                 'Authorization': `Bearer ${token}`
@@ -365,9 +305,7 @@
                                             throw new Error('删除地址失败');
                                         }
 
-                                        // 重新加载地址列表
-                                        loadAddresses();
-                                        alert('删除地址成功');
+                                        await loadAddressList(); // 重新加载地址列表
                                     } catch (error) {
                                         console.error('删除地址失败:', error);
                                         alert('删除地址失败，请重试');
@@ -378,6 +316,10 @@
                     }
                 } catch (error) {
                     console.error('加载地址列表失败:', error);
+                    const addressList = document.getElementById('addressList');
+                    if (addressList) {
+                        addressList.innerHTML = '<p>加载地址列表失败，请刷新重试</p>';
+                    }
                 }
             }
 
@@ -417,50 +359,29 @@
                             </div>
                             <button id="addAddressBtn" class="btn-save" style="margin-bottom: 20px;">添加新地址</button>
                             <div id="addressForm" style="display: none; margin-bottom: 20px;">
-                                <form id="newAddressForm">
-                                    <div class="form-group">
-                                        <label for="receiver">收货人</label>
-                                        <input type="text" id="receiver" name="receiver" required>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="phone">手机号码</label>
-                                        <input type="tel" id="phone" name="phone" required>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="province">省份</label>
-                                        <input type="text" id="province" name="province" required>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="city">城市</label>
-                                        <input type="text" id="city" name="city" required>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="district">区/县</label>
-                                        <input type="text" id="district" name="district" required>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="address">详细地址</label>
-                                        <input type="text" id="address" name="address" required>
-                                    </div>
-                                    <div class="form-group">
-                                        <label>
-                                            <input type="checkbox" id="isDefault" name="isDefault"> 设为默认地址
-                                        </label>
-                                    </div>
-                                    <button type="submit" class="btn-save">保存地址</button>
-                                    <button type="button" class="btn-save" style="background: #999;" onclick="document.getElementById('addressForm').style.display='none'">取消</button>
-                                </form>
+                                <div class="form-group">
+                                    <label for="name">收货人姓名</label>
+                                    <input type="text" id="name" name="name" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="phone">手机号码</label>
+                                    <input type="tel" id="phone" name="phone" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="address">详细地址</label>
+                                    <textarea id="address" name="address" rows="3" required></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label>
+                                        <input type="checkbox" id="isDefault" name="isDefault">
+                                        设为默认地址
+                                    </label>
+                                </div>
+                                <button type="button" class="btn-save" id="saveAddressBtn">保存地址</button>
+                                <button type="button" class="btn-save" id="cancelAddressBtn" style="background: #666; margin-left: 10px;">取消</button>
                             </div>
                             <div class="address-list" id="addressList">
-                                <div class="address-card">
-                                    <h3>默认地址</h3>
-                                    <p>张三 13800138000</p>
-                                    <p>广东省广州市天河区天河路123号</p>
-                                    <div style="margin-top: 10px;">
-                                        <a href="#" style="color: #8B4513; margin-right: 15px;">编辑</a>
-                                        <a href="#" style="color: #8B4513;">删除</a>
-                                    </div>
-                                </div>
+                                <!-- 地址列表将通过JavaScript动态加载 -->
                             </div>
                         `;
                         break;
@@ -528,6 +449,88 @@
                     this.classList.add('active');
                     // 加载对应的设置内容
                     loadSettingsContent(this.dataset.section);
+                    // 如果是地址设置，加载地址列表
+                    if (this.dataset.section === 'address') {
+                        loadAddressList();
+                        // 添加新地址按钮事件
+                        const addAddressBtn = document.getElementById('addAddressBtn');
+                        const addressForm = document.getElementById('addressForm');
+                        const saveAddressBtn = document.getElementById('saveAddressBtn');
+                        const cancelAddressBtn = document.getElementById('cancelAddressBtn');
+
+                        if (addAddressBtn && addressForm) {
+                            addAddressBtn.addEventListener('click', () => {
+                                addressForm.style.display = 'block';
+                                addAddressBtn.style.display = 'none';
+                            });
+                        }
+
+                        if (cancelAddressBtn) {
+                            cancelAddressBtn.addEventListener('click', () => {
+                                addressForm.style.display = 'none';
+                                addAddressBtn.style.display = 'block';
+                                // 清空表单
+                                document.getElementById('name').value = '';
+                                document.getElementById('phone').value = '';
+                                document.getElementById('address').value = '';
+                                document.getElementById('isDefault').checked = false;
+                            });
+                        }
+
+                        if (saveAddressBtn) {
+                            saveAddressBtn.addEventListener('click', async () => {
+                                const name = document.getElementById('name').value.trim();
+                                const phone = document.getElementById('phone').value.trim();
+                                const address = document.getElementById('address').value.trim();
+                                const isDefault = document.getElementById('isDefault').checked;
+
+                                if (!name || !phone || !address) {
+                                    alert('请填写完整的地址信息');
+                                    return;
+                                }
+
+                                try {
+                                    const token = localStorage.getItem('userToken');
+                                    if (!token) {
+                                        alert('请先登录');
+                                        return;
+                                    }
+
+                                    const response = await fetch(`${API_BASE_URL}/api/addresses`, {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                            'Authorization': `Bearer ${token}`
+                                        },
+                                        body: JSON.stringify({
+                                            name,
+                                            phone,
+                                            address,
+                                            is_default: isDefault
+                                        })
+                                    });
+
+                                    if (!response.ok) {
+                                        throw new Error('保存地址失败');
+                                    }
+
+                                    // 清空并隐藏表单
+                                    addressForm.style.display = 'none';
+                                    addAddressBtn.style.display = 'block';
+                                    document.getElementById('name').value = '';
+                                    document.getElementById('phone').value = '';
+                                    document.getElementById('address').value = '';
+                                    document.getElementById('isDefault').checked = false;
+
+                                    // 重新加载地址列表
+                                    await loadAddressList();
+                                } catch (error) {
+                                    console.error('保存地址失败:', error);
+                                    alert('保存地址失败，请重试');
+                                }
+                            });
+                        }
+                    }
                 });
             });
         });

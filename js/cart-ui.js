@@ -1,5 +1,5 @@
 // 购物车UI相关功能
-import { API_BASE_URL } from './config.js';
+// 使用api.js中定义的API_BASE_URL
 
 // 更新购物车UI
 async function updateCartUI() {
