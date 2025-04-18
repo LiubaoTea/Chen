@@ -353,277 +353,133 @@ const handleCartOperations = async (request, env) => {
         });
     }
 
-    try {
-        const token = authHeader.split(' ')[1];
-        const decoded = JSON.parse(atob(token));
-        
-        // 确保userId存在
-        if (!decoded.userId) {
-            console.error('Token中缺少userId:', decoded);
-            return new Response(JSON.stringify({ error: '无效的用户令牌' }), {
-                status: 401,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
-        }
-        
-        const userId = decoded.userId;
-    } catch (error) {
-        console.error('Token解析失败:', error);
-        return new Response(JSON.stringify({ error: '无效的用户令牌', details: error.message }), {
-            status: 401,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-    }
+    const token = authHeader.split(' ')[1];
+    const decoded = JSON.parse(atob(token));
+    const userId = decoded.userId;
 
     // 检查或创建购物车会话
-    try {
-        const timestamp = new Date().toISOString();
-        console.log('检查购物车会话，用户ID:', userId);
-        
-        let session = await env.DB.prepare(
-            'SELECT * FROM shopping_sessions WHERE user_id = ? AND status = "active" AND expires_at > ?'
-        ).bind(userId, timestamp).first();
-        
-        if (!session) {
-            console.log('未找到有效会话，创建新会话');
-            const expiresAt = new Date(Date.now() + 24*60*60*1000).toISOString();
-            
-            try {
-                const result = await env.DB.prepare(
-                    'INSERT INTO shopping_sessions (user_id, status, created_at, expires_at) VALUES (?, ?, ?, ?) RETURNING *'
-                ).bind(userId, 'active', timestamp, expiresAt).first();
-                
-                if (!result) {
-                    throw new Error('创建会话失败，未返回结果');
-                }
-                
-                session = result;
-                console.log('创建新会话成功，会话ID:', session.session_id);
-            } catch (insertError) {
-                console.error('创建购物车会话失败:', insertError);
-                throw new Error(`创建购物车会话失败: ${insertError.message}`);
-            }
-        } else {
-            console.log('找到有效会话，会话ID:', session.session_id);
-        }
-    } catch (sessionError) {
-        console.error('检查或创建购物车会话失败:', sessionError);
-        return new Response(JSON.stringify({ error: '购物车会话处理失败', details: sessionError.message }), {
-            status: 500,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
+    const timestamp = new Date().toISOString();
+    let session = await env.DB.prepare(
+        'SELECT * FROM shopping_sessions WHERE user_id = ? AND status = "active" AND expires_at > ?'
+    ).bind(userId, timestamp).first();
+
+    if (!session) {
+        const result = await env.DB.prepare(
+            'INSERT INTO shopping_sessions (user_id, status, created_at, expires_at) VALUES (?, ?, ?, ?) RETURNING *'
+        ).bind(userId, 'active', timestamp, new Date(Date.now() + 24*60*60*1000).toISOString()).first();
+        session = result;
     }
 
     // 获取购物车内容
     if (path === '/api/cart' && request.method === 'GET') {
         try {
-            console.log('获取购物车内容，用户ID:', userId);
-            
             // 检查购物车会话是否存在且有效
-            const currentTime = new Date().toISOString();
             let session = await env.DB.prepare(
                 'SELECT * FROM shopping_sessions WHERE user_id = ? AND status = "active" AND expires_at > ?'
-            ).bind(userId, currentTime).first();
+            ).bind(userId, new Date().toISOString()).first();
 
             if (!session) {
-                console.log('未找到有效会话，创建新会话');
-                const expiresAt = new Date(Date.now() + 24*60*60*1000).toISOString();
-                
-                try {
-                    const result = await env.DB.prepare(
-                        'INSERT INTO shopping_sessions (user_id, status, created_at, expires_at) VALUES (?, ?, ?, ?) RETURNING *'
-                    ).bind(userId, 'active', currentTime, expiresAt).first();
-                    
-                    if (!result) {
-                        throw new Error('创建会话失败，未返回结果');
-                    }
-                    
-                    session = result;
-                    console.log('创建新会话成功，会话ID:', session.session_id);
-                } catch (insertError) {
-                    console.error('创建购物车会话失败:', insertError);
-                    throw new Error(`创建购物车会话失败: ${insertError.message}`);
-                }
-            } else {
-                console.log('找到有效会话，会话ID:', session.session_id);
+                // 创建新的购物车会话
+                const result = await env.DB.prepare(
+                    'INSERT INTO shopping_sessions (user_id, status, created_at, expires_at) VALUES (?, ?, ?, ?) RETURNING *'
+                ).bind(userId, 'active', new Date().toISOString(), new Date(Date.now() + 24*60*60*1000).toISOString()).first();
+                session = result;
             }
 
-            try {
-                console.log('查询购物车商品，会话ID:', session.session_id);
-                const cartItems = await env.DB.prepare(
-                    `SELECT c.*, p.name, p.price, p.image_filename 
-                    FROM carts c 
-                    JOIN products p ON c.product_id = p.product_id 
-                    WHERE c.user_id = ? AND c.session_id = ?`
-                ).bind(userId, session.session_id).all();
+            const cartItems = await env.DB.prepare(
+                `SELECT c.*, p.name, p.price, p.image_filename 
+                FROM carts c 
+                JOIN products p ON c.product_id = p.product_id 
+                WHERE c.user_id = ? AND c.session_id = ?`
+            ).bind(userId, session.session_id).all();
 
-                if (!cartItems || !cartItems.results) {
-                    console.log('购物车为空');
-                    const emptyResponse = new Response(JSON.stringify([]), {
-                        status: 200,
-                        headers: { 'Content-Type': 'application/json' }
-                    });
-                    return addCorsHeaders(emptyResponse, corsHeaders);
-                }
-
-                console.log('找到购物车商品数量:', cartItems.results.length);
-                
-                // 处理产品图片URL
-                const itemsWithImages = cartItems.results.map(item => {
-                    const imageUrl = `https://${env.R2_DOMAIN}/image/Goods/${item.image_filename}`;
-                    return { ...item, image_url: imageUrl };
-                });
-
-                const response = new Response(JSON.stringify(itemsWithImages), {
+            if (!cartItems.results) {
+                return new Response(JSON.stringify({ items: [] }), {
                     status: 200,
                     headers: { 'Content-Type': 'application/json' }
                 });
-                return addCorsHeaders(response, corsHeaders);
-            } catch (queryError) {
-                console.error('查询购物车商品失败:', queryError);
-                throw new Error(`查询购物车商品失败: ${queryError.message}`);
             }
-        } catch (error) {
-            console.error('获取购物车失败:', error);
-            const errorResponse = new Response(JSON.stringify({ error: '获取购物车失败', details: error.message }), {
-                status: 500,
+
+            // 处理产品图片URL
+            const itemsWithImages = cartItems.results.map(item => {
+                const imageUrl = `https://${env.R2_DOMAIN}/image/Goods/${item.image_filename}`;
+                return { ...item, image_url: imageUrl };
+            });
+
+            return new Response(JSON.stringify(itemsWithImages), {
+                status: 200,
                 headers: { 'Content-Type': 'application/json' }
             });
-            return addCorsHeaders(errorResponse, corsHeaders);
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '获取购物车失败', details: error.message }), {
+                status: 500,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
         }
     }
 
     // 添加商品到购物车
     if (path === '/api/cart/add' && request.method === 'POST') {
         try {
-            console.log('添加商品到购物车，用户ID:', userId);
-            
-            // 解析请求体
-            let requestBody;
-            try {
-                requestBody = await request.json();
-                console.log('请求体:', JSON.stringify(requestBody));
-            } catch (parseError) {
-                console.error('解析请求体失败:', parseError);
-                const errorResponse = new Response(JSON.stringify({ error: '无效的请求格式', details: parseError.message }), {
+            const { productId, quantity } = await request.json();
+            if (!productId || !quantity || typeof productId !== 'number' || typeof quantity !== 'number') {
+                return new Response(JSON.stringify({ error: '无效的商品ID或数量' }), {
                     status: 400,
-                    headers: { 'Content-Type': 'application/json' }
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
                 });
-                return addCorsHeaders(errorResponse, corsHeaders);
-            }
-            
-            const { productId, quantity } = requestBody;
-            
-            // 验证参数
-            if (!productId || !quantity) {
-                console.error('缺少必要参数:', requestBody);
-                const errorResponse = new Response(JSON.stringify({ error: '缺少必要参数' }), {
-                    status: 400,
-                    headers: { 'Content-Type': 'application/json' }
-                });
-                return addCorsHeaders(errorResponse, corsHeaders);
-            }
-            
-            // 确保productId和quantity是数字
-            const productIdNum = Number(productId);
-            const quantityNum = Number(quantity);
-            
-            if (isNaN(productIdNum) || isNaN(quantityNum) || quantityNum <= 0) {
-                console.error('无效的商品ID或数量:', { productId, quantity });
-                const errorResponse = new Response(JSON.stringify({ error: '无效的商品ID或数量' }), {
-                    status: 400,
-                    headers: { 'Content-Type': 'application/json' }
-                });
-                return addCorsHeaders(errorResponse, corsHeaders);
             }
 
             // 检查商品是否存在
-            console.log('检查商品是否存在，商品ID:', productIdNum);
             const product = await env.DB.prepare(
                 'SELECT * FROM products WHERE product_id = ?'
-            ).bind(productIdNum).first();
+            ).bind(productId).first();
 
             if (!product) {
-                console.error('商品不存在，商品ID:', productIdNum);
-                const errorResponse = new Response(JSON.stringify({ error: '商品不存在' }), {
+                return new Response(JSON.stringify({ error: '商品不存在' }), {
                     status: 404,
-                    headers: { 'Content-Type': 'application/json' }
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
                 });
-                return addCorsHeaders(errorResponse, corsHeaders);
             }
-            
-            console.log('商品存在，商品名称:', product.name);
 
             // 检查购物车会话是否有效
             const timestamp = new Date().toISOString();
-            console.log('检查购物车会话');
-            
-            let session;
-            try {
+            let session = await env.DB.prepare(
+                'SELECT * FROM shopping_sessions WHERE user_id = ? AND status = "active" AND expires_at > ?'
+            ).bind(userId, timestamp).first();
+
+            if (!session) {
+                // 创建新的购物车会话
                 session = await env.DB.prepare(
-                    'SELECT * FROM shopping_sessions WHERE user_id = ? AND status = "active" AND expires_at > ?'
-                ).bind(userId, timestamp).first();
-
-                if (!session) {
-                    console.log('未找到有效会话，创建新会话');
-                    const expiresAt = new Date(Date.now() + 24*60*60*1000).toISOString();
-                    
-                    const result = await env.DB.prepare(
-                        'INSERT INTO shopping_sessions (user_id, status, created_at, expires_at) VALUES (?, ?, ?, ?) RETURNING *'
-                    ).bind(userId, 'active', timestamp, expiresAt).first();
-                    
-                    if (!result) {
-                        throw new Error('创建会话失败，未返回结果');
-                    }
-                    
-                    session = result;
-                    console.log('创建新会话成功，会话ID:', session.session_id);
-                } else {
-                    console.log('找到有效会话，会话ID:', session.session_id);
-                }
-            } catch (sessionError) {
-                console.error('检查或创建购物车会话失败:', sessionError);
-                throw new Error(`检查或创建购物车会话失败: ${sessionError.message}`);
+                    'INSERT INTO shopping_sessions (user_id, status, created_at, expires_at) VALUES (?, ?, ?, ?) RETURNING *'
+                ).bind(userId, 'active', timestamp, new Date(Date.now() + 24*60*60*1000).toISOString()).first();
             }
 
-            try {
-                // 检查商品是否已在购物车中
-                console.log('检查商品是否已在购物车中');
-                const existingItem = await env.DB.prepare(
-                    'SELECT * FROM carts WHERE user_id = ? AND product_id = ? AND session_id = ?'
-                ).bind(userId, productIdNum, session.session_id).first();
+            // 检查商品是否已在购物车中
+            const existingItem = await env.DB.prepare(
+                'SELECT * FROM carts WHERE user_id = ? AND product_id = ? AND session_id = ?'
+            ).bind(userId, productId, session.session_id).first();
 
-                if (existingItem) {
-                    // 更新数量
-                    console.log('商品已在购物车中，更新数量');
-                    await env.DB.prepare(
-                        'UPDATE carts SET quantity = quantity + ? WHERE user_id = ? AND product_id = ? AND session_id = ?'
-                    ).bind(quantityNum, userId, productIdNum, session.session_id).run();
-                } else {
-                    // 添加新商品
-                    console.log('添加新商品到购物车');
-                    await env.DB.prepare(
-                        'INSERT INTO carts (user_id, product_id, quantity, added_at, session_id) VALUES (?, ?, ?, ?, ?)'
-                    ).bind(userId, productIdNum, quantityNum, timestamp, session.session_id).run();
-                }
-
-                console.log('添加商品到购物车成功');
-                const successResponse = new Response(JSON.stringify({ message: '添加成功' }), {
-                    status: 200,
-                    headers: { 'Content-Type': 'application/json' }
-                });
-                return addCorsHeaders(successResponse, corsHeaders);
-            } catch (cartError) {
-                console.error('操作购物车失败:', cartError);
-                throw new Error(`操作购物车失败: ${cartError.message}`);
+            if (existingItem) {
+                // 更新数量
+                await env.DB.prepare(
+                    'UPDATE carts SET quantity = quantity + ? WHERE user_id = ? AND product_id = ? AND session_id = ?'
+                ).bind(quantity, userId, productId, session.session_id).run();
+            } else {
+                // 添加新商品
+                await env.DB.prepare(
+                    'INSERT INTO carts (user_id, product_id, quantity, added_at, session_id) VALUES (?, ?, ?, ?, ?)'
+                ).bind(userId, productId, quantity, timestamp, session.session_id).run();
             }
-        } catch (error) {
-            console.error('添加到购物车失败:', error);
-            const errorResponse = new Response(JSON.stringify({ error: '添加到购物车失败', details: error.message }), {
-                status: 500,
-                headers: { 'Content-Type': 'application/json' }
+
+            return new Response(JSON.stringify({ message: '添加成功' }), {
+                status: 200,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             });
-            return addCorsHeaders(errorResponse, corsHeaders);
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '添加到购物车失败', details: error.message }), {
+                status: 500,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
         }
     }
 
@@ -744,27 +600,9 @@ const handleOrderOperations = async (request, env) => {
         });
     }
 
-    try {
-        const token = authHeader.split(' ')[1];
-        const decoded = JSON.parse(atob(token));
-        
-        // 确保userId存在
-        if (!decoded.userId) {
-            console.error('Token中缺少userId:', decoded);
-            return new Response(JSON.stringify({ error: '无效的用户令牌' }), {
-                status: 401,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
-        }
-        
-        const userId = decoded.userId;
-    } catch (error) {
-        console.error('Token解析失败:', error);
-        return new Response(JSON.stringify({ error: '无效的用户令牌', details: error.message }), {
-            status: 401,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-    }
+    const token = authHeader.split(' ')[1];
+    const decoded = JSON.parse(atob(token));
+    const userId = decoded.userId;
 
     // 创建订单
     if (path === '/api/orders' && request.method === 'POST') {
@@ -965,27 +803,9 @@ const handleUserCenter = async (request, env) => {
         });
     }
 
-    try {
-        const token = authHeader.split(' ')[1];
-        const decoded = JSON.parse(atob(token));
-        
-        // 确保userId存在
-        if (!decoded.userId) {
-            console.error('Token中缺少userId:', decoded);
-            return new Response(JSON.stringify({ error: '无效的用户令牌' }), {
-                status: 401,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
-        }
-        
-        const userId = decoded.userId;
-    } catch (error) {
-        console.error('Token解析失败:', error);
-        return new Response(JSON.stringify({ error: '无效的用户令牌', details: error.message }), {
-            status: 401,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-    }
+    const token = authHeader.split(' ')[1];
+    const decoded = JSON.parse(atob(token));
+    const userId = decoded.userId;
 
     // 获取用户个人资料
     if (path === '/api/user/profile' && request.method === 'GET') {
@@ -2018,7 +1838,10 @@ export default {
             }
 
             // 添加CORS头到响应
-            return addCorsHeaders(response, corsHeaders);
+            return new Response(response.body, {
+                status: response.status,
+                headers: { ...corsHeaders, ...response.headers }
+            });
         } catch (error) {
             return new Response(JSON.stringify({ 
                 error: '服务器错误', 
