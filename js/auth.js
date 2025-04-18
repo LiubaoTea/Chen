@@ -1,3 +1,9 @@
+// 从api.js导入用户认证相关函数
+import { loginUser, registerUser } from './api.js';
+
+// 重新导出这些函数，使其他模块可以通过auth.js访问
+export { loginUser, registerUser };
+
 // 用户认证状态检查
 export function checkAuthStatus() {
     // 检查本地存储中是否有用户token
