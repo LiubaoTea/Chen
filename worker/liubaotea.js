@@ -341,6 +341,11 @@ const handleCartOperations = async (request, env) => {
         return handleOptions(request);
     }
 
+    // 为所有响应添加CORS头
+    const addCorsToResponse = (response) => {
+        return addCorsHeaders(response, corsHeaders);
+    };
+
     const url = new URL(request.url);
     const path = url.pathname;
 
@@ -394,10 +399,10 @@ const handleCartOperations = async (request, env) => {
             ).bind(userId, session.session_id).all();
 
             if (!cartItems.results) {
-                return new Response(JSON.stringify({ items: [] }), {
+                return addCorsToResponse(new Response(JSON.stringify({ items: [] }), {
                     status: 200,
                     headers: { 'Content-Type': 'application/json' }
-                });
+                }));
             }
 
             // 处理产品图片URL
@@ -406,15 +411,15 @@ const handleCartOperations = async (request, env) => {
                 return { ...item, image_url: imageUrl };
             });
 
-            return new Response(JSON.stringify(itemsWithImages), {
+            return addCorsToResponse(new Response(JSON.stringify(itemsWithImages), {
                 status: 200,
                 headers: { 'Content-Type': 'application/json' }
-            });
+            }));
         } catch (error) {
-            return new Response(JSON.stringify({ error: '获取购物车失败', details: error.message }), {
+            return addCorsToResponse(new Response(JSON.stringify({ error: '获取购物车失败', details: error.message }), {
                 status: 500,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
+                headers: { 'Content-Type': 'application/json' }
+            }));
         }
     }
 
@@ -435,10 +440,10 @@ const handleCartOperations = async (request, env) => {
             ).bind(productId).first();
 
             if (!product) {
-                return new Response(JSON.stringify({ error: '商品不存在' }), {
+                return addCorsToResponse(new Response(JSON.stringify({ error: '商品不存在' }), {
                     status: 404,
-                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-                });
+                    headers: { 'Content-Type': 'application/json' }
+                }));
             }
 
             // 检查购物车会话是否有效
@@ -471,15 +476,15 @@ const handleCartOperations = async (request, env) => {
                 ).bind(userId, productId, quantity, timestamp, session.session_id).run();
             }
 
-            return new Response(JSON.stringify({ message: '添加成功' }), {
+            return addCorsToResponse(new Response(JSON.stringify({ message: '添加成功' }), {
                 status: 200,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
+                headers: { 'Content-Type': 'application/json' }
+            }));
         } catch (error) {
-            return new Response(JSON.stringify({ error: '添加到购物车失败', details: error.message }), {
+            return addCorsToResponse(new Response(JSON.stringify({ error: '添加到购物车失败', details: error.message }), {
                 status: 500,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
+                headers: { 'Content-Type': 'application/json' }
+            }));
         }
     }
 
@@ -504,15 +509,15 @@ const handleCartOperations = async (request, env) => {
                 'DELETE FROM carts WHERE user_id = ? AND product_id = ? AND session_id = ?'
             ).bind(userId, productId, session.session_id).run();
 
-            return new Response(JSON.stringify({ message: '移除成功' }), {
+            return addCorsToResponse(new Response(JSON.stringify({ message: '移除成功' }), {
                 status: 200,
                 headers: { 'Content-Type': 'application/json' }
-            });
+            }));
         } catch (error) {
-            return new Response(JSON.stringify({ error: '从购物车移除失败', details: error.message }), {
+            return addCorsToResponse(new Response(JSON.stringify({ error: '从购物车移除失败', details: error.message }), {
                 status: 500,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
+                headers: { 'Content-Type': 'application/json' }
+            }));
         }
     }
 
@@ -537,15 +542,15 @@ const handleCartOperations = async (request, env) => {
                 'UPDATE carts SET quantity = ? WHERE user_id = ? AND product_id = ? AND session_id = ?'
             ).bind(quantity, userId, productId, session.session_id).run();
 
-            return new Response(JSON.stringify({ message: '更新成功' }), {
+            return addCorsToResponse(new Response(JSON.stringify({ message: '更新成功' }), {
                 status: 200,
                 headers: { 'Content-Type': 'application/json' }
-            });
+            }));
         } catch (error) {
-            return new Response(JSON.stringify({ error: '更新购物车失败', details: error.message }), {
+            return addCorsToResponse(new Response(JSON.stringify({ error: '更新购物车失败', details: error.message }), {
                 status: 500,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
+                headers: { 'Content-Type': 'application/json' }
+            }));
         }
     }
 
@@ -618,10 +623,10 @@ const handleOrderOperations = async (request, env) => {
             ).bind(userId).all();
 
             if (!cartItems.results || cartItems.results.length === 0) {
-                return new Response(JSON.stringify({ error: '购物车为空' }), {
+                return addCorsToResponse(new Response(JSON.stringify({ error: '购物车为空' }), {
                     status: 400,
                     headers: { 'Content-Type': 'application/json' }
-                });
+                }));
             }
 
             // 计算订单总金额
@@ -659,14 +664,14 @@ const handleOrderOperations = async (request, env) => {
             // 清空购物车
             await env.DB.prepare('DELETE FROM carts WHERE user_id = ?').bind(userId).run();
 
-            return new Response(JSON.stringify({
+            return addCorsToResponse(new Response(JSON.stringify({
                 orderId,
                 total: orderTotal,
                 status: 'pending'
             }), {
                 status: 201,
                 headers: { 'Content-Type': 'application/json' }
-            });
+            }));
         } catch (error) {
             return new Response(JSON.stringify({ error: '创建订单失败', details: error.message }), {
                 status: 500,
@@ -686,10 +691,10 @@ const handleOrderOperations = async (request, env) => {
                 ORDER BY o.created_at DESC`
             ).bind(userId).all();
 
-            return new Response(JSON.stringify(orders.results), {
+            return addCorsToResponse(new Response(JSON.stringify(orders.results), {
                 status: 200,
                 headers: { 'Content-Type': 'application/json' }
-            });
+            }));
         } catch (error) {
             return new Response(JSON.stringify({ error: '获取订单列表失败', details: error.message }), {
                 status: 500,
@@ -771,10 +776,10 @@ const handleOrderOperations = async (request, env) => {
                 'UPDATE orders SET status = ? WHERE order_id = ?'
             ).bind(status, orderId).run();
 
-            return new Response(JSON.stringify({ message: '更新成功' }), {
+            return addCorsToResponse(new Response(JSON.stringify({ message: '更新成功' }), {
                 status: 200,
                 headers: { 'Content-Type': 'application/json' }
-            });
+            }));
         } catch (error) {
             return new Response(JSON.stringify({ error: '更新订单状态失败', details: error.message }), {
                 status: 500,
@@ -842,10 +847,10 @@ const handleUserCenter = async (request, env) => {
                 'UPDATE users SET username = ?, email = ? WHERE user_id = ?'
             ).bind(username, email, userId).run();
 
-            return new Response(JSON.stringify({ message: '更新成功' }), {
+            return addCorsToResponse(new Response(JSON.stringify({ message: '更新成功' }), {
                 status: 200,
                 headers: { 'Content-Type': 'application/json' }
-            });
+            }));
         } catch (error) {
             return new Response(JSON.stringify({ error: '更新用户信息失败', details: error.message }), {
                 status: 500,
@@ -1100,10 +1105,10 @@ const handleOrders = async (request, env) => {
                 'SELECT * FROM orders WHERE user_id = ? ORDER BY created_at DESC'
             ).bind(userId).all();
 
-            return new Response(JSON.stringify(orders.results), {
+            return addCorsToResponse(new Response(JSON.stringify(orders.results), {
                 status: 200,
                 headers: { 'Content-Type': 'application/json' }
-            });
+            }));
         } catch (error) {
             return new Response(JSON.stringify({ error: '获取订单列表失败', details: error.message }), {
                 status: 500,

@@ -115,10 +115,8 @@
         </div>
     </main>
 
-    <script type="module" src="./js/api.js"></script>
-    <script type="module" src="./js/auth.js"></script>
-    <script type="module" src="./js/contact-modal.js"></script>
     <script type="module">
+        import { registerUser } from './js/api.js';
         document.addEventListener('DOMContentLoaded', () => {
             const registerForm = document.getElementById('registerForm');
             
