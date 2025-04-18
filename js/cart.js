@@ -3,36 +3,50 @@ import { API_BASE_URL } from './config.js';
 
 // 获取购物车状态
 async function getCartStatus() {
-    try {
-        const token = localStorage.getItem('userToken');
-        if (!token) {
-            return [];
-        }
+    let retryCount = 0;
+    const maxRetries = 3;
+    const retryDelay = 1000; // 1秒
 
-        const response = await fetch(`${API_BASE_URL}/api/cart`, {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
-
-        if (!response.ok) {
-            // 如果是500错误，返回空购物车
-            if (response.status === 500) {
-                console.error('服务器错误，返回空购物车');
+    async function tryFetch() {
+        try {
+            const token = localStorage.getItem('userToken');
+            if (!token) {
                 return [];
             }
-            const error = await response.json();
-            throw new Error(error.error || '获取购物车状态失败');
-        }
 
-        const data = await response.json();
-        return data;
-    } catch (error) {
-        console.error('获取购物车状态失败:', error);
-        // 对于任何错误，返回空购物车
-        return [];
+            const response = await fetch(`${API_BASE_URL}/api/cart`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                if (response.status === 500 && retryCount < maxRetries) {
+                    console.warn(`服务器错误，第${retryCount + 1}次重试中...`);
+                    retryCount++;
+                    await new Promise(resolve => setTimeout(resolve, retryDelay));
+                    return await tryFetch();
+                }
+                const error = await response.json();
+                throw new Error(error.error || '获取购物车状态失败');
+            }
+
+            const data = await response.json();
+            return Array.isArray(data) ? data : [];
+        } catch (error) {
+            if (retryCount < maxRetries) {
+                console.warn(`获取购物车失败，第${retryCount + 1}次重试中...`);
+                retryCount++;
+                await new Promise(resolve => setTimeout(resolve, retryDelay));
+                return await tryFetch();
+            }
+            console.error('获取购物车状态失败:', error);
+            return [];
+        }
     }
+
+    return await tryFetch();
 }
 
 // 初始化购物车
