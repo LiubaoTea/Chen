@@ -1,11 +1,16 @@
 import { API_BASE_URL } from './config.js';
+import { loginUser } from './api.js';
 
 // 用户中心功能实现
 
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', () => {
     // 检查用户登录状态
-    if (!checkAuthStatus()) return;
+    if (!checkAuthStatus()) {
+        // 如果未登录，显示登录表单
+        showLoginForm();
+        return;
+    }
 
     // 获取并显示用户信息
     loadUserInfo();
@@ -16,6 +21,52 @@ document.addEventListener('DOMContentLoaded', () => {
     // 初始化退出登录按钮
     initLogoutButton();
 });
+
+// 显示登录表单
+function showLoginForm() {
+    const mainContent = document.querySelector('.user-container');
+    if (mainContent) {
+        mainContent.innerHTML = `
+            <div class="login-form-container">
+                <h2>用户登录</h2>
+                <form id="loginForm" class="login-form">
+                    <div class="form-group">
+                        <label for="username">用户名</label>
+                        <input type="text" id="username" name="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">密码</label>
+                        <input type="password" id="password" name="password" required>
+                    </div>
+                    <button type="submit" class="login-btn">登录</button>
+                    <p class="register-link">还没有账号？<a href="register.html">立即注册</a></p>
+                </form>
+            </div>
+        `;
+
+        // 添加登录表单提交事件
+        const loginForm = document.getElementById('loginForm');
+        if (loginForm) {
+            loginForm.addEventListener('submit', handleLogin);
+        }
+    }
+}
+
+// 处理登录提交
+async function handleLogin(e) {
+    e.preventDefault();
+    
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    
+    try {
+        await loginUser(username, password);
+        // 登录成功后重新加载页面
+        window.location.reload();
+    } catch (error) {
+        alert(error.message || '登录失败，请重试');
+    }
+}
 
 // 加载用户信息
 async function loadUserInfo() {
