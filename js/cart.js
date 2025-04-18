@@ -8,7 +8,7 @@ async function getCartStatus() {
     try {
         const token = localStorage.getItem('userToken');
         if (!token) {
-            throw new Error('未登录');
+            return [];
         }
 
         const response = await fetch(`${API_BASE_URL}/api/cart`, {
@@ -19,6 +19,11 @@ async function getCartStatus() {
         });
 
         if (!response.ok) {
+            // 如果是500错误，返回空购物车
+            if (response.status === 500) {
+                console.error('服务器错误，返回空购物车');
+                return [];
+            }
             const error = await response.json();
             throw new Error(error.error || '获取购物车状态失败');
         }
@@ -27,11 +32,8 @@ async function getCartStatus() {
         return data;
     } catch (error) {
         console.error('获取购物车状态失败:', error);
-        // 如果是未登录错误，直接返回空购物车
-        if (error.message === '未登录') {
-            return [];
-        }
-        throw error;
+        // 对于任何错误，返回空购物车
+        return [];
     }
 }
 
@@ -108,15 +110,18 @@ async function updateCartUI() {
         const cartFooter = document.getElementById('cartFooter');
         const cartCount = document.querySelector('.cart-count');
 
+        // 确保cartData是数组
+        const items = Array.isArray(cartData) ? cartData : [];
+
         // 更新购物车图标数量
         if (cartCount) {
-            const totalQuantity = cartData.reduce((sum, item) => sum + item.quantity, 0);
+            const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
             cartCount.textContent = totalQuantity;
             cartCount.style.display = totalQuantity > 0 ? 'block' : 'none';
         }
 
         // 如果购物车为空
-        if (cartData.length === 0) {
+        if (items.length === 0) {
             if (emptyCart) emptyCart.style.display = 'block';
             if (cartFooter) cartFooter.style.display = 'none';
             if (cartItemList) cartItemList.innerHTML = '';
@@ -248,6 +253,12 @@ async function addToCart(productId, quantity = 1) {
         });
 
         if (!response.ok) {
+            // 如果是500错误，显示友好提示
+            if (response.status === 500) {
+                console.error('服务器错误，请稍后重试');
+                alert('系统繁忙，请稍后重试');
+                return;
+            }
             const error = await response.json();
             throw new Error(error.error || '添加到购物车失败');
         }
@@ -258,12 +269,6 @@ async function addToCart(productId, quantity = 1) {
         alert('成功加入购物车！');
     } catch (error) {
         console.error('添加到购物车失败:', error);
-        // 检查是否是服务器错误
-        if (error.message.includes('500')) {
-            console.error('服务器错误，请稍后重试');
-            return;
-        }
-        // 如果不是服务器错误，显示错误提示
         alert('添加到购物车失败，请稍后重试');
     }
 }
