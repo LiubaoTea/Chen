@@ -1,4 +1,5 @@
 import { API_BASE_URL } from './config.js';
+import { checkAuthStatus } from './auth.js';
 
 // 用户中心功能实现
 
