@@ -5,10 +5,16 @@
 //                        一、CORS配置
 //==========================================================================
 const corsHeaders = {
+   
     'Access-Control-Allow-Origin': 'https://www.liubaotea.online',
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     'Access-Control-Max-Age': '86400'
+};
+
+// 添加CORS头的通用响应函数
+const addCorsToResponse = (response) => {
+    return addCorsHeaders(response, corsHeaders);
 };
 
 //==========================================================================
@@ -341,10 +347,7 @@ const handleCartOperations = async (request, env) => {
         return handleOptions(request);
     }
 
-    // 为所有响应添加CORS头
-    const addCorsToResponse = (response) => {
-        return addCorsHeaders(response, corsHeaders);
-    };
+    // 使用全局定义的addCorsToResponse函数
 
     const url = new URL(request.url);
     const path = url.pathname;
@@ -379,16 +382,28 @@ const handleCartOperations = async (request, env) => {
     if (path === '/api/cart' && request.method === 'GET') {
         try {
             // 检查购物车会话是否存在且有效
-            let session = await env.DB.prepare(
-                'SELECT * FROM shopping_sessions WHERE user_id = ? AND status = "active" AND expires_at > ?'
-            ).bind(userId, new Date().toISOString()).first();
+            let session;
+            try {
+                session = await env.DB.prepare(
+                    'SELECT * FROM shopping_sessions WHERE user_id = ? AND status = "active" AND expires_at > ?'
+                ).bind(userId, new Date().toISOString()).first();
 
-            if (!session) {
-                // 创建新的购物车会话
-                const result = await env.DB.prepare(
-                    'INSERT INTO shopping_sessions (user_id, status, created_at, expires_at) VALUES (?, ?, ?, ?) RETURNING *'
-                ).bind(userId, 'active', new Date().toISOString(), new Date(Date.now() + 24*60*60*1000).toISOString()).first();
-                session = result;
+                if (!session) {
+                    // 创建新的购物车会话
+                    const result = await env.DB.prepare(
+                        'INSERT INTO shopping_sessions (user_id, status, created_at, expires_at) VALUES (?, ?, ?, ?) RETURNING *'
+                    ).bind(userId, 'active', new Date().toISOString(), new Date(Date.now() + 24*60*60*1000).toISOString()).first();
+                    session = result;
+                }
+            } catch (error) {
+                console.error('购物车会话处理错误:', error);
+                return addCorsToResponse(new Response(JSON.stringify({ 
+                    error: '服务器错误', 
+                    details: '无法处理购物车会话'
+                }), {
+                    status: 500,
+                    headers: { 'Content-Type': 'application/json' }
+                }));
             }
 
             const cartItems = await env.DB.prepare(
@@ -459,21 +474,32 @@ const handleCartOperations = async (request, env) => {
                 ).bind(userId, 'active', timestamp, new Date(Date.now() + 24*60*60*1000).toISOString()).first();
             }
 
-            // 检查商品是否已在购物车中
-            const existingItem = await env.DB.prepare(
-                'SELECT * FROM carts WHERE user_id = ? AND product_id = ? AND session_id = ?'
-            ).bind(userId, productId, session.session_id).first();
+            try {
+                // 检查商品是否已在购物车中
+                const existingItem = await env.DB.prepare(
+                    'SELECT * FROM carts WHERE user_id = ? AND product_id = ? AND session_id = ?'
+                ).bind(userId, productId, session.session_id).first();
 
-            if (existingItem) {
-                // 更新数量
-                await env.DB.prepare(
-                    'UPDATE carts SET quantity = quantity + ? WHERE user_id = ? AND product_id = ? AND session_id = ?'
-                ).bind(quantity, userId, productId, session.session_id).run();
-            } else {
-                // 添加新商品
-                await env.DB.prepare(
-                    'INSERT INTO carts (user_id, product_id, quantity, added_at, session_id) VALUES (?, ?, ?, ?, ?)'
-                ).bind(userId, productId, quantity, timestamp, session.session_id).run();
+                if (existingItem) {
+                    // 更新数量
+                    await env.DB.prepare(
+                        'UPDATE carts SET quantity = quantity + ? WHERE user_id = ? AND product_id = ? AND session_id = ?'
+                    ).bind(quantity, userId, productId, session.session_id).run();
+                } else {
+                    // 添加新商品
+                    await env.DB.prepare(
+                        'INSERT INTO carts (user_id, product_id, quantity, added_at, session_id) VALUES (?, ?, ?, ?, ?)'
+                    ).bind(userId, productId, quantity, timestamp, session.session_id).run();
+                }
+            } catch (error) {
+                console.error('购物车操作数据库错误:', error);
+                return addCorsToResponse(new Response(JSON.stringify({ 
+                    error: '服务器错误', 
+                    details: '无法更新购物车'
+                }), {
+                    status: 500,
+                    headers: { 'Content-Type': 'application/json' }
+                }));
             }
 
             return addCorsToResponse(new Response(JSON.stringify({ message: '添加成功' }), {
