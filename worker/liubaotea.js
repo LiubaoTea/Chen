@@ -367,44 +367,32 @@ const handleCartOperations = async (request, env) => {
 
     // 检查或创建购物车会话
     const timestamp = new Date().toISOString();
-    let session = await env.DB.prepare(
-        'SELECT * FROM shopping_sessions WHERE user_id = ? AND status = "active" AND expires_at > ?'
-    ).bind(userId, timestamp).first();
+    let session;
+    try {
+        session = await env.DB.prepare(
+            'SELECT * FROM shopping_sessions WHERE user_id = ? AND status = "active" AND expires_at > ?'
+        ).bind(userId, timestamp).first();
 
-    if (!session) {
-        const result = await env.DB.prepare(
-            'INSERT INTO shopping_sessions (user_id, status, created_at, expires_at) VALUES (?, ?, ?, ?) RETURNING *'
-        ).bind(userId, 'active', timestamp, new Date(Date.now() + 24*60*60*1000).toISOString()).first();
-        session = result;
+        if (!session) {
+            // 创建新的购物车会话
+            session = await env.DB.prepare(
+                'INSERT INTO shopping_sessions (user_id, status, created_at, expires_at) VALUES (?, ?, ?, ?) RETURNING *'
+            ).bind(userId, 'active', timestamp, new Date(Date.now() + 7*24*60*60*1000).toISOString()).first();
+        }
+    } catch (error) {
+        console.error('购物车会话处理错误:', error);
+        return addCorsToResponse(new Response(JSON.stringify({ 
+            error: '服务器错误', 
+            details: '无法处理购物车会话'
+        }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json' }
+        }));
     }
 
     // 获取购物车内容
     if (path === '/api/cart' && request.method === 'GET') {
         try {
-            // 检查购物车会话是否存在且有效
-            let session;
-            try {
-                session = await env.DB.prepare(
-                    'SELECT * FROM shopping_sessions WHERE user_id = ? AND status = "active" AND expires_at > ?'
-                ).bind(userId, new Date().toISOString()).first();
-
-                if (!session) {
-                    // 创建新的购物车会话
-                    const result = await env.DB.prepare(
-                        'INSERT INTO shopping_sessions (user_id, status, created_at, expires_at) VALUES (?, ?, ?, ?) RETURNING *'
-                    ).bind(userId, 'active', new Date().toISOString(), new Date(Date.now() + 24*60*60*1000).toISOString()).first();
-                    session = result;
-                }
-            } catch (error) {
-                console.error('购物车会话处理错误:', error);
-                return addCorsToResponse(new Response(JSON.stringify({ 
-                    error: '服务器错误', 
-                    details: '无法处理购物车会话'
-                }), {
-                    status: 500,
-                    headers: { 'Content-Type': 'application/json' }
-                }));
-            }
 
             const cartItems = await env.DB.prepare(
                 `SELECT c.*, p.name, p.price, p.image_filename 
