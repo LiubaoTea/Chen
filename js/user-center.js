@@ -1,3 +1,5 @@
+import { API_BASE_URL } from './config.js';
+
 // 用户中心功能实现
 
 // 页面加载完成后初始化

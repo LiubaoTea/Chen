@@ -1,4 +1,5 @@
 // 使用api.js中定义的API_BASE_URL
+import { API_BASE_URL } from './config.js';
 
 // 等待DOM加载完成
 document.addEventListener('DOMContentLoaded', function() {

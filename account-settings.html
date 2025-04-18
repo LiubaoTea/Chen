@@ -240,7 +240,8 @@
         </div>
     </main>
 
-    <script>
+    <script type="module">
+        import { API_BASE_URL } from './js/config.js';
         document.addEventListener('DOMContentLoaded', function() {
             const menuItems = document.querySelectorAll('.settings-menu-item');
             const settingsContent = document.getElementById('settings-content');

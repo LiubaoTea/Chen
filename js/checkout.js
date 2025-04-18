@@ -1,5 +1,5 @@
-// API基础URL
-const API_BASE_URL = 'https://workers.liubaotea.online';
+// 导入API基础URL
+import { API_BASE_URL } from './config.js';
 
 // 生成订单编号
 function generateOrderNumber() {

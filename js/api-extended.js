@@ -1,7 +1,7 @@
-// 扩展API交互函数库
+// API交互函数库扩展
 
-// API基础URL，与api.js保持一致
-const API_BASE_URL = 'https://workers.liubaotea.online';
+// 导入API基础URL
+import { API_BASE_URL } from './config.js';
 
 // 用户地址管理API
 async function addUserAddress(addressData) {
