@@ -27,6 +27,10 @@ async function getCartStatus() {
         return data;
     } catch (error) {
         console.error('获取购物车状态失败:', error);
+        // 如果是未登录错误，直接返回空购物车
+        if (error.message === '未登录') {
+            return [];
+        }
         throw error;
     }
 }
@@ -157,7 +161,13 @@ async function updateCartUI() {
 
     } catch (error) {
         console.error('更新购物车UI失败:', error);
+        // 如果是未登录错误，不显示错误提示
         if (error.message !== '未登录') {
+            // 检查是否是服务器错误
+            if (error.message.includes('500')) {
+                console.error('服务器错误，请稍后重试');
+                return;
+            }
             alert('更新购物车失败，请刷新页面重试');
         }
     }
@@ -248,6 +258,12 @@ async function addToCart(productId, quantity = 1) {
         alert('成功加入购物车！');
     } catch (error) {
         console.error('添加到购物车失败:', error);
+        // 检查是否是服务器错误
+        if (error.message.includes('500')) {
+            console.error('服务器错误，请稍后重试');
+            return;
+        }
+        // 如果不是服务器错误，显示错误提示
         alert('添加到购物车失败，请稍后重试');
     }
 }
