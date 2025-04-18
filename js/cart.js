@@ -1,6 +1,5 @@
 // 购物车功能实现
 // 使用相对路径，这样请求会发送到当前服务器
-const API_BASE_URL = 'https://workers.liubaotea.online';
 // 获取购物车状态
 async function getCartStatus() {
     try {
