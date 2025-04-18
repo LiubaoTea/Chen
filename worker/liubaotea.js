@@ -2,7 +2,7 @@
 
 // CORS配置
 //==========================================================================
-//                         总、CORS配置
+//                        一、CORS配置
 //==========================================================================
 const corsHeaders = {
     'Access-Control-Allow-Origin': 'https://www.liubaotea.online',
@@ -11,9 +11,27 @@ const corsHeaders = {
     'Access-Control-Max-Age': '86400'
 };
 
+//==========================================================================
+//                          二、CORS头处理函数
+//                             处理跨域请求的CORS头
+//==========================================================================
+
+// 添加CORS头的辅助函数
+function addCorsHeaders(response, corsHeaders) {
+    const newHeaders = new Headers(response.headers);
+    Object.keys(corsHeaders).forEach(key => {
+        newHeaders.set(key, corsHeaders[key]);
+    });
+    return new Response(response.body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: newHeaders
+    });
+}
+
 
 //==========================================================================
-//                       处理OPTIONS预检请求
+//                       三、处理OPTIONS预检请求
 //==========================================================================
 const handleOptions = (request) => {
     return new Response(null, {
@@ -23,8 +41,8 @@ const handleOptions = (request) => {
 };
 
 //==========================================================================
-//                         一、用户相关API路由处理
-// 处理用户注册、登录和获取用户信息的相关请求
+//                         四、用户相关API路由处理
+//                 处理用户注册、登录和获取用户信息的相关请求
 //==========================================================================
 const handleUserAuth = async (request, env) => {
     // 处理OPTIONS预检请求
@@ -146,8 +164,8 @@ const handleUserAuth = async (request, env) => {
 };
 
 //==========================================================================
-//                      二、商品相关API路由处理
-// 处理商品列表、商品详情、商品筛选和相关商品推荐的请求
+//                      五、商品相关API路由处理
+//              处理商品列表、商品详情、商品筛选和相关商品推荐的请求
 //==========================================================================
 const handleProducts = async (request, env) => {
     const url = new URL(request.url);
@@ -214,21 +232,12 @@ const handleProducts = async (request, env) => {
             
             console.log('查询到商品数量:', products.results.length);
             
-            // 处理产品图片URL，使用统一的命名规则
-           // const productsWithImages = products.results.map(product => {
-              //  const imageUrl = `https://${env.R2_DOMAIN}/image/Goods/Goods_${product.product_id}.png`;
-            //    return { ...product, image_url: imageUrl };
-          //  });
-
              // 处理产品图片URL，将本地路径替换为R2存储路径
              const productsWithImages = products.results.map(product => {
              // 假设产品图片存储在R2的image/Goods目录下
                  const imageUrl = `https://${env.R2_DOMAIN}/image/Goods/${product.image_filename}`;
                 return { ...product, image_url: imageUrl };
               });
-
-
-
 
             return new Response(JSON.stringify(productsWithImages), {
                 status: 200,
@@ -323,8 +332,8 @@ const handleProducts = async (request, env) => {
 };
 
 //==========================================================================
-//                       三、购物车相关API路由处理
-// 处理购物车的添加、删除、更新和查询操作
+//                       六、购物车相关API路由处理
+//        主要的购物车处理函数，负责处理所有购物车相关的API请求（添加、删除、更新、查询等）
 //==========================================================================
 const handleCartOperations = async (request, env) => {
     // 处理OPTIONS预检请求
@@ -344,133 +353,277 @@ const handleCartOperations = async (request, env) => {
         });
     }
 
-    const token = authHeader.split(' ')[1];
-    const decoded = JSON.parse(atob(token));
-    const userId = decoded.userId;
+    try {
+        const token = authHeader.split(' ')[1];
+        const decoded = JSON.parse(atob(token));
+        
+        // 确保userId存在
+        if (!decoded.userId) {
+            console.error('Token中缺少userId:', decoded);
+            return new Response(JSON.stringify({ error: '无效的用户令牌' }), {
+                status: 401,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        }
+        
+        const userId = decoded.userId;
+    } catch (error) {
+        console.error('Token解析失败:', error);
+        return new Response(JSON.stringify({ error: '无效的用户令牌', details: error.message }), {
+            status: 401,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+    }
 
     // 检查或创建购物车会话
-    const timestamp = new Date().toISOString();
-    let session = await env.DB.prepare(
-        'SELECT * FROM shopping_sessions WHERE user_id = ? AND status = "active" AND expires_at > ?'
-    ).bind(userId, timestamp).first();
-
-    if (!session) {
-        const result = await env.DB.prepare(
-            'INSERT INTO shopping_sessions (user_id, status, created_at, expires_at) VALUES (?, ?, ?, ?) RETURNING *'
-        ).bind(userId, 'active', timestamp, new Date(Date.now() + 24*60*60*1000).toISOString()).first();
-        session = result;
+    try {
+        const timestamp = new Date().toISOString();
+        console.log('检查购物车会话，用户ID:', userId);
+        
+        let session = await env.DB.prepare(
+            'SELECT * FROM shopping_sessions WHERE user_id = ? AND status = "active" AND expires_at > ?'
+        ).bind(userId, timestamp).first();
+        
+        if (!session) {
+            console.log('未找到有效会话，创建新会话');
+            const expiresAt = new Date(Date.now() + 24*60*60*1000).toISOString();
+            
+            try {
+                const result = await env.DB.prepare(
+                    'INSERT INTO shopping_sessions (user_id, status, created_at, expires_at) VALUES (?, ?, ?, ?) RETURNING *'
+                ).bind(userId, 'active', timestamp, expiresAt).first();
+                
+                if (!result) {
+                    throw new Error('创建会话失败，未返回结果');
+                }
+                
+                session = result;
+                console.log('创建新会话成功，会话ID:', session.session_id);
+            } catch (insertError) {
+                console.error('创建购物车会话失败:', insertError);
+                throw new Error(`创建购物车会话失败: ${insertError.message}`);
+            }
+        } else {
+            console.log('找到有效会话，会话ID:', session.session_id);
+        }
+    } catch (sessionError) {
+        console.error('检查或创建购物车会话失败:', sessionError);
+        return new Response(JSON.stringify({ error: '购物车会话处理失败', details: sessionError.message }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
     }
 
     // 获取购物车内容
     if (path === '/api/cart' && request.method === 'GET') {
         try {
+            console.log('获取购物车内容，用户ID:', userId);
+            
             // 检查购物车会话是否存在且有效
+            const currentTime = new Date().toISOString();
             let session = await env.DB.prepare(
                 'SELECT * FROM shopping_sessions WHERE user_id = ? AND status = "active" AND expires_at > ?'
-            ).bind(userId, new Date().toISOString()).first();
+            ).bind(userId, currentTime).first();
 
             if (!session) {
-                // 创建新的购物车会话
-                const result = await env.DB.prepare(
-                    'INSERT INTO shopping_sessions (user_id, status, created_at, expires_at) VALUES (?, ?, ?, ?) RETURNING *'
-                ).bind(userId, 'active', new Date().toISOString(), new Date(Date.now() + 24*60*60*1000).toISOString()).first();
-                session = result;
+                console.log('未找到有效会话，创建新会话');
+                const expiresAt = new Date(Date.now() + 24*60*60*1000).toISOString();
+                
+                try {
+                    const result = await env.DB.prepare(
+                        'INSERT INTO shopping_sessions (user_id, status, created_at, expires_at) VALUES (?, ?, ?, ?) RETURNING *'
+                    ).bind(userId, 'active', currentTime, expiresAt).first();
+                    
+                    if (!result) {
+                        throw new Error('创建会话失败，未返回结果');
+                    }
+                    
+                    session = result;
+                    console.log('创建新会话成功，会话ID:', session.session_id);
+                } catch (insertError) {
+                    console.error('创建购物车会话失败:', insertError);
+                    throw new Error(`创建购物车会话失败: ${insertError.message}`);
+                }
+            } else {
+                console.log('找到有效会话，会话ID:', session.session_id);
             }
 
-            const cartItems = await env.DB.prepare(
-                `SELECT c.*, p.name, p.price, p.image_filename 
-                FROM carts c 
-                JOIN products p ON c.product_id = p.product_id 
-                WHERE c.user_id = ? AND c.session_id = ?`
-            ).bind(userId, session.session_id).all();
+            try {
+                console.log('查询购物车商品，会话ID:', session.session_id);
+                const cartItems = await env.DB.prepare(
+                    `SELECT c.*, p.name, p.price, p.image_filename 
+                    FROM carts c 
+                    JOIN products p ON c.product_id = p.product_id 
+                    WHERE c.user_id = ? AND c.session_id = ?`
+                ).bind(userId, session.session_id).all();
 
-            if (!cartItems.results) {
-                return new Response(JSON.stringify({ items: [] }), {
+                if (!cartItems || !cartItems.results) {
+                    console.log('购物车为空');
+                    const emptyResponse = new Response(JSON.stringify([]), {
+                        status: 200,
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                    return addCorsHeaders(emptyResponse, corsHeaders);
+                }
+
+                console.log('找到购物车商品数量:', cartItems.results.length);
+                
+                // 处理产品图片URL
+                const itemsWithImages = cartItems.results.map(item => {
+                    const imageUrl = `https://${env.R2_DOMAIN}/image/Goods/${item.image_filename}`;
+                    return { ...item, image_url: imageUrl };
+                });
+
+                const response = new Response(JSON.stringify(itemsWithImages), {
                     status: 200,
                     headers: { 'Content-Type': 'application/json' }
                 });
+                return addCorsHeaders(response, corsHeaders);
+            } catch (queryError) {
+                console.error('查询购物车商品失败:', queryError);
+                throw new Error(`查询购物车商品失败: ${queryError.message}`);
             }
-
-            // 处理产品图片URL
-            const itemsWithImages = cartItems.results.map(item => {
-                const imageUrl = `https://${env.R2_DOMAIN}/image/Goods/${item.image_filename}`;
-                return { ...item, image_url: imageUrl };
-            });
-
-            return new Response(JSON.stringify(itemsWithImages), {
-                status: 200,
+        } catch (error) {
+            console.error('获取购物车失败:', error);
+            const errorResponse = new Response(JSON.stringify({ error: '获取购物车失败', details: error.message }), {
+                status: 500,
                 headers: { 'Content-Type': 'application/json' }
             });
-        } catch (error) {
-            return new Response(JSON.stringify({ error: '获取购物车失败', details: error.message }), {
-                status: 500,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
+            return addCorsHeaders(errorResponse, corsHeaders);
         }
     }
 
     // 添加商品到购物车
     if (path === '/api/cart/add' && request.method === 'POST') {
         try {
-            const { productId, quantity } = await request.json();
-            if (!productId || !quantity || typeof productId !== 'number' || typeof quantity !== 'number') {
-                return new Response(JSON.stringify({ error: '无效的商品ID或数量' }), {
+            console.log('添加商品到购物车，用户ID:', userId);
+            
+            // 解析请求体
+            let requestBody;
+            try {
+                requestBody = await request.json();
+                console.log('请求体:', JSON.stringify(requestBody));
+            } catch (parseError) {
+                console.error('解析请求体失败:', parseError);
+                const errorResponse = new Response(JSON.stringify({ error: '无效的请求格式', details: parseError.message }), {
                     status: 400,
-                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                    headers: { 'Content-Type': 'application/json' }
                 });
+                return addCorsHeaders(errorResponse, corsHeaders);
+            }
+            
+            const { productId, quantity } = requestBody;
+            
+            // 验证参数
+            if (!productId || !quantity) {
+                console.error('缺少必要参数:', requestBody);
+                const errorResponse = new Response(JSON.stringify({ error: '缺少必要参数' }), {
+                    status: 400,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                return addCorsHeaders(errorResponse, corsHeaders);
+            }
+            
+            // 确保productId和quantity是数字
+            const productIdNum = Number(productId);
+            const quantityNum = Number(quantity);
+            
+            if (isNaN(productIdNum) || isNaN(quantityNum) || quantityNum <= 0) {
+                console.error('无效的商品ID或数量:', { productId, quantity });
+                const errorResponse = new Response(JSON.stringify({ error: '无效的商品ID或数量' }), {
+                    status: 400,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                return addCorsHeaders(errorResponse, corsHeaders);
             }
 
             // 检查商品是否存在
+            console.log('检查商品是否存在，商品ID:', productIdNum);
             const product = await env.DB.prepare(
                 'SELECT * FROM products WHERE product_id = ?'
-            ).bind(productId).first();
+            ).bind(productIdNum).first();
 
             if (!product) {
-                return new Response(JSON.stringify({ error: '商品不存在' }), {
+                console.error('商品不存在，商品ID:', productIdNum);
+                const errorResponse = new Response(JSON.stringify({ error: '商品不存在' }), {
                     status: 404,
-                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                    headers: { 'Content-Type': 'application/json' }
                 });
+                return addCorsHeaders(errorResponse, corsHeaders);
             }
+            
+            console.log('商品存在，商品名称:', product.name);
 
             // 检查购物车会话是否有效
             const timestamp = new Date().toISOString();
-            let session = await env.DB.prepare(
-                'SELECT * FROM shopping_sessions WHERE user_id = ? AND status = "active" AND expires_at > ?'
-            ).bind(userId, timestamp).first();
-
-            if (!session) {
-                // 创建新的购物车会话
+            console.log('检查购物车会话');
+            
+            let session;
+            try {
                 session = await env.DB.prepare(
-                    'INSERT INTO shopping_sessions (user_id, status, created_at, expires_at) VALUES (?, ?, ?, ?) RETURNING *'
-                ).bind(userId, 'active', timestamp, new Date(Date.now() + 24*60*60*1000).toISOString()).first();
+                    'SELECT * FROM shopping_sessions WHERE user_id = ? AND status = "active" AND expires_at > ?'
+                ).bind(userId, timestamp).first();
+
+                if (!session) {
+                    console.log('未找到有效会话，创建新会话');
+                    const expiresAt = new Date(Date.now() + 24*60*60*1000).toISOString();
+                    
+                    const result = await env.DB.prepare(
+                        'INSERT INTO shopping_sessions (user_id, status, created_at, expires_at) VALUES (?, ?, ?, ?) RETURNING *'
+                    ).bind(userId, 'active', timestamp, expiresAt).first();
+                    
+                    if (!result) {
+                        throw new Error('创建会话失败，未返回结果');
+                    }
+                    
+                    session = result;
+                    console.log('创建新会话成功，会话ID:', session.session_id);
+                } else {
+                    console.log('找到有效会话，会话ID:', session.session_id);
+                }
+            } catch (sessionError) {
+                console.error('检查或创建购物车会话失败:', sessionError);
+                throw new Error(`检查或创建购物车会话失败: ${sessionError.message}`);
             }
 
-            // 检查商品是否已在购物车中
-            const existingItem = await env.DB.prepare(
-                'SELECT * FROM carts WHERE user_id = ? AND product_id = ? AND session_id = ?'
-            ).bind(userId, productId, session.session_id).first();
+            try {
+                // 检查商品是否已在购物车中
+                console.log('检查商品是否已在购物车中');
+                const existingItem = await env.DB.prepare(
+                    'SELECT * FROM carts WHERE user_id = ? AND product_id = ? AND session_id = ?'
+                ).bind(userId, productIdNum, session.session_id).first();
 
-            if (existingItem) {
-                // 更新数量
-                await env.DB.prepare(
-                    'UPDATE carts SET quantity = quantity + ? WHERE user_id = ? AND product_id = ? AND session_id = ?'
-                ).bind(quantity, userId, productId, session.session_id).run();
-            } else {
-                // 添加新商品
-                await env.DB.prepare(
-                    'INSERT INTO carts (user_id, product_id, quantity, added_at, session_id) VALUES (?, ?, ?, ?, ?)'
-                ).bind(userId, productId, quantity, timestamp, session.session_id).run();
+                if (existingItem) {
+                    // 更新数量
+                    console.log('商品已在购物车中，更新数量');
+                    await env.DB.prepare(
+                        'UPDATE carts SET quantity = quantity + ? WHERE user_id = ? AND product_id = ? AND session_id = ?'
+                    ).bind(quantityNum, userId, productIdNum, session.session_id).run();
+                } else {
+                    // 添加新商品
+                    console.log('添加新商品到购物车');
+                    await env.DB.prepare(
+                        'INSERT INTO carts (user_id, product_id, quantity, added_at, session_id) VALUES (?, ?, ?, ?, ?)'
+                    ).bind(userId, productIdNum, quantityNum, timestamp, session.session_id).run();
+                }
+
+                console.log('添加商品到购物车成功');
+                const successResponse = new Response(JSON.stringify({ message: '添加成功' }), {
+                    status: 200,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                return addCorsHeaders(successResponse, corsHeaders);
+            } catch (cartError) {
+                console.error('操作购物车失败:', cartError);
+                throw new Error(`操作购物车失败: ${cartError.message}`);
             }
-
-            return new Response(JSON.stringify({ message: '添加成功' }), {
-                status: 200,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
         } catch (error) {
-            return new Response(JSON.stringify({ error: '添加到购物车失败', details: error.message }), {
+            console.error('添加到购物车失败:', error);
+            const errorResponse = new Response(JSON.stringify({ error: '添加到购物车失败', details: error.message }), {
                 status: 500,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                headers: { 'Content-Type': 'application/json' }
             });
+            return addCorsHeaders(errorResponse, corsHeaders);
         }
     }
 
@@ -575,8 +728,8 @@ const handleCartOperations = async (request, env) => {
 };
 
 //==========================================================================
-//                         四、订单和支付相关API路由处理
-// 处理订单创建、订单状态更新和支付处理等功能
+//                         七、订单和支付相关API路由处理
+//                      处理订单创建、订单状态更新和支付处理等功能
 //==========================================================================
 const handleOrderOperations = async (request, env) => {
     const url = new URL(request.url);
@@ -591,9 +744,27 @@ const handleOrderOperations = async (request, env) => {
         });
     }
 
-    const token = authHeader.split(' ')[1];
-    const decoded = JSON.parse(atob(token));
-    const userId = decoded.userId;
+    try {
+        const token = authHeader.split(' ')[1];
+        const decoded = JSON.parse(atob(token));
+        
+        // 确保userId存在
+        if (!decoded.userId) {
+            console.error('Token中缺少userId:', decoded);
+            return new Response(JSON.stringify({ error: '无效的用户令牌' }), {
+                status: 401,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        }
+        
+        const userId = decoded.userId;
+    } catch (error) {
+        console.error('Token解析失败:', error);
+        return new Response(JSON.stringify({ error: '无效的用户令牌', details: error.message }), {
+            status: 401,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+    }
 
     // 创建订单
     if (path === '/api/orders' && request.method === 'POST') {
@@ -778,8 +949,8 @@ const handleOrderOperations = async (request, env) => {
 };
 
 //==========================================================================
-//                            五、用户中心相关API路由处理
-// 处理用户信息更新、地址管理和通知设置等功能
+//                            八、用户中心相关API路由处理
+//                     处理用户信息更新、地址管理和通知设置等功能
 //==========================================================================
 const handleUserCenter = async (request, env) => {
     const url = new URL(request.url);
@@ -794,9 +965,27 @@ const handleUserCenter = async (request, env) => {
         });
     }
 
-    const token = authHeader.split(' ')[1];
-    const decoded = JSON.parse(atob(token));
-    const userId = decoded.userId;
+    try {
+        const token = authHeader.split(' ')[1];
+        const decoded = JSON.parse(atob(token));
+        
+        // 确保userId存在
+        if (!decoded.userId) {
+            console.error('Token中缺少userId:', decoded);
+            return new Response(JSON.stringify({ error: '无效的用户令牌' }), {
+                status: 401,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        }
+        
+        const userId = decoded.userId;
+    } catch (error) {
+        console.error('Token解析失败:', error);
+        return new Response(JSON.stringify({ error: '无效的用户令牌', details: error.message }), {
+            status: 401,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+    }
 
     // 获取用户个人资料
     if (path === '/api/user/profile' && request.method === 'GET') {
@@ -1006,8 +1195,8 @@ const handleUserCenter = async (request, env) => {
 };
 
 //==========================================================================
-//                           五、订单相关API路由处理
-// 处理订单创建、订单列表查询和订单详情的相关请求
+//                           九、订单相关API路由处理
+//                  处理订单创建、订单列表查询和订单详情的相关请求
 //==========================================================================
 const handleOrders = async (request, env) => {
     const url = new URL(request.url);
@@ -1166,8 +1355,8 @@ const handleOrders = async (request, env) => {
 };
 
 //==========================================================================
-//                                六、图片处理API
-// 处理从R2存储获取商品图片的请求
+//                                十、图片处理API
+//                            处理从R2存储获取商品图片的请求
 //==========================================================================
 const handleImageRequest = async (request, env) => {
     const url = new URL(request.url);
@@ -1199,8 +1388,8 @@ const handleImageRequest = async (request, env) => {
 };
 
 //==========================================================================
-//                         七、用户地址管理API路由处理
-// 处理用户地址的添加、查询、更新和删除
+//                         十一、用户地址管理API路由处理
+//                       处理用户地址的添加、查询、更新和删除
 //==========================================================================
 const handleUserAddress = async (request, env) => {
     const url = new URL(request.url);
@@ -1348,8 +1537,8 @@ const handleUserAddress = async (request, env) => {
 };
 
 //==========================================================================
-//                            八、用户设置API路由处理
-// 处理用户设置的查询和更新
+//                            十二、用户设置API路由处理
+//                            处理用户设置的查询和更新
 //==========================================================================
 const handleUserSettings = async (request, env) => {
     const url = new URL(request.url);
@@ -1437,8 +1626,8 @@ const handleUserSettings = async (request, env) => {
 };
 
 //==========================================================================
-//                              九、商品分类API路由处理
-// 处理商品分类的查询和管理
+//                              十三、商品分类API路由处理
+//                             处理商品分类的查询和管理
 //==========================================================================
 const handleProductCategories = async (request, env) => {
     const url = new URL(request.url);
@@ -1526,8 +1715,8 @@ const handleProductCategories = async (request, env) => {
 };
 
 //==========================================================================
-//                              十、商品评价API路由处理
-// 处理商品评价的添加、查询和管理
+//                              十四、商品评价API路由处理
+//                              处理商品评价的添加、查询和管理
 //==========================================================================
 const handleProductReviews = async (request, env) => {
     const url = new URL(request.url);
@@ -1624,27 +1813,11 @@ const handleProductReviews = async (request, env) => {
     return new Response('Not Found', { status: 404 });
 };
 
-//==========================================================================
-//                           十一、CORS头处理函数
-// 处理跨域请求的CORS头
-//==========================================================================
 
-// 添加CORS头的辅助函数
-function addCorsHeaders(response, corsHeaders) {
-    const newHeaders = new Headers(response.headers);
-    Object.keys(corsHeaders).forEach(key => {
-        newHeaders.set(key, corsHeaders[key]);
-    });
-    return new Response(response.body, {
-        status: response.status,
-        statusText: response.statusText,
-        headers: newHeaders
-    });
-}
 
 //==========================================================================
-//                           十二、购物会话API路由处理
-// 处理购物会话的创建、更新和管理
+//                           十五、购物会话API路由处理
+//                           处理购物会话的创建、更新和管理
 //==========================================================================
 const handleShoppingSession = async (request, env) => {
     const url = new URL(request.url);
@@ -1729,8 +1902,8 @@ const handleShoppingSession = async (request, env) => {
 }
 
 //==========================================================================
-//                              十三、购物车相关API路由处理
-// 处理购物车添加商品、查看购物车和更新购物车的相关请求
+//                              十六、各函数相关API路由处理
+//                                处理各个函数的API相关请求
 //==========================================================================
 
 // 主函数：处理所有API请求
@@ -1762,7 +1935,7 @@ const handleRequest = {
 
             // 处理购物车相关请求
             if (path.startsWith('/api/cart')) {
-                return handleCart(request, env);
+                return handleCartOperations(request, env);
             }
 
             // 处理用户地址相关请求
@@ -1801,238 +1974,20 @@ const handleRequest = {
 };
 
 //==========================================================================
-//                         十四、购物车相关API路由处理
-// 处理购物车添加商品、查看购物车和更新购物车的相关请求
+//                         十五、购物车相关API路由处理（已合并到handleCartOperations）
 //==========================================================================
-const handleCart = async (request, env) => {
-    const url = new URL(request.url);
-    const path = url.pathname;
 
-    // 添加商品到购物车
-    if (path === '/api/cart/add' && request.method === 'POST') {
-        try {
-            // 从请求头中获取token
-            const authHeader = request.headers.get('Authorization');
-            if (!authHeader || !authHeader.startsWith('Bearer ')) {
-                return new Response(JSON.stringify({ error: '未授权访问' }), {
-                    status: 401,
-                    headers: { 'Content-Type': 'application/json' }
-                });
-            }
 
-            const token = authHeader.split(' ')[1];
-            const decoded = JSON.parse(atob(token));
-            const userId = decoded.userId;
-
-            const { productId, quantity } = await request.json();
-
-            // 验证商品库存
-            const product = await env.DB.prepare(
-                'SELECT stock FROM products WHERE product_id = ?'
-            ).bind(productId).first();
-
-            if (!product) {
-                return new Response(JSON.stringify({ error: '商品不存在' }), {
-                    status: 404,
-                    headers: { 'Content-Type': 'application/json' }
-                });
-            }
-
-            if (product.stock < quantity) {
-                return new Response(JSON.stringify({ error: '库存不足' }), {
-                    status: 400,
-                    headers: { 'Content-Type': 'application/json' }
-                });
-            }
-
-            // 检查购物车中是否已存在该商品
-            const existingItem = await env.DB.prepare(
-                'SELECT cart_id, quantity FROM carts WHERE user_id = ? AND product_id = ?'
-            ).bind(userId, productId).first();
-
-            const timestamp = new Date().toISOString();
-
-            if (existingItem) {
-                // 更新现有购物车项的数量
-                await env.DB.prepare(
-                    'UPDATE carts SET quantity = quantity + ? WHERE cart_id = ?'
-                ).bind(quantity, existingItem.cart_id).run();
-            } else {
-                // 添加新的购物车项
-                await env.DB.prepare(
-                    'INSERT INTO carts (user_id, product_id, quantity, added_at) VALUES (?, ?, ?, ?)'
-                ).bind(userId, productId, quantity, timestamp).run();
-            }
-
-            return new Response(JSON.stringify({ message: '添加到购物车成功' }), {
-                status: 200,
-                headers: { 'Content-Type': 'application/json' }
-            });
-        } catch (error) {
-            return new Response(JSON.stringify({ error: '添加到购物车失败', details: error.message }), {
-                status: 500,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
-        }
-    }
-
-    // 获取购物车内容
-    if (path === '/api/cart' && request.method === 'GET') {
-        try {
-            const authHeader = request.headers.get('Authorization');
-            if (!authHeader || !authHeader.startsWith('Bearer ')) {
-                return new Response(JSON.stringify({ error: '未授权访问' }), {
-                    status: 401,
-                    headers: { 'Content-Type': 'application/json' }
-                });
-            }
-
-            const token = authHeader.split(' ')[1];
-            const decoded = JSON.parse(atob(token));
-            const userId = decoded.userId;
-
-            // 获取用户的购物车内容
-            const cartItems = await env.DB.prepare(
-                `SELECT c.cart_id, c.quantity, c.added_at, 
-                        p.product_id, p.name, p.price, p.image_filename
-                 FROM carts c
-                 JOIN products p ON c.product_id = p.product_id
-                 WHERE c.user_id = ?`
-            ).bind(userId).all();
-
-            // 处理产品图片URL
-            const itemsWithImages = cartItems.results.map(item => {
-                const imageUrl = `https://${env.R2_DOMAIN}/image/Goods/${item.image_filename}`;
-                return { ...item, image_url: imageUrl };
-            });
-
-            return new Response(JSON.stringify(itemsWithImages), {
-                status: 200,
-                headers: { 'Content-Type': 'application/json' }
-            });
-        } catch (error) {
-            return new Response(JSON.stringify({ error: '获取购物车失败', details: error.message }), {
-                status: 500,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
-        }
-    }
-
-    // 更新购物车商品数量
-    if (path === '/api/cart/update' && request.method === 'PUT') {
-        try {
-            const authHeader = request.headers.get('Authorization');
-            if (!authHeader || !authHeader.startsWith('Bearer ')) {
-                return new Response(JSON.stringify({ error: '未授权访问' }), {
-                    status: 401,
-                    headers: { 'Content-Type': 'application/json' }
-                });
-            }
-
-            const token = authHeader.split(' ')[1];
-            const decoded = JSON.parse(atob(token));
-            const userId = decoded.userId;
-
-            const { cartId, quantity } = await request.json();
-
-            // 验证购物车项属于当前用户
-            const cartItem = await env.DB.prepare(
-                'SELECT c.*, p.stock FROM carts c JOIN products p ON c.product_id = p.product_id WHERE c.cart_id = ? AND c.user_id = ?'
-            ).bind(cartId, userId).first();
-
-            if (!cartItem) {
-                return new Response(JSON.stringify({ error: '购物车项不存在或无权访问' }), {
-                    status: 404,
-                    headers: { 'Content-Type': 'application/json' }
-                });
-            }
-
-            // 检查库存
-            if (cartItem.stock < quantity) {
-                return new Response(JSON.stringify({ error: '库存不足' }), {
-                    status: 400,
-                    headers: { 'Content-Type': 'application/json' }
-                });
-            }
-
-            // 更新数量
-            await env.DB.prepare(
-                'UPDATE carts SET quantity = ? WHERE cart_id = ?'
-            ).bind(quantity, cartId).run();
-
-            return new Response(JSON.stringify({ message: '更新成功' }), {
-                status: 200,
-                headers: { 'Content-Type': 'application/json' }
-            });
-        } catch (error) {
-            return new Response(JSON.stringify({ error: '更新购物车失败', details: error.message }), {
-                status: 500,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
-        }
-    }
-
-    // 从购物车中删除商品
-    if (path === '/api/cart/remove' && request.method === 'DELETE') {
-        try {
-            const authHeader = request.headers.get('Authorization');
-            if (!authHeader || !authHeader.startsWith('Bearer ')) {
-                return new Response(JSON.stringify({ error: '未授权访问' }), {
-                    status: 401,
-                    headers: { 'Content-Type': 'application/json' }
-                });
-            }
-
-            const token = authHeader.split(' ')[1];
-            const decoded = JSON.parse(atob(token));
-            const userId = decoded.userId;
-
-            const { cartId } = await request.json();
-
-            // 验证购物车项属于当前用户
-            const cartItem = await env.DB.prepare(
-                'SELECT * FROM carts WHERE cart_id = ? AND user_id = ?'
-            ).bind(cartId, userId).first();
-
-            if (!cartItem) {
-                return new Response(JSON.stringify({ error: '购物车项不存在或无权访问' }), {
-                    status: 404,
-                    headers: { 'Content-Type': 'application/json' }
-                });
-            }
-
-            // 删除购物车项
-            await env.DB.prepare(
-                'DELETE FROM carts WHERE cart_id = ?'
-            ).bind(cartId).run();
-
-            return new Response(JSON.stringify({ message: '删除成功' }), {
-                status: 200,
-                headers: { 'Content-Type': 'application/json' }
-            });
-        } catch (error) {
-            return new Response(JSON.stringify({ error: '删除购物车项失败', details: error.message }), {
-                status: 500,
-                headers: { 'Content-Type': 'application/json' }
-            });
-        }
-    }
-
-    return new Response('Not Found', { status: 404 });
-};
-
-//                      十五、Worker主处理函数
+//                      
+//==========================================================================
+//                         十七、Worker主处理函数
+//==========================================================================
 export default {
     async fetch(request, env, ctx) {
         const url = new URL(request.url);
         
-        // 设置CORS头
-        const corsHeaders = {
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-            'Content-Type': 'application/json'
-        };
+        // 使用全局CORS配置
+        const headers = { ...corsHeaders, 'Content-Type': 'application/json' };
 
         // 处理预检请求
         if (request.method === 'OPTIONS') {
@@ -2063,10 +2018,7 @@ export default {
             }
 
             // 添加CORS头到响应
-            return new Response(response.body, {
-                status: response.status,
-                headers: { ...corsHeaders, ...response.headers }
-            });
+            return addCorsHeaders(response, corsHeaders);
         } catch (error) {
             return new Response(JSON.stringify({ 
                 error: '服务器错误', 
