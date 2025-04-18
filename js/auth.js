@@ -1,5 +1,5 @@
 // 用户认证状态检查
-function checkAuthStatus() {
+export function checkAuthStatus() {
     // 检查本地存储中是否有用户token
     const token = localStorage.getItem('userToken');
     if (!token) {

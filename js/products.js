@@ -61,7 +61,7 @@ async function loadProducts() {
                     </div>
                     <div class="product-price">
                         <span class="price">¥${product.price.toFixed(2)}</span>
-                        <a href="shop.html?id=${product.product_id}" class="btn-small">立即购买</a>
+                        <a href="product-detail.html?id=${product.product_id}" class="btn-small">立即购买</a>
                     </div>
                 </div>
             `;
