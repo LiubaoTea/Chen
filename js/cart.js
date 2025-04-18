@@ -1,8 +1,6 @@
 // 导入API配置
 import { API_BASE_URL } from './config.js';
 
-// 购物车功能实现
-// 使用相对路径，这样请求会发送到当前服务器
 // 获取购物车状态
 async function getCartStatus() {
     try {
