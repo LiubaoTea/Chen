@@ -366,18 +366,19 @@ const handleCartOperations = async (request, env) => {
     const userId = decoded.userId;
 
     // 检查或创建购物车会话
-    const timestamp = new Date().toISOString();
+    const currentTimestamp = Math.floor(Date.now() / 1000);
     let session;
     try {
         session = await env.DB.prepare(
             'SELECT * FROM shopping_sessions WHERE user_id = ? AND status = "active" AND expires_at > ?'
-        ).bind(userId, timestamp).first();
+        ).bind(userId, currentTimestamp).first();
 
         if (!session) {
             // 创建新的购物车会话
+            const expiresAt = currentTimestamp + (7 * 24 * 60 * 60); // 7天后过期
             session = await env.DB.prepare(
                 'INSERT INTO shopping_sessions (user_id, status, created_at, expires_at) VALUES (?, ?, ?, ?) RETURNING *'
-            ).bind(userId, 'active', timestamp, new Date(Date.now() + 7*24*60*60*1000).toISOString()).first();
+            ).bind(userId, 'active', currentTimestamp, expiresAt).first();
         }
     } catch (error) {
         console.error('购物车会话处理错误:', error);
@@ -450,16 +451,17 @@ const handleCartOperations = async (request, env) => {
             }
 
             // 检查购物车会话是否有效
-            const timestamp = new Date().toISOString();
+            const currentTimestamp = Math.floor(Date.now() / 1000);
             let session = await env.DB.prepare(
                 'SELECT * FROM shopping_sessions WHERE user_id = ? AND status = "active" AND expires_at > ?'
-            ).bind(userId, timestamp).first();
+            ).bind(userId, currentTimestamp).first();
 
             if (!session) {
                 // 创建新的购物车会话
+                const expiresAt = currentTimestamp + (24 * 60 * 60); // 24小时后过期
                 session = await env.DB.prepare(
                     'INSERT INTO shopping_sessions (user_id, status, created_at, expires_at) VALUES (?, ?, ?, ?) RETURNING *'
-                ).bind(userId, 'active', timestamp, new Date(Date.now() + 24*60*60*1000).toISOString()).first();
+                ).bind(userId, 'active', currentTimestamp, expiresAt).first();
             }
 
             try {
@@ -477,7 +479,7 @@ const handleCartOperations = async (request, env) => {
                     // 添加新商品
                     await env.DB.prepare(
                         'INSERT INTO carts (user_id, product_id, quantity, added_at, session_id) VALUES (?, ?, ?, ?, ?)'
-                    ).bind(userId, productId, quantity, timestamp, session.session_id).run();
+                    ).bind(userId, productId, quantity, currentTimestamp, session.session_id).run();
                 }
             } catch (error) {
                 console.error('购物车操作数据库错误:', error);

@@ -4,7 +4,7 @@ import { API_BASE_URL } from './config.js';
 // 获取购物车状态
 async function getCartStatus() {
     let retryCount = 0;
-    const maxRetries = 3;
+    const maxRetries = 1;
     const retryDelay = 1000; // 1秒
 
     async function tryFetch() {
