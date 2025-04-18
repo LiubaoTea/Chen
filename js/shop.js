@@ -1,5 +1,6 @@
-// 使用api.js中定义的API_BASE_URL
+// 使用api.js中定义的API_BASE_URL和getProducts函数
 import { API_BASE_URL } from './config.js';
+import { getProducts } from './api.js';
 
 // 等待DOM加载完成
 document.addEventListener('DOMContentLoaded', function() {
@@ -381,50 +382,7 @@ function initProductSort() {
     }
 }
 
-// 初始化添加到购物车按钮
-function initAddToCartButtons() {
-    const addToCartButtons = document.querySelectorAll('.add-to-cart');
-    
-    if (addToCartButtons) {
-        addToCartButtons.forEach(button => {
-            button.addEventListener('click', async function() {
-                try {
-                    const token = localStorage.getItem('userToken');
-                    if (!token) {
-                        alert('请先登录');
-                        return;
-                    }
 
-                    const productId = this.getAttribute('data-id');
-                    
-                    const response = await fetch(`${API_BASE_URL}/api/cart/add`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${token}`
-                        },
-                        body: JSON.stringify({
-                            productId: parseInt(productId),
-                            quantity: 1
-                        })
-                    });
-
-                    if (!response.ok) {
-                        const error = await response.json();
-                        throw new Error(error.error || '添加到购物车失败');
-                    }
-
-                    // 调用cart.js中的显示购物车和更新UI方法
-                    window.showCart();
-                    await window.updateCartUI();
-                } catch (error) {
-                    console.error('添加到购物车失败:', error);
-                    alert(error.message);
-                }
-            });
-        });
-    }
-}
 
 // 快速查看功能
 function initQuickView() {

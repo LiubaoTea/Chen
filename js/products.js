@@ -1,4 +1,5 @@
 import { API_BASE_URL } from './config.js';
+import { getProducts } from './api.js';
 
 // 等待DOM加载完成
 document.addEventListener('DOMContentLoaded', function() {

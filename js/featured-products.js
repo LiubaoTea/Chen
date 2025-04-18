@@ -1,3 +1,6 @@
+import { getProducts } from './api.js';
+import { API_BASE_URL } from './config.js';
+
 // 等待DOM加载完成
 document.addEventListener('DOMContentLoaded', function() {
     // 加载精选商品

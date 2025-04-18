@@ -4,7 +4,7 @@
 import { API_BASE_URL } from './config.js';
 
 // 用户注册
-async function registerUser(username, email, password) {
+export async function registerUser(username, email, password) {
     try {
         const response = await fetch(`${API_BASE_URL}/api/register`, {
             method: 'POST',
@@ -27,7 +27,7 @@ async function registerUser(username, email, password) {
 }
 
 // 用户登录
-async function loginUser(username, password) {
+export async function loginUser(username, password) {
     try {
         const response = await fetch(`${API_BASE_URL}/api/login`, {
             method: 'POST',
@@ -55,7 +55,7 @@ async function loginUser(username, password) {
 }
 
 // 获取用户信息
-async function getUserInfo() {
+export async function getUserInfo() {
     try {
         const token = localStorage.getItem('userToken');
         if (!token) {
@@ -82,7 +82,7 @@ async function getUserInfo() {
 }
 
 // 获取商品列表
-async function getProducts(filters = {}) {
+export async function getProducts(filters = {}) {
     try {
         // 构建查询参数
         const params = new URLSearchParams();
