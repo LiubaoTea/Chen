@@ -166,6 +166,86 @@ const handleUserAuth = async (request, env) => {
         }
     }
 
+    // 更新用户信息
+    if (path === '/api/user/profile' && request.method === 'PUT') {
+        try {
+            const authHeader = request.headers.get('Authorization');
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
+                    status: 401,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+
+            const token = authHeader.split(' ')[1];
+            const decoded = JSON.parse(atob(token));
+            const userId = decoded.userId;
+
+            const { username, email } = await request.json();
+            
+            // 更新用户信息
+            await env.DB.prepare(
+                'UPDATE users SET username = ?, email = ? WHERE user_id = ?'
+            ).bind(username, email, userId).run();
+
+            return new Response(JSON.stringify({ message: '用户信息更新成功' }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '更新用户信息失败', details: error.message }), {
+                status: 500,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        }
+    }
+
+    // 更新用户密码
+    if (path === '/api/user/password' && request.method === 'PUT') {
+        try {
+            const authHeader = request.headers.get('Authorization');
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
+                    status: 401,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+
+            const token = authHeader.split(' ')[1];
+            const decoded = JSON.parse(atob(token));
+            const userId = decoded.userId;
+
+            const { oldPassword, newPassword } = await request.json();
+
+            // 验证旧密码
+            const user = await env.DB.prepare(
+                'SELECT * FROM users WHERE user_id = ? AND password_hash = ?'
+            ).bind(userId, oldPassword).first();
+
+            if (!user) {
+                return new Response(JSON.stringify({ error: '原密码错误' }), {
+                    status: 400,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+
+            // 更新密码
+            await env.DB.prepare(
+                'UPDATE users SET password_hash = ? WHERE user_id = ?'
+            ).bind(newPassword, userId).run();
+
+            return new Response(JSON.stringify({ message: '密码更新成功' }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '更新密码失败', details: error.message }), {
+                status: 500,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        }
+    }
+
     return new Response('Not Found', { status: 404 });
 };
 
@@ -1010,10 +1090,18 @@ const handleUserCenter = async (request, env) => {
     if (path === '/api/addresses' && request.method === 'POST') {
         try {
             const addressData = await request.json();
-            const timestamp = new Date().toISOString();
+            const { recipient_name, contact_phone, full_address, region, postal_code, is_default } = addressData;
+            
+            // 验证必填字段
+            if (!recipient_name || !contact_phone || !full_address || !region) {
+                return new Response(JSON.stringify({ error: '缺少必填字段' }), {
+                    status: 400,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                });
+            }
 
             // 如果设置为默认地址，先将其他地址设置为非默认
-            if (addressData.is_default) {
+            if (is_default) {
                 await env.DB.prepare(
                     'UPDATE user_addresses SET is_default = 0 WHERE user_id = ?'
                 ).bind(userId).run();
@@ -1022,22 +1110,21 @@ const handleUserCenter = async (request, env) => {
             // 添加新地址
             await env.DB.prepare(
                 `INSERT INTO user_addresses 
-                (user_id, recipient_name, contact_phone, full_address, region, postal_code, is_default, created_at) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+                (user_id, recipient_name, contact_phone, full_address, region, postal_code, is_default) 
+                VALUES (?, ?, ?, ?, ?, ?, ?)`
             ).bind(
                 userId,
-                addressData.recipient_name,
-                addressData.contact_phone,
-                addressData.full_address,
-                addressData.region,
-                addressData.postal_code,
-                addressData.is_default ? 1 : 0,
-                timestamp
+                recipient_name,
+                contact_phone,
+                full_address,
+                region,
+                postal_code || '',
+                is_default ? 1 : 0
             ).run();
 
             return new Response(JSON.stringify({ message: '添加地址成功' }), {
                 status: 201,
-                headers: { 'Content-Type': 'application/json' }
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             });
         } catch (error) {
             return new Response(JSON.stringify({ error: '添加地址失败', details: error.message }), {
