@@ -440,7 +440,7 @@ async function loadOrderItems() {
 
         const items = await response.json();
         renderOrderItems(items);
-        updateOrderSummary(items);
+        updateOrderSummary();
 
     } catch (error) {
         console.error('加载订单商品失败:', error);
@@ -581,6 +581,26 @@ function updateOrderSummary() {
     document.getElementById('shipping').textContent = `¥${shipping.toFixed(2)}`;
     document.getElementById('total').textContent = `¥${total.toFixed(2)}`;
 }
+
+
+
+// 加载订单商品
+async function loadOrderItems() {
+    try {
+        const token = localStorage.getItem('userToken');
+        const response = await fetch(`${API_BASE_URL}/api/cart`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('获取购物车商品失败');
+        }
+
+        const items = await response.json();
+        renderOrderItems(items);
+        updateOrderSummary();
 
     } catch (error) {
         console.error('加载订单商品失败:', error);

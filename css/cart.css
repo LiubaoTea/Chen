@@ -137,6 +137,8 @@
     padding: 0;
     margin: 0;
     font-size: 0.875rem;
+    appearance: textfield;
+    -webkit-appearance: textfield;
     -moz-appearance: textfield;
 }
 
