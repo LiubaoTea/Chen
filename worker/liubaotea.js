@@ -342,7 +342,7 @@ const handleProducts = async (request, env) => {
 //        主要的购物车处理函数，负责处理所有购物车相关的API请求（添加、删除、更新、查询等）
 //==========================================================================
 const handleCartOperations = async (request, env) => {
-    console.log('开始处理购物车操作请求');
+    console.log('开始处理购物车请求:', request.method, request.url);
     
     // 处理OPTIONS预检请求
     if (request.method === 'OPTIONS') {
@@ -351,65 +351,65 @@ const handleCartOperations = async (request, env) => {
     }
 
     // 使用全局定义的addCorsToResponse函数
-
+    console.log('解析请求URL和路径');
     const url = new URL(request.url);
     const path = url.pathname;
 
-    // 验证用户身份认证
-    console.log('开始验证用户身份认证');
+    // 获取用户ID
+    console.log('开始验证用户授权');
     const authHeader = request.headers.get('Authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        console.log('用户认证失败：未提供有效的认证令牌');
+        console.error('授权头缺失或格式错误');
         return new Response(JSON.stringify({ error: '未授权访问' }), {
             status: 401,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
     }
 
-    // 解析用户令牌
-    console.log('开始解析用户令牌');
+    console.log('解析JWT令牌');
+    const token = authHeader.split(' ')[1];
+    let decoded, userId;
     try {
-        const token = authHeader.split(' ')[1];
-        const decoded = JSON.parse(atob(token));
-        const userId = decoded.userId;
-        console.log('用户令牌解析成功，用户ID:', userId);
+        decoded = JSON.parse(atob(token));
+        userId = decoded.userId;
+        console.log('成功获取用户ID:', userId);
     } catch (error) {
         console.error('令牌解析失败:', error);
-        return new Response(JSON.stringify({ error: '无效的认证令牌' }), {
+        return new Response(JSON.stringify({ error: '无效的授权令牌' }), {
             status: 401,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
     }
 
     // 检查或创建购物车会话
-    console.log('开始检查购物车会话状态');
+    console.log('开始处理购物车会话');
     const currentTimestamp = Math.floor(Date.now() / 1000);
+    console.log('当前时间戳:', currentTimestamp);
+    
     let session;
     try {
-        // 查询当前有效的购物车会话
-        console.log('查询用户的有效购物车会话');
+        console.log('查询现有购物车会话');
         session = await env.DB.prepare(
             'SELECT * FROM shopping_sessions WHERE user_id = ? AND status = "active" AND expires_at > ?'
         ).bind(userId, currentTimestamp).first();
-        console.log('购物车会话查询结果:', session);
 
         if (!session) {
+            console.log('未找到有效会话，创建新会话');
             // 创建新的购物车会话
-            console.log('未找到有效会话，创建新的购物车会话');
             const expiresAt = currentTimestamp + (7 * 24 * 60 * 60); // 7天后过期
+            console.log('新会话过期时间:', expiresAt);
             session = await env.DB.prepare(
                 'INSERT INTO shopping_sessions (user_id, status, created_at, expires_at) VALUES (?, ?, ?, ?) RETURNING *'
             ).bind(userId, 'active', currentTimestamp, expiresAt).first();
-            console.log('新会话创建成功:', session);
+            console.log('新会话创建成功，会话ID:', session.session_id);
+        } else {
+            console.log('找到现有会话，会话ID:', session.session_id);
         }
     } catch (error) {
         console.error('购物车会话处理错误:', error);
-        console.error('错误详情:', error.message);
-        console.error('错误堆栈:', error.stack);
         return addCorsToResponse(new Response(JSON.stringify({ 
             error: '服务器错误', 
-            details: '无法处理购物车会话',
-            message: error.message
+            details: '无法处理购物车会话'
         }), {
             status: 500,
             headers: { 'Content-Type': 'application/json' }
@@ -418,21 +418,34 @@ const handleCartOperations = async (request, env) => {
 
     // 获取购物车内容
     if (path === '/api/cart' && request.method === 'GET') {
-        console.log('处理获取购物车内容请求');
         try {
-            // 查询购物车商品信息
-            console.log('开始查询购物车商品，用户ID:', userId, '会话ID:', session.session_id);
+            // 如果没有有效会话，直接返回空购物车
+            if (!session) {
+                console.log('没有有效的购物车会话，返回空购物车');
+                return addCorsToResponse(new Response(JSON.stringify([]), {
+                    status: 200,
+                    headers: { 'Content-Type': 'application/json' }
+                }));
+            }
+
+            console.log('开始查询购物车内容，用户ID:', userId, '会话ID:', session.session_id);
+            
+            console.log('执行购物车查询，参数:', { userId, sessionId: session.session_id });
             const cartItems = await env.DB.prepare(
-                `SELECT c.*, p.name, p.price, p.image_filename 
-                FROM carts c 
-                JOIN products p ON c.product_id = p.product_id 
+                `SELECT c.cart_id, c.user_id, c.product_id, c.quantity, c.session_id,
+                        p.name, p.price,
+                        'Goods_' || p.product_id || '.png' as image_filename
+                FROM carts c
+                INNER JOIN products p ON c.product_id = p.product_id
                 WHERE c.user_id = ? AND c.session_id = ?`
             ).bind(userId, session.session_id).all();
+            console.log('SQL查询完成');
+
             console.log('购物车查询结果:', cartItems);
 
-            if (!cartItems.results) {
-                console.log('购物车为空，返回空数组');
-                return addCorsToResponse(new Response(JSON.stringify({ items: [] }), {
+            if (!cartItems || !cartItems.results || !Array.isArray(cartItems.results)) {
+                console.log('购物车为空或查询结果格式不正确');
+                return addCorsToResponse(new Response(JSON.stringify([]), {
                     status: 200,
                     headers: { 'Content-Type': 'application/json' }
                 }));
@@ -440,16 +453,26 @@ const handleCartOperations = async (request, env) => {
 
             // 处理产品图片URL
             const itemsWithImages = cartItems.results.map(item => {
-                const imageUrl = `https://${env.R2_DOMAIN}/image/Goods/${item.image_filename}`;
+                if (!item) return null;
+                const imageUrl = item.image_filename 
+                    ? `https://${env.R2_DOMAIN}/image/Goods/${item.image_filename}`
+                    : null;
                 return { ...item, image_url: imageUrl };
-            });
+            }).filter(item => item !== null);
+
+            console.log('处理后的购物车数据:', itemsWithImages);
 
             return addCorsToResponse(new Response(JSON.stringify(itemsWithImages), {
                 status: 200,
                 headers: { 'Content-Type': 'application/json' }
             }));
         } catch (error) {
-            return addCorsToResponse(new Response(JSON.stringify({ error: '获取购物车失败', details: error.message }), {
+            console.error('获取购物车失败:', error);
+            return addCorsToResponse(new Response(JSON.stringify({
+                error: '获取购物车失败',
+                details: error.message,
+                errorCode: 'CART_FETCH_ERROR'
+            }), {
                 status: 500,
                 headers: { 'Content-Type': 'application/json' }
             }));
@@ -458,16 +481,9 @@ const handleCartOperations = async (request, env) => {
 
     // 添加商品到购物车
     if (path === '/api/cart/add' && request.method === 'POST') {
-        console.log('处理添加商品到购物车请求');
         try {
-            // 解析请求数据
-            console.log('解析请求体数据');
             const { productId, quantity } = await request.json();
-            console.log('请求参数:', { productId, quantity });
-
-            // 验证请求参数
             if (!productId || !quantity || typeof productId !== 'number' || typeof quantity !== 'number') {
-                console.log('无效的请求参数:', { productId, quantity });
                 return new Response(JSON.stringify({ error: '无效的商品ID或数量' }), {
                     status: 400,
                     headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -648,27 +664,27 @@ const handleOrderOperations = async (request, env) => {
     const url = new URL(request.url);
     const path = url.pathname;
 
-    // 验证用户身份认证
-    console.log('开始验证用户身份认证');
+    // 获取用户ID
+    console.log('开始验证用户授权');
     const authHeader = request.headers.get('Authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        console.log('用户认证失败：未提供有效的认证令牌');
+        console.error('授权头缺失或格式错误');
         return new Response(JSON.stringify({ error: '未授权访问' }), {
             status: 401,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
     }
 
-    // 解析用户令牌
-    console.log('开始解析用户令牌');
+    console.log('解析JWT令牌');
+    const token = authHeader.split(' ')[1];
+    let decoded, userId;
     try {
-        const token = authHeader.split(' ')[1];
-        const decoded = JSON.parse(atob(token));
-        const userId = decoded.userId;
-        console.log('用户令牌解析成功，用户ID:', userId);
+        decoded = JSON.parse(atob(token));
+        userId = decoded.userId;
+        console.log('成功获取用户ID:', userId);
     } catch (error) {
         console.error('令牌解析失败:', error);
-        return new Response(JSON.stringify({ error: '无效的认证令牌' }), {
+        return new Response(JSON.stringify({ error: '无效的授权令牌' }), {
             status: 401,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
@@ -864,27 +880,27 @@ const handleUserCenter = async (request, env) => {
     const url = new URL(request.url);
     const path = url.pathname;
 
-    // 验证用户身份认证
-    console.log('开始验证用户身份认证');
+    // 获取用户ID
+    console.log('开始验证用户授权');
     const authHeader = request.headers.get('Authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        console.log('用户认证失败：未提供有效的认证令牌');
+        console.error('授权头缺失或格式错误');
         return new Response(JSON.stringify({ error: '未授权访问' }), {
             status: 401,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
     }
 
-    // 解析用户令牌
-    console.log('开始解析用户令牌');
+    console.log('解析JWT令牌');
+    const token = authHeader.split(' ')[1];
+    let decoded, userId;
     try {
-        const token = authHeader.split(' ')[1];
-        const decoded = JSON.parse(atob(token));
-        const userId = decoded.userId;
-        console.log('用户令牌解析成功，用户ID:', userId);
+        decoded = JSON.parse(atob(token));
+        userId = decoded.userId;
+        console.log('成功获取用户ID:', userId);
     } catch (error) {
         console.error('令牌解析失败:', error);
-        return new Response(JSON.stringify({ error: '无效的认证令牌' }), {
+        return new Response(JSON.stringify({ error: '无效的授权令牌' }), {
             status: 401,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
@@ -1307,20 +1323,9 @@ const handleUserAddress = async (request, env) => {
         });
     }
 
-    // 解析用户令牌
-    console.log('开始解析用户令牌');
-    try {
-        const token = authHeader.split(' ')[1];
-        const decoded = JSON.parse(atob(token));
-        const userId = decoded.userId;
-        console.log('用户令牌解析成功，用户ID:', userId);
-    } catch (error) {
-        console.error('令牌解析失败:', error);
-        return new Response(JSON.stringify({ error: '无效的认证令牌' }), {
-            status: 401,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-    }
+    const token = authHeader.split(' ')[1];
+    const decoded = JSON.parse(atob(token));
+    const userId = decoded.userId;
 
     // 添加新地址
     if (path === '/api/addresses' && request.method === 'POST') {
@@ -1467,20 +1472,9 @@ const handleUserSettings = async (request, env) => {
         });
     }
 
-    // 解析用户令牌
-    console.log('开始解析用户令牌');
-    try {
-        const token = authHeader.split(' ')[1];
-        const decoded = JSON.parse(atob(token));
-        const userId = decoded.userId;
-        console.log('用户令牌解析成功，用户ID:', userId);
-    } catch (error) {
-        console.error('令牌解析失败:', error);
-        return new Response(JSON.stringify({ error: '无效的认证令牌' }), {
-            status: 401,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-    }
+    const token = authHeader.split(' ')[1];
+    const decoded = JSON.parse(atob(token));
+    const userId = decoded.userId;
 
     // 获取用户设置
     if (path === '/api/settings' && request.method === 'GET') {
@@ -1757,20 +1751,9 @@ const handleShoppingSession = async (request, env) => {
         });
     }
 
-    // 解析用户令牌
-    console.log('开始解析用户令牌');
-    try {
-        const token = authHeader.split(' ')[1];
-        const decoded = JSON.parse(atob(token));
-        const userId = decoded.userId;
-        console.log('用户令牌解析成功，用户ID:', userId);
-    } catch (error) {
-        console.error('令牌解析失败:', error);
-        return new Response(JSON.stringify({ error: '无效的认证令牌' }), {
-            status: 401,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-    }
+    const token = authHeader.split(' ')[1];
+    const decoded = JSON.parse(atob(token));
+    const userId = decoded.userId;
 
     // 创建或更新购物会话
     if (path === '/api/shopping-session' && (request.method === 'POST' || request.method === 'PUT')) {
