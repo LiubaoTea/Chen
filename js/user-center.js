@@ -129,76 +129,83 @@ function initNavMenu() {
 
     navItems.forEach(item => {
         item.addEventListener('click', async () => {
-            // 移除所有导航项的active类
-            navItems.forEach(nav => nav.classList.remove('active'));
-            // 添加当前项的active类
-            item.classList.add('active');
+            try {
+                // 移除所有导航项的active类
+                navItems.forEach(nav => nav.classList.remove('active'));
+                // 添加当前项的active类
+                item.classList.add('active');
 
-            const section = item.getAttribute('data-section');
-            
-            // 根据不同的导航项加载对应的内容
-            switch(section) {
-                case 'orders':
-                    await loadOrders();
-                    break;
-                case 'profile':
-                    await showProfileSettings();
-                    break;
-                case 'security':
-                    showSecuritySettings();
-                    break;
-                case 'address':
-                    await showAddressSettings();
-                    break;
-                case 'notification':
-                    await showNotificationSettings();
-                    break;
+                const section = item.getAttribute('data-section');
+                contentArea.innerHTML = '<div class="loading">加载中...</div>';
+                
+                // 根据不同的导航项加载对应的内容
+                switch(section) {
+                    case 'orders':
+                        contentArea.innerHTML = `
+                            <h3>我的订单</h3>
+                            <div id="orderList" class="order-list">
+                                <!-- 订单列表将通过API动态加载 -->
+                            </div>
+                        `;
+                        await loadOrders();
+                        break;
+                    case 'profile':
+                        contentArea.innerHTML = `
+                            <h3>个人资料</h3>
+                            <div id="profileContent">
+                                <!-- 个人资料将通过API动态加载 -->
+                            </div>
+                        `;
+                        await showProfileSettings();
+                        break;
+                    case 'security':
+                        contentArea.innerHTML = `
+                            <h3>安全设置</h3>
+                            <div id="securityContent">
+                                <!-- 安全设置表单将通过API动态加载 -->
+                            </div>
+                        `;
+                        await showSecuritySettings();
+                        break;
+                    case 'address':
+                        await showAddressSettings();
+                        break;
+                    case 'notification':
+                        contentArea.innerHTML = `
+                            <h3>通知设置</h3>
+                            <div id="notificationContent">
+                                <!-- 通知设置将通过API动态加载 -->
+                            </div>
+                        `;
+                        await showNotificationSettings();
+                        break;
+                }
+            } catch (error) {
+                console.error('加载内容失败:', error);
+                contentArea.innerHTML = '<div class="error">加载失败，请重试</div>';
             }
         });
     });
+}
 }
 
 
 // 显示收货地址设置
 async function showAddressSettings() {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/user/addresses`, {
-            headers: {
-                'Authorization': `Bearer ${localStorage.getItem('userToken')}`
-            }
-        });
-
-        if (!response.ok) throw new Error('获取地址列表失败');
-        const addresses = await response.json();
-
-        let addressesHtml = addresses.map(address => `
-            <div class="address-item ${address.is_default ? 'default' : ''}">
-                <div class="address-info">
-                    <p><strong>${address.recipient_name}</strong> ${address.contact_phone}</p>
-                    <p>${address.region} ${address.full_address}</p>
-                    <p>邮编：${address.postal_code || '无'}</p>
-                </div>
-                <div class="address-actions">
-                    <button onclick="setDefaultAddress(${address.address_id})" 
-                            ${address.is_default ? 'disabled' : ''}>
-                        ${address.is_default ? '默认地址' : '设为默认'}
-                    </button>
-                    <button onclick="editAddress(${address.address_id})">编辑</button>
-                    <button onclick="deleteAddress(${address.address_id})">删除</button>
-                </div>
-            </div>
-        `).join('');
-
-        const content = `
+        const contentArea = document.getElementById('contentArea');
+        contentArea.innerHTML = `
             <h3>收货地址管理</h3>
-            <div class="address-list">
-                ${addressesHtml}
+            <div id="addressList">
+                <!-- 地址列表将通过API动态加载 -->
             </div>
-            <button onclick="showAddAddressForm()" class="btn-primary">添加新地址</button>
+            <button id="addAddressBtn" class="btn-primary">添加新地址</button>
         `;
 
-        const contentArea = document.getElementById('contentArea');
-        contentArea.innerHTML = content;
+        await loadAddressList();
+
+        // 添加新地址按钮事件
+        document.getElementById('addAddressBtn').addEventListener('click', showAddAddressForm);
     } catch (error) {
         console.error('加载地址列表失败:', error);
         alert('加载地址列表失败，请重试');
