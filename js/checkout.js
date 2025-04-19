@@ -38,42 +38,52 @@ document.addEventListener('DOMContentLoaded', async () => {
 // 初始化导航切换功能
 function initNavigation() {
     const navItems = document.querySelectorAll('.nav-item');
-    const contentSections = document.querySelectorAll('.nav-content');
+    const contentSections = document.querySelectorAll('.content-section');
 
     // 初始化时隐藏所有内容区域
-    contentSections.forEach(section => section.style.display = 'none');
+    contentSections.forEach(section => {
+        section.style.maxHeight = '0';
+        section.style.overflow = 'hidden';
+        section.style.transition = 'max-height 0.3s ease-out';
+    });
 
     navItems.forEach(item => {
         item.addEventListener('click', () => {
-            const sectionId = item.getAttribute('data-section');
-            const targetSection = document.getElementById(`${sectionId}-section`);
-
+            const section = item.getAttribute('data-section');
+            const targetSection = document.getElementById(`${section}-section`);
+            
             // 如果点击的是当前激活的导航项，则收起内容
             if (item.classList.contains('active')) {
                 item.classList.remove('active');
-                if (targetSection) targetSection.style.display = 'none';
+                if (targetSection) {
+                    targetSection.style.maxHeight = '0';
+                }
             } else {
-                // 移除所有导航项的active类
-                navItems.forEach(nav => nav.classList.remove('active'));
-                // 为当前点击的导航项添加active类
-                item.classList.add('active');
+                // 移除所有导航项的active类并收起其他内容
+                navItems.forEach(nav => {
+                    nav.classList.remove('active');
+                    const navSection = document.getElementById(`${nav.getAttribute('data-section')}-section`);
+                    if (navSection) {
+                        navSection.style.maxHeight = '0';
+                    }
+                });
 
-                // 隐藏所有内容区域
-                contentSections.forEach(section => section.style.display = 'none');
-                // 显示对应的内容区域
-                if (targetSection) targetSection.style.display = 'block';
+                // 展开当前点击的导航项内容
+                item.classList.add('active');
+                if (targetSection) {
+                    targetSection.style.maxHeight = targetSection.scrollHeight + 'px';
+                }
             }
         });
     });
 
-    // 默认显示第一个导航项的内容
+    // 默认展开第一个导航项
     const firstNavItem = navItems[0];
     if (firstNavItem) {
         firstNavItem.classList.add('active');
-        const firstSectionId = firstNavItem.getAttribute('data-section');
-        const firstSection = document.getElementById(`${firstSectionId}-section`);
+        const firstSection = document.getElementById(`${firstNavItem.getAttribute('data-section')}-section`);
         if (firstSection) {
-            firstSection.style.display = 'block';
+            firstSection.style.maxHeight = firstSection.scrollHeight + 'px';
         }
     }
 }
@@ -417,66 +427,67 @@ function updateOrderSummary() {
 // 加载订单商品
 async function loadOrderItems() {
     try {
-        const urlParams = new URLSearchParams(window.location.search);
-        const productId = urlParams.get('product');
-        const quantity = urlParams.get('quantity');
+        const token = localStorage.getItem('userToken');
+        const response = await fetch(`${API_BASE_URL}/api/cart`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
 
-        let items;
-        if (productId && quantity) {
-            // 直接购买商品
-            const response = await fetch(`${API_BASE_URL}/api/products/${productId}`);
-            if (!response.ok) {
-                throw new Error('获取商品信息失败');
-            }
-            const product = await response.json();
-            items = [{
-                product_id: product.product_id,
-                name: product.name,
-                price: product.price,
-                quantity: parseInt(quantity),
-                image_url: `/image/Goods/Goods_${product.product_id}.png`
-            }];
-        } else {
-            // 从购物车结算
-            const token = localStorage.getItem('userToken');
-            const response = await fetch(`${API_BASE_URL}/api/cart`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-            if (!response.ok) {
-                throw new Error('获取购物车信息失败');
-            }
-            items = await response.json();
+        if (!response.ok) {
+            throw new Error('获取购物车商品失败');
         }
 
-        // 显示订单商品
-        const orderItems = document.getElementById('orderItems');
+        const items = await response.json();
+        renderOrderItems(items);
+        updateOrderSummary(items);
+
+    } catch (error) {
+        console.error('加载订单商品失败:', error);
+        alert('加载订单商品失败，请刷新页面重试');
+    }
+}
+
+// 渲染订单商品
+function renderOrderItems(items) {
+    const orderItems = document.getElementById('orderItems');
+    const selectedItemsInfo = document.getElementById('selectedItemsInfo');
+
+    if (orderItems) {
         orderItems.innerHTML = items.map(item => `
-            <div class="order-item" data-id="${item.product_id}">
-                <div class="item-radio">
-                    <input type="checkbox" id="product_${item.product_id}" checked>
+            <div class="order-item">
+                <div class="order-item-left">
+                    <i class="fas fa-box-open"></i>
+                    <div class="order-item-image">
+                        <img src="https://r2liubaotea.liubaotea.online/image/Goods/Goods_${item.product_id}.png" alt="${item.name}">
+                    </div>
                 </div>
-                <div class="item-image">
-                    <img src="${item.image_url}" alt="${item.name}">
-                </div>
-                <div class="item-details">
-                    <div class="item-name">${item.name}</div>
-                    <div class="item-price">¥${item.price.toFixed(2)}</div>
-                    <div class="item-quantity">数量：${item.quantity}</div>
+                <div class="order-item-right">
+                    <div class="order-item-name">${item.name}</div>
+                    <div class="order-item-price">
+                        <i class="fas fa-yen-sign"></i>
+                        <span>¥${item.price.toFixed(2)} × ${item.quantity}</span>
+                    </div>
                 </div>
             </div>
         `).join('');
+    }
 
-        // 添加商品选择事件
-        const checkboxes = orderItems.querySelectorAll('input[type="checkbox"]');
-        checkboxes.forEach(checkbox => {
-            checkbox.addEventListener('change', () => {
-                updateOrderSummary();
-            });
-        });
-
-        updateOrderSummary(); // 更新订单总结
+    if (selectedItemsInfo) {
+        selectedItemsInfo.innerHTML = items.map(item => `
+            <div class="summary-item">
+                <div class="summary-item-left">
+                    <i class="fas fa-shopping-bag"></i>
+                    <span>${item.name}</span>
+                </div>
+                <div class="summary-item-right">
+                    <i class="fas fa-yen-sign"></i>
+                    <span>¥${item.price.toFixed(2)} × ${item.quantity}</span>
+                </div>
+            </div>
+        `).join('');
+    }
+}
 
         // 更新订单总结
 function updateOrderSummary() {
@@ -580,34 +591,44 @@ function updateOrderSummary() {
 // 初始化支付方式选择
 function initPaymentMethods() {
     const paymentMethods = document.querySelectorAll('.payment-method');
+    const selectedPaymentInfo = document.getElementById('selectedPaymentInfo');
+    
     paymentMethods.forEach(method => {
-        // 为每个支付方式添加radio input
-        if (!method.querySelector('input[type="radio"]')) {
-            const radio = document.createElement('input');
-            radio.type = 'radio';
-            radio.name = 'payment';
-            radio.style.display = 'none';
-            method.appendChild(radio);
-        }
-
         method.addEventListener('click', () => {
-            paymentMethods.forEach(m => {
-                m.classList.remove('selected');
-                const r = m.querySelector('input[type="radio"]');
-                if (r) r.checked = false;
-            });
+            paymentMethods.forEach(m => m.classList.remove('selected'));
             method.classList.add('selected');
-            const radio = method.querySelector('input[type="radio"]');
-            if (radio) radio.checked = true;
+            
+            const paymentMethod = method.getAttribute('data-method');
+            const paymentInfo = method.querySelector('.payment-method-name').textContent;
+            
+            // 更新右侧支付方式信息
+            if (selectedPaymentInfo) {
+                selectedPaymentInfo.innerHTML = `
+                    <div class="selected-payment-info">
+                        <i class="fas fa-credit-card"></i>
+                        <span>${paymentInfo}</span>
+                    </div>
+                `;
+            }
+            
             updateOrderSummary();
         });
     });
 
     // 默认选择第一个支付方式
     if (paymentMethods.length > 0) {
-        paymentMethods[0].classList.add('selected');
-        const firstRadio = paymentMethods[0].querySelector('input[type="radio"]');
-        if (firstRadio) firstRadio.checked = true;
+        const firstMethod = paymentMethods[0];
+        firstMethod.classList.add('selected');
+        
+        const paymentInfo = firstMethod.querySelector('.payment-method-name').textContent;
+        if (selectedPaymentInfo) {
+            selectedPaymentInfo.innerHTML = `
+                <div class="selected-payment-info">
+                    <i class="fas fa-credit-card"></i>
+                    <span>${paymentInfo}</span>
+                </div>
+            `;
+        }
     }
 }
 
