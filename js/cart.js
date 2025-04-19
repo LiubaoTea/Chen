@@ -297,7 +297,8 @@ async function removeFromCart(cartId) {
     try {
         const token = localStorage.getItem('userToken');
         if (!token) {
-            throw new Error('未登录');
+            window.location.href = 'login.html';
+            return;
         }
 
         const response = await fetch(`${API_BASE_URL}/api/cart/remove`, {
@@ -310,43 +311,55 @@ async function removeFromCart(cartId) {
         });
 
         if (!response.ok) {
+            if (response.status === 500) {
+                throw new Error('服务器错误，请稍后重试');
+            }
             const error = await response.json();
             throw new Error(error.error || '从购物车移除商品失败');
         }
 
         await updateCartUI();
+        return true;
     } catch (error) {
         console.error('从购物车移除商品失败:', error);
-        alert('从购物车移除商品失败，请稍后重试');
+        throw error;
     }
 }
 
 // 更新购物车中商品数量
 async function updateCartItemQuantity(cartId, quantity) {
-    const token = localStorage.getItem('userToken');
-    if (!token) {
-        window.location.href = 'login.html';
-        return;
+    try {
+        const token = localStorage.getItem('userToken');
+        if (!token) {
+            window.location.href = 'login.html';
+            return;
+        }
+
+        const response = await fetch(`${API_BASE_URL}/api/cart/update`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                cartId: parseInt(cartId),
+                quantity: parseInt(quantity)
+            })
+        });
+
+        if (!response.ok) {
+            if (response.status === 500) {
+                throw new Error('服务器错误，请稍后重试');
+            }
+            const error = await response.json();
+            throw new Error(error.error || '更新购物车商品数量失败');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('更新购物车商品数量失败:', error);
+        throw error;
     }
-
-    const response = await fetch(`${API_BASE_URL}/api/cart/update`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-            cartId: parseInt(cartId),
-            quantity: parseInt(quantity)
-        })
-    });
-
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || '更新购物车商品数量失败');
-    }
-
-    return response.json();
 }
 
 // 清空购物车

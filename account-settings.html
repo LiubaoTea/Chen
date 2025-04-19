@@ -542,7 +542,10 @@
     <script type="module" src="./js/cart.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // 初始化购物车
             initCart();
+            
+            // 添加购物车图标点击事件
             const cartToggle = document.getElementById('cartToggle');
             if (cartToggle) {
                 cartToggle.addEventListener('click', function(e) {
