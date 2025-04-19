@@ -37,6 +37,9 @@ function initNavigation() {
     const navItems = document.querySelectorAll('.nav-item');
     const contentSections = document.querySelectorAll('.nav-content');
 
+    // 初始化时隐藏所有内容区域
+    contentSections.forEach(section => section.style.display = 'none');
+
     navItems.forEach(item => {
         item.addEventListener('click', () => {
             const sectionId = item.getAttribute('data-section');
@@ -45,7 +48,7 @@ function initNavigation() {
             // 如果点击的是当前激活的导航项，则收起内容
             if (item.classList.contains('active')) {
                 item.classList.remove('active');
-                targetSection.style.display = 'none';
+                if (targetSection) targetSection.style.display = 'none';
             } else {
                 // 移除所有导航项的active类
                 navItems.forEach(nav => nav.classList.remove('active'));
@@ -55,7 +58,7 @@ function initNavigation() {
                 // 隐藏所有内容区域
                 contentSections.forEach(section => section.style.display = 'none');
                 // 显示对应的内容区域
-                targetSection.style.display = 'block';
+                if (targetSection) targetSection.style.display = 'block';
             }
         });
     });
@@ -63,6 +66,7 @@ function initNavigation() {
     // 默认显示第一个导航项的内容
     const firstNavItem = navItems[0];
     if (firstNavItem) {
+        firstNavItem.classList.add('active');
         const firstSectionId = firstNavItem.getAttribute('data-section');
         const firstSection = document.getElementById(`${firstSectionId}-section`);
         if (firstSection) {
@@ -410,10 +414,15 @@ function updateOrderSummary() {
             subtotal += price * quantity;
             return `
                 <div class="summary-item">
-                    <img src="${imageUrl}" alt="${name}" class="summary-image">
-                    <div>
+                    <div class="summary-item-left">
+                        <img src="${imageUrl}" alt="${name}" class="summary-image">
+                    </div>
+                    <div class="summary-item-right">
                         <strong>${name}</strong>
-                        <p>¥${price.toFixed(2)} × ${quantity}</p>
+                        <div class="summary-item-meta">
+                            <span class="summary-item-price">¥${price.toFixed(2)}</span>
+                            <span class="summary-item-quantity">× ${quantity}</span>
+                        </div>
                     </div>
                 </div>
             `;
@@ -455,14 +464,24 @@ function updateOrderSummary() {
 function initPaymentMethods() {
     const paymentMethods = document.querySelectorAll('.payment-method');
     paymentMethods.forEach(method => {
-        const radio = method.querySelector('input[type="radio"]');
+        // 为每个支付方式添加radio input
+        if (!method.querySelector('input[type="radio"]')) {
+            const radio = document.createElement('input');
+            radio.type = 'radio';
+            radio.name = 'payment';
+            radio.style.display = 'none';
+            method.appendChild(radio);
+        }
+
         method.addEventListener('click', () => {
             paymentMethods.forEach(m => {
                 m.classList.remove('selected');
-                m.querySelector('input[type="radio"]').checked = false;
+                const r = m.querySelector('input[type="radio"]');
+                if (r) r.checked = false;
             });
             method.classList.add('selected');
-            radio.checked = true;
+            const radio = method.querySelector('input[type="radio"]');
+            if (radio) radio.checked = true;
             updateOrderSummary();
         });
     });
@@ -470,7 +489,8 @@ function initPaymentMethods() {
     // 默认选择第一个支付方式
     if (paymentMethods.length > 0) {
         paymentMethods[0].classList.add('selected');
-        paymentMethods[0].querySelector('input[type="radio"]').checked = true;
+        const firstRadio = paymentMethods[0].querySelector('input[type="radio"]');
+        if (firstRadio) firstRadio.checked = true;
     }
 }
 
