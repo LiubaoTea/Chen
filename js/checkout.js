@@ -39,16 +39,24 @@ function initNavigation() {
 
     navItems.forEach(item => {
         item.addEventListener('click', () => {
-            // 移除所有导航项的active类
-            navItems.forEach(nav => nav.classList.remove('active'));
-            // 为当前点击的导航项添加active类
-            item.classList.add('active');
-
-            // 隐藏所有内容区域
-            contentSections.forEach(section => section.classList.remove('active'));
-            // 显示对应的内容区域
             const sectionId = item.getAttribute('data-section');
-            document.getElementById(`${sectionId}-section`).classList.add('active');
+            const targetSection = document.getElementById(`${sectionId}-section`);
+
+            // 如果点击的是当前激活的导航项，则收起内容
+            if (item.classList.contains('active')) {
+                item.classList.remove('active');
+                targetSection.classList.remove('active');
+            } else {
+                // 移除所有导航项的active类
+                navItems.forEach(nav => nav.classList.remove('active'));
+                // 为当前点击的导航项添加active类
+                item.classList.add('active');
+
+                // 隐藏所有内容区域
+                contentSections.forEach(section => section.classList.remove('active'));
+                // 显示对应的内容区域
+                targetSection.classList.add('active');
+            }
         });
     });
 }
@@ -81,8 +89,14 @@ async function loadAddresses() {
         // 添加现有地址
         addressHtml += addresses.map((address, index) => `
             <div class="address-card ${index === 0 ? 'selected' : ''}" data-id="${address.id}">
-                <h3>${address.name} ${address.phone}</h3>
-                <p>${address.province}${address.city}${address.district}${address.detail}</p>
+                <div class="address-radio">
+                    <input type="radio" name="address" ${index === 0 ? 'checked' : ''} id="address_${address.id}">
+                    <label for="address_${address.id}"></label>
+                </div>
+                <div class="address-content">
+                    <h3>${address.name} ${address.phone}</h3>
+                    <p>${address.province}${address.city}${address.district}${address.detail}</p>
+                </div>
                 <div class="address-actions">
                     <button class="edit-address" data-id="${address.id}">
                         <i class="fas fa-edit"></i> 编辑
@@ -99,12 +113,18 @@ async function loadAddresses() {
         // 添加地址选择事件
         const addressCards = addressList.querySelectorAll('.address-card:not(.add-address)');
         addressCards.forEach(card => {
+            const radio = card.querySelector('input[type="radio"]');
             card.addEventListener('click', (e) => {
                 // 如果点击的是操作按钮，不触发选择事件
                 if (e.target.closest('.address-actions')) return;
                 
-                addressCards.forEach(c => c.classList.remove('selected'));
+                addressCards.forEach(c => {
+                    c.classList.remove('selected');
+                    c.querySelector('input[type="radio"]').checked = false;
+                });
                 card.classList.add('selected');
+                radio.checked = true;
+                updateOrderSummary();
             });
         });
 
@@ -307,7 +327,11 @@ async function loadOrderItems() {
         // 显示订单商品
         const orderItems = document.getElementById('orderItems');
         orderItems.innerHTML = items.map(item => `
-            <div class="order-item">
+            <div class="order-item" data-id="${item.product_id}">
+                <div class="item-radio">
+                    <input type="radio" name="product" id="product_${item.product_id}" checked>
+                    <label for="product_${item.product_id}"></label>
+                </div>
                 <div class="item-image">
                     <img src="${item.image_url}" alt="${item.name}">
                 </div>
@@ -319,15 +343,97 @@ async function loadOrderItems() {
             </div>
         `).join('');
 
-        // 计算订单金额
-        const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-        const shipping = subtotal >= 199 ? 0 : 10; // 满199包邮
-        const total = subtotal + shipping;
+        // 添加商品选择事件
+        const orderItemElements = orderItems.querySelectorAll('.order-item');
+        orderItemElements.forEach(item => {
+            const radio = item.querySelector('input[type="radio"]');
+            item.addEventListener('click', () => {
+                orderItemElements.forEach(i => {
+                    i.classList.remove('selected');
+                    i.querySelector('input[type="radio"]').checked = false;
+                });
+                item.classList.add('selected');
+                radio.checked = true;
+                updateOrderSummary();
+            });
+        });
+
+        // 默认选中第一个商品
+        if (orderItemElements.length > 0) {
+            orderItemElements[0].classList.add('selected');
+            orderItemElements[0].querySelector('input[type="radio"]').checked = true;
+        }
+
+        updateOrderSummary(); // 更新订单总结
 
         // 更新订单总结
-        document.getElementById('subtotal').textContent = `¥${subtotal.toFixed(2)}`;
-        document.getElementById('shipping').textContent = `¥${shipping.toFixed(2)}`;
-        document.getElementById('total').textContent = `¥${total.toFixed(2)}`;
+function updateOrderSummary() {
+    const selectedAddress = document.querySelector('.address-card.selected');
+    const selectedItems = document.querySelectorAll('.order-item.selected');
+    const selectedPayment = document.querySelector('.payment-method.selected');
+
+    // 更新收货地址信息
+    const addressSummary = document.getElementById('addressSummary');
+    if (selectedAddress) {
+        const name = selectedAddress.querySelector('h3').textContent;
+        const address = selectedAddress.querySelector('p').textContent;
+        addressSummary.innerHTML = `
+            <div class="summary-item">
+                <i class="fas fa-map-marker-alt"></i>
+                <div>
+                    <strong>${name}</strong>
+                    <p>${address}</p>
+                </div>
+            </div>
+        `;
+    }
+
+    // 更新商品信息
+    const itemsSummary = document.getElementById('itemsSummary');
+    let subtotal = 0;
+    if (selectedItems.length > 0) {
+        const itemsHtml = Array.from(selectedItems).map(item => {
+            const name = item.querySelector('.item-name').textContent;
+            const price = parseFloat(item.querySelector('.item-price').textContent.slice(1));
+            const quantity = parseInt(item.querySelector('.item-quantity').textContent.split('：')[1]);
+            const imageUrl = item.querySelector('img').src;
+            subtotal += price * quantity;
+            return `
+                <div class="summary-item">
+                    <img src="${imageUrl}" alt="${name}" class="summary-image">
+                    <div>
+                        <strong>${name}</strong>
+                        <p>¥${price.toFixed(2)} × ${quantity}</p>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        itemsSummary.innerHTML = itemsHtml;
+    }
+
+    // 更新支付方式信息
+    const paymentSummary = document.getElementById('paymentSummary');
+    if (selectedPayment) {
+        const paymentName = selectedPayment.querySelector('span').textContent;
+        const paymentIcon = selectedPayment.querySelector('i').className;
+        paymentSummary.innerHTML = `
+            <div class="summary-item">
+                <i class="${paymentIcon}"></i>
+                <div>
+                    <strong>${paymentName}</strong>
+                </div>
+            </div>
+        `;
+    }
+
+    // 更新金额信息
+    const shipping = subtotal >= 199 ? 0 : 10; // 满199包邮
+    const total = subtotal + shipping;
+
+    document.getElementById('subtotal').textContent = `¥${subtotal.toFixed(2)}`;
+    document.getElementById('shipping').textContent = `¥${shipping.toFixed(2)}`;
+    document.getElementById('total').textContent = `¥${total.toFixed(2)}`;
+}
 
     } catch (error) {
         console.error('加载订单商品失败:', error);
@@ -339,14 +445,23 @@ async function loadOrderItems() {
 function initPaymentMethods() {
     const paymentMethods = document.querySelectorAll('.payment-method');
     paymentMethods.forEach(method => {
+        const radio = method.querySelector('input[type="radio"]');
         method.addEventListener('click', () => {
-            paymentMethods.forEach(m => m.classList.remove('selected'));
+            paymentMethods.forEach(m => {
+                m.classList.remove('selected');
+                m.querySelector('input[type="radio"]').checked = false;
+            });
             method.classList.add('selected');
+            radio.checked = true;
+            updateOrderSummary();
         });
     });
 
     // 默认选择第一个支付方式
-    paymentMethods[0].classList.add('selected');
+    if (paymentMethods.length > 0) {
+        paymentMethods[0].classList.add('selected');
+        paymentMethods[0].querySelector('input[type="radio"]').checked = true;
+    }
 }
 
 // 初始化提交订单按钮
