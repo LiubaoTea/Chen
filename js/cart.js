@@ -199,29 +199,28 @@ function addCartItemEventListeners() {
     const cartItemList = document.getElementById('cartItemList');
     if (!cartItemList) return;
 
-    // 数量减少按钮
-    cartItemList.querySelectorAll('.minus').forEach(button => {
-        button.addEventListener('click', async function() {
-            const cartId = this.getAttribute('data-cart-id');
-            const input = cartItemList.querySelector(`input[data-cart-id="${cartId}"]`);
-            const currentQuantity = parseInt(input.value);
-            if (currentQuantity > 1) {
-                await updateCartItemQuantity(cartId, currentQuantity - 1);
-                await updateCartUI();
-            }
-        });
-    });
+    // 为所有数量控制按钮添加事件监听器
+    cartItemList.querySelectorAll('.quantity-btn').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            const cartId = this.dataset.cartId;
+            const input = this.parentElement.querySelector('input');
+            let currentValue = parseInt(input.value);
 
-    // 数量增加按钮
-    cartItemList.querySelectorAll('.plus').forEach(button => {
-        button.addEventListener('click', async function() {
-            const cartId = this.getAttribute('data-cart-id');
-            const input = cartItemList.querySelector(`input[data-cart-id="${cartId}"]`);
-            const currentQuantity = parseInt(input.value);
-            if (currentQuantity < 99) {
-                await updateCartItemQuantity(cartId, currentQuantity + 1);
-                await updateCartUI();
+            if (this.classList.contains('minus')) {
+                if (currentValue > 1) {
+                    currentValue--;
+                    await updateCartItemQuantity(cartId, currentValue);
+                    await updateCartUI();
+                }
+            } else if (this.classList.contains('plus')) {
+                if (currentValue < 99) {
+                    currentValue++;
+                    await updateCartItemQuantity(cartId, currentValue);
+                    await updateCartUI();
+                }
             }
+
+            input.value = currentValue;
         });
     });
 
@@ -237,12 +236,17 @@ function addCartItemEventListeners() {
         });
     });
 
-    // 删除按钮
-    cartItemList.querySelectorAll('.remove-btn').forEach(button => {
-        button.addEventListener('click', async function() {
-            const cartId = this.getAttribute('data-cart-id');
-            await removeFromCart(cartId);
-            await updateCartUI();
+    // 为所有删除按钮添加事件监听器
+    cartItemList.querySelectorAll('.remove-btn').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            const cartId = this.dataset.cartId;
+            try {
+                await removeFromCart(cartId);
+                await updateCartUI();
+            } catch (error) {
+                console.error('删除商品失败:', error);
+                alert('删除商品失败，请重试');
+            }
         });
     });
 }
