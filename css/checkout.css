@@ -14,6 +14,7 @@
 /* 左侧区域样式 */
 .checkout-left {
     flex: 1;
+    width: 50%;
     background: #fff;
     border-radius: 12px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
@@ -23,7 +24,8 @@
 
 /* 右侧区域样式 */
 .checkout-right {
-    width: 380px;
+    flex: 1;
+    width: 50%;
     background: #fff;
     border-radius: 12px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
@@ -31,6 +33,82 @@
     position: sticky;
     top: 2rem;
     height: fit-content;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+/* 订单总结区域样式 */
+.order-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.order-summary-section {
+    padding: 1rem;
+    background: #fdfbf8;
+    border: 1px solid #e8d5c4;
+    border-radius: 8px;
+}
+
+.order-summary-section h3 {
+    color: #5c3c1d;
+    font-size: 1.1rem;
+    margin-bottom: 0.8rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #e8d5c4;
+}
+
+.order-number {
+    color: #7c5c3c;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+}
+
+.payment-info,
+.order-note,
+.shipping-address {
+    margin-bottom: 0.5rem;
+    color: #7c5c3c;
+}
+
+.price-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.price-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #7c5c3c;
+}
+
+.total-amount {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #5c3c1d;
+    padding-top: 0.5rem;
+    margin-top: 0.5rem;
+    border-top: 1px solid #e8d5c4;
+}
+
+.submit-order-btn {
+    width: 100%;
+    padding: 1rem;
+    background: #8b5e34;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.submit-order-btn:hover {
+    background: #5c3c1d;
 }
 
 /* 分隔线样式 */
