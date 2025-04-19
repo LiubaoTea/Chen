@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>订单结算 - 陳記六堡茶</title>
     <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/checkout-new.css">
+    <link rel="stylesheet" href="css/checkout.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </head>
 <body>
@@ -46,197 +46,92 @@
 
     <main class="checkout-main">
         <div class="checkout-container">
-            <!-- 左侧导航区域 -->
+            <!-- 左侧导航和内容区域 -->
             <div class="checkout-left">
-                <div class="nav-item" data-section="address">
-                    <div class="nav-item-header">
-                        <div class="nav-item-title">
-                            <i class="fas fa-map-marker-alt"></i>收货地址
-                        </div>
-                        <i class="fas fa-chevron-down"></i>
-                    </div>
-                    <div class="nav-item-content">
-                        <div class="sub-item">
-                            <span>选择收货地址</span>
-                            <i class="fas fa-angle-right"></i>
-                        </div>
-                        <div class="sub-item">
-                            <span>添加新地址</span>
-                            <i class="fas fa-plus"></i>
-                        </div>
+                <div class="nav-item active" data-section="address">
+                    <i class="fas fa-map-marker-alt"></i>收货地址
+                </div>
+                <div class="nav-content" id="address-section">
+                    <div class="address-list" id="addressList">
+                        <!-- 地址列表将通过JavaScript动态加载 -->
                     </div>
                 </div>
+
                 <div class="nav-item" data-section="order">
-                    <div class="nav-item-header">
-                        <div class="nav-item-title">
-                            <i class="fas fa-shopping-bag"></i>订单商品
-                        </div>
-                        <i class="fas fa-chevron-down"></i>
-                    </div>
-                    <div class="nav-item-content">
-                        <div class="sub-item">
-                            <span>查看商品清单</span>
-                            <i class="fas fa-angle-right"></i>
-                        </div>
+                    <i class="fas fa-shopping-bag"></i>订单商品
+                </div>
+                <div class="nav-content" id="order-section">
+                    <div class="order-items" id="orderItems">
+                        <!-- 订单商品列表将通过JavaScript动态加载 -->
                     </div>
                 </div>
+
                 <div class="nav-item" data-section="payment">
-                    <div class="nav-item-header">
-                        <div class="nav-item-title">
-                            <i class="fas fa-credit-card"></i>支付方式
+                    <i class="fas fa-credit-card"></i>支付方式
+                </div>
+                <div class="nav-content" id="payment-section">
+                    <div class="payment-methods">
+                        <div class="payment-method" data-method="alipay">
+                            <i class="fab fa-alipay"></i>
+                            <span>支付宝</span>
                         </div>
-                        <i class="fas fa-chevron-down"></i>
-                    </div>
-                    <div class="nav-item-content">
-                        <div class="sub-item">
-                            <span>选择支付方式</span>
-                            <i class="fas fa-angle-right"></i>
+                        <div class="payment-method" data-method="wechat">
+                            <i class="fab fa-weixin"></i>
+                            <span>微信支付</span>
                         </div>
                     </div>
                 </div>
+
                 <div class="nav-item" data-section="remark">
-                    <div class="nav-item-header">
-                        <div class="nav-item-title">
-                            <i class="fas fa-comment"></i>订单备注
-                        </div>
-                        <i class="fas fa-chevron-down"></i>
-                    </div>
-                    <div class="nav-item-content">
-                        <div class="sub-item">
-                            <span>添加备注信息</span>
-                            <i class="fas fa-angle-right"></i>
-                        </div>
+                    <i class="fas fa-comment"></i>订单备注
+                </div>
+                <div class="nav-content" id="remark-section">
+                    <div class="remark-container">
+                        <textarea id="orderRemark" placeholder="请输入订单备注信息（选填）" maxlength="200"></textarea>
+                        <div class="remark-limit">0/200</div>
                     </div>
                 </div>
             </div>
 
-            <!-- 右侧内容区域 -->
+            <!-- 右侧订单总结区域 -->
             <div class="checkout-right">
-                <!-- 主要内容区域 -->
-                <div class="content-area">
-                    <!-- 收货地址部分 -->
-                    <div class="content-section active" id="address-section">
-                        <div class="address-list" id="addressList">
-                            <!-- 地址列表将通过JavaScript动态加载 -->
-                        </div>
-                        <button class="add-address-btn" id="addAddress">
-                            <i class="fas fa-plus"></i>添加新地址
-                        </button>
-                    </div>
-
-                    <!-- 订单商品部分 -->
-                    <div class="content-section" id="order-section">
-                        <div class="order-items" id="orderItems">
-                            <!-- 订单商品列表将通过JavaScript动态加载 -->
-                        </div>
-                    </div>
-
-                    <!-- 支付方式部分 -->
-                    <div class="content-section" id="payment-section">
-                        <div class="payment-methods">
-                            <div class="payment-method" data-method="alipay">
-                                <i class="fab fa-alipay"></i>
-                                <span>支付宝</span>
-                            </div>
-                            <div class="payment-method" data-method="wechat">
-                                <i class="fab fa-weixin"></i>
-                                <span>微信支付</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 订单备注部分 -->
-                    <div class="content-section" id="remark-section">
-                        <div class="remark-container">
-                            <textarea id="orderRemark" placeholder="请输入订单备注信息（选填）" maxlength="200"></textarea>
-                            <div class="remark-limit">0/200</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 订单总结部分 -->
                 <div class="order-summary-container">
                     <h2 class="summary-title">订单总结</h2>
                     <div class="order-info">
-                        <div class="summary-section">
-                            <h3>订单商品</h3>
-                            <div id="selectedItemsInfo"></div>
-                        </div>
-                        <div class="summary-section">
-                            <h3>订单编号</h3>
-                            <div id="orderNumber">待生成</div>
-                        </div>
-                        <div class="summary-section">
-                            <h3>支付方式</h3>
-                            <div id="selectedPaymentInfo">请选择支付方式</div>
-                        </div>
-                        <div class="summary-section">
-                            <h3>订单备注</h3>
-                            <div id="selectedRemarkInfo"></div>
-                        </div>
-                        <div class="summary-section">
+                        <div class="order-number" id="orderNumber">订单编号：</div>
+                        <div class="selected-address">
                             <h3>收货地址</h3>
                             <div id="selectedAddressInfo">请选择收货地址</div>
                         </div>
-                        <div class="order-total">
-                            <div class="summary-row">
-                                <span>商品总价</span>
-                                <span id="subtotal">¥0.00</span>
-                            </div>
-                            <div class="summary-row">
-                                <span>运费</span>
-                                <span id="shipping">¥0.00</span>
-                            </div>
-                            <div class="summary-row total-row">
-                                <span>应付总额</span>
-                                <span id="total">¥0.00</span>
-                            </div>
+                        <div class="selected-items">
+                            <h3>订单商品</h3>
+                            <div id="selectedItemsInfo"></div>
+                        </div>
+                        <div class="selected-payment">
+                            <h3>支付方式</h3>
+                            <div id="selectedPaymentInfo">请选择支付方式</div>
+                        </div>
+                        <div class="selected-remark">
+                            <h3>订单备注</h3>
+                            <div id="selectedRemarkInfo"></div>
+                        </div>
+                    </div>
+                    <div class="order-total">
+                        <div class="summary-row">
+                            <span>商品总价</span>
+                            <span id="subtotal">¥0.00</span>
+                        </div>
+                        <div class="summary-row">
+                            <span>运费</span>
+                            <span id="shipping">¥0.00</span>
+                        </div>
+                        <div class="summary-row total-row">
+                            <span>应付总额</span>
+                            <span id="total">¥0.00</span>
                         </div>
                     </div>
                     <button class="checkout-btn" id="submitOrder">提交订单</button>
                 </div>
-            </div>
-        </div>
-
-        <!-- 地址编辑弹窗 -->
-        <div class="modal" id="addressModal">
-            <div class="address-modal">
-                <div class="address-modal-header">
-                    <h3 class="address-modal-title">编辑收货地址</h3>
-                    <button class="close-modal" id="closeAddressModal">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-                <form class="address-form" id="addressForm">
-                    <div class="form-group">
-                        <label for="name">收货人姓名</label>
-                        <input type="text" id="name" name="name" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="phone">联系电话</label>
-                        <input type="tel" id="phone" name="phone" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="province">省份</label>
-                        <select id="province" name="province" required></select>
-                    </div>
-                    <div class="form-group">
-                        <label for="city">城市</label>
-                        <select id="city" name="city" required></select>
-                    </div>
-                    <div class="form-group">
-                        <label for="district">区/县</label>
-                        <select id="district" name="district" required></select>
-                    </div>
-                    <div class="form-group">
-                        <label for="address">详细地址</label>
-                        <input type="text" id="address" name="address" required>
-                    </div>
-                    <div class="address-modal-actions">
-                        <button type="button" class="btn-cancel" id="cancelAddress">取消</button>
-                        <button type="submit" class="btn-save">保存</button>
-                    </div>
-                </form>
             </div>
         </div>
     </main>

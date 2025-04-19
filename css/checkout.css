@@ -1,3 +1,361 @@
+.checkout-main {
+    padding: 2rem;
+    background: #f9f5f0;
+}
+
+.checkout-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    gap: 2rem;
+    position: relative;
+}
+
+/* 左侧区域样式 */
+.checkout-left {
+    flex: 1;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    padding: 1.5rem;
+    position: relative;
+}
+
+/* 右侧区域样式 */
+.checkout-right {
+    width: 380px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    padding: 1.5rem;
+    position: sticky;
+    top: 2rem;
+    height: fit-content;
+}
+
+/* 分隔线样式 */
+.checkout-container::before {
+    content: '';
+    position: absolute;
+    left: calc(50% - 190px);
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: linear-gradient(to bottom, transparent, #e8d5c4 10%, #e8d5c4 90%, transparent);
+}
+
+/* 导航项样式 */
+.nav-item {
+    padding: 1rem;
+    margin-bottom: 1rem;
+    background: #fdfbf8;
+    border: 1px solid #e8d5c4;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    font-size: 1.1rem;
+    color: #5c3c1d;
+    transition: all 0.3s ease;
+}
+
+.nav-item i {
+    color: #8b5e34;
+    font-size: 1.2rem;
+}
+
+.nav-item:hover {
+    background: #f5ebe0;
+}
+
+.nav-item.active {
+    background: #e8d5c4;
+    border-color: #d4b69b;
+}
+
+/* 内容区域样式 */
+.nav-content {
+    padding: 1rem;
+    display: none;
+    background: #fff;
+    border: 1px solid #e8d5c4;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+}
+
+/* 地址卡片样式 */
+.address-card {
+    padding: 1.2rem;
+    background: #fdfbf8;
+    border: 1px solid #e8d5c4;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.address-card:hover {
+    background: #f5ebe0;
+    transform: translateY(-2px);
+}
+
+.address-card.selected {
+    background: #e8d5c4;
+    border-color: #d4b69b;
+}
+
+.address-card .address-content h3 {
+    color: #5c3c1d;
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+}
+
+.address-card .address-content p {
+    color: #7c5c3c;
+    font-size: 0.9rem;
+}
+
+.address-card .address-actions {
+    margin-top: 1rem;
+    display: flex;
+    gap: 1rem;
+}
+
+.address-card .address-actions button {
+    padding: 0.5rem 1rem;
+    border: 1px solid #d4b69b;
+    border-radius: 4px;
+    background: transparent;
+    color: #8b5e34;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.address-card .address-actions button:hover {
+    background: #e8d5c4;
+}
+
+/* 订单商品样式 */
+.order-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: #fdfbf8;
+    border: 1px solid #e8d5c4;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+}
+
+.order-item .item-image img {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 4px;
+}
+
+.order-item .item-details {
+    flex: 1;
+}
+
+.order-item .item-name {
+    color: #5c3c1d;
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+}
+
+.order-item .item-price {
+    color: #8b5e34;
+    font-size: 1rem;
+    font-weight: bold;
+}
+
+/* 支付方式样式 */
+.payment-methods {
+    display: flex;
+    gap: 1rem;
+}
+
+.payment-method {
+    flex: 1;
+    padding: 1rem;
+    background: #fdfbf8;
+    border: 1px solid #e8d5c4;
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.payment-method:hover {
+    background: #f5ebe0;
+}
+
+.payment-method.selected {
+    background: #e8d5c4;
+    border-color: #d4b69b;
+}
+
+.payment-method i {
+    font-size: 2rem;
+    color: #8b5e34;
+    margin-bottom: 0.5rem;
+}
+
+/* 订单备注样式 */
+.remark-container {
+    position: relative;
+}
+
+#orderRemark {
+    width: 100%;
+    height: 100px;
+    padding: 1rem;
+    border: 1px solid #e8d5c4;
+    border-radius: 8px;
+    background: #fdfbf8;
+    resize: none;
+    font-family: inherit;
+    color: #5c3c1d;
+}
+
+.remark-limit {
+    position: absolute;
+    bottom: 0.5rem;
+    right: 1rem;
+    color: #8b5e34;
+    font-size: 0.9rem;
+}
+
+/* 订单总结样式 */
+.order-summary-container {
+    padding: 1.5rem;
+}
+
+.summary-title {
+    color: #5c3c1d;
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
+    font-family: 'SimSun', serif;
+}
+
+.order-info > div {
+    margin-bottom: 1.5rem;
+}
+
+.order-info h3 {
+    color: #5c3c1d;
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+    font-family: 'SimSun', serif;
+}
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+    color: #7c5c3c;
+}
+
+.total-row {
+    border-top: 1px solid #e8d5c4;
+    padding-top: 1rem;
+    margin-top: 1rem;
+    font-weight: bold;
+    color: #5c3c1d;
+}
+
+.checkout-btn {
+    width: 100%;
+    padding: 1rem;
+    background: #8b5e34;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.checkout-btn:hover {
+    background: #5c3c1d;
+}
+
+/* 地址编辑模态框样式 */
+.modal {
+    background: rgba(0, 0, 0, 0.5);
+}
+
+.modal-content {
+    background: #fff;
+    border-radius: 12px;
+    padding: 2rem;
+}
+
+.modal-content h2 {
+    color: #5c3c1d;
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
+    font-family: 'SimSun', serif;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    color: #5c3c1d;
+    margin-bottom: 0.5rem;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 0.8rem;
+    border: 1px solid #e8d5c4;
+    border-radius: 4px;
+    background: #fdfbf8;
+    color: #5c3c1d;
+}
+
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.form-actions button {
+    flex: 1;
+    padding: 0.8rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-cancel {
+    background: transparent;
+    border: 1px solid #e8d5c4;
+    color: #8b5e34;
+}
+
+.btn-submit {
+    background: #8b5e34;
+    border: none;
+    color: #fff;
+}
+
+.btn-cancel:hover {
+    background: #f5ebe0;
+}
+
+.btn-submit:hover {
+    background: #5c3c1d;
+}
+
+/* 订单总结项样式 */
 .summary-item {
     display: flex;
     align-items: center;
@@ -29,19 +387,30 @@
 .summary-item-right {
     flex: 1;
     display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
+    flex-direction: column;
 }
 
 .summary-item-right strong {
     color: #5c3c1d;
     font-size: 1rem;
-    margin-right: 1rem;
+    margin-bottom: 0.5rem;
 }
 
 .summary-item-right p {
     color: #7c5c3c;
     font-size: 0.9rem;
-    text-align: right;
+}
+
+.summary-item-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.5rem;
+}
+
+.summary-image {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 4px;
 }
