@@ -42,16 +42,19 @@ async function loadUserInfo() {
         // 更新用户信息显示
         const usernameElement = document.getElementById('username');
         const userEmailElement = document.getElementById('userEmail');
+        const userIdElement = document.getElementById('userId');
         
-        if (usernameElement && userEmailElement) {
+        if (usernameElement && userEmailElement && userIdElement) {
             usernameElement.textContent = userData.username;
             userEmailElement.textContent = userData.email;
+            userIdElement.textContent = `用户ID: ${userData.user_id}`;
         }
         
-        // 加载用户订单列表
-        if (window.location.pathname.includes('user-center.html')) {
-            loadOrders();
-        }
+        // 初始化导航菜单
+        initNavMenu();
+        
+        // 加载默认内容（订单列表）
+        loadOrders();
     } catch (error) {
         console.error('加载用户信息失败:', error);
         localStorage.removeItem('userToken'); // 清除无效的token
@@ -119,15 +122,179 @@ function viewOrderDetail(orderNumber) {
     window.location.href = `order-detail.html?orderNumber=${orderNumber}`;
 }
 
-// 初始化设置卡片点击事件
-function initSettingCards() {
-    const settingCards = document.querySelectorAll('.setting-card');
-    settingCards.forEach((card, index) => {
-        card.addEventListener('click', () => {
-            // 跳转到账户设置页面
-            window.location.href = 'account-settings.html';
+// 初始化导航菜单
+function initNavMenu() {
+    const navItems = document.querySelectorAll('.nav-item');
+    const contentArea = document.getElementById('contentArea');
+
+    navItems.forEach(item => {
+        item.addEventListener('click', async () => {
+            // 移除所有导航项的active类
+            navItems.forEach(nav => nav.classList.remove('active'));
+            // 添加当前项的active类
+            item.classList.add('active');
+
+            const section = item.getAttribute('data-section');
+            
+            // 根据不同的导航项加载对应的内容
+            switch(section) {
+                case 'orders':
+                    await loadOrders();
+                    break;
+                case 'profile':
+                    await showProfileSettings();
+                    break;
+                case 'security':
+                    showSecuritySettings();
+                    break;
+                case 'address':
+                    await showAddressSettings();
+                    break;
+                case 'notification':
+                    await showNotificationSettings();
+                    break;
+            }
         });
     });
+}
+
+
+// 显示收货地址设置
+async function showAddressSettings() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/user/addresses`, {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('userToken')}`
+            }
+        });
+
+        if (!response.ok) throw new Error('获取地址列表失败');
+        const addresses = await response.json();
+
+        let addressesHtml = addresses.map(address => `
+            <div class="address-item ${address.is_default ? 'default' : ''}">
+                <div class="address-info">
+                    <p><strong>${address.recipient_name}</strong> ${address.contact_phone}</p>
+                    <p>${address.region} ${address.full_address}</p>
+                    <p>邮编：${address.postal_code || '无'}</p>
+                </div>
+                <div class="address-actions">
+                    <button onclick="setDefaultAddress(${address.address_id})" 
+                            ${address.is_default ? 'disabled' : ''}>
+                        ${address.is_default ? '默认地址' : '设为默认'}
+                    </button>
+                    <button onclick="editAddress(${address.address_id})">编辑</button>
+                    <button onclick="deleteAddress(${address.address_id})">删除</button>
+                </div>
+            </div>
+        `).join('');
+
+        const content = `
+            <h3>收货地址管理</h3>
+            <div class="address-list">
+                ${addressesHtml}
+            </div>
+            <button onclick="showAddAddressForm()" class="btn-primary">添加新地址</button>
+        `;
+
+        const contentArea = document.getElementById('contentArea');
+        contentArea.innerHTML = content;
+    } catch (error) {
+        console.error('加载地址列表失败:', error);
+        alert('加载地址列表失败，请重试');
+    }
+}
+
+// 显示通知设置
+async function showNotificationSettings() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/user/settings`, {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('userToken')}`
+            }
+        });
+
+        if (!response.ok) throw new Error('获取通知设置失败');
+        const settings = await response.json();
+
+        const content = `
+            <h3>通知设置</h3>
+            <form id="notificationForm">
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" name="email_notifications" 
+                               ${settings.notification_prefs.email ? 'checked' : ''}>
+                        接收邮件通知
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" name="sms_notifications" 
+                               ${settings.notification_prefs.sms ? 'checked' : ''}>
+                        接收短信通知
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label>隐私设置</label>
+                    <div>
+                        <label>
+                            <input type="checkbox" name="show_email" 
+                                   ${settings.privacy_settings.show_email ? 'checked' : ''}>
+                            公开邮箱
+                        </label>
+                    </div>
+                    <div>
+                        <label>
+                            <input type="checkbox" name="show_phone" 
+                                   ${settings.privacy_settings.show_phone ? 'checked' : ''}>
+                            公开手机号
+                        </label>
+                    </div>
+                </div>
+                <button type="submit" class="btn-primary">保存设置</button>
+            </form>
+        `;
+
+        const contentArea = document.getElementById('contentArea');
+        contentArea.innerHTML = content;
+
+        // 添加表单提交事件
+        const form = document.getElementById('notificationForm');
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                const formData = new FormData(form);
+                const settings = {
+                    notification_prefs: {
+                        email: formData.get('email_notifications') === 'on',
+                        sms: formData.get('sms_notifications') === 'on'
+                    },
+                    privacy_settings: {
+                        show_email: formData.get('show_email') === 'on',
+                        show_phone: formData.get('show_phone') === 'on'
+                    }
+                };
+
+                const response = await fetch(`${API_BASE_URL}/api/user/settings`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('userToken')}`
+                    },
+                    body: JSON.stringify(settings)
+                });
+
+                if (!response.ok) throw new Error('更新通知设置失败');
+                alert('通知设置已更新');
+            } catch (error) {
+                console.error('更新通知设置失败:', error);
+                alert('更新通知设置失败，请重试');
+            }
+        });
+    } catch (error) {
+        console.error('加载通知设置失败:', error);
+        alert('加载通知设置失败，请重试');
+    }
 }
 
 // 显示个人资料设置
