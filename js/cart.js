@@ -99,13 +99,7 @@ function initCart() {
     // 结算按钮
     if (checkout) {
         checkout.addEventListener('click', function() {
-            const checkoutModal = document.getElementById('checkoutModal');
-            const checkoutOverlay = document.getElementById('checkoutOverlay');
-            if (checkoutModal && checkoutOverlay) {
-                checkoutModal.classList.add('active');
-                checkoutOverlay.classList.add('active');
-                updateCheckoutUI();
-            }
+            window.location.href = 'checkout.html';
         });
     }
 
@@ -307,7 +301,7 @@ async function removeFromCart(cartId) {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify({ productId: parseInt(cartId) })
+            body: JSON.stringify({ cartId: parseInt(cartId) })
         });
 
         if (!response.ok) {
@@ -337,7 +331,7 @@ async function updateCartItemQuantity(cartId, quantity) {
                 'Authorization': `Bearer ${token}`
             },
             body: JSON.stringify({
-                productId: parseInt(cartId),
+                cartId: parseInt(cartId),
                 quantity: parseInt(quantity)
             })
         });
