@@ -158,12 +158,12 @@ async function updateCartUI() {
                         <h3>${item.name}</h3>
                         <p class="price">¥${item.price.toFixed(2)}</p>
                         <div class="quantity-controls">
-                            <button class="quantity-btn minus" data-cart-id="${item.cart_id}">-</button>
+                            <button class="quantity-btn minus" data-cart-id="${item.cart_id}" type="button">-</button>
                             <input type="number" value="${item.quantity}" min="1" max="99" data-cart-id="${item.cart_id}">
-                            <button class="quantity-btn plus" data-cart-id="${item.cart_id}">+</button>
+                            <button class="quantity-btn plus" data-cart-id="${item.cart_id}" type="button">+</button>
                         </div>
                     </div>
-                    <button class="remove-btn" data-cart-id="${item.cart_id}">
+                    <button class="remove-btn" data-cart-id="${item.cart_id}" type="button">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
