@@ -1,51 +1,43 @@
-/* 结算页面样式 - 古色古香风格 */
+/* 结算页面样式 - 古色古香茶文化风格 */
 
 /* 主容器样式 */
+.checkout-main {
+    background: #f9f5f0;
+    min-height: calc(100vh - 80px);
+    padding: 2rem 0;
+}
+
 .checkout-container {
+    max-width: 1200px;
+    margin: 0 auto;
     display: flex;
     gap: 2rem;
-    max-width: 1200px;
-    margin: 2rem auto;
     padding: 2rem;
-    background: #f9f5f0;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     position: relative;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'%3E%3Cpath d='M30 0C13.432 0 0 13.432 0 30s13.432 30 30 30 30-13.432 30-30S46.568 0 30 0zm0 54c-13.255 0-24-10.745-24-24S16.745 6 30 6s24 10.745 24 24-10.745 24-24 24z' fill='%23d4b895' fill-opacity='0.08'/%3E%3C/svg%3E") repeat;
 }
 
-/* 古典纹样背景 */
-.checkout-container::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Cpath d='M20 0C8.954 0 0 8.954 0 20s8.954 20 20 20 20-8.954 20-20S31.046 0 20 0zm0 36c-8.837 0-16-7.163-16-16S11.163 4 20 4s16 7.163 16 16-7.163 16-16 16z' fill='%23d4b895' fill-opacity='0.1'/%3E%3C/svg%3E");
-    opacity: 0.1;
-    z-index: 0;
-    pointer-events: none;
-}
-
-/* 左侧导航样式 */
-.checkout-nav {
-    flex: 0 0 240px;
+/* 左侧区域样式 */
+.checkout-left {
+    flex: 1;
     background: #fff;
-    padding: 2rem 0;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(139, 94, 52, 0.1);
     border: 1px solid #e8d5c4;
+    overflow: hidden;
 }
 
+/* 导航项样式 */
 .nav-item {
     padding: 1.5rem 2rem;
-    cursor: pointer;
+    background: #fdfbf8;
+    border-bottom: 1px solid #e8d5c4;
     color: #7c5c3c;
-    transition: all 0.3s ease;
-    position: relative;
+    cursor: pointer;
     display: flex;
     align-items: center;
     gap: 1rem;
+    transition: all 0.3s ease;
 }
 
 .nav-item i {
@@ -54,70 +46,87 @@
 }
 
 .nav-item.active {
-    background: #f0e6d9;
-    color: #5c3c1d;
-    border-left: 4px solid #8b5e34;
-}
-
-.nav-item:hover {
-    background: #f7f1e9;
-}
-
-/* 右侧内容样式 */
-.checkout-content {
-    flex: 1;
-    background: #fff;
-    padding: 2rem;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-    border: 1px solid #e8d5c4;
-}
-
-.section-title {
-    color: #5c3c1d;
-    font-size: 1.5rem;
-    margin-bottom: 2rem;
-    padding-bottom: 1rem;
-    border-bottom: 2px solid #e8d5c4;
-    position: relative;
-}
-
-.section-title::after {
-    content: '';
-    position: absolute;
-    bottom: -2px;
-    left: 0;
-    width: 60px;
-    height: 2px;
     background: #8b5e34;
+    color: #fff;
+}
+
+.nav-item.active i {
+    color: #fff;
+}
+
+/* 内容区域样式 */
+.nav-content {
+    padding: 2rem;
+    display: none;
+}
+
+.nav-content.active {
+    display: block;
 }
 
 /* 地址列表样式 */
 .address-list {
     display: grid;
-    gap: 1rem;
+    gap: 1.5rem;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
 }
 
-.address-item {
-    padding: 1.5rem;
+.address-card {
+    background: #fdfbf8;
     border: 1px solid #e8d5c4;
     border-radius: 8px;
-    background: #fdfbf8;
+    padding: 1.5rem;
     cursor: pointer;
     transition: all 0.3s ease;
+    position: relative;
 }
 
-.address-item:hover {
+.address-card:hover {
     border-color: #8b5e34;
     transform: translateY(-2px);
 }
 
-.address-item.selected {
+.address-card.selected {
     border: 2px solid #8b5e34;
     background: #f7f1e9;
 }
 
-/* 订单商品列表样式 */
+.address-card.add-address {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #8b5e34;
+    border-style: dashed;
+}
+
+.address-card.add-address i {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.address-actions {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    display: flex;
+    gap: 0.5rem;
+}
+
+.address-actions button {
+    background: none;
+    border: none;
+    color: #8b5e34;
+    cursor: pointer;
+    padding: 0.5rem;
+    transition: color 0.3s ease;
+}
+
+.address-actions button:hover {
+    color: #5c3c1d;
+}
+
+/* 订单商品样式 */
 .order-items {
     display: grid;
     gap: 1.5rem;
@@ -125,57 +134,78 @@
 
 .order-item {
     display: flex;
-    gap: 1.5rem;
+    gap: 2rem;
     padding: 1.5rem;
+    background: #fdfbf8;
     border: 1px solid #e8d5c4;
     border-radius: 8px;
-    background: #fdfbf8;
 }
 
 .item-image {
-    width: 100px;
-    height: 100px;
-    object-fit: cover;
-    border-radius: 4px;
+    width: 120px;
+    height: 120px;
+    border-radius: 8px;
+    overflow: hidden;
 }
 
-.item-info {
+.item-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.item-details {
     flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
 
 .item-name {
     color: #5c3c1d;
-    font-size: 1.1rem;
+    font-size: 1.2rem;
     margin-bottom: 0.5rem;
 }
 
 .item-price {
     color: #8b5e34;
+    font-size: 1.1rem;
     font-weight: bold;
+    margin-bottom: 0.5rem;
+}
+
+.item-quantity {
+    color: #7c5c3c;
 }
 
 /* 支付方式样式 */
 .payment-methods {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
+    gap: 1.5rem;
 }
 
 .payment-method {
-    padding: 1.5rem;
+    background: #fdfbf8;
     border: 1px solid #e8d5c4;
     border-radius: 8px;
-    background: #fdfbf8;
+    padding: 2rem;
     cursor: pointer;
     transition: all 0.3s ease;
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 1rem;
 }
 
 .payment-method i {
-    font-size: 2rem;
+    font-size: 2.5rem;
     color: #8b5e34;
+}
+
+.payment-method span {
+    font-size: 1.2rem;
+    color: #5c3c1d;
 }
 
 .payment-method:hover {
@@ -188,70 +218,164 @@
     background: #f7f1e9;
 }
 
-/* 订单总结样式 */
-.order-summary {
-    background: #fdfbf8;
-    padding: 2rem;
-    border-radius: 8px;
+/* 右侧订单总结样式 */
+.checkout-right {
+    width: 380px;
+    position: sticky;
+    top: 2rem;
+}
+
+.order-summary-container {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(139, 94, 52, 0.1);
     border: 1px solid #e8d5c4;
+    padding: 2rem;
+}
+
+.summary-title {
+    color: #5c3c1d;
+    font-size: 1.5rem;
     margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #e8d5c4;
+    position: relative;
+}
+
+.summary-title::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 60px;
+    height: 2px;
+    background: #8b5e34;
+}
+
+.order-info {
+    margin-bottom: 2rem;
+}
+
+.order-info > div {
+    margin-bottom: 1.5rem;
+}
+
+.order-info h3 {
+    color: #5c3c1d;
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+}
+
+.order-number {
+    color: #8b5e34;
+    font-weight: bold;
+    margin-bottom: 1.5rem;
 }
 
 .summary-row {
     display: flex;
     justify-content: space-between;
-    padding: 1rem 0;
-    border-bottom: 1px dashed #e8d5c4;
+    padding: 0.8rem 0;
     color: #7c5c3c;
 }
 
 .total-row {
-    border-bottom: none;
+    border-top: 1px solid #e8d5c4;
     margin-top: 1rem;
-    padding-top: 1.5rem;
-    border-top: 2px solid #e8d5c4;
-    font-size: 1.2rem;
+    padding-top: 1rem;
     font-weight: bold;
     color: #5c3c1d;
 }
 
 .checkout-btn {
     width: 100%;
-    padding: 1.2rem;
+    padding: 1rem;
     background: #8b5e34;
     color: #fff;
     border: none;
     border-radius: 8px;
     font-size: 1.1rem;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: background-color 0.3s ease;
 }
 
 .checkout-btn:hover {
     background: #5c3c1d;
 }
 
-/* 响应式设计 */
-@media (max-width: 768px) {
-    .checkout-container {
-        flex-direction: column;
-        padding: 1rem;
-        margin: 1rem;
-    }
+/* 地址编辑模态框样式 */
+.modal {
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+}
 
-    .checkout-nav {
-        flex: none;
-        display: flex;
-        overflow-x: auto;
-        padding: 1rem;
-    }
+.modal-content {
+    background: #fdfbf8;
+    border-radius: 12px;
+    border: 1px solid #e8d5c4;
+}
 
-    .nav-item {
-        padding: 1rem;
-        white-space: nowrap;
-    }
+.modal h2 {
+    color: #5c3c1d;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #e8d5c4;
+}
 
-    .checkout-content {
-        padding: 1rem;
-    }
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    color: #7c5c3c;
+    margin-bottom: 0.5rem;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 0.8rem;
+    border: 1px solid #e8d5c4;
+    border-radius: 6px;
+    background: #fff;
+    color: #5c3c1d;
+}
+
+.form-group input:focus {
+    border-color: #8b5e34;
+    outline: none;
+}
+
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.form-actions button {
+    flex: 1;
+    padding: 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-cancel {
+    background: #f0e6d9;
+    border: 1px solid #e8d5c4;
+    color: #7c5c3c;
+}
+
+.btn-submit {
+    background: #8b5e34;
+    border: none;
+    color: #fff;
+}
+
+.btn-cancel:hover {
+    background: #e8d5c4;
+}
+
+.btn-submit:hover {
+    background: #5c3c1d;
 }
