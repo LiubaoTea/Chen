@@ -21,27 +21,41 @@ document.addEventListener('DOMContentLoaded', () => {
 // 加载用户信息
 async function loadUserInfo() {
     try {
+        const token = localStorage.getItem('userToken');
+        if (!token) {
+            throw new Error('未找到登录凭证');
+        }
+
         const response = await fetch(`${API_BASE_URL}/api/user`, {
             headers: {
-                'Authorization': `Bearer ${localStorage.getItem('userToken')}`
+                'Authorization': `Bearer ${token}`
             }
         });
         
         if (!response.ok) {
-            throw new Error('获取用户信息失败');
+            const errorData = await response.json();
+            throw new Error(errorData.error || '获取用户信息失败');
         }
         
         const userData = await response.json();
         
         // 更新用户信息显示
-        document.getElementById('username').textContent = userData.username;
-        document.getElementById('userEmail').textContent = userData.email;
+        const usernameElement = document.getElementById('username');
+        const userEmailElement = document.getElementById('userEmail');
+        
+        if (usernameElement && userEmailElement) {
+            usernameElement.textContent = userData.username;
+            userEmailElement.textContent = userData.email;
+        }
         
         // 加载用户订单列表
-        loadOrders();
+        if (window.location.pathname.includes('user-center.html')) {
+            loadOrders();
+        }
     } catch (error) {
         console.error('加载用户信息失败:', error);
-        alert('加载用户信息失败，请重新登录');
+        localStorage.removeItem('userToken'); // 清除无效的token
+        alert('登录已过期，请重新登录');
         window.location.href = 'login.html';
     }
 }
