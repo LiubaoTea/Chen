@@ -540,6 +540,7 @@
     <script type="module" src="./js/auth.js"></script>
     <script type="module" src="./js/user-center.js"></script>
     <script type="module" src="./js/cart.js"></script>
+    <script type="module" src="./js/user-settings.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // 初始化购物车
@@ -553,6 +554,9 @@
                     window.location.href = 'cart.html';
                 });
             }
+
+            // 初始化用户设置
+            initializeUserSettings();
         });
     </script>
 </body>

@@ -148,15 +148,37 @@
         </div>
     </header>
 
+    <link rel="stylesheet" href="css/user-profile.css">
     <main>
-        <div class="user-container">
-            <div class="user-header">
-                <div class="user-avatar">
-                    <i class="fas fa-user"></i>
+        <div class="user-profile profile-decoration">
+            <div class="profile-header">
+                <h1 class="profile-title">个人中心</h1>
+                <p class="profile-subtitle">茶香悠远，品味人生</p>
+            </div>
+            <div class="profile-info">
+                <div class="info-card">
+                    <div class="info-label">
+                        <i class="fas fa-id-card"></i>用户ID
+                    </div>
+                    <div class="info-value" id="userId">加载中...</div>
                 </div>
-                <div class="user-info">
-                    <h2 id="username">用户名</h2>
-                    <p id="userEmail">用户邮箱</p>
+                <div class="info-card">
+                    <div class="info-label">
+                        <i class="fas fa-user"></i>用户名
+                    </div>
+                    <div class="info-value" id="username">加载中...</div>
+                </div>
+                <div class="info-card">
+                    <div class="info-label">
+                        <i class="fas fa-envelope"></i>邮箱
+                    </div>
+                    <div class="info-value" id="userEmail">加载中...</div>
+                </div>
+                <div class="info-card">
+                    <div class="info-label">
+                        <i class="fas fa-phone"></i>手机号码
+                    </div>
+                    <div class="info-value" id="userPhone">加载中...</div>
                 </div>
             </div>
             
