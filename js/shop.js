@@ -170,8 +170,12 @@ function initAddToCartButtons() {
     const addToCartButtons = document.querySelectorAll('.add-to-cart');
     if (addToCartButtons) {
         addToCartButtons.forEach(button => {
-            button.addEventListener('click', async function() {
+            button.addEventListener('click', async function(e) {
+                e.stopPropagation(); // 阻止事件冒泡
                 const productId = this.getAttribute('data-id');
+                const name = this.getAttribute('data-name');
+                const price = parseFloat(this.getAttribute('data-price'));
+                const image = this.getAttribute('data-image');
                 await window.addToCart(productId, 1);
             });
         });
