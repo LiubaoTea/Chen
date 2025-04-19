@@ -11,14 +11,21 @@
 
 .summary-item-left {
     flex-shrink: 0;
-    width: 32px;
-    height: 32px;
+    width: 48px;
+    height: 48px;
     display: flex;
     align-items: center;
     justify-content: center;
     background: #fff;
     border-radius: 4px;
     border: 1px solid #e8d5c4;
+    overflow: hidden;
+}
+
+.summary-item-left img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
 .summary-item-left i {
@@ -29,19 +36,42 @@
 .summary-item-right {
     flex: 1;
     display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
+    flex-direction: column;
+    justify-content: center;
 }
 
-.summary-item-right strong {
+.summary-item-right .item-name {
     color: #5c3c1d;
     font-size: 1rem;
-    margin-right: 1rem;
+    margin-bottom: 0.25rem;
 }
 
-.summary-item-right p {
+.summary-item-right .item-details {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
     color: #7c5c3c;
     font-size: 0.9rem;
-    text-align: right;
+}
+
+.payment-method {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: #fff;
+    border: 1px solid #e8d5c4;
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+    cursor: pointer;
+}
+
+.payment-method i {
+    font-size: 1.5rem;
+}
+
+.payment-method span {
+    flex: 1;
+    color: #5c3c1d;
+    font-size: 1rem;
 }
