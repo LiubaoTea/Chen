@@ -1,5 +1,6 @@
 .summary-item {
     display: flex;
+    align-items: center;
     gap: 1rem;
     padding: 1rem;
     background: #fdfbf8;
@@ -10,32 +11,37 @@
 
 .summary-item-left {
     flex-shrink: 0;
-    width: 40px;
-    height: 40px;
+    width: 32px;
+    height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
+    background: #fff;
+    border-radius: 4px;
+    border: 1px solid #e8d5c4;
 }
 
 .summary-item-left i {
-    font-size: 1.5rem;
+    font-size: 1.2rem;
     color: #8b5e34;
 }
 
 .summary-item-right {
     flex: 1;
     display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
 }
 
 .summary-item-right strong {
     color: #5c3c1d;
     font-size: 1rem;
+    margin-right: 1rem;
 }
 
 .summary-item-right p {
     color: #7c5c3c;
     font-size: 0.9rem;
-    line-height: 1.4;
+    text-align: right;
 }
