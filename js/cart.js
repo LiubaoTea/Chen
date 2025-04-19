@@ -148,7 +148,7 @@ async function updateCartUI() {
             cartItemList.innerHTML = cartData.map(item => `
                 <div class="cart-item" data-id="${item.cart_id}">
                     <div class="cart-item-image">
-                        <img src="https://r2liubaotea.liubaotea.online/image/Goods/Goods_${item.cart_id}.png" alt="${item.name}">
+                        <img src="https://r2liubaotea.liubaotea.online/image/Goods/Goods_${item.product_id}.png" alt="${item.name}">
                     </div>
                     <div class="cart-item-info">
                         <h3>${item.name}</h3>
