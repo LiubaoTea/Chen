@@ -302,6 +302,81 @@ async function deleteAddress(addressId) {
     }
 }
 
+// 更新订单总结
+function updateOrderSummary() {
+    const selectedAddress = document.querySelector('.address-card.selected');
+    const selectedItems = document.querySelectorAll('.order-item input[type="checkbox"]:checked');
+    const selectedPayment = document.querySelector('.payment-method.selected');
+
+    // 更新收货地址信息
+    const addressInfo = document.getElementById('selectedAddressInfo');
+    if (selectedAddress && addressInfo) {
+        const name = selectedAddress.querySelector('h3').textContent;
+        const address = selectedAddress.querySelector('p').textContent;
+        addressInfo.innerHTML = `
+            <div class="summary-item">
+                <i class="fas fa-map-marker-alt"></i>
+                <div>
+                    <strong>${name}</strong>
+                    <p>${address}</p>
+                </div>
+            </div>
+        `;
+    }
+
+    // 更新商品信息
+    const itemsInfo = document.getElementById('selectedItemsInfo');
+    let subtotal = 0;
+    if (selectedItems.length > 0 && itemsInfo) {
+        const itemsHtml = Array.from(selectedItems).map(checkbox => {
+            const item = checkbox.closest('.order-item');
+            const name = item.querySelector('.item-name').textContent;
+            const price = parseFloat(item.querySelector('.item-price').textContent.slice(1));
+            const quantity = parseInt(item.querySelector('.item-quantity').textContent.split('：')[1]);
+            const imageUrl = item.querySelector('img').src;
+            subtotal += price * quantity;
+            return `
+                <div class="summary-item">
+                    <div class="summary-item-left">
+                        <img src="${imageUrl}" alt="${name}" class="summary-image">
+                    </div>
+                    <div class="summary-item-right">
+                        <strong>${name}</strong>
+                        <div class="summary-item-meta">
+                            <span class="summary-item-price">¥${price.toFixed(2)}</span>
+                            <span class="summary-item-quantity">× ${quantity}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        itemsInfo.innerHTML = itemsHtml;
+    }
+
+    // 更新支付方式信息
+    const paymentInfo = document.getElementById('selectedPaymentInfo');
+    if (selectedPayment && paymentInfo) {
+        const paymentName = selectedPayment.querySelector('span').textContent;
+        const paymentIcon = selectedPayment.querySelector('i').className;
+        paymentInfo.innerHTML = `
+            <div class="summary-item">
+                <i class="${paymentIcon}"></i>
+                <div>
+                    <strong>${paymentName}</strong>
+                </div>
+            </div>
+        `;
+    }
+
+    // 更新金额信息
+    const shipping = subtotal >= 199 ? 0 : 10; // 满199包邮
+    const total = subtotal + shipping;
+
+    document.getElementById('subtotal').textContent = `¥${subtotal.toFixed(2)}`;
+    document.getElementById('shipping').textContent = `¥${shipping.toFixed(2)}`;
+    document.getElementById('total').textContent = `¥${total.toFixed(2)}`;
+}
+
 // 加载订单商品
 async function loadOrderItems() {
     try {
@@ -343,8 +418,7 @@ async function loadOrderItems() {
         orderItems.innerHTML = items.map(item => `
             <div class="order-item" data-id="${item.product_id}">
                 <div class="item-radio">
-                    <input type="radio" name="product" id="product_${item.product_id}" checked>
-                    <label for="product_${item.product_id}"></label>
+                    <input type="checkbox" id="product_${item.product_id}" checked>
                 </div>
                 <div class="item-image">
                     <img src="${item.image_url}" alt="${item.name}">
@@ -358,25 +432,12 @@ async function loadOrderItems() {
         `).join('');
 
         // 添加商品选择事件
-        const orderItemElements = orderItems.querySelectorAll('.order-item');
-        orderItemElements.forEach(item => {
-            const radio = item.querySelector('input[type="radio"]');
-            item.addEventListener('click', () => {
-                orderItemElements.forEach(i => {
-                    i.classList.remove('selected');
-                    i.querySelector('input[type="radio"]').checked = false;
-                });
-                item.classList.add('selected');
-                radio.checked = true;
+        const checkboxes = orderItems.querySelectorAll('input[type="checkbox"]');
+        checkboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', () => {
                 updateOrderSummary();
             });
         });
-
-        // 默认选中第一个商品
-        if (orderItemElements.length > 0) {
-            orderItemElements[0].classList.add('selected');
-            orderItemElements[0].querySelector('input[type="radio"]').checked = true;
-        }
 
         updateOrderSummary(); // 更新订单总结
 
