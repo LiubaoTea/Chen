@@ -199,22 +199,27 @@ function addCartItemEventListeners() {
             const cartId = this.dataset.cartId;
             const input = this.parentElement.querySelector('input');
             let currentValue = parseInt(input.value);
-
-            if (this.classList.contains('minus')) {
-                if (currentValue > 1) {
-                    currentValue--;
-                    await updateCartItemQuantity(cartId, currentValue);
-                    await updateCartUI();
+            try {
+                if (this.classList.contains('minus')) {
+                    if (currentValue > 1) {
+                        currentValue--;
+                        await updateCartItemQuantity(cartId, currentValue);
+                        input.value = currentValue;
+                        await updateCartUI();
+                    }
+                } else if (this.classList.contains('plus')) {
+                    if (currentValue < 99) {
+                        currentValue++;
+                        await updateCartItemQuantity(cartId, currentValue);
+                        input.value = currentValue;
+                        await updateCartUI();
+                    }
                 }
-            } else if (this.classList.contains('plus')) {
-                if (currentValue < 99) {
-                    currentValue++;
-                    await updateCartItemQuantity(cartId, currentValue);
-                    await updateCartUI();
-                }
+            } catch (error) {
+                console.error('更新商品数量失败:', error);
+                alert('更新商品数量失败，请稍后重试');
+                await updateCartUI();
             }
-
-            input.value = currentValue;
         });
     });
 
@@ -318,32 +323,30 @@ async function removeFromCart(cartId) {
 
 // 更新购物车中商品数量
 async function updateCartItemQuantity(cartId, quantity) {
-    try {
-        const token = localStorage.getItem('userToken');
-        if (!token) {
-            throw new Error('未登录');
-        }
-
-        const response = await fetch(`${API_BASE_URL}/api/cart/update`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-                cartId: parseInt(cartId),
-                quantity: parseInt(quantity)
-            })
-        });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || '更新购物车商品数量失败');
-        }
-    } catch (error) {
-        console.error('更新购物车商品数量失败:', error);
-        alert('更新购物车商品数量失败，请稍后重试');
+    const token = localStorage.getItem('userToken');
+    if (!token) {
+        window.location.href = 'login.html';
+        return;
     }
+
+    const response = await fetch(`${API_BASE_URL}/api/cart/update`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+            cartId: parseInt(cartId),
+            quantity: parseInt(quantity)
+        })
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || '更新购物车商品数量失败');
+    }
+
+    return response.json();
 }
 
 // 清空购物车
