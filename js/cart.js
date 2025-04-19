@@ -136,13 +136,17 @@ async function updateCartUI() {
         if (items.length === 0) {
             if (emptyCart) emptyCart.style.display = 'block';
             if (cartFooter) cartFooter.style.display = 'none';
-            if (cartItemList) cartItemList.innerHTML = '';
+            if (cartItemList) {
+                cartItemList.style.display = 'none';
+                cartItemList.innerHTML = '';
+            }
             return;
         }
 
         // 显示购物车商品
         if (emptyCart) emptyCart.style.display = 'none';
         if (cartFooter) cartFooter.style.display = 'block';
+        if (cartItemList) cartItemList.style.display = 'block';
         
         if (cartItemList) {
             cartItemList.innerHTML = cartData.map(item => `
