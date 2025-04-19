@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 // 初始化导航切换功能
 function initNavigation() {
     const navItems = document.querySelectorAll('.nav-item');
-    const contentSections = document.querySelectorAll('.content-section');
+    const contentSections = document.querySelectorAll('.nav-content');
 
     navItems.forEach(item => {
         item.addEventListener('click', () => {
@@ -45,7 +45,7 @@ function initNavigation() {
             // 如果点击的是当前激活的导航项，则收起内容
             if (item.classList.contains('active')) {
                 item.classList.remove('active');
-                targetSection.classList.remove('active');
+                targetSection.style.display = 'none';
             } else {
                 // 移除所有导航项的active类
                 navItems.forEach(nav => nav.classList.remove('active'));
@@ -53,12 +53,22 @@ function initNavigation() {
                 item.classList.add('active');
 
                 // 隐藏所有内容区域
-                contentSections.forEach(section => section.classList.remove('active'));
+                contentSections.forEach(section => section.style.display = 'none');
                 // 显示对应的内容区域
-                targetSection.classList.add('active');
+                targetSection.style.display = 'block';
             }
         });
     });
+
+    // 默认显示第一个导航项的内容
+    const firstNavItem = navItems[0];
+    if (firstNavItem) {
+        const firstSectionId = firstNavItem.getAttribute('data-section');
+        const firstSection = document.getElementById(`${firstSectionId}-section`);
+        if (firstSection) {
+            firstSection.style.display = 'block';
+        }
+    }
 }
 
 // 加载收货地址列表
@@ -373,11 +383,11 @@ function updateOrderSummary() {
     const selectedPayment = document.querySelector('.payment-method.selected');
 
     // 更新收货地址信息
-    const addressSummary = document.getElementById('addressSummary');
-    if (selectedAddress) {
+    const addressInfo = document.getElementById('selectedAddressInfo');
+    if (selectedAddress && addressInfo) {
         const name = selectedAddress.querySelector('h3').textContent;
         const address = selectedAddress.querySelector('p').textContent;
-        addressSummary.innerHTML = `
+        addressInfo.innerHTML = `
             <div class="summary-item">
                 <i class="fas fa-map-marker-alt"></i>
                 <div>
@@ -389,9 +399,9 @@ function updateOrderSummary() {
     }
 
     // 更新商品信息
-    const itemsSummary = document.getElementById('itemsSummary');
+    const itemsInfo = document.getElementById('selectedItemsInfo');
     let subtotal = 0;
-    if (selectedItems.length > 0) {
+    if (selectedItems.length > 0 && itemsInfo) {
         const itemsHtml = Array.from(selectedItems).map(item => {
             const name = item.querySelector('.item-name').textContent;
             const price = parseFloat(item.querySelector('.item-price').textContent.slice(1));
@@ -408,15 +418,15 @@ function updateOrderSummary() {
                 </div>
             `;
         }).join('');
-        itemsSummary.innerHTML = itemsHtml;
+        itemsInfo.innerHTML = itemsHtml;
     }
 
     // 更新支付方式信息
-    const paymentSummary = document.getElementById('paymentSummary');
-    if (selectedPayment) {
+    const paymentInfo = document.getElementById('selectedPaymentInfo');
+    if (selectedPayment && paymentInfo) {
         const paymentName = selectedPayment.querySelector('span').textContent;
         const paymentIcon = selectedPayment.querySelector('i').className;
-        paymentSummary.innerHTML = `
+        paymentInfo.innerHTML = `
             <div class="summary-item">
                 <i class="${paymentIcon}"></i>
                 <div>
@@ -464,6 +474,19 @@ function initPaymentMethods() {
     }
 }
 
+// 初始化备注功能
+function initRemark() {
+    const remarkTextarea = document.getElementById('orderRemark');
+    const remarkLimit = document.querySelector('.remark-limit');
+
+    if (remarkTextarea && remarkLimit) {
+        remarkTextarea.addEventListener('input', () => {
+            const length = remarkTextarea.value.length;
+            remarkLimit.textContent = `${length}/200`;
+        });
+    }
+}
+
 // 初始化提交订单按钮
 function initSubmitOrder() {
     const submitBtn = document.getElementById('submitOrder');
@@ -487,6 +510,7 @@ function initSubmitOrder() {
             const addressId = selectedAddress.dataset.id;
             const paymentMethod = selectedPayment.dataset.method;
             const total = parseFloat(document.getElementById('total').textContent.slice(1));
+            const remark = document.getElementById('orderRemark')?.value || '';
 
             // 创建订单
             const token = localStorage.getItem('userToken');
@@ -499,7 +523,8 @@ function initSubmitOrder() {
                 body: JSON.stringify({
                     addressId,
                     paymentMethod,
-                    total
+                    total,
+                    remark
                 })
             });
 
