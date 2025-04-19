@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // 加载用户信息
 async function loadUserInfo() {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/user/profile`, {
+        const response = await fetch(`${API_BASE_URL}/api/user`, {
             headers: {
                 'Authorization': `Bearer ${localStorage.getItem('userToken')}`
             }
