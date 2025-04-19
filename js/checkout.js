@@ -19,6 +19,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.location.href = 'login.html';
         return;
     }
+    
+    // 初始化各个功能模块
+    initOrderRemark();
 
     // 生成并显示订单编号
     const orderNumber = generateOrderNumber();
@@ -302,11 +305,26 @@ async function deleteAddress(addressId) {
     }
 }
 
+// 初始化订单备注功能
+function initOrderRemark() {
+    const remarkTextarea = document.getElementById('orderRemark');
+    const remarkLimit = document.querySelector('.remark-limit');
+
+    if (remarkTextarea && remarkLimit) {
+        remarkTextarea.addEventListener('input', () => {
+            const length = remarkTextarea.value.length;
+            remarkLimit.textContent = `${length}/200`;
+            updateOrderSummary();
+        });
+    }
+}
+
 // 更新订单总结
 function updateOrderSummary() {
     const selectedAddress = document.querySelector('.address-card.selected');
     const selectedItems = document.querySelectorAll('.order-item input[type="checkbox"]:checked');
     const selectedPayment = document.querySelector('.payment-method.selected');
+    const orderRemark = document.getElementById('orderRemark');
 
     // 更新收货地址信息
     const addressInfo = document.getElementById('selectedAddressInfo');
@@ -360,12 +378,31 @@ function updateOrderSummary() {
         const paymentIcon = selectedPayment.querySelector('i').className;
         paymentInfo.innerHTML = `
             <div class="summary-item">
-                <i class="${paymentIcon}"></i>
-                <div>
+                <div class="summary-item-left">
+                    <i class="${paymentIcon}"></i>
+                </div>
+                <div class="summary-item-right">
                     <strong>${paymentName}</strong>
                 </div>
             </div>
         `;
+    }
+
+    // 更新订单备注信息
+    const remarkInfo = document.getElementById('selectedRemarkInfo');
+    if (remarkInfo && orderRemark) {
+        const remarkContent = orderRemark.value.trim();
+        remarkInfo.innerHTML = remarkContent ? `
+            <div class="summary-item">
+                <div class="summary-item-left">
+                    <i class="fas fa-comment"></i>
+                </div>
+                <div class="summary-item-right">
+                    <strong>订单备注</strong>
+                    <p>${remarkContent}</p>
+                </div>
+            </div>
+        ` : '';
     }
 
     // 更新金额信息
@@ -498,12 +535,31 @@ function updateOrderSummary() {
         const paymentIcon = selectedPayment.querySelector('i').className;
         paymentInfo.innerHTML = `
             <div class="summary-item">
-                <i class="${paymentIcon}"></i>
-                <div>
+                <div class="summary-item-left">
+                    <i class="${paymentIcon}"></i>
+                </div>
+                <div class="summary-item-right">
                     <strong>${paymentName}</strong>
                 </div>
             </div>
         `;
+    }
+
+    // 更新订单备注信息
+    const remarkInfo = document.getElementById('selectedRemarkInfo');
+    if (remarkInfo && orderRemark) {
+        const remarkContent = orderRemark.value.trim();
+        remarkInfo.innerHTML = remarkContent ? `
+            <div class="summary-item">
+                <div class="summary-item-left">
+                    <i class="fas fa-comment"></i>
+                </div>
+                <div class="summary-item-right">
+                    <strong>订单备注</strong>
+                    <p>${remarkContent}</p>
+                </div>
+            </div>
+        ` : '';
     }
 
     // 更新金额信息
