@@ -1,6 +1,5 @@
 import { API_BASE_URL } from './config.js';
 import { checkAuthStatus } from './auth.js';
-import _ from './node_modules/lodash-es/lodash.js';
 
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', async () => {
@@ -499,8 +498,7 @@ async function showAddressForm(addressId = null) {
     }
 
 
-    const form = document.getElementById('addressForm');
-    form.addEventListener('submit', async (e) => {
+    document.getElementById('addressForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         // 检查用户登录状态
         const token = localStorage.getItem('userToken');
