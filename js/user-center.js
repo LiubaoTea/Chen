@@ -1,18 +1,19 @@
 import { API_BASE_URL } from './config.js';
 import { checkAuthStatus } from './auth.js';
 
-// 用户中心功能实现
-
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', () => {
     // 检查用户登录状态
-    if (!checkAuthStatus()) return;
+    if (!checkAuthStatus()) {
+        window.location.href = 'login.html';
+        return;
+    }
 
     // 获取并显示用户信息
     loadUserInfo();
     
-    // 初始化设置卡片点击事件
-    initSettingCards();
+    // 初始化导航菜单
+    initNavMenu();
     
     // 初始化退出登录按钮
     initLogoutButton();
@@ -49,12 +50,6 @@ async function loadUserInfo() {
             userEmailElement.textContent = userData.email;
             userIdElement.textContent = `用户ID: ${userData.user_id}`;
         }
-        
-        // 初始化导航菜单
-        initNavMenu();
-        
-        // 加载默认内容（订单列表）
-        loadOrders();
     } catch (error) {
         console.error('加载用户信息失败:', error);
         localStorage.removeItem('userToken'); // 清除无效的token
@@ -66,9 +61,10 @@ async function loadUserInfo() {
 // 加载用户订单
 async function loadOrders() {
     try {
+        const token = localStorage.getItem('userToken');
         const response = await fetch(`${API_BASE_URL}/api/orders`, {
             headers: {
-                'Authorization': `Bearer ${localStorage.getItem('userToken')}`
+                'Authorization': `Bearer ${token}`
             }
         });
         
@@ -77,30 +73,39 @@ async function loadOrders() {
         }
         
         const orders = await response.json();
-        const orderList = document.getElementById('orderList');
+        const contentArea = document.getElementById('contentArea');
         
-        // 清空现有订单列表
-        orderList.innerHTML = '';
+        let orderListHTML = `
+            <h3>我的订单</h3>
+            <div class="order-list">
+        `;
         
-        // 添加订单列表项
-        orders.forEach(order => {
-            const orderItem = document.createElement('li');
-            orderItem.className = 'order-item';
-            orderItem.innerHTML = `
-                <div class="order-info">
-                    <h4>订单号: ${order.orderNumber}</h4>
-                    <p>下单时间: ${new Date(order.orderDate).toLocaleDateString()}</p>
-                    <p>订单状态: ${getOrderStatus(order.status)}</p>
-                </div>
-                <div class="order-actions">
-                    <button onclick="viewOrderDetail('${order.orderNumber}')">查看详情</button>
-                </div>
-            `;
-            orderList.appendChild(orderItem);
-        });
+        if (orders.length === 0) {
+            orderListHTML += '<div class="empty-message">暂无订单记录</div>';
+        } else {
+            orders.forEach(order => {
+                orderListHTML += `
+                    <div class="order-item">
+                        <div class="order-info">
+                            <h4>订单号: ${order.order_id}</h4>
+                            <p>下单时间: ${new Date(order.created_at * 1000).toLocaleString()}</p>
+                            <p>订单状态: ${getOrderStatus(order.status)}</p>
+                            <p>订单金额: ¥${order.total_amount.toFixed(2)}</p>
+                        </div>
+                        <div class="order-actions">
+                            <button onclick="viewOrderDetail('${order.order_id}')">查看详情</button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+        
+        orderListHTML += '</div>';
+        contentArea.innerHTML = orderListHTML;
     } catch (error) {
         console.error('加载订单列表失败:', error);
-        alert('加载订单列表失败，请稍后重试');
+        document.getElementById('contentArea').innerHTML = 
+            '<div class="error-message">加载订单列表失败，请稍后重试</div>';
     }
 }
 
@@ -109,17 +114,11 @@ function getOrderStatus(status) {
     const statusMap = {
         'pending': '待付款',
         'paid': '已付款',
-        'shipping': '已发货',
-        'completed': '已完成',
+        'shipped': '已发货',
+        'delivered': '已送达',
         'cancelled': '已取消'
     };
     return statusMap[status] || status;
-}
-
-// 查看订单详情
-function viewOrderDetail(orderNumber) {
-    // 跳转到订单详情页面
-    window.location.href = `order-detail.html?orderNumber=${orderNumber}`;
 }
 
 // 初始化导航菜单
@@ -129,54 +128,29 @@ function initNavMenu() {
 
     navItems.forEach(item => {
         item.addEventListener('click', async () => {
-            try {
-                // 移除所有导航项的active类
-                navItems.forEach(nav => nav.classList.remove('active'));
-                // 添加当前项的active类
-                item.classList.add('active');
+            // 移除所有导航项的active类
+            navItems.forEach(nav => nav.classList.remove('active'));
+            // 添加当前项的active类
+            item.classList.add('active');
 
-                const section = item.getAttribute('data-section');
-                contentArea.innerHTML = '<div class="loading">加载中...</div>';
-                
-                // 根据不同的导航项加载对应的内容
+            const section = item.getAttribute('data-section');
+            contentArea.innerHTML = '<div class="loading">加载中...</div>';
+            
+            try {
                 switch(section) {
                     case 'orders':
-                        contentArea.innerHTML = `
-                            <h3>我的订单</h3>
-                            <div id="orderList" class="order-list">
-                                <!-- 订单列表将通过API动态加载 -->
-                            </div>
-                        `;
                         await loadOrders();
                         break;
                     case 'profile':
-                        contentArea.innerHTML = `
-                            <h3>个人资料</h3>
-                            <div id="profileContent">
-                                <!-- 个人资料将通过API动态加载 -->
-                            </div>
-                        `;
                         await showProfileSettings();
                         break;
                     case 'security':
-                        contentArea.innerHTML = `
-                            <h3>安全设置</h3>
-                            <div id="securityContent">
-                                <!-- 安全设置表单将通过API动态加载 -->
-                            </div>
-                        `;
                         await showSecuritySettings();
                         break;
                     case 'address':
                         await showAddressSettings();
                         break;
                     case 'notification':
-                        contentArea.innerHTML = `
-                            <h3>通知设置</h3>
-                            <div id="notificationContent">
-                                <!-- 通知设置将通过API动态加载 -->
-                            </div>
-                        `;
                         await showNotificationSettings();
                         break;
                 }
@@ -186,18 +160,165 @@ function initNavMenu() {
             }
         });
     });
-}
+
+    // 默认加载订单列表
+    document.querySelector('[data-section="orders"]').click();
 }
 
+
+
+// 显示个人资料设置
+async function showProfileSettings() {
+    const contentArea = document.getElementById('contentArea');
+    try {
+        const token = localStorage.getItem('userToken');
+        const response = await fetch(`${API_BASE_URL}/api/user/profile`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('获取个人资料失败');
+        }
+
+        const profile = await response.json();
+        contentArea.innerHTML = `
+            <h3>个人资料</h3>
+            <form id="profileForm" class="settings-form">
+                <div class="form-group">
+                    <label for="username">用户名</label>
+                    <input type="text" id="username" name="username" value="${profile.username}" required>
+                </div>
+                <div class="form-group">
+                    <label for="email">邮箱</label>
+                    <input type="email" id="email" name="email" value="${profile.email}" required>
+                </div>
+                <div class="form-group">
+                    <label for="phone">手机号码</label>
+                    <input type="tel" id="phone" name="phone" value="${profile.phone_number || ''}" 
+                           pattern="\+[0-9]{11,}" placeholder="+86开头的手机号">
+                </div>
+                <button type="submit" class="submit-btn">保存修改</button>
+            </form>
+        `;
+
+        // 绑定表单提交事件
+        document.getElementById('profileForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                const formData = new FormData(e.target);
+                const response = await fetch(`${API_BASE_URL}/api/user/profile`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        username: formData.get('username'),
+                        email: formData.get('email'),
+                        phone_number: formData.get('phone')
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('更新个人资料失败');
+                }
+
+                alert('个人资料更新成功');
+                loadUserInfo(); // 重新加载用户信息
+            } catch (error) {
+                console.error('更新个人资料失败:', error);
+                alert('更新失败，请重试');
+            }
+        });
+    } catch (error) {
+        console.error('加载个人资料失败:', error);
+        contentArea.innerHTML = '<div class="error">加载个人资料失败，请重试</div>';
+    }
+}
+
+// 显示安全设置
+async function showSecuritySettings() {
+    const contentArea = document.getElementById('contentArea');
+    contentArea.innerHTML = `
+        <h3>安全设置</h3>
+        <form id="securityForm" class="settings-form">
+            <div class="form-group">
+                <label for="currentPassword">当前密码</label>
+                <input type="password" id="currentPassword" name="currentPassword" required>
+            </div>
+            <div class="form-group">
+                <label for="newPassword">新密码</label>
+                <input type="password" id="newPassword" name="newPassword" required>
+            </div>
+            <div class="form-group">
+                <label for="confirmPassword">确认新密码</label>
+                <input type="password" id="confirmPassword" name="confirmPassword" required>
+            </div>
+            <button type="submit" class="submit-btn">修改密码</button>
+        </form>
+    `;
+
+    // 绑定表单提交事件
+    document.getElementById('securityForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        const newPassword = formData.get('newPassword');
+        const confirmPassword = formData.get('confirmPassword');
+
+        if (newPassword !== confirmPassword) {
+            alert('两次输入的密码不一致');
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/user/security`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('userToken')}`
+                },
+                body: JSON.stringify({
+                    current_password: formData.get('currentPassword'),
+                    new_password: newPassword
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('修改密码失败');
+            }
+
+            alert('密码修改成功，请重新登录');
+            localStorage.removeItem('userToken');
+            window.location.href = 'login.html';
+        } catch (error) {
+            console.error('修改密码失败:', error);
+            alert('修改失败，请重试');
+        }
+    });
+}
 
 // 显示收货地址设置
 async function showAddressSettings() {
+    const contentArea = document.getElementById('contentArea');
     try {
-        const contentArea = document.getElementById('contentArea');
-        contentArea.innerHTML = `
+        const token = localStorage.getItem('userToken');
+        const response = await fetch(`${API_BASE_URL}/api/user/addresses`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('获取地址列表失败');
+        }
+
+        const addresses = await response.json();
+        let addressHTML = `
             <h3>收货地址管理</h3>
-            <div id="addressList">
-                <!-- 地址列表将通过API动态加载 -->
+            <button id="addAddressBtn" class="add-btn">添加新地址</button>
+            <div class="address-list">
             </div>
             <button id="addAddressBtn" class="btn-primary">添加新地址</button>
         `;
@@ -214,93 +335,73 @@ async function showAddressSettings() {
 
 // 显示通知设置
 async function showNotificationSettings() {
+    const contentArea = document.getElementById('contentArea');
     try {
+        const token = localStorage.getItem('userToken');
         const response = await fetch(`${API_BASE_URL}/api/user/settings`, {
             headers: {
-                'Authorization': `Bearer ${localStorage.getItem('userToken')}`
+                'Authorization': `Bearer ${token}`
             }
         });
 
-        if (!response.ok) throw new Error('获取通知设置失败');
-        const settings = await response.json();
+        if (!response.ok) {
+            throw new Error('获取通知设置失败');
+        }
 
-        const content = `
+        const settings = await response.json();
+        const notificationPrefs = JSON.parse(settings.notification_prefs || '{}');
+
+        contentArea.innerHTML = `
             <h3>通知设置</h3>
-            <form id="notificationForm">
+            <form id="notificationForm" class="settings-form">
                 <div class="form-group">
                     <label>
-                        <input type="checkbox" name="email_notifications" 
-                               ${settings.notification_prefs.email ? 'checked' : ''}>
+                        <input type="checkbox" name="email" ${notificationPrefs.email ? 'checked' : ''}>
                         接收邮件通知
                     </label>
                 </div>
                 <div class="form-group">
                     <label>
-                        <input type="checkbox" name="sms_notifications" 
-                               ${settings.notification_prefs.sms ? 'checked' : ''}>
+                        <input type="checkbox" name="sms" ${notificationPrefs.sms ? 'checked' : ''}>
                         接收短信通知
                     </label>
                 </div>
-                <div class="form-group">
-                    <label>隐私设置</label>
-                    <div>
-                        <label>
-                            <input type="checkbox" name="show_email" 
-                                   ${settings.privacy_settings.show_email ? 'checked' : ''}>
-                            公开邮箱
-                        </label>
-                    </div>
-                    <div>
-                        <label>
-                            <input type="checkbox" name="show_phone" 
-                                   ${settings.privacy_settings.show_phone ? 'checked' : ''}>
-                            公开手机号
-                        </label>
-                    </div>
-                </div>
-                <button type="submit" class="btn-primary">保存设置</button>
+                <button type="submit" class="submit-btn">保存设置</button>
             </form>
         `;
 
-        const contentArea = document.getElementById('contentArea');
-        contentArea.innerHTML = content;
-
-        // 添加表单提交事件
-        const form = document.getElementById('notificationForm');
-        form.addEventListener('submit', async (e) => {
+        // 绑定表单提交事件
+        document.getElementById('notificationForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             try {
-                const formData = new FormData(form);
-                const settings = {
-                    notification_prefs: {
-                        email: formData.get('email_notifications') === 'on',
-                        sms: formData.get('sms_notifications') === 'on'
-                    },
-                    privacy_settings: {
-                        show_email: formData.get('show_email') === 'on',
-                        show_phone: formData.get('show_phone') === 'on'
-                    }
-                };
-
+                const formData = new FormData(e.target);
                 const response = await fetch(`${API_BASE_URL}/api/user/settings`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('userToken')}`
+                        'Authorization': `Bearer ${token}`
                     },
-                    body: JSON.stringify(settings)
+                    body: JSON.stringify({
+                        notification_prefs: JSON.stringify({
+                            email: formData.get('email') === 'on',
+                            sms: formData.get('sms') === 'on'
+                        })
+                    })
                 });
 
-                if (!response.ok) throw new Error('更新通知设置失败');
-                alert('通知设置已更新');
+                if (!response.ok) {
+                    throw new Error('更新通知设置失败');
+                }
+
+                alert('通知设置更新成功');
             } catch (error) {
                 console.error('更新通知设置失败:', error);
-                alert('更新通知设置失败，请重试');
+                alert('更新失败，请重试');
             }
         });
     } catch (error) {
         console.error('加载通知设置失败:', error);
-        alert('加载通知设置失败，请重试');
+        contentArea.innerHTML = '<div class="error">加载通知设置失败，请重试</div>';
     }
 }
 
@@ -663,13 +764,19 @@ function showSettingsModal(content) {
 
 // 初始化退出登录按钮
 function initLogoutButton() {
-    const logoutBtn = document.querySelector('.logout-btn');
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', () => {
-            // 清除本地存储的用户信息
+    const logoutBtn = document.createElement('button');
+    logoutBtn.className = 'logout-btn';
+    logoutBtn.textContent = '退出登录';
+    logoutBtn.onclick = () => {
+        if (confirm('确定要退出登录吗？')) {
             localStorage.removeItem('userToken');
-            // 跳转到登录页面
+            localStorage.removeItem('username');
+            localStorage.removeItem('userEmail');
             window.location.href = 'login.html';
-        });
-    }
+        }
+    };
+
+    // 将退出按钮添加到导航菜单底部
+    const navMenu = document.querySelector('.nav-menu');
+    navMenu.appendChild(logoutBtn);
 }
