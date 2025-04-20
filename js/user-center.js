@@ -2,21 +2,26 @@ import { API_BASE_URL } from './config.js';
 import { checkAuthStatus } from './auth.js';
 
 // 页面加载完成后初始化
-document.addEventListener('DOMContentLoaded', () => {
-    // 检查用户登录状态
-    if (!checkAuthStatus()) {
-        window.location.href = 'login.html';
-        return;
-    }
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        // 检查用户登录状态
+        if (!checkAuthStatus()) {
+            window.location.href = 'login.html';
+            return;
+        }
 
-    // 获取并显示用户信息
-    loadUserInfo();
-    
-    // 初始化导航菜单
-    initNavMenu();
-    
-    // 初始化退出登录按钮
-    initLogoutButton();
+        // 获取并显示用户信息
+        await loadUserInfo();
+        
+        // 初始化导航菜单
+        initNavMenu();
+        
+        // 初始化退出登录按钮
+        initLogoutButton();
+    } catch (error) {
+        console.error('初始化失败:', error);
+        window.location.href = 'login.html';
+    }
 });
 
 // 加载用户信息
