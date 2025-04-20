@@ -84,7 +84,7 @@ async function loadOrders() {
         `;
         
         if (orders.length === 0) {
-            orderListHTML += '<div class="empty-message">暂无订单记录</div>';
+            orderListHTML += '<div class="empty-message"><i class="fas fa-box-open"></i><br>暂无订单记录</div>';
         } else {
             orders.forEach(order => {
                 orderListHTML += `
@@ -108,7 +108,7 @@ async function loadOrders() {
     } catch (error) {
         console.error('加载订单列表失败:', error);
         document.getElementById('contentArea').innerHTML = 
-            '<div class="error-message">加载订单列表失败，请稍后重试</div>';
+            '<div class="error-message"><i class="fas fa-exclamation-circle"></i><br>加载订单列表失败，请稍后重试</div>';
     }
 }
 
@@ -360,9 +360,11 @@ async function showAddressSettings() {
         });
     } catch (error) {
         console.error('加载地址列表失败:', error);
-        contentArea.innerHTML = '<div class="error">加载地址列表失败，请重试</div>';
+        contentArea.innerHTML = '<div class="error-message">加载地址列表失败，请重试</div>';
     }
 }
+import { initRegionSelector } from './region-selector.js';
+
 // 显示地址表单（新增/编辑）
 async function showAddressForm(addressId = null) {
     const contentArea = document.getElementById('contentArea');
@@ -385,7 +387,7 @@ async function showAddressForm(addressId = null) {
 
     contentArea.innerHTML = `
         <h3>${addressId ? '编辑地址' : '新增地址'}</h3>
-        <form id="addressForm" class="settings-form">
+        <form id="addressForm" class="address-form">
             <div class="form-group">
                 <label for="recipientName">收货人姓名</label>
                 <input type="text" id="recipientName" name="recipient_name" value="${address?.recipient_name || ''}" required>
@@ -395,8 +397,8 @@ async function showAddressForm(addressId = null) {
                 <input type="tel" id="contactPhone" name="contact_phone" value="${address?.contact_phone || ''}" required>
             </div>
             <div class="form-group">
-                <label for="region">所在地区</label>
-                <input type="text" id="region" name="region" value="${address?.region || ''}" required>
+                <label>所在地区</label>
+                <div id="regionContainer"></div>
             </div>
             <div class="form-group">
                 <label for="fullAddress">详细地址</label>
