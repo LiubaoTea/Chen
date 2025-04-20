@@ -363,6 +363,11 @@ async function showAddressSettings() {
         contentArea.innerHTML = '<div class="error">加载地址列表失败，请重试</div>';
     }
 }
+import { regionData } from '../src/utils/china-area-data.js';
+
+// 导入CSS样式
+import '../css/address.css';
+
 // 显示地址表单（新增/编辑）
 async function showAddressForm(addressId = null) {
     const contentArea = document.getElementById('contentArea');
@@ -384,27 +389,41 @@ async function showAddressForm(addressId = null) {
     }
 
     contentArea.innerHTML = `
-        <h3>${addressId ? '编辑地址' : '新增地址'}</h3>
-        <form id="addressForm" class="settings-form">
-            <div class="form-group">
-                <label for="recipientName">收货人姓名</label>
-                <input type="text" id="recipientName" name="recipient_name" value="${address?.recipient_name || ''}" required>
-            </div>
-            <div class="form-group">
-                <label for="contactPhone">联系电话</label>
-                <input type="tel" id="contactPhone" name="contact_phone" value="${address?.contact_phone || ''}" required>
-            </div>
-            <div class="form-group">
-                <label for="region">所在地区</label>
-                <input type="text" id="region" name="region" value="${address?.region || ''}" required>
-            </div>
+        <div class="address-form-container tea-theme">
+            <h3 class="form-title">${addressId ? '编辑地址' : '新增地址'}</h3>
+            <form id="addressForm" class="settings-form" onsubmit="return false;">
+                <div class="form-group">
+                    <label for="recipientName">收货人姓名</label>
+                    <input type="text" id="recipientName" name="recipient_name" value="${address?.recipient_name || ''}" required>
+                </div>
+                <div class="form-group">
+                    <label for="contactPhone">联系电话</label>
+                    <input type="tel" id="contactPhone" name="contact_phone" value="${address?.contact_phone || ''}" required>
+                </div>
+                <div class="form-group region-select">
+                    <label>所在地区</label>
+                    <div class="select-group">
+                        <select id="province" required>
+                            <option value="">请选择省份</option>
+                            ${regionData.map(province => `
+                                <option value="${province.value}">${province.label}</option>
+                            `).join('')}
+                        </select>
+                        <select id="city" required disabled>
+                            <option value="">请选择城市</option>
+                        </select>
+                        <select id="district" required disabled>
+                            <option value="">请选择区县</option>
+                        </select>
+                    </div>
+                </div>
             <div class="form-group">
                 <label for="fullAddress">详细地址</label>
-                <textarea id="fullAddress" name="full_address" required>${address?.full_address || ''}</textarea>
+                <textarea id="fullAddress" name="full_address" rows="3" required>${address?.full_address || ''}</textarea>
             </div>
             <div class="form-group">
                 <label for="postalCode">邮政编码</label>
-                <input type="text" id="postalCode" name="postal_code" value="${address?.postal_code || ''}">
+                <input type="text" id="postalCode" name="postal_code" value="${address?.postal_code || ''}" pattern="[0-9]{6}">
             </div>
             <div class="form-group">
                 <label>
@@ -412,10 +431,111 @@ async function showAddressForm(addressId = null) {
                     设为默认地址
                 </label>
             </div>
-            <button type="submit" class="submit-btn">${addressId ? '保存修改' : '添加地址'}</button>
-            <button type="button" class="cancel-btn" onclick="showAddressSettings()">取消</button>
+            <div class="form-actions">
+                <button type="submit" class="submit-btn tea-btn">${addressId ? '保存修改' : '添加地址'}</button>
+                <button type="button" class="cancel-btn tea-btn" onclick="showAddressSettings()">取消</button>
+            </div>
         </form>
     `;
+
+    // 省市区联动事件处理
+    const provinceSelect = document.getElementById('province');
+    const citySelect = document.getElementById('city');
+    const districtSelect = document.getElementById('district');
+
+    provinceSelect.addEventListener('change', () => {
+        const selectedProvince = regionData.find(p => p.value === provinceSelect.value);
+        citySelect.innerHTML = '<option value="">请选择城市</option>';
+        districtSelect.innerHTML = '<option value="">请选择区县</option>';
+        
+        if (selectedProvince && selectedProvince.children) {
+            citySelect.disabled = false;
+            selectedProvince.children.forEach(city => {
+                citySelect.innerHTML += `<option value="${city.value}">${city.label}</option>`;
+            });
+        } else {
+            citySelect.disabled = true;
+            districtSelect.disabled = true;
+        }
+    });
+
+    citySelect.addEventListener('change', () => {
+        const selectedProvince = regionData.find(p => p.value === provinceSelect.value);
+        const selectedCity = selectedProvince?.children?.find(c => c.value === citySelect.value);
+        districtSelect.innerHTML = '<option value="">请选择区县</option>';
+
+        if (selectedCity && selectedCity.children) {
+            districtSelect.disabled = false;
+            selectedCity.children.forEach(district => {
+                districtSelect.innerHTML += `<option value="${district.value}">${district.label}</option>`;
+            });
+        } else {
+            districtSelect.disabled = true;
+        }
+    });
+
+    // 表单提交处理
+    document.getElementById('addressForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        const selectedProvince = regionData.find(p => p.value === provinceSelect.value);
+        const selectedCity = selectedProvince?.children?.find(c => c.value === citySelect.value);
+        const selectedDistrict = selectedCity?.children?.find(d => d.value === districtSelect.value);
+
+        const region = `${selectedProvince?.label || ''} ${selectedCity?.label || ''} ${selectedDistrict?.label || ''}`;
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/user/addresses${addressId ? `/${addressId}` : ''}`, {
+                method: addressId ? 'PUT' : 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('userToken')}`
+                },
+                body: JSON.stringify({
+                    recipient_name: formData.get('recipient_name'),
+                    contact_phone: formData.get('contact_phone'),
+                    region: region.trim(),
+                    full_address: formData.get('full_address'),
+                    postal_code: formData.get('postal_code'),
+                    is_default: formData.get('is_default') === 'true'
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(addressId ? '更新地址失败' : '添加地址失败');
+            }
+
+            alert(addressId ? '地址更新成功' : '地址添加成功');
+            showAddressSettings();
+        } catch (error) {
+            console.error('保存地址失败:', error);
+            alert('操作失败，请重试');
+        }
+    });
+
+    // 如果是编辑模式，预填充省市区选择器
+    if (address && address.region) {
+        const regions = address.region.split(' ');
+        if (regions.length === 3) {
+            const [province, city, district] = regions;
+            const provinceData = regionData.find(p => p.label === province);
+            if (provinceData) {
+                provinceSelect.value = provinceData.value;
+                provinceSelect.dispatchEvent(new Event('change'));
+
+                const cityData = provinceData.children?.find(c => c.label === city);
+                if (cityData) {
+                    citySelect.value = cityData.value;
+                    citySelect.dispatchEvent(new Event('change'));
+
+                    const districtData = cityData.children?.find(d => d.label === district);
+                    if (districtData) {
+                        districtSelect.value = districtData.value;
+                    }
+                }
+            }
+        }
+    }
 
     document.getElementById('addressForm').addEventListener('submit', async (e) => {
         e.preventDefault();
