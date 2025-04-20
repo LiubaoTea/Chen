@@ -126,7 +126,7 @@ function getOrderStatus(status) {
 
 // 初始化导航菜单
 function initNavMenu() {
-    const navItems = document.querySelectorAll('.nav-item');
+    const navItems = document.querySelectorAll('.nav-item[data-section]');
     const contentArea = document.getElementById('contentArea');
 
     navItems.forEach(item => {
@@ -165,7 +165,10 @@ function initNavMenu() {
     });
 
     // 默认加载订单列表
-    document.querySelector('[data-section="orders"]').click();
+    const defaultNav = document.querySelector('.nav-item[data-section="orders"]');
+    if (defaultNav) {
+        defaultNav.click();
+    }
 }
 
 
@@ -365,8 +368,17 @@ async function showAddressSettings() {
 }
 import { regionData } from '../src/utils/china-area-data.js';
 
-// 导入CSS样式
-import '../css/address.css';
+// 初始化退出登录按钮
+function initLogoutButton() {
+    const logoutButton = document.createElement('button');
+    logoutButton.className = 'nav-item';
+    logoutButton.innerHTML = '<i class="fas fa-sign-out-alt"></i> 退出登录';
+    logoutButton.onclick = () => {
+        localStorage.removeItem('userToken');
+        window.location.href = 'login.html';
+    };
+    document.querySelector('.nav-list').appendChild(logoutButton);
+}
 
 // 显示地址表单（新增/编辑）
 async function showAddressForm(addressId = null) {
