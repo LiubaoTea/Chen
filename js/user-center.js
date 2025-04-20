@@ -1,12 +1,26 @@
 import { API_BASE_URL } from './config.js';
 import { checkAuthStatus } from './auth.js';
-import _ from './node_modules/lodash-es/lodash.js';
+import _ from '../node_modules/lodash-es/lodash.js';
 
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', async () => {
     try {
         // 检查用户登录状态
-        if (!checkAuthStatus()) {
+        const token = localStorage.getItem('userToken');
+        if (!token) {
+            window.location.href = 'login.html';
+            return;
+        }
+
+        // 验证token有效性
+        const response = await fetch(`${API_BASE_URL}/api/user/profile`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            localStorage.removeItem('userToken');
             window.location.href = 'login.html';
             return;
         }
@@ -130,10 +144,49 @@ function getOrderStatus(status) {
     return statusMap[status] || status;
 }
 
+// 初始化退出登录按钮
+function initLogoutButton() {
+    const logoutButton = document.createElement('button');
+    logoutButton.textContent = '退出登录';
+    logoutButton.className = 'logout-btn';
+    logoutButton.onclick = () => {
+        localStorage.removeItem('userToken');
+        window.location.href = 'login.html';
+    };
+    
+    // 将退出按钮添加到导航菜单底部
+    const navMenu = document.querySelector('.nav-menu');
+    if (navMenu) {
+        navMenu.appendChild(logoutButton);
+    }
+}
+
 // 初始化导航菜单
 function initNavMenu() {
     const navItems = document.querySelectorAll('.nav-item');
     const contentArea = document.getElementById('contentArea');
+    
+    // 如果没有找到导航项，创建默认导航
+    if (!navItems.length) {
+        const navMenu = document.querySelector('.nav-menu');
+        if (navMenu) {
+            const defaultNavItems = [
+                { text: '我的订单', section: 'orders' },
+                { text: '个人资料', section: 'profile' },
+                { text: '安全设置', section: 'security' },
+                { text: '收货地址', section: 'address' },
+                { text: '通知设置', section: 'notification' }
+            ];
+            
+            defaultNavItems.forEach(item => {
+                const navItem = document.createElement('div');
+                navItem.className = 'nav-item';
+                navItem.setAttribute('data-section', item.section);
+                navItem.textContent = item.text;
+                navMenu.appendChild(navItem);
+            });
+        }
+    }
 
     navItems.forEach(item => {
         item.addEventListener('click', async () => {
