@@ -16,7 +16,17 @@ document.addEventListener('DOMContentLoaded', () => {
     initNavMenu();
     
     // 初始化退出登录按钮
-    initLogoutButton();
+    const logoutBtn = document.createElement('button');
+    logoutBtn.className = 'logout-btn';
+    logoutBtn.innerHTML = '<i class="fas fa-sign-out-alt"></i>退出登录';
+    document.querySelector('.nav-list').appendChild(logoutBtn);
+    
+    logoutBtn.addEventListener('click', () => {
+        localStorage.removeItem('userToken');
+        localStorage.removeItem('username');
+        localStorage.removeItem('userEmail');
+        window.location.href = 'login.html';
+    });
 });
 
 // 加载用户信息
@@ -27,7 +37,7 @@ async function loadUserInfo() {
             throw new Error('未找到登录凭证');
         }
 
-        const response = await fetch(`${API_BASE_URL}/api/user`, {
+        const response = await fetch(`${API_BASE_URL}/api/user/profile`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -41,20 +51,23 @@ async function loadUserInfo() {
         const userData = await response.json();
         
         // 更新用户信息显示
-        const usernameElement = document.getElementById('username');
-        const userEmailElement = document.getElementById('userEmail');
-        const userIdElement = document.getElementById('userId');
+        document.getElementById('username').textContent = userData.username || '未设置';
+        document.getElementById('userEmail').textContent = userData.email || '未设置';
+        document.getElementById('userId').textContent = userData.user_id || '未知';
+        document.getElementById('userPhone').textContent = userData.phone_number || '未设置';
         
-        if (usernameElement && userEmailElement && userIdElement) {
-            usernameElement.textContent = userData.username;
-            userEmailElement.textContent = userData.email;
-            userIdElement.textContent = `用户ID: ${userData.user_id}`;
-        }
+        return userData;
     } catch (error) {
         console.error('加载用户信息失败:', error);
-        localStorage.removeItem('userToken'); // 清除无效的token
-        alert('登录已过期，请重新登录');
-        window.location.href = 'login.html';
+        document.getElementById('username').textContent = '加载失败';
+        document.getElementById('userEmail').textContent = '加载失败';
+        document.getElementById('userId').textContent = '加载失败';
+        document.getElementById('userPhone').textContent = '加载失败';
+        
+        if (error.message.includes('登录凭证')) {
+            localStorage.removeItem('userToken');
+            window.location.href = 'login.html';
+        }
     }
 }
 
@@ -315,21 +328,185 @@ async function showAddressSettings() {
         }
 
         const addresses = await response.json();
-        let addressHTML = `
+        contentArea.innerHTML = `
             <h3>收货地址管理</h3>
             <button id="addAddressBtn" class="add-btn">添加新地址</button>
             <div class="address-list">
+                ${addresses.length === 0 ? '<p>暂无收货地址</p>' : ''}
+                ${addresses.map(address => `
+                    <div class="address-item ${address.is_default ? 'default' : ''}">
+                        <div class="address-info">
+                            <p><strong>${address.recipient_name}</strong> ${address.contact_phone}</p>
+                            <p>${address.region} ${address.full_address}</p>
+                            <p>${address.postal_code || ''}</p>
+                        </div>
+                        <div class="address-actions">
+                            ${!address.is_default ? `<button class="set-default" data-id="${address.address_id}">设为默认</button>` : ''}
+                            <button class="edit" data-id="${address.address_id}">编辑</button>
+                            <button class="delete" data-id="${address.address_id}">删除</button>
+                        </div>
+                    </div>
+                `).join('')}
             </div>
-            <button id="addAddressBtn" class="btn-primary">添加新地址</button>
         `;
 
-        await loadAddressList();
-
         // 添加新地址按钮事件
-        document.getElementById('addAddressBtn').addEventListener('click', showAddAddressForm);
+        document.getElementById('addAddressBtn').addEventListener('click', () => {
+            showAddressForm();
+        });
+
+        // 绑定地址操作事件
+        document.querySelectorAll('.address-actions button').forEach(button => {
+            button.addEventListener('click', async (e) => {
+                const addressId = e.target.dataset.id;
+                if (e.target.classList.contains('set-default')) {
+                    await setDefaultAddress(addressId);
+                } else if (e.target.classList.contains('edit')) {
+                    await showAddressForm(addressId);
+                } else if (e.target.classList.contains('delete')) {
+                    await deleteAddress(addressId);
+                }
+            });
+        });
     } catch (error) {
         console.error('加载地址列表失败:', error);
-        alert('加载地址列表失败，请重试');
+        contentArea.innerHTML = '<div class="error">加载地址列表失败，请重试</div>';
+    }
+}
+// 显示地址表单（新增/编辑）
+async function showAddressForm(addressId = null) {
+    const contentArea = document.getElementById('contentArea');
+    let address = null;
+
+    if (addressId) {
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/user/addresses/${addressId}`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('userToken')}`
+                }
+            });
+            if (response.ok) {
+                address = await response.json();
+            }
+        } catch (error) {
+            console.error('获取地址详情失败:', error);
+        }
+    }
+
+    contentArea.innerHTML = `
+        <h3>${addressId ? '编辑地址' : '新增地址'}</h3>
+        <form id="addressForm" class="settings-form">
+            <div class="form-group">
+                <label for="recipientName">收货人姓名</label>
+                <input type="text" id="recipientName" name="recipient_name" value="${address?.recipient_name || ''}" required>
+            </div>
+            <div class="form-group">
+                <label for="contactPhone">联系电话</label>
+                <input type="tel" id="contactPhone" name="contact_phone" value="${address?.contact_phone || ''}" required>
+            </div>
+            <div class="form-group">
+                <label for="region">所在地区</label>
+                <input type="text" id="region" name="region" value="${address?.region || ''}" required>
+            </div>
+            <div class="form-group">
+                <label for="fullAddress">详细地址</label>
+                <textarea id="fullAddress" name="full_address" required>${address?.full_address || ''}</textarea>
+            </div>
+            <div class="form-group">
+                <label for="postalCode">邮政编码</label>
+                <input type="text" id="postalCode" name="postal_code" value="${address?.postal_code || ''}">
+            </div>
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" name="is_default" ${address?.is_default ? 'checked' : ''}>
+                    设为默认地址
+                </label>
+            </div>
+            <button type="submit" class="submit-btn">${addressId ? '保存修改' : '添加地址'}</button>
+            <button type="button" class="cancel-btn" onclick="showAddressSettings()">取消</button>
+        </form>
+    `;
+
+    document.getElementById('addressForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        const addressData = {
+            recipient_name: formData.get('recipient_name'),
+            contact_phone: formData.get('contact_phone'),
+            region: formData.get('region'),
+            full_address: formData.get('full_address'),
+            postal_code: formData.get('postal_code'),
+            is_default: formData.get('is_default') === 'on'
+        };
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/user/addresses${addressId ? `/${addressId}` : ''}`, {
+                method: addressId ? 'PUT' : 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('userToken')}`
+                },
+                body: JSON.stringify(addressData)
+            });
+
+            if (!response.ok) {
+                throw new Error(addressId ? '更新地址失败' : '添加地址失败');
+            }
+
+            alert(addressId ? '地址更新成功' : '地址添加成功');
+            showAddressSettings();
+        } catch (error) {
+            console.error('保存地址失败:', error);
+            alert('操作失败，请重试');
+        }
+    });
+}
+
+// 设置默认地址
+async function setDefaultAddress(addressId) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/user/addresses/${addressId}/default`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('userToken')}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('设置默认地址失败');
+        }
+
+        alert('默认地址设置成功');
+        showAddressSettings();
+    } catch (error) {
+        console.error('设置默认地址失败:', error);
+        alert('设置失败，请重试');
+    }
+}
+
+// 删除地址
+async function deleteAddress(addressId) {
+    if (!confirm('确定要删除这个地址吗？')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/user/addresses/${addressId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('userToken')}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('删除地址失败');
+        }
+
+        alert('地址删除成功');
+        showAddressSettings();
+    } catch (error) {
+        console.error('删除地址失败:', error);
+        alert('删除失败，请重试');
     }
 }
 
