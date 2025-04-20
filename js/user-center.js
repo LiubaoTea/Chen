@@ -130,6 +130,17 @@ function getOrderStatus(status) {
     return statusMap[status] || status;
 }
 
+// 初始化退出登录按钮
+function initLogoutButton() {
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => {
+            localStorage.removeItem('userToken');
+            window.location.href = 'login.html';
+        });
+    }
+}
+
 // 初始化导航菜单
 function initNavMenu() {
     const navItems = document.querySelectorAll('.nav-item');
