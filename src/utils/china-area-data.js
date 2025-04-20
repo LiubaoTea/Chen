@@ -1,5 +1,5 @@
 // import REGION_DATA from 'new-china-area-data'
-import { cloneDeep } from '../../node_modules/lodash-es/lodash.js'
+import { cloneDeep } from '/node_modules/lodash-es/lodash.js'
 
 const REGION_DATA = require('./data.json')
 // code转汉字大对象
