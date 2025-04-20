@@ -373,6 +373,9 @@ async function showAddressForm(addressId = null) {
     const contentArea = document.getElementById('contentArea');
     let address = null;
 
+    // 导入省市区数据
+    const { regionData, CodeToText } = await import('../src/utils/china-area-data.js');
+
     if (addressId) {
         try {
             const response = await fetch(`${API_BASE_URL}/api/user/addresses/${addressId}`, {
@@ -389,46 +392,139 @@ async function showAddressForm(addressId = null) {
     }
 
     contentArea.innerHTML = `
-        <h3>${addressId ? '编辑地址' : '新增地址'}</h3>
-        <form id="addressForm" class="settings-form">
-            <div class="form-group">
-                <label for="recipientName">收货人姓名</label>
-                <input type="text" id="recipientName" name="recipient_name" value="${address?.recipient_name || ''}" required>
-            </div>
-            <div class="form-group">
-                <label for="contactPhone">联系电话</label>
-                <input type="tel" id="contactPhone" name="contact_phone" value="${address?.contact_phone || ''}" required>
-            </div>
-            <div class="form-group">
-                <label for="region">所在地区</label>
-                <input type="text" id="region" name="region" value="${address?.region || ''}" required>
-            </div>
-            <div class="form-group">
-                <label for="fullAddress">详细地址</label>
-                <textarea id="fullAddress" name="full_address" required>${address?.full_address || ''}</textarea>
-            </div>
-            <div class="form-group">
-                <label for="postalCode">邮政编码</label>
-                <input type="text" id="postalCode" name="postal_code" value="${address?.postal_code || ''}">
-            </div>
-            <div class="form-group">
-                <label>
-                    <input type="checkbox" name="is_default" ${address?.is_default ? 'checked' : ''}>
-                    设为默认地址
-                </label>
-            </div>
-            <button type="submit" class="submit-btn">${addressId ? '保存修改' : '添加地址'}</button>
-            <button type="button" class="cancel-btn" onclick="showAddressSettings()">取消</button>
-        </form>
+        <div class="address-form-container tea-theme">
+            <h3 class="form-title">${addressId ? '编辑地址' : '新增地址'}</h3>
+            <form id="addressForm" class="settings-form">
+                <div class="form-group">
+                    <label for="recipientName">收货人姓名</label>
+                    <input type="text" id="recipientName" name="recipient_name" value="${address?.recipient_name || ''}" required>
+                </div>
+                <div class="form-group">
+                    <label for="contactPhone">联系电话</label>
+                    <input type="tel" id="contactPhone" name="contact_phone" value="${address?.contact_phone || ''}" required>
+                </div>
+                <div class="form-group address-selects">
+                    <label>所在地区</label>
+                    <div class="select-group">
+                        <select id="province" required></select>
+                        <select id="city" required></select>
+                        <select id="district" required></select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="fullAddress">详细地址</label>
+                    <textarea id="fullAddress" name="full_address" required class="tea-textarea">${address?.full_address || ''}</textarea>
+                </div>
+                <div class="form-group">
+                    <label for="postalCode">邮政编码</label>
+                    <input type="text" id="postalCode" name="postal_code" value="${address?.postal_code || ''}">
+                </div>
+                <div class="form-group checkbox-group">
+                    <label class="tea-checkbox">
+                        <input type="checkbox" name="is_default" ${address?.is_default ? 'checked' : ''}>
+                        <span class="checkbox-text">设为默认地址</span>
+                    </label>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="submit-btn tea-btn">${addressId ? '保存修改' : '添加地址'}</button>
+                    <button type="button" class="cancel-btn tea-btn" onclick="showAddressSettings()">取消</button>
+                </div>
+            </form>
+        </div>
     `;
+
+    // 初始化省市区选择器
+    const provinceSelect = document.getElementById('province');
+    const citySelect = document.getElementById('city');
+    const districtSelect = document.getElementById('district');
+
+    // 填充省份数据
+    provinceSelect.innerHTML = '<option value="">请选择省份</option>' +
+        regionData.map(province => `<option value="${province.value}">${province.label}</option>`).join('');
+
+    // 省份变化时更新城市
+    provinceSelect.addEventListener('change', () => {
+        const selectedProvince = regionData.find(p => p.value === provinceSelect.value);
+        citySelect.innerHTML = '<option value="">请选择城市</option>';
+        districtSelect.innerHTML = '<option value="">请选择区县</option>';
+
+        if (selectedProvince && selectedProvince.children) {
+            citySelect.innerHTML += selectedProvince.children
+                .map(city => `<option value="${city.value}">${city.label}</option>`).join('');
+        }
+    });
+
+    // 城市变化时更新区县
+    citySelect.addEventListener('change', () => {
+        const selectedProvince = regionData.find(p => p.value === provinceSelect.value);
+        const selectedCity = selectedProvince?.children?.find(c => c.value === citySelect.value);
+        districtSelect.innerHTML = '<option value="">请选择区县</option>';
+
+        if (selectedCity && selectedCity.children) {
+            districtSelect.innerHTML += selectedCity.children
+                .map(district => `<option value="${district.value}">${district.label}</option>`).join('');
+        }
+    });
+
+    // 如果是编辑模式，设置已选择的地区
+    if (address && address.region) {
+        const [province, city, district] = address.region.split(' ');
+        // 设置省份
+        const provinceOption = Array.from(provinceSelect.options)
+            .find(option => option.text === province);
+        if (provinceOption) {
+            provinceSelect.value = provinceOption.value;
+            provinceSelect.dispatchEvent(new Event('change'));
+
+            // 设置城市
+            setTimeout(() => {
+                const cityOption = Array.from(citySelect.options)
+                    .find(option => option.text === city);
+                if (cityOption) {
+                    citySelect.value = cityOption.value;
+                    citySelect.dispatchEvent(new Event('change'));
+
+                    // 设置区县
+                    setTimeout(() => {
+                        const districtOption = Array.from(districtSelect.options)
+                            .find(option => option.text === district);
+                        if (districtOption) {
+                            districtSelect.value = districtOption.value;
+                        }
+                    }, 100);
+                }
+            }, 100);
+        }
+    }
+
 
     document.getElementById('addressForm').addEventListener('submit', async (e) => {
         e.preventDefault();
+        // 检查用户登录状态
+        const token = localStorage.getItem('userToken');
+        if (!token) {
+            alert('登录已过期，请重新登录');
+            window.location.href = 'login.html';
+            return;
+        }
+
         const formData = new FormData(e.target);
+        const province = document.getElementById('province');
+        const city = document.getElementById('city');
+        const district = document.getElementById('district');
+
+        // 验证省市区选择
+        if (!province.value || !city.value || !district.value) {
+            alert('请完整选择所在地区');
+            return;
+        }
+
+        const region = `${province.options[province.selectedIndex].text} ${city.options[city.selectedIndex].text} ${district.options[district.selectedIndex].text}`;
+
         const addressData = {
             recipient_name: formData.get('recipient_name'),
             contact_phone: formData.get('contact_phone'),
-            region: formData.get('region'),
+            region: region,
             full_address: formData.get('full_address'),
             postal_code: formData.get('postal_code'),
             is_default: formData.get('is_default') === 'on'
