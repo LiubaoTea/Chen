@@ -1,5 +1,6 @@
 import { API_BASE_URL } from './config.js';
 import { checkAuthStatus } from './auth.js';
+import _ from './node_modules/lodash-es/lodash.js';
 
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', async () => {
