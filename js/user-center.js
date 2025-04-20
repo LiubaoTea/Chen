@@ -363,9 +363,6 @@ async function showAddressSettings() {
         contentArea.innerHTML = '<div class="error">加载地址列表失败，请重试</div>';
     }
 }
-// 导入省市区数据
-import { regionData } from '../src/utils/china-area-data.js';
-
 // 显示地址表单（新增/编辑）
 async function showAddressForm(addressId = null) {
     const contentArea = document.getElementById('contentArea');
@@ -398,27 +395,8 @@ async function showAddressForm(addressId = null) {
                 <input type="tel" id="contactPhone" name="contact_phone" value="${address?.contact_phone || ''}" required>
             </div>
             <div class="form-group">
-                <label for="province">所在地区</label>
-                <div class="address-select">
-                    <select id="province" name="province" required>
-                        <option value="">请选择省份</option>
-                        ${regionData.map(province => `
-                            <option value="${province.value}" ${address?.region?.startsWith(province.label) ? 'selected' : ''}>
-                                ${province.label}
-                            </option>
-                        `).join('')}
-                    </select>
-                </div>
-                <div class="address-select">
-                    <select id="city" name="city" required disabled>
-                        <option value="">请选择城市</option>
-                    </select>
-                </div>
-                <div class="address-select">
-                    <select id="district" name="district" required disabled>
-                        <option value="">请选择区/县</option>
-                    </select>
-                </div>
+                <label for="region">所在地区</label>
+                <input type="text" id="region" name="region" value="${address?.region || ''}" required>
             </div>
             <div class="form-group">
                 <label for="fullAddress">详细地址</label>
@@ -439,85 +417,13 @@ async function showAddressForm(addressId = null) {
         </form>
     `;
 
-    // 初始化省市区选择器
-    initRegionSelector(address?.region);
-}
-
-    // 初始化省市区选择器
-    function initRegionSelector(currentRegion = '') {
-        const provinceSelect = document.getElementById('province');
-        const citySelect = document.getElementById('city');
-        const districtSelect = document.getElementById('district');
-
-        // 省份变更事件
-        provinceSelect.addEventListener('change', () => {
-            const selectedProvince = regionData.find(p => p.value === provinceSelect.value);
-            citySelect.innerHTML = '<option value="">请选择城市</option>';
-            districtSelect.innerHTML = '<option value="">请选择区/县</option>';
-            
-            if (selectedProvince && selectedProvince.children) {
-                citySelect.disabled = false;
-                selectedProvince.children.forEach(city => {
-                    citySelect.innerHTML += `<option value="${city.value}">${city.label}</option>`;
-                });
-            } else {
-                citySelect.disabled = true;
-                districtSelect.disabled = true;
-            }
-        });
-
-        // 城市变更事件
-        citySelect.addEventListener('change', () => {
-            const selectedProvince = regionData.find(p => p.value === provinceSelect.value);
-            const selectedCity = selectedProvince?.children?.find(c => c.value === citySelect.value);
-            districtSelect.innerHTML = '<option value="">请选择区/县</option>';
-
-            if (selectedCity && selectedCity.children) {
-                districtSelect.disabled = false;
-                selectedCity.children.forEach(district => {
-                    districtSelect.innerHTML += `<option value="${district.value}">${district.label}</option>`;
-                });
-            } else {
-                districtSelect.disabled = true;
-            }
-        });
-
-        // 如果有当前地址，设置初始值
-        if (currentRegion) {
-            const [province, city, district] = currentRegion.split(' ');
-            const provinceData = regionData.find(p => p.label === province);
-            if (provinceData) {
-                provinceSelect.value = provinceData.value;
-                provinceSelect.dispatchEvent(new Event('change'));
-
-                const cityData = provinceData.children?.find(c => c.label === city);
-                if (cityData) {
-                    citySelect.value = cityData.value;
-                    citySelect.dispatchEvent(new Event('change'));
-
-                    const districtData = cityData.children?.find(d => d.label === district);
-                    if (districtData) {
-                        districtSelect.value = districtData.value;
-                    }
-                }
-            }
-        }
-    }
-
     document.getElementById('addressForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const formData = new FormData(e.target);
-        
-        // 获取省市区的文本值
-        const provinceText = document.querySelector('#province option:checked').text;
-        const cityText = document.querySelector('#city option:checked').text;
-        const districtText = document.querySelector('#district option:checked').text;
-        const region = [provinceText, cityText, districtText].filter(Boolean).join(' ');
-
         const addressData = {
             recipient_name: formData.get('recipient_name'),
             contact_phone: formData.get('contact_phone'),
-            region: region,
+            region: formData.get('region'),
             full_address: formData.get('full_address'),
             postal_code: formData.get('postal_code'),
             is_default: formData.get('is_default') === 'on'
