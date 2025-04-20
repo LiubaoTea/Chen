@@ -16,17 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initNavMenu();
     
     // 初始化退出登录按钮
-    const logoutBtn = document.createElement('button');
-    logoutBtn.className = 'logout-btn';
-    logoutBtn.innerHTML = '<i class="fas fa-sign-out-alt"></i>退出登录';
-    document.querySelector('.nav-list').appendChild(logoutBtn);
-    
-    logoutBtn.addEventListener('click', () => {
-        localStorage.removeItem('userToken');
-        localStorage.removeItem('username');
-        localStorage.removeItem('userEmail');
-        window.location.href = 'login.html';
-    });
+    initLogoutButton();
 });
 
 // 加载用户信息
@@ -582,336 +572,84 @@ async function showNotificationSettings() {
     }
 }
 
-// 显示个人资料设置
-async function showProfileSettings() {
+// 这个函数已经在前面定义过，删除这个重复的定义
+
+// 这个函数已经在前面定义过，删除这个重复的定义
+
+
+// 这个函数已经在前面定义过，删除这个重复的定义
+
+// 查看订单详情
+async function viewOrderDetail(orderId) {
     try {
-        const userData = await getUserInfo();
-        const content = `
-            <h3>个人资料设置</h3>
-            <form id="profileForm">
-                <div class="form-group">
-                    <label for="nickname">昵称</label>
-                    <input type="text" id="nickname" name="nickname" value="${userData.username}" required>
-                </div>
-                <div class="form-group">
-                    <label for="phone">手机号码</label>
-                    <input type="tel" id="phone" name="phone" value="${userData.phone || ''}" required>
-                </div>
-                <div class="form-group">
-                    <label for="bio">个人简介</label>
-                    <textarea id="bio" name="bio" rows="3">${userData.bio || ''}</textarea>
-                </div>
-                <button type="submit" class="btn-primary">保存修改</button>
-            </form>
-        `;
-        showSettingsModal(content);
-
-        // 添加表单提交事件
-        const form = document.getElementById('profileForm');
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            try {
-                const formData = new FormData(form);
-                const response = await fetch(`${API_BASE_URL}/api/user/profile`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('userToken')}`
-                    },
-                    body: JSON.stringify(Object.fromEntries(formData))
-                });
-
-                if (!response.ok) throw new Error('更新个人资料失败');
-                alert('个人资料更新成功');
-                location.reload();
-            } catch (error) {
-                console.error('更新个人资料失败:', error);
-                alert('更新个人资料失败，请重试');
+        const token = localStorage.getItem('userToken');
+        const response = await fetch(`${API_BASE_URL}/api/orders/${orderId}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
             }
         });
-    } catch (error) {
-        console.error('加载个人资料失败:', error);
-        alert('加载个人资料失败，请重试');
-    }
-}
-
-// 显示安全设置
-function showSecuritySettings() {
-    const content = `
-        <h3>安全设置</h3>
-        <form id="securityForm">
-            <div class="form-group">
-                <label for="oldPassword">当前密码</label>
-                <input type="password" id="oldPassword" name="oldPassword" required>
-            </div>
-            <div class="form-group">
-                <label for="newPassword">新密码</label>
-                <input type="password" id="newPassword" name="newPassword" required>
-            </div>
-            <div class="form-group">
-                <label for="confirmPassword">确认新密码</label>
-                <input type="password" id="confirmPassword" name="confirmPassword" required>
-            </div>
-            <button type="submit" class="btn-primary">修改密码</button>
-        </form>
-    `;
-    showSettingsModal(content);
-
-    // 添加表单提交事件
-    const form = document.getElementById('securityForm');
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const newPassword = form.newPassword.value;
-        const confirmPassword = form.confirmPassword.value;
-
-        if (newPassword !== confirmPassword) {
-            alert('两次输入的密码不一致');
-            return;
-        }
-
-        try {
-            const response = await fetch(`${API_BASE_URL}/api/user/password`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('userToken')}`
-                },
-                body: JSON.stringify({
-                    oldPassword: form.oldPassword.value,
-                    newPassword: newPassword
-                })
-            });
-
-            if (!response.ok) throw new Error('修改密码失败');
-            alert('密码修改成功，请重新登录');
-            localStorage.removeItem('userToken');
-            window.location.href = 'login.html';
-        } catch (error) {
-            console.error('修改密码失败:', error);
-            alert('修改密码失败，请重试');
-        }
-    });
-}
-
-
-// 显示收货地址设置
-async function showAddressSettings() {
-    const content = `
-        <h3>收货地址管理</h3>
-        <div id="addressList">
-            <!-- 地址列表将通过API动态加载 -->
-        </div>
-        <button id="addAddressBtn" class="btn-primary">添加新地址</button>
-    `;
-    showSettingsModal(content);
-    await loadAddressList();
-
-    // 添加新地址按钮事件
-    document.getElementById('addAddressBtn').addEventListener('click', showAddAddressForm);
-}
-
-// 加载地址列表
-async function loadAddressList() {
-    try {
-        const addresses = await getUserAddresses();
-        const addressList = document.getElementById('addressList');
         
-        if (!addresses || addresses.length === 0) {
-            addressList.innerHTML = '<p>暂无收货地址</p>';
-            return;
+        if (!response.ok) {
+            throw new Error('获取订单详情失败');
         }
-
-        addressList.innerHTML = addresses.map(address => `
-            <div class="address-item ${address.is_default ? 'default' : ''}">
-                <div class="address-info">
-                    <p><strong>${address.recipient_name}</strong> ${address.contact_phone}</p>
-                    <p>${address.region} ${address.full_address}</p>
-                    <p>邮编：${address.postal_code}</p>
+        
+        const orderDetail = await response.json();
+        const contentArea = document.getElementById('contentArea');
+        
+        let orderDetailHTML = `
+            <div class="order-detail">
+                <h3>订单详情</h3>
+                <div class="order-info">
+                    <p><strong>订单号:</strong> ${orderDetail.order_id}</p>
+                    <p><strong>下单时间:</strong> ${new Date(orderDetail.created_at * 1000).toLocaleString()}</p>
+                    <p><strong>订单状态:</strong> ${getOrderStatus(orderDetail.status)}</p>
+                    <p><strong>订单金额:</strong> ¥${orderDetail.total_amount.toFixed(2)}</p>
                 </div>
-                <div class="address-actions">
-                    ${!address.is_default ? `<button class="btn-text" onclick="setDefaultAddress(${address.address_id})">设为默认</button>` : ''}
-                    <button class="btn-text" onclick="editAddress(${address.address_id})">编辑</button>
-                    <button class="btn-text" onclick="deleteAddress(${address.address_id})">删除</button>
-                </div>
-            </div>
-        `).join('');
-    } catch (error) {
-        console.error('加载地址列表失败:', error);
-        document.getElementById('addressList').innerHTML = '<p class="error">加载地址列表失败，请重试</p>';
-    }
-}
-
-// 显示添加地址表单
-function showAddAddressForm() {
-    const content = `
-        <h3>添加新地址</h3>
-        <form id="addressForm">
-            <div class="form-group">
-                <label for="recipientName">收货人姓名</label>
-                <input type="text" id="recipientName" name="recipient_name" required>
-            </div>
-            <div class="form-group">
-                <label for="contactPhone">联系电话</label>
-                <input type="tel" id="contactPhone" name="contact_phone" required>
-            </div>
-            <div class="form-group">
-                <label for="region">所在地区</label>
-                <input type="text" id="region" name="region" required>
-            </div>
-            <div class="form-group">
-                <label for="fullAddress">详细地址</label>
-                <textarea id="fullAddress" name="full_address" required></textarea>
-            </div>
-            <div class="form-group">
-                <label for="postalCode">邮政编码</label>
-                <input type="text" id="postalCode" name="postal_code" required>
-            </div>
-            <div class="form-group">
-                <label>
-                    <input type="checkbox" name="is_default"> 设为默认地址
-                </label>
-            </div>
-            <button type="submit" class="btn-primary">保存地址</button>
-        </form>
-    `;
-    showSettingsModal(content);
-
-    // 添加表单提交事件
-    const form = document.getElementById('addressForm');
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        try {
-            const formData = new FormData(form);
-            const addressData = Object.fromEntries(formData);
-            addressData.is_default = formData.get('is_default') === 'on';
-
-            await addUserAddress(addressData);
-            alert('添加地址成功');
-            showAddressSettings(); // 重新加载地址列表
-        } catch (error) {
-            console.error('添加地址失败:', error);
-            alert('添加地址失败，请重试');
-        }
-    });
-}
-
-// 设置默认地址
-async function setDefaultAddress(addressId) {
-    try {
-        await updateUserAddress(addressId, { is_default: true });
-        await loadAddressList(); // 重新加载地址列表
-    } catch (error) {
-        console.error('设置默认地址失败:', error);
-        alert('设置默认地址失败，请重试');
-    }
-}
-
-// 编辑地址
-async function editAddress(addressId) {
-    try {
-        const addresses = await getUserAddresses();
-        const address = addresses.find(a => a.address_id === addressId);
-        if (!address) throw new Error('地址不存在');
-
-        const content = `
-            <h3>编辑地址</h3>
-            <form id="addressForm">
-                <div class="form-group">
-                    <label for="recipientName">收货人姓名</label>
-                    <input type="text" id="recipientName" name="recipient_name" value="${address.recipient_name}" required>
-                </div>
-                <div class="form-group">
-                    <label for="contactPhone">联系电话</label>
-                    <input type="tel" id="contactPhone" name="contact_phone" value="${address.contact_phone}" required>
-                </div>
-                <div class="form-group">
-                    <label for="region">所在地区</label>
-                    <input type="text" id="region" name="region" value="${address.region}" required>
-                </div>
-                <div class="form-group">
-                    <label for="fullAddress">详细地址</label>
-                    <textarea id="fullAddress" name="full_address" required>${address.full_address}</textarea>
-                </div>
-                <div class="form-group">
-                    <label for="postalCode">邮政编码</label>
-                    <input type="text" id="postalCode" name="postal_code" value="${address.postal_code}" required>
-                </div>
-                <div class="form-group">
-                    <label>
-                        <input type="checkbox" name="is_default" ${address.is_default ? 'checked' : ''}> 设为默认地址
-                    </label>
-                </div>
-                <button type="submit" class="btn-primary">保存修改</button>
-            </form>
+                <h4>订单商品</h4>
+                <div class="order-items">
         `;
-        showSettingsModal(content);
-
-        // 添加表单提交事件
-        const form = document.getElementById('addressForm');
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            try {
-                const formData = new FormData(form);
-                const addressData = Object.fromEntries(formData);
-                addressData.is_default = formData.get('is_default') === 'on';
-
-                await updateUserAddress(addressId, addressData);
-                alert('更新地址成功');
-                showAddressSettings(); // 重新加载地址列表
-            } catch (error) {
-                console.error('更新地址失败:', error);
-                alert('更新地址失败，请重试');
-            }
-        });
+        
+        if (orderDetail.items && orderDetail.items.length > 0) {
+            orderDetail.items.forEach(item => {
+                orderDetailHTML += `
+                    <div class="order-item">
+                        <div class="item-info">
+                            <h5>${item.product_name}</h5>
+                            <p>单价: ¥${item.unit_price.toFixed(2)}</p>
+                            <p>数量: ${item.quantity}</p>
+                            <p>小计: ¥${(item.unit_price * item.quantity).toFixed(2)}</p>
+                        </div>
+                    </div>
+                `;
+            });
+        } else {
+            orderDetailHTML += '<p>暂无商品信息</p>';
+        }
+        
+        orderDetailHTML += `
+                </div>
+                <div class="order-actions">
+                    <button onclick="loadOrders()">返回订单列表</button>
+                </div>
+            </div>
+        `;
+        
+        contentArea.innerHTML = orderDetailHTML;
     } catch (error) {
-        console.error('加载地址信息失败:', error);
-        alert('加载地址信息失败，请重试');
+        console.error('加载订单详情失败:', error);
+        document.getElementById('contentArea').innerHTML = 
+            '<div class="error-message">加载订单详情失败，请稍后重试</div>';
     }
 }
 
-// 删除地址
-async function deleteAddress(addressId) {
-    if (!confirm('确定要删除这个地址吗？')) return;
-    
-    try {
-        await deleteUserAddress(addressId);
-        alert('删除地址成功');
-        await loadAddressList(); // 重新加载地址列表
-    } catch (error) {
-        console.error('删除地址失败:', error);
-        alert('删除地址失败，请重试');
-    }
-}
+// 这个函数在代码中未被使用，删除它
+
+// 这个函数在代码中未被正确使用，删除它
+
+// 这些函数在代码中未被正确使用，删除它们
 
 
-// 显示通知设置
-function showNotificationSettings() {
-    const content = `
-        <h3>通知设置</h3>
-        <form id="notificationForm">
-            <div class="form-group">
-                <label>
-                    <input type="checkbox" name="orderNotification" checked>
-                    订单状态通知
-                </label>
-            </div>
-            <div class="form-group">
-                <label>
-                    <input type="checkbox" name="promotionNotification" checked>
-                    促销活动通知
-                </label>
-            </div>
-            <div class="form-group">
-                <label>
-                    <input type="checkbox" name="systemNotification" checked>
-                    系统消息通知
-                </label>
-            </div>
-            <button type="submit" class="btn-primary">保存设置</button>
-        </form>
-    `;
-    showSettingsModal(content);
-}
+// 这个函数已经在前面定义过，删除这个重复的定义
 
 // 显示设置模态框
 function showSettingsModal(content) {
@@ -943,7 +681,7 @@ function showSettingsModal(content) {
 function initLogoutButton() {
     const logoutBtn = document.createElement('button');
     logoutBtn.className = 'logout-btn';
-    logoutBtn.textContent = '退出登录';
+    logoutBtn.innerHTML = '<i class="fas fa-sign-out-alt"></i>退出登录';
     logoutBtn.onclick = () => {
         if (confirm('确定要退出登录吗？')) {
             localStorage.removeItem('userToken');
@@ -956,4 +694,96 @@ function initLogoutButton() {
     // 将退出按钮添加到导航菜单底部
     const navMenu = document.querySelector('.nav-menu');
     navMenu.appendChild(logoutBtn);
+}
+
+// 获取用户信息
+async function getUserInfo() {
+    const token = localStorage.getItem('userToken');
+    if (!token) {
+        throw new Error('未找到登录凭证');
+    }
+
+    const response = await fetch(`${API_BASE_URL}/api/user/profile`, {
+        headers: {
+            'Authorization': `Bearer ${token}`
+        }
+    });
+    
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || '获取用户信息失败');
+    }
+    
+    return await response.json();
+}
+
+// 获取用户地址列表
+async function getUserAddresses() {
+    const token = localStorage.getItem('userToken');
+    const response = await fetch(`${API_BASE_URL}/api/user/addresses`, {
+        headers: {
+            'Authorization': `Bearer ${token}`
+        }
+    });
+    
+    if (!response.ok) {
+        throw new Error('获取地址列表失败');
+    }
+    
+    return await response.json();
+}
+
+// 添加用户地址
+async function addUserAddress(addressData) {
+    const token = localStorage.getItem('userToken');
+    const response = await fetch(`${API_BASE_URL}/api/user/addresses`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(addressData)
+    });
+    
+    if (!response.ok) {
+        throw new Error('添加地址失败');
+    }
+    
+    return await response.json();
+}
+
+// 更新用户地址
+async function updateUserAddress(addressId, addressData) {
+    const token = localStorage.getItem('userToken');
+    const response = await fetch(`${API_BASE_URL}/api/user/addresses/${addressId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(addressData)
+    });
+    
+    if (!response.ok) {
+        throw new Error('更新地址失败');
+    }
+    
+    return await response.json();
+}
+
+// 删除用户地址
+async function deleteUserAddress(addressId) {
+    const token = localStorage.getItem('userToken');
+    const response = await fetch(`${API_BASE_URL}/api/user/addresses/${addressId}`, {
+        method: 'DELETE',
+        headers: {
+            'Authorization': `Bearer ${token}`
+        }
+    });
+    
+    if (!response.ok) {
+        throw new Error('删除地址失败');
+    }
+    
+    return true;
 }
