@@ -498,7 +498,8 @@ async function showAddressForm(addressId = null) {
     }
 
 
-    document.getElementById('addressForm').addEventListener('submit', async (e) => {
+    const form = document.getElementById('addressForm');
+    form.addEventListener('submit', async (e) => {
         e.preventDefault();
         // 检查用户登录状态
         const token = localStorage.getItem('userToken');

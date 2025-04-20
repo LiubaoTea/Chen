@@ -246,6 +246,59 @@ const handleUserAuth = async (request, env) => {
         }
     }
 
+    // 获取用户通知设置
+    if (path === '/api/user/settings' && request.method === 'GET') {
+        try {
+            const settings = await env.DB.prepare(
+                'SELECT notification_prefs FROM user_settings WHERE user_id = ?'
+            ).bind(userId).first();
+
+            return new Response(JSON.stringify(settings || { notification_prefs: null }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '获取通知设置失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+
+    // 更新用户通知设置
+    if (path === '/api/user/settings' && request.method === 'PUT') {
+        try {
+            const { notification_prefs } = await request.json();
+            
+            // 检查是否已有设置记录
+            const existingSettings = await env.DB.prepare(
+                'SELECT 1 FROM user_settings WHERE user_id = ?'
+            ).bind(userId).first();
+
+            if (existingSettings) {
+                // 更新现有设置
+                await env.DB.prepare(
+                    'UPDATE user_settings SET notification_prefs = ? WHERE user_id = ?'
+                ).bind(notification_prefs, userId).run();
+            } else {
+                // 创建新设置记录
+                await env.DB.prepare(
+                    'INSERT INTO user_settings (user_id, notification_prefs) VALUES (?, ?)'
+                ).bind(userId, notification_prefs).run();
+            }
+
+            return new Response(JSON.stringify({ message: '通知设置更新成功' }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '更新通知设置失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+
     return new Response('Not Found', { status: 404 });
 };
 
@@ -408,6 +461,59 @@ const handleProducts = async (request, env) => {
             });
         } catch (error) {
             return new Response(JSON.stringify({ error: '获取商品详情失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+
+    // 获取用户通知设置
+    if (path === '/api/user/settings' && request.method === 'GET') {
+        try {
+            const settings = await env.DB.prepare(
+                'SELECT notification_prefs FROM user_settings WHERE user_id = ?'
+            ).bind(userId).first();
+
+            return new Response(JSON.stringify(settings || { notification_prefs: null }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '获取通知设置失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+
+    // 更新用户通知设置
+    if (path === '/api/user/settings' && request.method === 'PUT') {
+        try {
+            const { notification_prefs } = await request.json();
+            
+            // 检查是否已有设置记录
+            const existingSettings = await env.DB.prepare(
+                'SELECT 1 FROM user_settings WHERE user_id = ?'
+            ).bind(userId).first();
+
+            if (existingSettings) {
+                // 更新现有设置
+                await env.DB.prepare(
+                    'UPDATE user_settings SET notification_prefs = ? WHERE user_id = ?'
+                ).bind(notification_prefs, userId).run();
+            } else {
+                // 创建新设置记录
+                await env.DB.prepare(
+                    'INSERT INTO user_settings (user_id, notification_prefs) VALUES (?, ?)'
+                ).bind(userId, notification_prefs).run();
+            }
+
+            return new Response(JSON.stringify({ message: '通知设置更新成功' }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '更新通知设置失败', details: error.message }), {
                 status: 500,
                 headers: { 'Content-Type': 'application/json' }
             });
@@ -733,6 +839,59 @@ const handleCartOperations = async (request, env) => {
         }
     }
 
+    // 获取用户通知设置
+    if (path === '/api/user/settings' && request.method === 'GET') {
+        try {
+            const settings = await env.DB.prepare(
+                'SELECT notification_prefs FROM user_settings WHERE user_id = ?'
+            ).bind(userId).first();
+
+            return new Response(JSON.stringify(settings || { notification_prefs: null }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '获取通知设置失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+
+    // 更新用户通知设置
+    if (path === '/api/user/settings' && request.method === 'PUT') {
+        try {
+            const { notification_prefs } = await request.json();
+            
+            // 检查是否已有设置记录
+            const existingSettings = await env.DB.prepare(
+                'SELECT 1 FROM user_settings WHERE user_id = ?'
+            ).bind(userId).first();
+
+            if (existingSettings) {
+                // 更新现有设置
+                await env.DB.prepare(
+                    'UPDATE user_settings SET notification_prefs = ? WHERE user_id = ?'
+                ).bind(notification_prefs, userId).run();
+            } else {
+                // 创建新设置记录
+                await env.DB.prepare(
+                    'INSERT INTO user_settings (user_id, notification_prefs) VALUES (?, ?)'
+                ).bind(userId, notification_prefs).run();
+            }
+
+            return new Response(JSON.stringify({ message: '通知设置更新成功' }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '更新通知设置失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+
     return new Response('Not Found', { status: 404 });
 };
 
@@ -949,6 +1108,59 @@ const handleOrderOperations = async (request, env) => {
         }
     }
 
+    // 获取用户通知设置
+    if (path === '/api/user/settings' && request.method === 'GET') {
+        try {
+            const settings = await env.DB.prepare(
+                'SELECT notification_prefs FROM user_settings WHERE user_id = ?'
+            ).bind(userId).first();
+
+            return new Response(JSON.stringify(settings || { notification_prefs: null }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '获取通知设置失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+
+    // 更新用户通知设置
+    if (path === '/api/user/settings' && request.method === 'PUT') {
+        try {
+            const { notification_prefs } = await request.json();
+            
+            // 检查是否已有设置记录
+            const existingSettings = await env.DB.prepare(
+                'SELECT 1 FROM user_settings WHERE user_id = ?'
+            ).bind(userId).first();
+
+            if (existingSettings) {
+                // 更新现有设置
+                await env.DB.prepare(
+                    'UPDATE user_settings SET notification_prefs = ? WHERE user_id = ?'
+                ).bind(notification_prefs, userId).run();
+            } else {
+                // 创建新设置记录
+                await env.DB.prepare(
+                    'INSERT INTO user_settings (user_id, notification_prefs) VALUES (?, ?)'
+                ).bind(userId, notification_prefs).run();
+            }
+
+            return new Response(JSON.stringify({ message: '通知设置更新成功' }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '更新通知设置失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+
     return new Response('Not Found', { status: 404 });
 };
 
@@ -1068,7 +1280,7 @@ const handleUserCenter = async (request, env) => {
     }
 
     // 获取用户地址列表
-    if (path === '/api/addresses' && request.method === 'GET') {
+    if (path === '/api/user/addresses' && request.method === 'GET') {
         try {
             const addresses = await env.DB.prepare(
                 'SELECT * FROM user_addresses WHERE user_id = ? ORDER BY is_default DESC'
@@ -1087,7 +1299,7 @@ const handleUserCenter = async (request, env) => {
     }
 
     // 添加新地址
-    if (path === '/api/addresses' && request.method === 'POST') {
+    if (path === '/api/user/addresses' && request.method === 'POST') {
         try {
             const addressData = await request.json();
             const { recipient_name, contact_phone, full_address, region, postal_code, is_default } = addressData;
@@ -1135,7 +1347,7 @@ const handleUserCenter = async (request, env) => {
     }
 
     // 更新地址
-    if (path.match(/\/api\/addresses\/\d+$/) && request.method === 'PUT') {
+    if (path.match(/\/api\/user\/addresses\/\d+$/) && request.method === 'PUT') {
         try {
             const addressId = path.split('/').pop();
             const addressData = await request.json();
@@ -1177,7 +1389,7 @@ const handleUserCenter = async (request, env) => {
     }
 
     // 删除地址
-    if (path.match(/\/api\/addresses\/\d+$/) && request.method === 'DELETE') {
+    if (path.match(/\/api\/user\/addresses\/\d+$/) && request.method === 'DELETE') {
         try {
             const addressId = path.split('/').pop();
 
@@ -1191,6 +1403,59 @@ const handleUserCenter = async (request, env) => {
             });
         } catch (error) {
             return new Response(JSON.stringify({ error: '删除地址失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+
+    // 获取用户通知设置
+    if (path === '/api/user/settings' && request.method === 'GET') {
+        try {
+            const settings = await env.DB.prepare(
+                'SELECT notification_prefs FROM user_settings WHERE user_id = ?'
+            ).bind(userId).first();
+
+            return new Response(JSON.stringify(settings || { notification_prefs: null }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '获取通知设置失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+
+    // 更新用户通知设置
+    if (path === '/api/user/settings' && request.method === 'PUT') {
+        try {
+            const { notification_prefs } = await request.json();
+            
+            // 检查是否已有设置记录
+            const existingSettings = await env.DB.prepare(
+                'SELECT 1 FROM user_settings WHERE user_id = ?'
+            ).bind(userId).first();
+
+            if (existingSettings) {
+                // 更新现有设置
+                await env.DB.prepare(
+                    'UPDATE user_settings SET notification_prefs = ? WHERE user_id = ?'
+                ).bind(notification_prefs, userId).run();
+            } else {
+                // 创建新设置记录
+                await env.DB.prepare(
+                    'INSERT INTO user_settings (user_id, notification_prefs) VALUES (?, ?)'
+                ).bind(userId, notification_prefs).run();
+            }
+
+            return new Response(JSON.stringify({ message: '通知设置更新成功' }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '更新通知设置失败', details: error.message }), {
                 status: 500,
                 headers: { 'Content-Type': 'application/json' }
             });
@@ -1357,6 +1622,59 @@ const handleOrders = async (request, env) => {
         }
     }
 
+    // 获取用户通知设置
+    if (path === '/api/user/settings' && request.method === 'GET') {
+        try {
+            const settings = await env.DB.prepare(
+                'SELECT notification_prefs FROM user_settings WHERE user_id = ?'
+            ).bind(userId).first();
+
+            return new Response(JSON.stringify(settings || { notification_prefs: null }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '获取通知设置失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+
+    // 更新用户通知设置
+    if (path === '/api/user/settings' && request.method === 'PUT') {
+        try {
+            const { notification_prefs } = await request.json();
+            
+            // 检查是否已有设置记录
+            const existingSettings = await env.DB.prepare(
+                'SELECT 1 FROM user_settings WHERE user_id = ?'
+            ).bind(userId).first();
+
+            if (existingSettings) {
+                // 更新现有设置
+                await env.DB.prepare(
+                    'UPDATE user_settings SET notification_prefs = ? WHERE user_id = ?'
+                ).bind(notification_prefs, userId).run();
+            } else {
+                // 创建新设置记录
+                await env.DB.prepare(
+                    'INSERT INTO user_settings (user_id, notification_prefs) VALUES (?, ?)'
+                ).bind(userId, notification_prefs).run();
+            }
+
+            return new Response(JSON.stringify({ message: '通知设置更新成功' }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '更新通知设置失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+
     return new Response('Not Found', { status: 404 });
 };
 
@@ -1390,6 +1708,59 @@ const handleImageRequest = async (request, env) => {
         }
     }
     
+    // 获取用户通知设置
+    if (path === '/api/user/settings' && request.method === 'GET') {
+        try {
+            const settings = await env.DB.prepare(
+                'SELECT notification_prefs FROM user_settings WHERE user_id = ?'
+            ).bind(userId).first();
+
+            return new Response(JSON.stringify(settings || { notification_prefs: null }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '获取通知设置失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+
+    // 更新用户通知设置
+    if (path === '/api/user/settings' && request.method === 'PUT') {
+        try {
+            const { notification_prefs } = await request.json();
+            
+            // 检查是否已有设置记录
+            const existingSettings = await env.DB.prepare(
+                'SELECT 1 FROM user_settings WHERE user_id = ?'
+            ).bind(userId).first();
+
+            if (existingSettings) {
+                // 更新现有设置
+                await env.DB.prepare(
+                    'UPDATE user_settings SET notification_prefs = ? WHERE user_id = ?'
+                ).bind(notification_prefs, userId).run();
+            } else {
+                // 创建新设置记录
+                await env.DB.prepare(
+                    'INSERT INTO user_settings (user_id, notification_prefs) VALUES (?, ?)'
+                ).bind(userId, notification_prefs).run();
+            }
+
+            return new Response(JSON.stringify({ message: '通知设置更新成功' }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '更新通知设置失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+
     return new Response('Not Found', { status: 404 });
 };
 
@@ -1415,7 +1786,7 @@ const handleUserAddress = async (request, env) => {
     const userId = decoded.userId;
 
     // 添加新地址
-    if (path === '/api/addresses' && request.method === 'POST') {
+    if (path === '/api/user/addresses' && request.method === 'POST') {
         try {
             const { recipient_name, contact_phone, full_address, region, postal_code, is_default } = await request.json();
             const timestamp = new Date().toISOString();
@@ -1445,7 +1816,7 @@ const handleUserAddress = async (request, env) => {
     }
 
     // 获取用户地址列表
-    if (path === '/api/addresses' && request.method === 'GET') {
+    if (path === '/api/user/addresses' && request.method === 'GET') {
         try {
             const addresses = await env.DB.prepare(
                 'SELECT * FROM user_addresses WHERE user_id = ? ORDER BY is_default DESC, created_at DESC'
@@ -1464,7 +1835,7 @@ const handleUserAddress = async (request, env) => {
     }
 
     // 更新地址
-    if (path.match(/\/api\/addresses\/\d+$/) && request.method === 'PUT') {
+    if (path.match(/\/api\/user\/addresses\/\d+$/) && request.method === 'PUT') {
         try {
             const addressId = path.split('/').pop();
             const { recipient_name, contact_phone, full_address, region, postal_code, is_default } = await request.json();
@@ -1506,7 +1877,7 @@ const handleUserAddress = async (request, env) => {
     }
 
     // 删除地址
-    if (path.match(/\/api\/addresses\/\d+$/) && request.method === 'DELETE') {
+    if (path.match(/\/api\/user\/addresses\/\d+$/) && request.method === 'DELETE') {
         try {
             const addressId = path.split('/').pop();
 
@@ -1533,6 +1904,59 @@ const handleUserAddress = async (request, env) => {
             });
         } catch (error) {
             return new Response(JSON.stringify({ error: '删除地址失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+
+    // 获取用户通知设置
+    if (path === '/api/user/settings' && request.method === 'GET') {
+        try {
+            const settings = await env.DB.prepare(
+                'SELECT notification_prefs FROM user_settings WHERE user_id = ?'
+            ).bind(userId).first();
+
+            return new Response(JSON.stringify(settings || { notification_prefs: null }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '获取通知设置失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+
+    // 更新用户通知设置
+    if (path === '/api/user/settings' && request.method === 'PUT') {
+        try {
+            const { notification_prefs } = await request.json();
+            
+            // 检查是否已有设置记录
+            const existingSettings = await env.DB.prepare(
+                'SELECT 1 FROM user_settings WHERE user_id = ?'
+            ).bind(userId).first();
+
+            if (existingSettings) {
+                // 更新现有设置
+                await env.DB.prepare(
+                    'UPDATE user_settings SET notification_prefs = ? WHERE user_id = ?'
+                ).bind(notification_prefs, userId).run();
+            } else {
+                // 创建新设置记录
+                await env.DB.prepare(
+                    'INSERT INTO user_settings (user_id, notification_prefs) VALUES (?, ?)'
+                ).bind(userId, notification_prefs).run();
+            }
+
+            return new Response(JSON.stringify({ message: '通知设置更新成功' }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '更新通知设置失败', details: error.message }), {
                 status: 500,
                 headers: { 'Content-Type': 'application/json' }
             });
@@ -1628,6 +2052,59 @@ const handleUserSettings = async (request, env) => {
         }
     }
 
+    // 获取用户通知设置
+    if (path === '/api/user/settings' && request.method === 'GET') {
+        try {
+            const settings = await env.DB.prepare(
+                'SELECT notification_prefs FROM user_settings WHERE user_id = ?'
+            ).bind(userId).first();
+
+            return new Response(JSON.stringify(settings || { notification_prefs: null }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '获取通知设置失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+
+    // 更新用户通知设置
+    if (path === '/api/user/settings' && request.method === 'PUT') {
+        try {
+            const { notification_prefs } = await request.json();
+            
+            // 检查是否已有设置记录
+            const existingSettings = await env.DB.prepare(
+                'SELECT 1 FROM user_settings WHERE user_id = ?'
+            ).bind(userId).first();
+
+            if (existingSettings) {
+                // 更新现有设置
+                await env.DB.prepare(
+                    'UPDATE user_settings SET notification_prefs = ? WHERE user_id = ?'
+                ).bind(notification_prefs, userId).run();
+            } else {
+                // 创建新设置记录
+                await env.DB.prepare(
+                    'INSERT INTO user_settings (user_id, notification_prefs) VALUES (?, ?)'
+                ).bind(userId, notification_prefs).run();
+            }
+
+            return new Response(JSON.stringify({ message: '通知设置更新成功' }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '更新通知设置失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+
     return new Response('Not Found', { status: 404 });
 };
 
@@ -1711,6 +2188,59 @@ const handleProductCategories = async (request, env) => {
             });
         } catch (error) {
             return new Response(JSON.stringify({ error: '获取分类商品失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+
+    // 获取用户通知设置
+    if (path === '/api/user/settings' && request.method === 'GET') {
+        try {
+            const settings = await env.DB.prepare(
+                'SELECT notification_prefs FROM user_settings WHERE user_id = ?'
+            ).bind(userId).first();
+
+            return new Response(JSON.stringify(settings || { notification_prefs: null }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '获取通知设置失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+
+    // 更新用户通知设置
+    if (path === '/api/user/settings' && request.method === 'PUT') {
+        try {
+            const { notification_prefs } = await request.json();
+            
+            // 检查是否已有设置记录
+            const existingSettings = await env.DB.prepare(
+                'SELECT 1 FROM user_settings WHERE user_id = ?'
+            ).bind(userId).first();
+
+            if (existingSettings) {
+                // 更新现有设置
+                await env.DB.prepare(
+                    'UPDATE user_settings SET notification_prefs = ? WHERE user_id = ?'
+                ).bind(notification_prefs, userId).run();
+            } else {
+                // 创建新设置记录
+                await env.DB.prepare(
+                    'INSERT INTO user_settings (user_id, notification_prefs) VALUES (?, ?)'
+                ).bind(userId, notification_prefs).run();
+            }
+
+            return new Response(JSON.stringify({ message: '通知设置更新成功' }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '更新通知设置失败', details: error.message }), {
                 status: 500,
                 headers: { 'Content-Type': 'application/json' }
             });
@@ -1816,6 +2346,59 @@ const handleProductReviews = async (request, env) => {
         }
     }
 
+    // 获取用户通知设置
+    if (path === '/api/user/settings' && request.method === 'GET') {
+        try {
+            const settings = await env.DB.prepare(
+                'SELECT notification_prefs FROM user_settings WHERE user_id = ?'
+            ).bind(userId).first();
+
+            return new Response(JSON.stringify(settings || { notification_prefs: null }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '获取通知设置失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+
+    // 更新用户通知设置
+    if (path === '/api/user/settings' && request.method === 'PUT') {
+        try {
+            const { notification_prefs } = await request.json();
+            
+            // 检查是否已有设置记录
+            const existingSettings = await env.DB.prepare(
+                'SELECT 1 FROM user_settings WHERE user_id = ?'
+            ).bind(userId).first();
+
+            if (existingSettings) {
+                // 更新现有设置
+                await env.DB.prepare(
+                    'UPDATE user_settings SET notification_prefs = ? WHERE user_id = ?'
+                ).bind(notification_prefs, userId).run();
+            } else {
+                // 创建新设置记录
+                await env.DB.prepare(
+                    'INSERT INTO user_settings (user_id, notification_prefs) VALUES (?, ?)'
+                ).bind(userId, notification_prefs).run();
+            }
+
+            return new Response(JSON.stringify({ message: '通知设置更新成功' }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '更新通知设置失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+
     return new Response('Not Found', { status: 404 });
 };
 
@@ -1904,6 +2487,59 @@ const handleShoppingSession = async (request, env) => {
         }
     }
 
+    // 获取用户通知设置
+    if (path === '/api/user/settings' && request.method === 'GET') {
+        try {
+            const settings = await env.DB.prepare(
+                'SELECT notification_prefs FROM user_settings WHERE user_id = ?'
+            ).bind(userId).first();
+
+            return new Response(JSON.stringify(settings || { notification_prefs: null }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '获取通知设置失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+
+    // 更新用户通知设置
+    if (path === '/api/user/settings' && request.method === 'PUT') {
+        try {
+            const { notification_prefs } = await request.json();
+            
+            // 检查是否已有设置记录
+            const existingSettings = await env.DB.prepare(
+                'SELECT 1 FROM user_settings WHERE user_id = ?'
+            ).bind(userId).first();
+
+            if (existingSettings) {
+                // 更新现有设置
+                await env.DB.prepare(
+                    'UPDATE user_settings SET notification_prefs = ? WHERE user_id = ?'
+                ).bind(notification_prefs, userId).run();
+            } else {
+                // 创建新设置记录
+                await env.DB.prepare(
+                    'INSERT INTO user_settings (user_id, notification_prefs) VALUES (?, ?)'
+                ).bind(userId, notification_prefs).run();
+            }
+
+            return new Response(JSON.stringify({ message: '通知设置更新成功' }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '更新通知设置失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+
     return new Response('Not Found', { status: 404 });
 }
 
@@ -1969,7 +2605,60 @@ const handleRequest = {
                 return handleShoppingSession(request, env);
             }
 
-            return new Response('Not Found', { status: 404 });
+            // 获取用户通知设置
+    if (path === '/api/user/settings' && request.method === 'GET') {
+        try {
+            const settings = await env.DB.prepare(
+                'SELECT notification_prefs FROM user_settings WHERE user_id = ?'
+            ).bind(userId).first();
+
+            return new Response(JSON.stringify(settings || { notification_prefs: null }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '获取通知设置失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+
+    // 更新用户通知设置
+    if (path === '/api/user/settings' && request.method === 'PUT') {
+        try {
+            const { notification_prefs } = await request.json();
+            
+            // 检查是否已有设置记录
+            const existingSettings = await env.DB.prepare(
+                'SELECT 1 FROM user_settings WHERE user_id = ?'
+            ).bind(userId).first();
+
+            if (existingSettings) {
+                // 更新现有设置
+                await env.DB.prepare(
+                    'UPDATE user_settings SET notification_prefs = ? WHERE user_id = ?'
+                ).bind(notification_prefs, userId).run();
+            } else {
+                // 创建新设置记录
+                await env.DB.prepare(
+                    'INSERT INTO user_settings (user_id, notification_prefs) VALUES (?, ?)'
+                ).bind(userId, notification_prefs).run();
+            }
+
+            return new Response(JSON.stringify({ message: '通知设置更新成功' }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '更新通知设置失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+
+    return new Response('Not Found', { status: 404 });
         } catch (error) {
             return new Response(JSON.stringify({ error: '服务器错误', details: error.message }), {
                 status: 500,
