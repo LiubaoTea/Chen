@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>购物车 - 陳記六堡茶</title>
+    <link rel="stylesheet" href="./css/style.css">
+    <link rel="stylesheet" href="./css/responsive.css">
+    <link rel="stylesheet" href="./css/shop.css">
+    <link rel="stylesheet" href="./css/cart.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script type="module" src="./js/api.js"></script>
+    <script type="module" src="./js/cart.js"></script>
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="logo-container">
+                <img src="https://r2liubaotea.liubaotea.online/image/Design_Assets/liubaotea_logo.png" alt="陳記六堡茶" class="logo">
+                <h1 class="brand-name">陳記六堡茶</h1>
+            </div>
+            <nav class="main-nav">
+                <button class="menu-toggle" id="menuToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <ul class="nav-list" id="navList">
+                    <li><a href="index.html">首页</a></li>
+                    <li><a href="products.html">产品展示</a></li>
+                    <li><a href="brand-story.html">品牌故事</a></li>
+                    <li><a href="tea-culture.html">农家茶文化</a></li>
+                    <li><a href="shop.html">在线商城</a></li>
+                    <li><a href="contact.html">联系我们</a></li>
+                    <li><a href="user-center.html">用户中心</a></li>
+                </ul>
+            </nav>
+            <div class="shop-icons">
+                <a href="#" class="shop-icon" id="searchToggle">
+                    <i class="fas fa-search"></i>
+                </a>
+                <a href="#" class="shop-icon" id="cartToggle">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span class="cart-count">0</span>
+                </a>
+                <a href="#" class="shop-icon" id="userToggle">
+                    <i class="fas fa-user"></i>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="cart-page-main">
+        <div class="container">
+            <h1 class="page-title">我的购物车</h1>
+            <div class="cart-page-container">
+                <div class="cart-items-container" id="cartPageItems">
+                    <!-- 购物车为空时显示 -->
+                    <div class="empty-cart" id="emptyCartPage" style="display: none;">
+                        <i class="fas fa-shopping-cart"></i>
+                        <p>您的购物车是空的</p>
+                        <a href="shop.html" class="btn">去购物</a>
+                    </div>
+                    <!-- 购物车商品列表 -->
+                    <div class="cart-item-list" id="cartPageItemList">
+                        <!-- 购物车商品会通过JavaScript动态添加 -->
+                    </div>
+                </div>
+                <div class="cart-summary">
+                    <h2>订单摘要</h2>
+                    <div class="cart-total">
+                        <span>商品总价:</span>
+                        <span class="total-price">¥0.00</span>
+                    </div>
+                    <div class="cart-actions">
+                        <button class="btn btn-outline" id="clearCartPage">清空购物车</button>
+                        <button class="btn" id="checkoutPage">去结算</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async function() {
+            // 初始化购物车
+            window.initCart();
+            
+            // 获取购物车数据并渲染到页面
+            await renderCartPage();
+            
+            // 添加清空购物车事件
+            const clearCartBtn = document.getElementById('clearCartPage');
+            if (clearCartBtn) {
+                clearCartBtn.addEventListener('click', async function() {
+                    try {
+                        await window.clearCartItems();
+                        await renderCartPage();
+                    } catch (error) {
+                        console.error('清空购物车失败:', error);
+                    }
+                });
+            }
+            
+            // 添加结算按钮事件
+            const checkoutBtn = document.getElementById('checkoutPage');
+            if (checkoutBtn) {
+                checkoutBtn.addEventListener('click', function() {
+                    window.location.href = 'checkout.html';
+                });
+            }
+        });
+        
+        // 渲染购物车页面
+        async function renderCartPage() {
+            try {
+                const cartData = await window.getCartStatus();
+                const cartItemList = document.getElementById('cartPageItemList');
+                const emptyCart = document.getElementById('emptyCartPage');
+                const cartCount = document.querySelector('.cart-count');
+                const totalPrice = document.querySelector('.total-price');
+                
+                // 确保cartData是数组
+                const items = Array.isArray(cartData) ? cartData : [];
+                
+                // 更新购物车图标数量
+                if (cartCount) {
+                    const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
+                    cartCount.textContent = totalQuantity;
+                    cartCount.style.display = totalQuantity > 0 ? 'block' : 'none';
+                }
+                
+                // 如果购物车为空
+                if (items.length === 0) {
+                    if (emptyCart) emptyCart.style.display = 'block';
+                    if (cartItemList) {
+                        cartItemList.style.display = 'none';
+                        cartItemList.innerHTML = '';
+                    }
+                    if (totalPrice) totalPrice.textContent = '¥0.00';
+                    return;
+                }
+                
+                // 显示购物车商品
+                if (emptyCart) emptyCart.style.display = 'none';
+                if (cartItemList) {
+                    cartItemList.style.display = 'block';
+                    cartItemList.innerHTML = cartData.map(item => `
+                        <div class="cart-item" data-id="${item.cart_id}">
+                            <div class="cart-item-checkbox">
+                                <input type="checkbox" checked>
+                            </div>
+                            <div class="cart-item-image">
+                                <img src="https://r2liubaotea.liubaotea.online/image/Goods/Goods_${item.product_id}.png" alt="${item.name}">
+                            </div>
+                            <div class="cart-item-info">
+                                <h3>${item.name}</h3>
+                                <p class="price">¥${item.price.toFixed(2)}</p>
+                                <div class="quantity-controls">
+                                    <button class="quantity-btn minus" data-cart-id="${item.cart_id}" type="button">-</button>
+                                    <input type="number" value="${item.quantity}" min="1" max="99" data-cart-id="${item.cart_id}">
+                                    <button class="quantity-btn plus" data-cart-id="${item.cart_id}" type="button">+</button>
+                                </div>
+                            </div>
+                            <button class="remove-btn" data-cart-id="${item.cart_id}" type="button">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    `).join('');
+                    
+                    // 添加事件监听器
+                    addCartPageEventListeners();
+                }
+                
+                // 更新总价
+                const total = cartData.reduce((sum, item) => sum + item.price * item.quantity, 0);
+                if (totalPrice) {
+                    totalPrice.textContent = `¥${total.toFixed(2)}`;
+                }
+            } catch (error) {
+                console.error('更新购物车页面失败:', error);
+            }
+        }
+        
+        // 添加购物车商品事件监听器
+        function addCartPageEventListeners() {
+            const cartItemList = document.getElementById('cartPageItemList');
+            if (!cartItemList) return;
+            
+            // 为所有数量控制按钮添加事件监听器
+            cartItemList.querySelectorAll('.quantity-btn').forEach(btn => {
+                btn.addEventListener('click', async function() {
+                    const cartId = this.dataset.cartId;
+                    const input = this.parentElement.querySelector('input');
+                    let currentValue = parseInt(input.value);
+                    try {
+                        if (this.classList.contains('minus')) {
+                            if (currentValue > 1) {
+                                currentValue--;
+                                await window.updateCartItemQuantity(cartId, currentValue);
+                                input.value = currentValue;
+                                await renderCartPage();
+                            }
+                        } else if (this.classList.contains('plus')) {
+                            if (currentValue < 99) {
+                                currentValue++;
+                                await window.updateCartItemQuantity(cartId, currentValue);
+                                input.value = currentValue;
+                                await renderCartPage();
+                            }
+                        }
+                    } catch (error) {
+                        console.error('更新商品数量失败:', error);
+                        alert('更新商品数量失败，请稍后重试');
+                        await renderCartPage();
+                    }
+                });
+            });
+            
+            // 数量输入框
+            cartItemList.querySelectorAll('input[type="number"]').forEach(input => {
+                input.addEventListener('change', async function() {
+                    const cartId = this.getAttribute('data-cart-id');
+                    let value = parseInt(this.value);
+                    if (value < 1) value = 1;
+                    if (value > 99) value = 99;
+                    try {
+                        await window.updateCartItemQuantity(cartId, value);
+                        await renderCartPage();
+                    } catch (error) {
+                        console.error('更新商品数量失败:', error);
+                        alert('更新商品数量失败，请稍后重试');
+                        await renderCartPage();
+                    }
+                });
+            });
+            
+            // 为所有删除按钮添加事件监听器
+            cartItemList.querySelectorAll('.remove-btn').forEach(btn => {
+                btn.addEventListener('click', async function() {
+                    const cartId = this.dataset.cartId;
+                    try {
+                        await window.removeFromCart(cartId);
+                        await renderCartPage();
+                    } catch (error) {
+                        console.error('删除商品失败:', error);
+                        alert('删除商品失败，请重试');
+                    }
+                });
+            });
+        }
+    </script>
+</body>
+</html>
