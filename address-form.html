@@ -80,15 +80,39 @@
             e.preventDefault();
             
             const formData = {
-                recipient_name: document.getElementById('recipient_name').value,
-                contact_phone: document.getElementById('contact_phone').value,
-                region: document.getElementById('region').value,
-                full_address: document.getElementById('full_address').value,
-                postal_code: document.getElementById('postal_code').value,
+                recipient_name: document.getElementById('recipient_name').value.trim(),
+                contact_phone: document.getElementById('contact_phone').value.trim(),
+                region: document.getElementById('region').value.trim(),
+                full_address: document.getElementById('full_address').value.trim(),
+                postal_code: document.getElementById('postal_code').value.trim() || '',
                 is_default: document.getElementById('is_default').checked ? 1 : 0
             };
 
+            // 表单验证
+            if (!formData.recipient_name) {
+                alert('请输入收货人姓名');
+                return;
+            }
+            if (!formData.contact_phone) {
+                alert('请输入联系电话');
+                return;
+            }
+            if (!formData.region) {
+                alert('请输入所在地区');
+                return;
+            }
+            if (!formData.full_address) {
+                alert('请输入详细地址');
+                return;
+            }
+
             const token = localStorage.getItem('userToken');
+            if (!token) {
+                alert('登录已过期，请重新登录');
+                window.location.href = 'login.html';
+                return;
+            }
+
             try {
                 const response = await fetch(`${API_BASE_URL}/api/user/addresses${addressId ? `/${addressId}` : ''}`, {
                     method: addressId ? 'PUT' : 'POST',
@@ -104,6 +128,7 @@
                     throw new Error(errorData.error || '保存地址失败');
                 }
 
+                alert(addressId ? '地址更新成功' : '地址添加成功');
                 window.location.href = 'user-center.html';
             } catch (error) {
                 console.error('保存地址失败:', error);
