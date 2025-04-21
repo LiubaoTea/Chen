@@ -468,13 +468,6 @@ async function showNotificationSettings() {
     }
 }
 
-// 这个函数已经在前面定义过，删除这个重复的定义
-
-// 这个函数已经在前面定义过，删除这个重复的定义
-
-
-// 这个函数已经在前面定义过，删除这个重复的定义
-
 // 查看订单详情
 async function viewOrderDetail(orderId) {
     try {
@@ -537,15 +530,6 @@ async function viewOrderDetail(orderId) {
             '<div class="error-message">加载订单详情失败，请稍后重试</div>';
     }
 }
-
-// 这个函数在代码中未被使用，删除它
-
-// 这个函数在代码中未被正确使用，删除它
-
-// 这些函数在代码中未被正确使用，删除它们
-
-
-// 这个函数已经在前面定义过，删除这个重复的定义
 
 // 显示设置模态框
 function showSettingsModal(content) {
