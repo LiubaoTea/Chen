@@ -311,7 +311,7 @@ async function showSecuritySettings() {
 async function loadAddressData(addressId) {
     const token = localStorage.getItem('userToken');
     try {
-        const response = await fetch(`${API_BASE_URL}/api/user/addresses/${addressId}`, {
+        const response = await fetch(`${API_BASE_URL}/api/addresses/${addressId}`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -422,7 +422,7 @@ async function showAddressSettings() {
                 try {
                     const addressId = form.dataset.addressId;
                 const method = addressId ? 'PUT' : 'POST';
-                const url = addressId ? `${API_BASE_URL}/api/user/addresses/${addressId}` : `${API_BASE_URL}/api/user/addresses`;
+                const url = addressId ? `${API_BASE_URL}/api/addresses/${addressId}` : `${API_BASE_URL}/api/addresses`;
                 
                 const response = await fetch(url, {
                         method: method,
@@ -476,10 +476,11 @@ async function showAddressSettings() {
                     }
                 } else if (e.target.classList.contains('set-default')) {
                     try {
-                        const response = await fetch(`${API_BASE_URL}/api/user/addresses/${addressId}/default`, {
+                        const response = await fetch(`${API_BASE_URL}/api/addresses/${addressId}/default`, {
                             method: 'PUT',
                             headers: {
-                                'Authorization': `Bearer ${token}`
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json'
                             }
                         });
                         if (!response.ok) {
