@@ -28,7 +28,7 @@ async function showAddressList() {
     const contentArea = document.getElementById('contentArea');
     try {
         const token = localStorage.getItem('userToken');
-        const response = await fetch(`${API_BASE_URL}/api/user/addresses`, {
+        const response = await fetch(`${API_BASE_URL}/api/addresses`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -85,7 +85,7 @@ function initAddAddressButton() {
 function initAddressSidebar() {
     // 添加侧边栏HTML
     const sidebar = document.createElement('div');
-    sidebar.className = 'modal';
+    sidebar.className = 'address-sidebar';
     sidebar.innerHTML = `
         <div class="address-sidebar-header">
             <h3 class="address-sidebar-title">编辑地址</h3>
@@ -155,13 +155,13 @@ function showAddressForm(addressId = null) {
     }
     
     // 显示侧边栏
-    sidebar.classList.add('show');
+    sidebar.classList.add('active');
 }
 
 // 隐藏地址表单
 function hideAddressForm() {
     const sidebar = document.querySelector('.address-sidebar');
-    sidebar.classList.remove('show');
+    sidebar.classList.remove('active');
 }
 
 // 初始化省市区选择器
@@ -210,7 +210,7 @@ function initAreaSelects() {
 async function loadAddressData(addressId) {
     try {
         const token = localStorage.getItem('userToken');
-        const response = await fetch(`${API_BASE_URL}/api/user/addresses/${addressId}`, {
+        const response = await fetch(`${API_BASE_URL}/api/addresses/${addressId}`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -293,7 +293,7 @@ function bindAddressActions() {
             try {
                 const token = localStorage.getItem('userToken');
                 // 先获取当前地址的完整信息
-                const getResponse = await fetch(`${API_BASE_URL}/api/user/addresses/${addressId}`, {
+                const getResponse = await fetch(`${API_BASE_URL}/api/addresses/${addressId}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -307,7 +307,7 @@ function bindAddressActions() {
                 // 更新默认状态
                 addressData.is_default = 1;
 
-                const response = await fetch(`${API_BASE_URL}/api/user/addresses/${addressId}`, {
+                const response = await fetch(`${API_BASE_URL}/api/addresses/${addressId}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -343,7 +343,7 @@ function bindAddressActions() {
             if (confirm('确定要删除这个地址吗？')) {
                 try {
                     const token = localStorage.getItem('userToken');
-                    const response = await fetch(`${API_BASE_URL}/api/user/addresses/${addressId}`, {
+                    const response = await fetch(`${API_BASE_URL}/api/addresses/${addressId}`, {
                         method: 'DELETE',
                         headers: {
                             'Authorization': `Bearer ${token}`
