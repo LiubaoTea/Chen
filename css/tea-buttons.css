@@ -1,0 +1,115 @@
+.tea-btn {
+    padding: 0.6rem 1.2rem;
+    border: 1px solid #8B4513;
+    border-radius: 4px;
+    font-family: 'SimSun', serif;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 80px;
+}
+
+.tea-btn::before {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    right: 2px;
+    bottom: 2px;
+    border: 1px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.tea-btn:hover::before {
+    border-color: currentColor;
+}
+
+/* 主要按钮样式 */
+.tea-btn-primary {
+    background-color: #8B4513;
+    color: #FFF8DC;
+}
+
+.tea-btn-primary:hover {
+    background-color: #A0522D;
+    box-shadow: 0 2px 8px rgba(139, 69, 19, 0.3);
+}
+
+/* 次要按钮样式 */
+.tea-btn-secondary {
+    background-color: #D2691E;
+    color: #FFF8DC;
+}
+
+.tea-btn-secondary:hover {
+    background-color: #CD853F;
+    box-shadow: 0 2px 8px rgba(210, 105, 30, 0.3);
+}
+
+/* 文本按钮样式 */
+.tea-btn-text {
+    background-color: transparent;
+    color: #8B4513;
+    border-color: transparent;
+}
+
+.tea-btn-text:hover {
+    color: #A0522D;
+    background-color: rgba(139, 69, 19, 0.1);
+}
+
+/* 危险按钮样式 */
+.tea-btn-danger {
+    background-color: #8B0000;
+    color: #FFF8DC;
+    border-color: #8B0000;
+}
+
+.tea-btn-danger:hover {
+    background-color: #A52A2A;
+    border-color: #A52A2A;
+    box-shadow: 0 2px 8px rgba(139, 0, 0, 0.3);
+}
+
+/* 默认地址按钮样式 */
+.tea-btn-default {
+    background-color: #FFF8DC;
+    color: #8B4513;
+    border: 1px dashed #8B4513;
+}
+
+.tea-btn-default:hover {
+    background-color: #FFF3E0;
+    border-style: solid;
+}
+
+.tea-btn-default.active {
+    background-color: #FFF3E0;
+    border-style: solid;
+    font-weight: bold;
+}
+
+/* 禁用状态 */
+.tea-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+/* 小型按钮 */
+.tea-btn-sm {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.875rem;
+    min-width: 60px;
+}
+
+/* 大型按钮 */
+.tea-btn-lg {
+    padding: 0.8rem 1.6rem;
+    font-size: 1.125rem;
+    min-width: 100px;
+}

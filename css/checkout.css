@@ -347,18 +347,72 @@
 
 .checkout-btn {
     width: 100%;
-    padding: 1rem;
-    background: #8b5e34;
-    color: #fff;
-    border: none;
-    border-radius: 8px;
     font-size: 1.1rem;
+}
+
+/* 使用新的茶文化风格按钮 */
+@import url('tea-buttons.css');
+
+.btn {
+    padding: 0.6rem 1.2rem;
+    border: 1px solid #8B4513;
+    border-radius: 4px;
+    font-family: 'SimSun', serif;
     cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 80px;
+}
+
+.btn::before {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    right: 2px;
+    bottom: 2px;
+    border: 1px solid transparent;
     transition: all 0.3s ease;
 }
 
-.checkout-btn:hover {
-    background: #5c3c1d;
+.btn:hover::before {
+    border-color: currentColor;
+}
+
+.btn-primary {
+    background-color: #8B4513;
+    color: #FFF8DC;
+}
+
+.btn-primary:hover {
+    background-color: #A0522D;
+    box-shadow: 0 2px 8px rgba(139, 69, 19, 0.3);
+}
+
+.btn-secondary {
+    background-color: #D2691E;
+    color: #FFF8DC;
+}
+
+.btn-secondary:hover {
+    background-color: #CD853F;
+    box-shadow: 0 2px 8px rgba(210, 105, 30, 0.3);
+}
+
+.btn-danger {
+    background-color: #8B0000;
+    color: #FFF8DC;
+    border-color: #8B0000;
+}
+
+.btn-danger:hover {
+    background-color: #A52A2A;
+    border-color: #A52A2A;
+    box-shadow: 0 2px 8px rgba(139, 0, 0, 0.3);
 }
 
 /* 地址编辑模态框样式 */
