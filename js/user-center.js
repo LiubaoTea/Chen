@@ -373,8 +373,10 @@ async function showAddressForm(addressId = null) {
     const contentArea = document.getElementById('contentArea');
     let address = null;
 
-    // 导入省市区数据
+    // 导入省市区数据和lodash工具
     const { regionData, CodeToText } = await import('../src/utils/china-area-data.js');
+    // 从本地utils.js导入lodash-es函数
+    const { get } = await import('./utils.js');
 
     if (addressId) {
         try {
@@ -500,37 +502,37 @@ async function showAddressForm(addressId = null) {
 
     document.getElementById('addressForm').addEventListener('submit', async (e) => {
         e.preventDefault();
-        // 检查用户登录状态
-        const token = localStorage.getItem('userToken');
-        if (!token) {
-            alert('登录已过期，请重新登录');
-            window.location.href = 'login.html';
-            return;
-        }
-
-        const formData = new FormData(e.target);
-        const province = document.getElementById('province');
-        const city = document.getElementById('city');
-        const district = document.getElementById('district');
-
-        // 验证省市区选择
-        if (!province.value || !city.value || !district.value) {
-            alert('请完整选择所在地区');
-            return;
-        }
-
-        const region = `${province.options[province.selectedIndex].text} ${city.options[city.selectedIndex].text} ${district.options[district.selectedIndex].text}`;
-
-        const addressData = {
-            recipient_name: formData.get('recipient_name'),
-            contact_phone: formData.get('contact_phone'),
-            region: region,
-            full_address: formData.get('full_address'),
-            postal_code: formData.get('postal_code'),
-            is_default: formData.get('is_default') === 'on'
-        };
-
         try {
+            // 检查用户登录状态
+            const token = localStorage.getItem('userToken');
+            if (!token) {
+                alert('登录已过期，请重新登录');
+                window.location.href = 'login.html';
+                return;
+            }
+
+            const formData = new FormData(e.target);
+            const province = document.getElementById('province');
+            const city = document.getElementById('city');
+            const district = document.getElementById('district');
+
+            // 验证省市区选择
+            if (!province.value || !city.value || !district.value) {
+                alert('请完整选择所在地区');
+                return;
+            }
+
+            const region = `${province.options[province.selectedIndex].text} ${city.options[city.selectedIndex].text} ${district.options[district.selectedIndex].text}`;
+
+            const addressData = {
+                recipient_name: formData.get('recipient_name'),
+                contact_phone: formData.get('contact_phone'),
+                region: region,
+                full_address: formData.get('full_address'),
+                postal_code: formData.get('postal_code'),
+                is_default: formData.get('is_default') === 'on'
+            };
+
             const response = await fetch(`${API_BASE_URL}/api/user/addresses${addressId ? `/${addressId}` : ''}`, {
                 method: addressId ? 'PUT' : 'POST',
                 headers: {
@@ -547,7 +549,7 @@ async function showAddressForm(addressId = null) {
             alert(addressId ? '地址更新成功' : '地址添加成功');
             showAddressSettings();
         } catch (error) {
-            console.error('保存地址失败:', error);
+            console.error('地址操作失败:', error);
             alert('操作失败，请重试');
         }
     });
