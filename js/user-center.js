@@ -312,7 +312,7 @@ async function showAddressSettings() {
     const contentArea = document.getElementById('contentArea');
     try {
         const token = localStorage.getItem('userToken');
-        const response = await fetch(`${API_BASE_URL}/api/user/addresses`, {
+        const response = await fetch(`${API_BASE_URL}/api/addresses`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -324,7 +324,6 @@ async function showAddressSettings() {
 
         const addresses = await response.json();
         
-        // 创建主内容区域的地址列表
         contentArea.innerHTML = `
             <h3>收货地址管理</h3>
             <div class="address-list">
@@ -345,99 +344,13 @@ async function showAddressSettings() {
             <button id="addAddressBtn" class="add-address-btn">添加新地址</button>
         `;
 
-        // 创建右侧边栏
-        if (!document.querySelector('.address-sidebar')) {
-            const sidebar = document.createElement('div');
-            sidebar.className = 'address-sidebar';
-            sidebar.innerHTML = `
-                <div class="address-sidebar-header">
-                    <h3 class="address-sidebar-title">编辑地址</h3>
-                    <button class="close-sidebar"><i class="fas fa-times"></i></button>
-                </div>
-                <form class="address-form">
-                    <div class="form-group">
-                        <label for="name">收货人姓名</label>
-                        <input type="text" id="name" name="name" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="phone">联系电话</label>
-                        <input type="tel" id="phone" name="phone" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="province">省份</label>
-                        <select id="province" name="province" required></select>
-                    </div>
-                    <div class="form-group">
-                        <label for="city">城市</label>
-                        <select id="city" name="city" required></select>
-                    </div>
-                    <div class="form-group">
-                        <label for="district">区/县</label>
-                        <select id="district" name="district" required></select>
-                    </div>
-                    <div class="form-group">
-                        <label for="detail">详细地址</label>
-                        <input type="text" id="detail" name="detail" required>
-                    </div>
-                    <div class="address-actions">
-                        <button type="submit" class="save-address">保存地址</button>
-                        <button type="button" class="cancel-address">取消</button>
-                    </div>
-                </form>
-            `;
-            document.body.appendChild(sidebar);
-
-            // 绑定关闭和取消按钮事件
-            const closeBtn = sidebar.querySelector('.close-sidebar');
-            const cancelBtn = sidebar.querySelector('.cancel-address');
-            const closeSidebar = () => {
-                sidebar.classList.remove('active');
-            };
-            closeBtn.addEventListener('click', closeSidebar);
-            cancelBtn.addEventListener('click', closeSidebar);
-
-            // 绑定表单提交事件
-            const form = sidebar.querySelector('.address-form');
-            form.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const formData = new FormData(e.target);
-                try {
-                    const response = await fetch(`${API_BASE_URL}/api/addresses`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${token}`
-                        },
-                        body: JSON.stringify({
-                            name: formData.get('name'),
-                            phone: formData.get('phone'),
-                            province: formData.get('province'),
-                            city: formData.get('city'),
-                            district: formData.get('district'),
-                            detail: formData.get('detail')
-                        })
-                    });
-
-                    if (!response.ok) {
-                        throw new Error('保存地址失败');
-                    }
-
-                    closeSidebar();
-                    await showAddressSettings();
-                } catch (error) {
-                    console.error('保存地址失败:', error);
-                    alert('保存地址失败，请重试');
-                }
-            });
-        }
-
         // 绑定地址操作事件
         document.querySelectorAll('.address-actions button').forEach(button => {
             button.addEventListener('click', async (e) => {
                 const addressId = e.target.dataset.id;
                 if (e.target.classList.contains('set-default')) {
                     try {
-                        const response = await fetch(`${API_BASE_URL}/api/user/addresses/${addressId}/default`, {
+                        const response = await fetch(`${API_BASE_URL}/api/addresses/${addressId}/default`, {
                             method: 'PUT',
                             headers: {
                                 'Authorization': `Bearer ${token}`
@@ -454,7 +367,7 @@ async function showAddressSettings() {
                 } else if (e.target.classList.contains('delete')) {
                     if (confirm('确定要删除这个地址吗？')) {
                         try {
-                            const response = await fetch(`${API_BASE_URL}/api/user/addresses/${addressId}`, {
+                            const response = await fetch(`${API_BASE_URL}/api/addresses/${addressId}`, {
                                 method: 'DELETE',
                                 headers: {
                                     'Authorization': `Bearer ${token}`
@@ -475,8 +388,7 @@ async function showAddressSettings() {
 
         // 添加新地址按钮事件
         document.getElementById('addAddressBtn').addEventListener('click', () => {
-            const sidebar = document.querySelector('.address-sidebar');
-            sidebar.classList.add('active');
+            window.location.href = 'address-form.html';
         });
     } catch (error) {
         console.error('加载地址列表失败:', error);
