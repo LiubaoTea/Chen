@@ -307,11 +307,93 @@ async function showSecuritySettings() {
     });
 }
 
-import { initAddressManagement } from './user-center-address.js';
-
 // 显示收货地址设置
 async function showAddressSettings() {
-    await initAddressManagement();
+    const contentArea = document.getElementById('contentArea');
+    try {
+        const token = localStorage.getItem('userToken');
+        const response = await fetch(`${API_BASE_URL}/api/addresses`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('获取地址列表失败');
+        }
+
+        const addresses = await response.json();
+        
+        contentArea.innerHTML = `
+            <h3>收货地址管理</h3>
+            <div class="address-list">
+                ${addresses.length === 0 ? '<p>暂无收货地址</p>' : ''}
+                ${addresses.map(address => `
+                    <div class="address-item ${address.is_default ? 'default' : ''}">
+                        <div class="address-info">
+                            <p><strong>${address.name}</strong> ${address.phone}</p>
+                            <p>${address.province}${address.city}${address.district}${address.detail}</p>
+                        </div>
+                        <div class="address-actions">
+                            ${!address.is_default ? `<button class="set-default" data-id="${address.id}">设为默认</button>` : ''}
+                            <button class="delete" data-id="${address.id}">删除</button>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+            <button id="addAddressBtn" class="add-address-btn">添加新地址</button>
+        `;
+
+        // 绑定地址操作事件
+        document.querySelectorAll('.address-actions button').forEach(button => {
+            button.addEventListener('click', async (e) => {
+                const addressId = e.target.dataset.id;
+                if (e.target.classList.contains('set-default')) {
+                    try {
+                        const response = await fetch(`${API_BASE_URL}/api/addresses/${addressId}/default`, {
+                            method: 'PUT',
+                            headers: {
+                                'Authorization': `Bearer ${token}`
+                            }
+                        });
+                        if (!response.ok) {
+                            throw new Error('设置默认地址失败');
+                        }
+                        await showAddressSettings();
+                    } catch (error) {
+                        console.error('设置默认地址失败:', error);
+                        alert('设置默认地址失败，请重试');
+                    }
+                } else if (e.target.classList.contains('delete')) {
+                    if (confirm('确定要删除这个地址吗？')) {
+                        try {
+                            const response = await fetch(`${API_BASE_URL}/api/addresses/${addressId}`, {
+                                method: 'DELETE',
+                                headers: {
+                                    'Authorization': `Bearer ${token}`
+                                }
+                            });
+                            if (!response.ok) {
+                                throw new Error('删除地址失败');
+                            }
+                            await showAddressSettings();
+                        } catch (error) {
+                            console.error('删除地址失败:', error);
+                            alert('删除地址失败，请重试');
+                        }
+                    }
+                }
+            });
+        });
+
+        // 添加新地址按钮事件
+        document.getElementById('addAddressBtn').addEventListener('click', () => {
+            window.location.href = 'address-form.html';
+        });
+    } catch (error) {
+        console.error('加载地址列表失败:', error);
+        contentArea.innerHTML = '<div class="error">加载地址列表失败，请重试</div>';
+    }
 }
 
 // 显示通知设置
