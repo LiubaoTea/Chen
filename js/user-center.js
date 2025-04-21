@@ -307,16 +307,25 @@ async function showSecuritySettings() {
     });
 }
 
+// 导入省市区数据
+import areaData from '../src/utils/data.json' assert { type: 'json' };
+
 // 显示收货地址设置
 async function showAddressSettings() {
     const contentArea = document.getElementById('contentArea');
     try {
         const token = localStorage.getItem('userToken');
-        const response = await fetch(`${API_BASE_URL}/api/addresses`, {
+        const response = await fetch(`${API_BASE_URL}/api/user/addresses`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
         });
+
+        // 初始化省市区选择器
+        initAreaSelectors();
+
+        // 绑定地址模态框事件
+        bindAddressModalEvents();
 
         if (!response.ok) {
             throw new Error('获取地址列表失败');
@@ -335,20 +344,63 @@ async function showAddressSettings() {
                             <p>${address.province}${address.city}${address.district}${address.detail}</p>
                         </div>
                         <div class="address-actions">
-                            ${!address.is_default ? `<button class="set-default" data-id="${address.id}">设为默认</button>` : ''}
+                            ${!address.is_default ? `<button class="set-default" data-id="${address.id}">设为默认</button>` : '<span class="default-label">已默认</span>'}
+                            <button class="edit" data-id="${address.id}">编辑</button>
                             <button class="delete" data-id="${address.id}">删除</button>
                         </div>
                     </div>
                 `).join('')}
             </div>
             <button id="addAddressBtn" class="add-address-btn">添加新地址</button>
+
+            <!-- 地址编辑模态框 -->
+            <div id="addressModal" class="modal">
+                <div class="modal-content">
+                    <h3>编辑地址</h3>
+                    <form id="addressForm">
+                        <input type="hidden" id="addressId">
+                        <div class="form-group">
+                            <label for="name">收货人姓名</label>
+                            <input type="text" id="name" name="name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="phone">联系电话</label>
+                            <input type="tel" id="phone" name="phone" required pattern="\d{11}">
+                        </div>
+                        <div class="form-group">
+                            <label for="province">所在地区</label>
+                            <div class="area-select">
+                                <select id="province" name="province" required></select>
+                                <select id="city" name="city" required></select>
+                                <select id="district" name="district" required></select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="detail">详细地址</label>
+                            <input type="text" id="detail" name="detail" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="isDefault" name="isDefault">
+                                设为默认地址
+                            </label>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="cancel-btn" onclick="closeAddressModal()">取消</button>
+                            <button type="submit" class="submit-btn">保存</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         `;
 
         // 绑定地址操作事件
         document.querySelectorAll('.address-actions button').forEach(button => {
             button.addEventListener('click', async (e) => {
                 const addressId = e.target.dataset.id;
-                if (e.target.classList.contains('set-default')) {
+                if (e.target.classList.contains('edit')) {
+                    openAddressModal(addressId);
+                } else if (e.target.classList.contains('set-default')) {
                     try {
                         const response = await fetch(`${API_BASE_URL}/api/addresses/${addressId}/default`, {
                             method: 'PUT',
@@ -388,8 +440,174 @@ async function showAddressSettings() {
 
         // 添加新地址按钮事件
         document.getElementById('addAddressBtn').addEventListener('click', () => {
-            window.location.href = 'address-form.html';
+            openAddressModal();
         });
+
+// 初始化省市区选择器
+function initAreaSelectors() {
+    const provinceSelect = document.getElementById('province');
+    const citySelect = document.getElementById('city');
+    const districtSelect = document.getElementById('district');
+
+    // 清空选项
+    provinceSelect.innerHTML = '<option value="">请选择省份</option>';
+    citySelect.innerHTML = '<option value="">请选择城市</option>';
+    districtSelect.innerHTML = '<option value="">请选择区县</option>';
+
+    // 添加省份选项
+    for (const provinceCode in areaData['86']) {
+        const option = document.createElement('option');
+        option.value = provinceCode;
+        option.textContent = areaData['86'][provinceCode];
+        provinceSelect.appendChild(option);
+    }
+
+    // 省份变化时更新城市
+    provinceSelect.addEventListener('change', () => {
+        const provinceCode = provinceSelect.value;
+        updateCityOptions(provinceCode);
+        districtSelect.innerHTML = '<option value="">请选择区县</option>';
+    });
+
+    // 城市变化时更新区县
+    citySelect.addEventListener('change', () => {
+        const cityCode = citySelect.value;
+        updateDistrictOptions(cityCode);
+    });
+}
+
+// 更新城市选项
+function updateCityOptions(provinceCode) {
+    const citySelect = document.getElementById('city');
+    citySelect.innerHTML = '<option value="">请选择城市</option>';
+    
+    if (provinceCode && areaData[provinceCode]) {
+        for (const cityCode in areaData[provinceCode]) {
+            const option = document.createElement('option');
+            option.value = cityCode;
+            option.textContent = areaData[provinceCode][cityCode];
+            citySelect.appendChild(option);
+        }
+    }
+}
+
+// 更新区县选项
+function updateDistrictOptions(cityCode) {
+    const districtSelect = document.getElementById('district');
+    districtSelect.innerHTML = '<option value="">请选择区县</option>';
+    
+    if (cityCode && areaData[cityCode]) {
+        for (const districtCode in areaData[cityCode]) {
+            const option = document.createElement('option');
+            option.value = districtCode;
+            option.textContent = areaData[cityCode][districtCode];
+            districtSelect.appendChild(option);
+        }
+    }
+}
+
+// 打开地址编辑模态框
+async function openAddressModal(addressId = null) {
+    const modal = document.getElementById('addressModal');
+    const form = document.getElementById('addressForm');
+    const addressIdInput = document.getElementById('addressId');
+
+    // 重置表单
+    form.reset();
+    addressIdInput.value = '';
+
+    if (addressId) {
+        // 编辑现有地址
+        try {
+            const token = localStorage.getItem('userToken');
+            const response = await fetch(`${API_BASE_URL}/api/user/addresses/${addressId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('获取地址详情失败');
+            }
+
+            const address = await response.json();
+            addressIdInput.value = addressId;
+            document.getElementById('name').value = address.name;
+            document.getElementById('phone').value = address.phone;
+            document.getElementById('detail').value = address.detail;
+            document.getElementById('isDefault').checked = address.is_default;
+
+            // 设置省市区
+            document.getElementById('province').value = address.province_code;
+            updateCityOptions(address.province_code);
+            document.getElementById('city').value = address.city_code;
+            updateDistrictOptions(address.city_code);
+            document.getElementById('district').value = address.district_code;
+        } catch (error) {
+            console.error('加载地址详情失败:', error);
+            alert('加载地址详情失败，请重试');
+            return;
+        }
+    }
+
+    modal.style.display = 'block';
+}
+
+// 关闭地址编辑模态框
+function closeAddressModal() {
+    const modal = document.getElementById('addressModal');
+    modal.style.display = 'none';
+}
+
+// 绑定地址模态框事件
+function bindAddressModalEvents() {
+    const form = document.getElementById('addressForm');
+    
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const addressId = document.getElementById('addressId').value;
+        const formData = new FormData(form);
+        
+        const addressData = {
+            name: formData.get('name'),
+            phone: formData.get('phone'),
+            province: document.getElementById('province').options[document.getElementById('province').selectedIndex].text,
+            city: document.getElementById('city').options[document.getElementById('city').selectedIndex].text,
+            district: document.getElementById('district').options[document.getElementById('district').selectedIndex].text,
+            province_code: formData.get('province'),
+            city_code: formData.get('city'),
+            district_code: formData.get('district'),
+            detail: formData.get('detail'),
+            is_default: formData.get('isDefault') === 'on'
+        };
+
+        try {
+            const token = localStorage.getItem('userToken');
+            const url = addressId ?
+                `${API_BASE_URL}/api/user/addresses/${addressId}` :
+                `${API_BASE_URL}/api/user/addresses`;
+
+            const response = await fetch(url, {
+                method: addressId ? 'PUT' : 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(addressData)
+            });
+
+            if (!response.ok) {
+                throw new Error(addressId ? '更新地址失败' : '添加地址失败');
+            }
+
+            closeAddressModal();
+            await showAddressSettings();
+        } catch (error) {
+            console.error('保存地址失败:', error);
+            alert('保存失败，请重试');
+        }
+    });
+}
     } catch (error) {
         console.error('加载地址列表失败:', error);
         contentArea.innerHTML = '<div class="error">加载地址列表失败，请重试</div>';
