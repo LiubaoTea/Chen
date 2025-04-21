@@ -331,12 +331,14 @@ async function showAddressSettings() {
                 ${addresses.map(address => `
                     <div class="address-item ${address.is_default ? 'default' : ''}">
                         <div class="address-info">
-                            <p><strong>${address.name}</strong> ${address.phone}</p>
-                            <p>${address.province}${address.city}${address.district}${address.detail}</p>
+                            <p><strong>${address.recipient_name}</strong> ${address.contact_phone}</p>
+                            <p>${address.region} ${address.full_address}</p>
+                            ${address.postal_code ? `<p>邮编：${address.postal_code}</p>` : ''}
                         </div>
                         <div class="address-actions">
-                            ${!address.is_default ? `<button class="set-default" data-id="${address.id}">设为默认</button>` : ''}
-                            <button class="delete" data-id="${address.id}">删除</button>
+                            ${!address.is_default ? `<button class="set-default" data-id="${address.address_id}">设为默认</button>` : ''}
+                            <button class="edit" data-id="${address.address_id}">编辑</button>
+                            <button class="delete" data-id="${address.address_id}">删除</button>
                         </div>
                     </div>
                 `).join('')}
@@ -350,11 +352,13 @@ async function showAddressSettings() {
                 const addressId = e.target.dataset.id;
                 if (e.target.classList.contains('set-default')) {
                     try {
-                        const response = await fetch(`${API_BASE_URL}/api/user/addresses/${addressId}/default`, {
+                        const response = await fetch(`${API_BASE_URL}/api/user/addresses/${addressId}`, {
                             method: 'PUT',
                             headers: {
+                                'Content-Type': 'application/json',
                                 'Authorization': `Bearer ${token}`
-                            }
+                            },
+                            body: JSON.stringify({ is_default: 1 })
                         });
                         if (!response.ok) {
                             throw new Error('设置默认地址失败');
@@ -364,6 +368,9 @@ async function showAddressSettings() {
                         console.error('设置默认地址失败:', error);
                         alert('设置默认地址失败，请重试');
                     }
+                } else if (e.target.classList.contains('edit')) {
+                    // 跳转到编辑地址页面
+                    window.location.href = `address-form.html?id=${addressId}`;
                 } else if (e.target.classList.contains('delete')) {
                     if (confirm('确定要删除这个地址吗？')) {
                         try {
@@ -390,6 +397,77 @@ async function showAddressSettings() {
         document.getElementById('addAddressBtn').addEventListener('click', () => {
             window.location.href = 'address-form.html';
         });
+
+        // 为地址列表添加样式
+        const style = document.createElement('style');
+        style.textContent = `
+            .address-list {
+                display: flex;
+                flex-direction: column;
+                gap: 15px;
+                margin-top: 20px;
+            }
+            .address-item {
+                border: 1px solid #D2691E;
+                border-radius: 8px;
+                padding: 15px;
+                background: #FFF;
+                position: relative;
+            }
+            .address-item.default {
+                border: 2px solid #8B4513;
+                background: #FFF9F0;
+            }
+            .address-item.default::after {
+                content: '默认';
+                position: absolute;
+                top: 10px;
+                right: 10px;
+                background: #8B4513;
+                color: #FFF;
+                padding: 2px 8px;
+                border-radius: 4px;
+                font-size: 12px;
+            }
+            .address-actions {
+                margin-top: 10px;
+                display: flex;
+                gap: 10px;
+            }
+            .address-actions button {
+                padding: 5px 10px;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+                transition: all 0.3s ease;
+            }
+            .address-actions .set-default {
+                background: #D2691E;
+                color: #FFF;
+            }
+            .address-actions .edit {
+                background: #8B4513;
+                color: #FFF;
+            }
+            .address-actions .delete {
+                background: #DC3545;
+                color: #FFF;
+            }
+            .add-address-btn {
+                margin-top: 20px;
+                padding: 10px 20px;
+                background: #8B4513;
+                color: #FFF;
+                border: none;
+                border-radius: 6px;
+                cursor: pointer;
+                transition: all 0.3s ease;
+            }
+            .add-address-btn:hover {
+                background: #6B4423;
+            }
+        `;
+        document.head.appendChild(style);
     } catch (error) {
         console.error('加载地址列表失败:', error);
         contentArea.innerHTML = '<div class="error">加载地址列表失败，请重试</div>';

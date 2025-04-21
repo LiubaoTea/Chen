@@ -303,7 +303,162 @@ const handleUserAuth = async (request, env) => {
 };
 
 //==========================================================================
-//                      五、商品相关API路由处理
+//                      五、地址管理API路由处理
+//              处理用户收货地址的添加、修改、删除和查询请求
+//==========================================================================
+const handleAddresses = async (request, env) => {
+    // 处理OPTIONS预检请求
+    if (request.method === 'OPTIONS') {
+        return handleOptions(request);
+    }
+
+    const url = new URL(request.url);
+    const path = url.pathname;
+
+    // 验证用户身份
+    const authHeader = request.headers.get('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return new Response(JSON.stringify({ error: '未授权访问' }), {
+            status: 401,
+            headers: { 'Content-Type': 'application/json' }
+        });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const decoded = JSON.parse(atob(token));
+    const userId = decoded.userId;
+
+    // 获取地址列表
+    if (path === '/api/user/addresses' && request.method === 'GET') {
+        try {
+            const { results: addresses } = await env.DB.prepare(
+                'SELECT * FROM user_addresses WHERE user_id = ? ORDER BY is_default DESC'
+            ).bind(userId).all();
+
+            return new Response(JSON.stringify(addresses), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '获取地址列表失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+
+    // 添加新地址
+    if (path === '/api/user/addresses' && request.method === 'POST') {
+        try {
+            const { recipient_name, contact_phone, full_address, region, postal_code, is_default } = await request.json();
+
+            // 如果设置为默认地址，先将其他地址设置为非默认
+            if (is_default) {
+                await env.DB.prepare(
+                    'UPDATE user_addresses SET is_default = 0 WHERE user_id = ?'
+                ).bind(userId).run();
+            }
+
+            // 插入新地址
+            const result = await env.DB.prepare(
+                'INSERT INTO user_addresses (user_id, recipient_name, contact_phone, full_address, region, postal_code, is_default) VALUES (?, ?, ?, ?, ?, ?, ?)'
+            ).bind(userId, recipient_name, contact_phone, full_address, region, postal_code, is_default ? 1 : 0).run();
+
+            return new Response(JSON.stringify({ message: '添加地址成功', address_id: result.lastRowId }), {
+                status: 201,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '添加地址失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+
+    // 更新地址
+    const updateMatch = path.match(/^\/api\/user\/addresses\/(\d+)$/);
+    if (updateMatch && request.method === 'PUT') {
+        try {
+            const addressId = updateMatch[1];
+            const { recipient_name, contact_phone, full_address, region, postal_code, is_default } = await request.json();
+
+            // 验证地址所有权
+            const address = await env.DB.prepare(
+                'SELECT 1 FROM user_addresses WHERE address_id = ? AND user_id = ?'
+            ).bind(addressId, userId).first();
+
+            if (!address) {
+                return new Response(JSON.stringify({ error: '地址不存在或无权限修改' }), {
+                    status: 403,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+
+            // 如果设置为默认地址，先将其他地址设置为非默认
+            if (is_default) {
+                await env.DB.prepare(
+                    'UPDATE user_addresses SET is_default = 0 WHERE user_id = ?'
+                ).bind(userId).run();
+            }
+
+            // 更新地址信息
+            await env.DB.prepare(
+                'UPDATE user_addresses SET recipient_name = ?, contact_phone = ?, full_address = ?, region = ?, postal_code = ?, is_default = ? WHERE address_id = ?'
+            ).bind(recipient_name, contact_phone, full_address, region, postal_code, is_default ? 1 : 0, addressId).run();
+
+            return new Response(JSON.stringify({ message: '更新地址成功' }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '更新地址失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+
+    // 删除地址
+    const deleteMatch = path.match(/^\/api\/user\/addresses\/(\d+)$/);
+    if (deleteMatch && request.method === 'DELETE') {
+        try {
+            const addressId = deleteMatch[1];
+
+            // 验证地址所有权
+            const address = await env.DB.prepare(
+                'SELECT 1 FROM user_addresses WHERE address_id = ? AND user_id = ?'
+            ).bind(addressId, userId).first();
+
+            if (!address) {
+                return new Response(JSON.stringify({ error: '地址不存在或无权限删除' }), {
+                    status: 403,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+
+            // 删除地址
+            await env.DB.prepare(
+                'DELETE FROM user_addresses WHERE address_id = ?'
+            ).bind(addressId).run();
+
+            return new Response(JSON.stringify({ message: '删除地址成功' }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '删除地址失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+
+    return new Response('Not Found', { status: 404 });
+};
+
+//==========================================================================
+//                      六、商品相关API路由处理
 //              处理商品列表、商品详情、商品筛选和相关商品推荐的请求
 //==========================================================================
 const handleProducts = async (request, env) => {
