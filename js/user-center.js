@@ -307,12 +307,33 @@ async function showSecuritySettings() {
     });
 }
 
+// 加载单个地址数据
+async function loadAddressData(addressId) {
+    const token = localStorage.getItem('userToken');
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/user/addresses/${addressId}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('获取地址数据失败');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('加载地址数据失败:', error);
+        throw error;
+    }
+}
+
 // 显示收货地址设置
 async function showAddressSettings() {
     const contentArea = document.getElementById('contentArea');
     try {
         const token = localStorage.getItem('userToken');
-        const response = await fetch(`${API_BASE_URL}/api/addresses`, {
+        const response = await fetch(`${API_BASE_URL}/api/user/addresses`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -332,12 +353,13 @@ async function showAddressSettings() {
                 ${addresses.map(address => `
                     <div class="address-item ${address.is_default ? 'default' : ''}">
                         <div class="address-info">
-                            <p><strong>${address.name}</strong> ${address.phone}</p>
-                            <p>${address.province}${address.city}${address.district}${address.detail}</p>
+                            <p><strong>${address.recipient_name}</strong> ${address.contact_phone}</p>
+                            <p>${address.region} ${address.full_address}</p>
                         </div>
                         <div class="address-actions">
-                            ${!address.is_default ? `<button class="set-default" data-id="${address.id}">设为默认</button>` : ''}
-                            <button class="delete" data-id="${address.id}">删除</button>
+                            ${!address.is_default ? `<button class="set-default" data-id="${address.address_id}">设为默认</button>` : ''}
+                            <button class="edit" data-id="${address.address_id}">编辑</button>
+                            <button class="delete" data-id="${address.address_id}">删除</button>
                         </div>
                     </div>
                 `).join('')}
@@ -356,28 +378,24 @@ async function showAddressSettings() {
                 </div>
                 <form class="address-form">
                     <div class="form-group">
-                        <label for="name">收货人姓名</label>
-                        <input type="text" id="name" name="name" required>
+                        <label for="recipient_name">收货人姓名</label>
+                        <input type="text" id="recipient_name" name="recipient_name" required>
                     </div>
                     <div class="form-group">
-                        <label for="phone">联系电话</label>
-                        <input type="tel" id="phone" name="phone" required>
+                        <label for="contact_phone">联系电话</label>
+                        <input type="tel" id="contact_phone" name="contact_phone" required>
                     </div>
                     <div class="form-group">
-                        <label for="province">省份</label>
-                        <select id="province" name="province" required></select>
+                        <label for="region">地区（省/市/区）</label>
+                        <input type="text" id="region" name="region" required>
                     </div>
                     <div class="form-group">
-                        <label for="city">城市</label>
-                        <select id="city" name="city" required></select>
+                        <label for="full_address">详细地址</label>
+                        <input type="text" id="full_address" name="full_address" required>
                     </div>
                     <div class="form-group">
-                        <label for="district">区/县</label>
-                        <select id="district" name="district" required></select>
-                    </div>
-                    <div class="form-group">
-                        <label for="detail">详细地址</label>
-                        <input type="text" id="detail" name="detail" required>
+                        <label for="postal_code">邮政编码</label>
+                        <input type="text" id="postal_code" name="postal_code">
                     </div>
                     <div class="address-actions">
                         <button type="submit" class="save-address">保存地址</button>
@@ -402,19 +420,22 @@ async function showAddressSettings() {
                 e.preventDefault();
                 const formData = new FormData(e.target);
                 try {
-                    const response = await fetch(`${API_BASE_URL}/api/addresses`, {
-                        method: 'POST',
+                    const addressId = form.dataset.addressId;
+                const method = addressId ? 'PUT' : 'POST';
+                const url = addressId ? `${API_BASE_URL}/api/user/addresses/${addressId}` : `${API_BASE_URL}/api/user/addresses`;
+                
+                const response = await fetch(url, {
+                        method: method,
                         headers: {
                             'Content-Type': 'application/json',
                             'Authorization': `Bearer ${token}`
                         },
                         body: JSON.stringify({
-                            name: formData.get('name'),
-                            phone: formData.get('phone'),
-                            province: formData.get('province'),
-                            city: formData.get('city'),
-                            district: formData.get('district'),
-                            detail: formData.get('detail')
+                            recipient_name: formData.get('recipient_name'),
+                            contact_phone: formData.get('contact_phone'),
+                            region: formData.get('region'),
+                            full_address: formData.get('full_address'),
+                            postal_code: formData.get('postal_code')
                         })
                     });
 
@@ -435,9 +456,27 @@ async function showAddressSettings() {
         document.querySelectorAll('.address-actions button').forEach(button => {
             button.addEventListener('click', async (e) => {
                 const addressId = e.target.dataset.id;
-                if (e.target.classList.contains('set-default')) {
+                if (e.target.classList.contains('edit')) {
                     try {
-                        const response = await fetch(`${API_BASE_URL}/api/addresses/${addressId}/default`, {
+                        const addressData = await loadAddressData(addressId);
+                        const sidebar = document.querySelector('.address-sidebar');
+                        const form = sidebar.querySelector('.address-form');
+                        
+                        form.dataset.addressId = addressId;
+                        form.querySelector('#recipient_name').value = addressData.recipient_name;
+                        form.querySelector('#contact_phone').value = addressData.contact_phone;
+                        form.querySelector('#region').value = addressData.region;
+                        form.querySelector('#full_address').value = addressData.full_address;
+                        form.querySelector('#postal_code').value = addressData.postal_code || '';
+                        
+                        sidebar.classList.add('active');
+                    } catch (error) {
+                        console.error('加载地址数据失败:', error);
+                        alert('加载地址数据失败，请重试');
+                    }
+                } else if (e.target.classList.contains('set-default')) {
+                    try {
+                        const response = await fetch(`${API_BASE_URL}/api/user/addresses/${addressId}/default`, {
                             method: 'PUT',
                             headers: {
                                 'Authorization': `Bearer ${token}`
