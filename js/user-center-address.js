@@ -85,7 +85,7 @@ function initAddAddressButton() {
 function initAddressSidebar() {
     // 添加侧边栏HTML
     const sidebar = document.createElement('div');
-    sidebar.className = 'address-sidebar';
+    sidebar.className = 'modal';
     sidebar.innerHTML = `
         <div class="address-sidebar-header">
             <h3 class="address-sidebar-title">编辑地址</h3>
@@ -155,13 +155,13 @@ function showAddressForm(addressId = null) {
     }
     
     // 显示侧边栏
-    sidebar.classList.add('active');
+    sidebar.classList.add('show');
 }
 
 // 隐藏地址表单
 function hideAddressForm() {
     const sidebar = document.querySelector('.address-sidebar');
-    sidebar.classList.remove('active');
+    sidebar.classList.remove('show');
 }
 
 // 初始化省市区选择器
@@ -292,13 +292,28 @@ function bindAddressActions() {
             const addressId = e.target.dataset.id;
             try {
                 const token = localStorage.getItem('userToken');
+                // 先获取当前地址的完整信息
+                const getResponse = await fetch(`${API_BASE_URL}/api/user/addresses/${addressId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!getResponse.ok) {
+                    throw new Error('获取地址信息失败');
+                }
+
+                const addressData = await getResponse.json();
+                // 更新默认状态
+                addressData.is_default = 1;
+
                 const response = await fetch(`${API_BASE_URL}/api/user/addresses/${addressId}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`
                     },
-                    body: JSON.stringify({ is_default: 1 })
+                    body: JSON.stringify(addressData)
                 });
 
                 if (!response.ok) {
