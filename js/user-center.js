@@ -374,9 +374,9 @@ async function showAddressForm(addressId = null) {
     let address = null;
 
     // 导入省市区数据和lodash工具
-    const { regionData, CodeToText } = await import('../src/utils/china-area-data.js');
+    const { regionData, CodeToText } = await import('/src/utils/china-area-data.js');
     // 从本地utils.js导入lodash-es函数
-    const { get } = await import('./utils.js');
+    const { get } = await import('/js/utils.js');
 
     if (addressId) {
         try {
