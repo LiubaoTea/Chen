@@ -121,29 +121,31 @@
 .address-item {
     border: 1px solid #D2691E;
     border-radius: 8px;
-    padding: 1rem;
+    padding: 1.2rem;
     background-color: #FEFCF7;
+    position: relative;
 }
 
 .address-item-header {
     display: flex;
-    justify-content: space-between;
-    margin-bottom: 0.5rem;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 0.8rem;
     color: #8B4513;
     font-weight: 500;
 }
 
 .address-item-content {
     color: #5C4033;
-    margin-bottom: 0.5rem;
-    line-height: 1.5;
+    line-height: 1.6;
+    margin-bottom: 1rem;
+    font-size: 1.05rem;
 }
 
 .address-item-actions {
     display: flex;
-    justify-content: flex-end;
-    gap: 0.5rem;
-    margin-top: 0.5rem;
+    align-items: center;
+    gap: 1rem;
 }
 
 /* 使用新的茶文化风格按钮 */
@@ -161,13 +163,13 @@
 }
 
 .default-checkbox {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 0.8rem;
-    margin: 1rem 0;
-    padding: 0.8rem;
-    background: rgba(210, 105, 30, 0.1);
+    padding: 0.5rem 1rem;
+    background: rgba(210, 105, 30, 0.08);
     border-radius: 4px;
+    margin-right: 1rem;
 }
 
 .default-checkbox input[type="checkbox"] {

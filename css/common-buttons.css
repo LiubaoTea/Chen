@@ -1,0 +1,81 @@
+.common-btn {
+    font-family: 'SimSun', serif;
+    padding: 0.8rem 1.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 90px;
+    font-size: 1rem;
+}
+
+/* 保存类按钮 */
+.save-btn {
+    background-color: #8B4513;
+    color: #FFF8DC;
+    border: 1px solid #8B4513;
+}
+
+.save-btn:hover {
+    background-color: #A0522D;
+    box-shadow: 0 2px 8px rgba(139, 69, 19, 0.3);
+}
+
+/* 修改类按钮 */
+.edit-btn {
+    background-color: #D2691E;
+    color: #FFF8DC;
+    border: 1px solid #D2691E;
+}
+
+.edit-btn:hover {
+    background-color: #CD853F;
+    box-shadow: 0 2px 8px rgba(210, 105, 30, 0.3);
+}
+
+/* 退出登录按钮 */
+.logout-btn {
+    background-color: #8B0000;
+    color: #FFF8DC;
+    border: 1px solid #8B0000;
+}
+
+.logout-btn:hover {
+    background-color: #A52A2A;
+    box-shadow: 0 2px 8px rgba(139, 0, 0, 0.3);
+}
+
+/* 默认地址按钮 */
+.default-address-btn {
+    background-color: #FFF8DC;
+    color: #8B4513;
+    border: 1px dashed #8B4513;
+    padding: 0.6rem 1.2rem;
+}
+
+.default-address-btn:hover {
+    background-color: #FFF3E0;
+    border-style: solid;
+}
+
+.default-address-btn.active {
+    background-color: #FFF3E0;
+    border-style: solid;
+    font-weight: bold;
+}
+
+/* 按钮内的图标 */
+.btn-icon {
+    margin-right: 0.5rem;
+    font-size: 1.1em;
+}
+
+/* 禁用状态 */
+.common-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    box-shadow: none;
+}
