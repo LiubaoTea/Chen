@@ -308,6 +308,183 @@ async function showSecuritySettings() {
 }
 
 // 显示收货地址设置
+
+// 初始化省市区选择器
+function initAddressSelector() {
+    const provinceSelect = document.getElementById('province');
+    const citySelect = document.getElementById('city');
+    const districtSelect = document.getElementById('district');
+
+    // 加载省份数据
+    const provinces = addressData['86'];
+    for (const code in provinces) {
+        const option = document.createElement('option');
+        option.value = code;
+        option.textContent = provinces[code];
+        provinceSelect.appendChild(option);
+    }
+
+    // 省份选择事件
+    provinceSelect.addEventListener('change', () => {
+        citySelect.innerHTML = '<option value="">请选择城市</option>';
+        districtSelect.innerHTML = '<option value="">请选择区县</option>';
+        
+        const cities = addressData[provinceSelect.value];
+        if (cities) {
+            for (const code in cities) {
+                const option = document.createElement('option');
+                option.value = code;
+                option.textContent = cities[code];
+                citySelect.appendChild(option);
+            }
+        }
+    });
+
+    // 城市选择事件
+    citySelect.addEventListener('change', () => {
+        districtSelect.innerHTML = '<option value="">请选择区县</option>';
+        
+        const districts = addressData[citySelect.value];
+        if (districts) {
+            for (const code in districts) {
+                const option = document.createElement('option');
+                option.value = code;
+                option.textContent = districts[code];
+                districtSelect.appendChild(option);
+            }
+        }
+    });
+}
+
+// 显示地址表单
+async function showAddressForm(addressId = null) {
+    const formContainer = document.getElementById('addressFormContainer');
+    const formTitle = document.getElementById('addressFormTitle');
+    const form = document.getElementById('addressForm');
+    
+    formContainer.style.display = 'block';
+    formTitle.textContent = addressId ? '编辑地址' : '添加新地址';
+    form.reset();
+
+    if (addressId) {
+        try {
+            const token = localStorage.getItem('userToken');
+            const response = await fetch(`${API_BASE_URL}/api/user/addresses/${addressId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error('获取地址信息失败');
+            }
+            
+            const address = await response.json();
+            document.getElementById('addressId').value = addressId;
+            document.getElementById('recipient_name').value = address.recipient_name;
+            document.getElementById('contact_phone').value = address.contact_phone;
+            document.getElementById('full_address').value = address.full_address;
+            document.getElementById('postal_code').value = address.postal_code || '';
+            document.getElementById('is_default').checked = address.is_default === 1;
+
+            // 设置省市区选择器的值
+            const regionParts = address.region.split(' ');
+            if (regionParts.length === 3) {
+                // 找到对应的省份代码
+                for (const provinceCode in addressData['86']) {
+                    if (addressData['86'][provinceCode] === regionParts[0]) {
+                        document.getElementById('province').value = provinceCode;
+                        document.getElementById('province').dispatchEvent(new Event('change'));
+
+                        // 找到对应的城市代码
+                        for (const cityCode in addressData[provinceCode]) {
+                            if (addressData[provinceCode][cityCode] === regionParts[1]) {
+                                document.getElementById('city').value = cityCode;
+                                document.getElementById('city').dispatchEvent(new Event('change'));
+
+                                // 找到对应的区县代码
+                                for (const districtCode in addressData[cityCode]) {
+                                    if (addressData[cityCode][districtCode] === regionParts[2]) {
+                                        document.getElementById('district').value = districtCode;
+                                        break;
+                                    }
+                                }
+                                break;
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('加载地址信息失败:', error);
+            alert('加载地址信息失败，请重试');
+        }
+    }
+}
+
+// 处理地址表单提交
+async function handleAddressFormSubmit(e) {
+    e.preventDefault();
+    
+    const formData = {
+        recipient_name: document.getElementById('recipient_name').value.trim(),
+        contact_phone: document.getElementById('contact_phone').value.trim(),
+        region: [
+            document.getElementById('province').options[document.getElementById('province').selectedIndex].text,
+            document.getElementById('city').options[document.getElementById('city').selectedIndex].text,
+            document.getElementById('district').options[document.getElementById('district').selectedIndex].text
+        ].join(' '),
+        full_address: document.getElementById('full_address').value.trim(),
+        postal_code: document.getElementById('postal_code').value.trim(),
+        is_default: document.getElementById('is_default').checked ? 1 : 0
+    };
+
+    // 表单验证
+    if (!formData.recipient_name) {
+        alert('请输入收货人姓名');
+        return;
+    }
+    if (!formData.contact_phone) {
+        alert('请输入联系电话');
+        return;
+    }
+    if (!formData.region.split(' ').every(part => part && part !== '请选择省份' && part !== '请选择城市' && part !== '请选择区县')) {
+        alert('请选择完整的地区信息');
+        return;
+    }
+    if (!formData.full_address) {
+        alert('请输入详细地址');
+        return;
+    }
+
+    const addressId = document.getElementById('addressId').value;
+    const token = localStorage.getItem('userToken');
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/user/addresses${addressId ? `/${addressId}` : ''}`, {
+            method: addressId ? 'PUT' : 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(formData)
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || '保存地址失败');
+        }
+
+        alert(addressId ? '地址更新成功' : '地址添加成功');
+        hideAddressForm();
+        await showAddressSettings();
+    } catch (error) {
+        console.error('保存地址失败:', error);
+        alert('保存地址失败，请重试');
+    }
+}
+
 async function showAddressSettings() {
     const contentArea = document.getElementById('contentArea');
     try {
@@ -324,8 +501,59 @@ async function showAddressSettings() {
 
         const addresses = await response.json();
         
+        // 创建地址编辑表单的HTML
+        const addressFormHtml = `
+            <div id="addressFormContainer" style="display: none;" class="address-form-container">
+                <h3 id="addressFormTitle">添加新地址</h3>
+                <form id="addressForm" class="settings-form">
+                    <input type="hidden" id="addressId">
+                    <div class="form-group">
+                        <label for="recipient_name">收货人姓名</label>
+                        <input type="text" id="recipient_name" name="recipient_name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="contact_phone">联系电话</label>
+                        <input type="tel" id="contact_phone" name="contact_phone" required>
+                    </div>
+                    <div class="form-group address-select-group">
+                        <label>所在地区</label>
+                        <div class="select-container">
+                            <select id="province" required>
+                                <option value="">请选择省份</option>
+                            </select>
+                            <select id="city" required>
+                                <option value="">请选择城市</option>
+                            </select>
+                            <select id="district" required>
+                                <option value="">请选择区县</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="full_address">详细地址</label>
+                        <textarea id="full_address" name="full_address" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="postal_code">邮政编码</label>
+                        <input type="text" id="postal_code" name="postal_code">
+                    </div>
+                    <div class="form-group">
+                        <label class="checkbox-container">
+                            <input type="checkbox" id="is_default" name="is_default">
+                            <span class="checkbox-text">设为默认地址</span>
+                        </label>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="submit-btn">保存</button>
+                        <button type="button" class="cancel-btn" onclick="hideAddressForm()">取消</button>
+                    </div>
+                </form>
+            </div>
+        `;
+        
         contentArea.innerHTML = `
             <h3>收货地址管理</h3>
+            ${addressFormHtml}
             <div class="address-list">
                 ${addresses.length === 0 ? '<p>暂无收货地址</p>' : ''}
                 ${addresses.map(address => `
@@ -369,7 +597,7 @@ async function showAddressSettings() {
                         alert('设置默认地址失败，请重试');
                     }
                 } else if (e.target.classList.contains('edit')) {
-                    window.location.href = `address-form.html?id=${addressId}`;
+                    showAddressForm(addressId);
                 } else if (e.target.classList.contains('delete')) {
                     if (confirm('确定要删除这个地址吗？')) {
                         try {
@@ -394,12 +622,67 @@ async function showAddressSettings() {
 
         // 添加新地址按钮事件
         document.getElementById('addAddressBtn').addEventListener('click', () => {
-            window.location.href = 'address-form.html';
+            showAddressForm();
         });
+
+        // 初始化省市区选择器
+        initAddressSelector();
+
+        // 绑定地址表单提交事件
+        document.getElementById('addressForm').addEventListener('submit', handleAddressFormSubmit);
+
+        // 初始化取消按钮事件
+        window.hideAddressForm = () => {
+            document.getElementById('addressFormContainer').style.display = 'none';
+        };
 
         // 为地址列表添加样式
         const style = document.createElement('style');
         style.textContent = `
+            .address-form-container {
+                background: #FFF9F0;
+                border: 1px solid #D2691E;
+                border-radius: 8px;
+                padding: 20px;
+                margin-bottom: 20px;
+            }
+            .select-container {
+                display: flex;
+                gap: 10px;
+            }
+            .select-container select {
+                flex: 1;
+                padding: 8px;
+                border: 1px solid #D2691E;
+                border-radius: 4px;
+            }
+            .form-actions {
+                display: flex;
+                gap: 10px;
+                margin-top: 20px;
+            }
+            .submit-btn, .cancel-btn {
+                padding: 10px 20px;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+            }
+            .submit-btn {
+                background: #8B4513;
+                color: #FFF;
+            }
+            .cancel-btn {
+                background: #6B4423;
+                color: #FFF;
+            }
+            .checkbox-container {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            .checkbox-text {
+                color: #6B4423;
+            
             .address-list {
                 display: flex;
                 flex-direction: column;
