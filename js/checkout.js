@@ -82,7 +82,7 @@ function initNavigation() {
 async function loadAddresses() {
     try {
         const token = localStorage.getItem('userToken');
-        const response = await fetch(`${API_BASE_URL}/api/addresses`, {
+        const response = await fetch(`${API_BASE_URL}/api/user/addresses`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -172,7 +172,7 @@ async function loadAddresses() {
 async function editAddress(addressId) {
     try {
         const token = localStorage.getItem('userToken');
-        const response = await fetch(`${API_BASE_URL}/api/addresses/${addressId}`, {
+        const response = await fetch(`${API_BASE_URL}/api/user/addresses/${addressId}`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -197,7 +197,7 @@ async function deleteAddress(addressId) {
 
     try {
         const token = localStorage.getItem('userToken');
-        const response = await fetch(`${API_BASE_URL}/api/addresses/${addressId}`, {
+        const response = await fetch(`${API_BASE_URL}/api/user/addresses/${addressId}`, {
             method: 'DELETE',
             headers: {
                 'Authorization': `Bearer ${token}`

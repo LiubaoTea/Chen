@@ -11,7 +11,7 @@ async function addUserAddress(addressData) {
             throw new Error('未登录');
         }
 
-        const response = await fetch(`${API_BASE_URL}/api/addresses`, {
+        const response = await fetch(`${API_BASE_URL}/api/user/addresses`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -39,7 +39,7 @@ async function getUserAddresses() {
             throw new Error('未登录');
         }
 
-        const response = await fetch(`${API_BASE_URL}/api/addresses`, {
+        const response = await fetch(`${API_BASE_URL}/api/user/addresses`, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`
@@ -65,7 +65,7 @@ async function updateUserAddress(addressId, addressData) {
             throw new Error('未登录');
         }
 
-        const response = await fetch(`${API_BASE_URL}/api/addresses/${addressId}`, {
+        const response = await fetch(`${API_BASE_URL}/api/user/addresses/${addressId}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -93,7 +93,7 @@ async function deleteUserAddress(addressId) {
             throw new Error('未登录');
         }
 
-        const response = await fetch(`${API_BASE_URL}/api/addresses/${addressId}`, {
+        const response = await fetch(`${API_BASE_URL}/api/user/addresses/${addressId}`, {
             method: 'DELETE',
             headers: {
                 'Authorization': `Bearer ${token}`
