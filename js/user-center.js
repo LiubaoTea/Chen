@@ -312,7 +312,7 @@ async function showAddressSettings() {
     const contentArea = document.getElementById('contentArea');
     try {
         const token = localStorage.getItem('userToken');
-        const response = await fetch(`${API_BASE_URL}/api/addresses`, {
+        const response = await fetch(`${API_BASE_URL}/api/user/addresses`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -437,7 +437,7 @@ async function showAddressSettings() {
                 const addressId = e.target.dataset.id;
                 if (e.target.classList.contains('set-default')) {
                     try {
-                        const response = await fetch(`${API_BASE_URL}/api/addresses/${addressId}/default`, {
+                        const response = await fetch(`${API_BASE_URL}/api/user/addresses/${addressId}/default`, {
                             method: 'PUT',
                             headers: {
                                 'Authorization': `Bearer ${token}`
@@ -454,7 +454,7 @@ async function showAddressSettings() {
                 } else if (e.target.classList.contains('delete')) {
                     if (confirm('确定要删除这个地址吗？')) {
                         try {
-                            const response = await fetch(`${API_BASE_URL}/api/addresses/${addressId}`, {
+                            const response = await fetch(`${API_BASE_URL}/api/user/addresses/${addressId}`, {
                                 method: 'DELETE',
                                 headers: {
                                     'Authorization': `Bearer ${token}`
