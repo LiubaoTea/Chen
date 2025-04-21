@@ -175,6 +175,279 @@ function initNavMenu() {
 
 
 
+// 加载省市区数据
+async function loadAreaData() {
+    try {
+        const response = await fetch('/src/utils/data.json');
+        if (!response.ok) {
+            throw new Error('加载地区数据失败');
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('加载地区数据失败:', error);
+        return null;
+    }
+}
+
+// 显示地址管理
+async function showAddressSettings() {
+    const contentArea = document.getElementById('contentArea');
+    try {
+        const token = localStorage.getItem('userToken');
+        const response = await fetch(`${API_BASE_URL}/api/user/addresses`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('获取地址列表失败');
+        }
+
+        const addresses = await response.json();
+        const areaData = await loadAreaData();
+
+        let addressListHTML = `
+            <div class="content-header">
+                <h2>收货地址</h2>
+                <button class="btn-save" onclick="showAddressForm()">添加新地址</button>
+            </div>
+            <div class="address-list">
+        `;
+
+        if (addresses.length === 0) {
+            addressListHTML += '<div class="empty-message">暂无收货地址</div>';
+        } else {
+            addresses.forEach(address => {
+                addressListHTML += `
+                    <div class="address-item">
+                        <div class="address-info">
+                            <h4>${address.recipient_name} ${address.contact_phone}</h4>
+                            <p>${address.region} ${address.full_address}</p>
+                            <p>邮编：${address.postal_code || '无'}</p>
+                            ${address.is_default ? '<span class="default-tag">默认地址</span>' : ''}
+                        </div>
+                        <div class="address-actions">
+                            <button onclick="editAddress(${address.address_id})">编辑</button>
+                            <button onclick="deleteAddress(${address.address_id})">删除</button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        addressListHTML += '</div>';
+        contentArea.innerHTML = addressListHTML;
+    } catch (error) {
+        console.error('加载地址列表失败:', error);
+        contentArea.innerHTML = '<div class="error-message">加载地址列表失败，请稍后重试</div>';
+    }
+}
+
+// 显示地址表单
+async function showAddressForm(addressId = null) {
+    const contentArea = document.getElementById('contentArea');
+    const areaData = await loadAreaData();
+    let address = null;
+
+    if (addressId) {
+        try {
+            const token = localStorage.getItem('userToken');
+            const response = await fetch(`${API_BASE_URL}/api/user/addresses/${addressId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            if (response.ok) {
+                address = await response.json();
+            }
+        } catch (error) {
+            console.error('加载地址信息失败:', error);
+        }
+    }
+
+    // 生成省份选项
+    let provinceOptions = '<option value="">请选择省份</option>';
+    Object.entries(areaData['86']).forEach(([code, name]) => {
+        provinceOptions += `<option value="${code}" ${address && address.region.includes(name) ? 'selected' : ''}>${name}</option>`;
+    });
+
+    contentArea.innerHTML = `
+        <div class="content-header">
+            <h2>${addressId ? '编辑' : '新增'}收货地址</h2>
+        </div>
+        <form id="addressForm" class="settings-form">
+            <div class="form-group">
+                <label for="recipient_name">收货人姓名</label>
+                <input type="text" id="recipient_name" name="recipient_name" value="${address?.recipient_name || ''}" required>
+            </div>
+            <div class="form-group">
+                <label for="contact_phone">联系电话</label>
+                <input type="tel" id="contact_phone" name="contact_phone" value="${address?.contact_phone || ''}" required>
+            </div>
+            <div class="form-group">
+                <label>所在地区</label>
+                <div class="area-select">
+                    <select id="province" required>
+                        ${provinceOptions}
+                    </select>
+                    <select id="city" required>
+                        <option value="">请选择城市</option>
+                    </select>
+                    <select id="district" required>
+                        <option value="">请选择区县</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="full_address">详细地址</label>
+                <textarea id="full_address" name="full_address" required>${address?.full_address || ''}</textarea>
+            </div>
+            <div class="form-group">
+                <label for="postal_code">邮政编码</label>
+                <input type="text" id="postal_code" name="postal_code" value="${address?.postal_code || ''}">
+            </div>
+            <div class="form-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="is_default" name="is_default" ${address?.is_default ? 'checked' : ''}>
+                    <span>设为默认地址</span>
+                </label>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn-save">保存</button>
+                <button type="button" onclick="showAddressSettings()" class="btn-cancel">取消</button>
+            </div>
+        </form>
+    `;
+
+    // 初始化省市区联动
+    initAreaSelect(areaData, address);
+
+    // 表单提交处理
+    document.getElementById('addressForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = {
+            recipient_name: document.getElementById('recipient_name').value.trim(),
+            contact_phone: document.getElementById('contact_phone').value.trim(),
+            region: [
+                document.querySelector('#province option:checked').text,
+                document.querySelector('#city option:checked').text,
+                document.querySelector('#district option:checked').text
+            ].join(' '),
+            full_address: document.getElementById('full_address').value.trim(),
+            postal_code: document.getElementById('postal_code').value.trim(),
+            is_default: document.getElementById('is_default').checked ? 1 : 0
+        };
+
+        try {
+            const token = localStorage.getItem('userToken');
+            const response = await fetch(
+                `${API_BASE_URL}/api/user/addresses${addressId ? `/${addressId}` : ''}`,
+                {
+                    method: addressId ? 'PUT' : 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(formData)
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error('保存地址失败');
+            }
+
+            alert(addressId ? '地址更新成功' : '地址添加成功');
+            showAddressSettings();
+        } catch (error) {
+            console.error('保存地址失败:', error);
+            alert('保存失败，请重试');
+        }
+    });
+}
+
+// 初始化省市区选择
+function initAreaSelect(areaData, address = null) {
+    const province = document.getElementById('province');
+    const city = document.getElementById('city');
+    const district = document.getElementById('district');
+
+    // 省份变化时更新城市
+    province.addEventListener('change', () => {
+        const provinceCode = province.value;
+        const cities = areaData[provinceCode] || {};
+        
+        city.innerHTML = '<option value="">请选择城市</option>';
+        Object.entries(cities).forEach(([code, name]) => {
+            city.innerHTML += `<option value="${code}">${name}</option>`;
+        });
+        
+        district.innerHTML = '<option value="">请选择区县</option>';
+
+        if (address) {
+            const cityOption = Array.from(city.options).find(option => 
+                address.region.includes(option.text)
+            );
+            if (cityOption) {
+                cityOption.selected = true;
+                city.dispatchEvent(new Event('change'));
+            }
+        }
+    });
+
+    // 城市变化时更新区县
+    city.addEventListener('change', () => {
+        const cityCode = city.value;
+        const districts = areaData[cityCode] || {};
+        
+        district.innerHTML = '<option value="">请选择区县</option>';
+        Object.entries(districts).forEach(([code, name]) => {
+            district.innerHTML += `<option value="${code}">${name}</option>`;
+        });
+
+        if (address) {
+            const districtOption = Array.from(district.options).find(option => 
+                address.region.includes(option.text)
+            );
+            if (districtOption) {
+                districtOption.selected = true;
+            }
+        }
+    });
+
+    // 如果是编辑模式，触发省份变化事件以加载城市数据
+    if (address && province.value) {
+        province.dispatchEvent(new Event('change'));
+    }
+}
+
+// 删除地址
+async function deleteAddress(addressId) {
+    if (!confirm('确定要删除这个地址吗？')) {
+        return;
+    }
+
+    try {
+        const token = localStorage.getItem('userToken');
+        const response = await fetch(`${API_BASE_URL}/api/user/addresses/${addressId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('删除地址失败');
+        }
+
+        alert('地址删除成功');
+        showAddressSettings();
+    } catch (error) {
+        console.error('删除地址失败:', error);
+        alert('删除失败，请重试');
+    }
+}
+
 // 显示个人资料设置
 async function showProfileSettings() {
     const contentArea = document.getElementById('contentArea');

@@ -1,0 +1,136 @@
+.address-list {
+    display: grid;
+    gap: 20px;
+}
+
+.address-item {
+    background: #FFF;
+    border: 1px solid #D2691E;
+    border-radius: 8px;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.address-info h4 {
+    margin: 0 0 10px 0;
+    color: #8B4513;
+    font-size: 1.1em;
+}
+
+.address-info p {
+    margin: 5px 0;
+    color: #6B4423;
+}
+
+.default-tag {
+    display: inline-block;
+    background: #D2691E;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    margin-top: 8px;
+}
+
+.address-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.address-actions button {
+    background: #8B4513;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.address-actions button:hover {
+    background: #6B3410;
+}
+
+.area-select {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+}
+
+.area-select select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #D2691E;
+    border-radius: 6px;
+    background: #FFF;
+    color: #6B4423;
+    font-size: 1em;
+}
+
+.area-select select:focus {
+    outline: none;
+    border-color: #8B4513;
+    box-shadow: 0 0 0 2px rgba(139, 69, 19, 0.2);
+}
+
+.empty-message {
+    text-align: center;
+    padding: 30px;
+    color: #6B4423;
+    font-style: italic;
+}
+
+.error-message {
+    color: #D8000C;
+    background-color: #FFD2D2;
+    padding: 15px;
+    border-radius: 6px;
+    margin: 10px 0;
+    text-align: center;
+}
+
+.btn-cancel {
+    background: #999;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1em;
+    transition: background 0.3s;
+    margin-left: 10px;
+}
+
+.btn-cancel:hover {
+    background: #777;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: auto;
+    margin: 0;
+}
+
+@media (max-width: 768px) {
+    .area-select {
+        grid-template-columns: 1fr;
+    }
+    
+    .address-item {
+        flex-direction: column;
+    }
+    
+    .address-actions {
+        margin-top: 15px;
+        width: 100%;
+        justify-content: flex-end;
+    }
+}
