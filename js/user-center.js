@@ -308,7 +308,7 @@ async function showSecuritySettings() {
 }
 
 // 导入地址编辑器组件
-import { showAddressEditor, setDefaultAddress, deleteAddress, loadUserAddresses } from './address-editor.js';
+import { setDefaultAddress, deleteAddress, loadUserAddresses } from './address-editor.js';
 
 // 显示收货地址设置
 async function showAddressSettings() {
@@ -329,7 +329,6 @@ async function showAddressSettings() {
                         </div>
                         <div class="address-actions">
                             ${!address.is_default ? `<button class="set-default" data-id="${address.address_id}">设为默认</button>` : ''}
-                            <button class="edit" data-id="${address.address_id}">编辑</button>
                             <button class="delete" data-id="${address.address_id}">删除</button>
                         </div>
                     </div>
@@ -338,22 +337,12 @@ async function showAddressSettings() {
             <button id="addAddressBtn" class="add-address-btn">添加新地址</button>
         `;
 
-        // 添加新地址按钮事件
-        document.getElementById('addAddressBtn').addEventListener('click', () => {
-            showAddressEditor(null, showAddressSettings);
-        });
-
         // 绑定地址操作事件
         document.querySelectorAll('.address-actions button').forEach(button => {
             button.addEventListener('click', async (e) => {
                 const addressId = e.target.dataset.id;
                 if (e.target.classList.contains('set-default')) {
                     await setDefaultAddress(addressId, showAddressSettings);
-                } else if (e.target.classList.contains('edit')) {
-                    const address = addresses.find(addr => addr.address_id == addressId);
-                    if (address) {
-                        showAddressEditor(address, showAddressSettings);
-                    }
                 } else if (e.target.classList.contains('delete')) {
                     await deleteAddress(addressId, showAddressSettings);
                 }
