@@ -260,8 +260,8 @@ async function handleAddressSubmit(e) {
 
         const token = localStorage.getItem('userToken');
         const url = addressId ?
-            `${API_BASE_URL}/api/user/addresses/${addressId}` :
-            `${API_BASE_URL}/api/user/addresses`;
+            `${API_BASE_URL}/api/addresses/${addressId}` :
+            `${API_BASE_URL}/api/addresses`;
 
         const response = await fetch(url, {
             method: addressId ? 'PUT' : 'POST',
