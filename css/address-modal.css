@@ -42,13 +42,27 @@
 .address-form {
     display: flex;
     flex-direction: column;
+    gap: 1.5rem;
+}
+
+.form-row {
+    display: flex;
     gap: 1rem;
+    width: 100%;
 }
 
 .form-group {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+}
+
+.form-group.half-width {
+    flex: 1;
+}
+
+.form-group.full-width {
+    width: 100%;
 }
 
 .form-group label {
@@ -78,18 +92,28 @@
 
 .region-selects {
     display: flex;
-    gap: 0.5rem;
+    gap: 1rem;
+    width: 100%;
 }
 
 .region-selects select {
     flex: 1;
+    height: 38px;
+    background-color: #FEFCF7;
+    border: 1px solid #D2691E;
+    border-radius: 4px;
+    color: #5C4033;
+    font-family: 'SimSun', serif;
+    padding: 0 0.5rem;
 }
 
 .form-actions {
     display: flex;
-    justify-content: flex-end;
-    gap: 1rem;
-    margin-top: 1.5rem;
+    justify-content: center;
+    gap: 1.5rem;
+    margin-top: 2rem;
+    border-top: 1px solid #D2691E;
+    padding-top: 1.5rem;
 }
 
 .btn {

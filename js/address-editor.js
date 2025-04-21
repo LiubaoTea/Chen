@@ -27,42 +27,52 @@ export async function showAddressEditor(address = null, onSuccess) {
         modal.innerHTML = `
             <h3 class="address-modal-title">${address ? '编辑地址' : '新增地址'}</h3>
             <form id="addressForm" class="address-form">
-                <div class="form-group">
-                    <label for="recipientName">收货人姓名</label>
-                    <input type="text" id="recipientName" name="recipient_name" value="${address?.recipient_name || ''}" required>
-                </div>
-                <div class="form-group">
-                    <label for="contactPhone">联系电话</label>
-                    <input type="tel" id="contactPhone" name="contact_phone" value="${address?.contact_phone || ''}" required>
-                </div>
-                <div class="form-group">
-                    <label>所在地区</label>
-                    <div class="region-selects">
-                        <select id="province" required>
-                            <option value="">请选择省份</option>
-                            ${Object.entries(addressData.default[86]).map(([code, name]) => 
-                                `<option value="${code}">${name}</option>`
-                            ).join('')}
-                        </select>
-                        <select id="city" required>
-                            <option value="">请选择城市</option>
-                        </select>
-                        <select id="district" required>
-                            <option value="">请选择区县</option>
-                        </select>
+                <div class="form-row">
+                    <div class="form-group half-width">
+                        <label for="recipientName">收货人姓名</label>
+                        <input type="text" id="recipientName" name="recipient_name" value="${address?.recipient_name || ''}" required>
+                    </div>
+                    <div class="form-group half-width">
+                        <label for="contactPhone">电话号码</label>
+                        <input type="tel" id="contactPhone" name="contact_phone" value="${address?.contact_phone || ''}" required>
                     </div>
                 </div>
-                <div class="form-group">
-                    <label for="fullAddress">详细地址</label>
-                    <textarea id="fullAddress" name="full_address" required>${address?.full_address || ''}</textarea>
+                <div class="form-row">
+                    <div class="form-group full-width">
+                        <label>所在地区</label>
+                        <div class="region-selects">
+                            <select id="province" required>
+                                <option value="">请选择省份</option>
+                                ${Object.entries(addressData.default[86]).map(([code, name]) => 
+                                    `<option value="${code}">${name}</option>`
+                                ).join('')}
+                            </select>
+                            <select id="city" required>
+                                <option value="">请选择城市</option>
+                            </select>
+                            <select id="district" required>
+                                <option value="">请选择区县</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="postalCode">邮政编码</label>
-                    <input type="text" id="postalCode" name="postal_code" value="${address?.postal_code || ''}">
+                <div class="form-row">
+                    <div class="form-group full-width">
+                        <label for="fullAddress">详细地址</label>
+                        <textarea id="fullAddress" name="full_address" required>${address?.full_address || ''}</textarea>
+                    </div>
                 </div>
-                <div class="form-group default-checkbox">
-                    <input type="checkbox" id="isDefault" name="is_default" ${address?.is_default ? 'checked' : ''}>
-                    <label for="isDefault">设为默认地址</label>
+                <div class="form-row">
+                    <div class="form-group full-width">
+                        <label for="postalCode">邮政编码</label>
+                        <input type="text" id="postalCode" name="postal_code" value="${address?.postal_code || ''}">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group full-width default-checkbox">
+                        <input type="checkbox" id="isDefault" name="is_default" ${address?.is_default ? 'checked' : ''}>
+                        <label for="isDefault">设为默认地址</label>
+                    </div>
                 </div>
                 <div class="form-actions">
                     <button type="submit" class="btn btn-primary">${address ? '保存修改' : '添加地址'}</button>
