@@ -100,7 +100,8 @@
                 });
 
                 if (!response.ok) {
-                    throw new Error('保存地址失败');
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || '保存地址失败');
                 }
 
                 window.location.href = 'user-center.html';

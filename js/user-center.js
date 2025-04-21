@@ -369,7 +369,6 @@ async function showAddressSettings() {
                         alert('设置默认地址失败，请重试');
                     }
                 } else if (e.target.classList.contains('edit')) {
-                    // 跳转到编辑地址页面
                     window.location.href = `address-form.html?id=${addressId}`;
                 } else if (e.target.classList.contains('delete')) {
                     if (confirm('确定要删除这个地址吗？')) {
