@@ -1,5 +1,6 @@
 import { API_BASE_URL } from './config.js';
 import { checkAuthStatus } from './auth.js';
+import addressData from '../src/utils/china-area-data.js';
 
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', async () => {
@@ -636,120 +637,11 @@ async function showAddressSettings() {
             document.getElementById('addressFormContainer').style.display = 'none';
         };
 
-        // 为地址列表添加样式
-        const style = document.createElement('style');
-        style.textContent = `
-            .address-form-container {
-                background: #FFF9F0;
-                border: 1px solid #D2691E;
-                border-radius: 8px;
-                padding: 20px;
-                margin-bottom: 20px;
-            }
-            .select-container {
-                display: flex;
-                gap: 10px;
-            }
-            .select-container select {
-                flex: 1;
-                padding: 8px;
-                border: 1px solid #D2691E;
-                border-radius: 4px;
-            }
-            .form-actions {
-                display: flex;
-                gap: 10px;
-                margin-top: 20px;
-            }
-            .submit-btn, .cancel-btn {
-                padding: 10px 20px;
-                border: none;
-                border-radius: 4px;
-                cursor: pointer;
-            }
-            .submit-btn {
-                background: #8B4513;
-                color: #FFF;
-            }
-            .cancel-btn {
-                background: #6B4423;
-                color: #FFF;
-            }
-            .checkbox-container {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-            }
-            .checkbox-text {
-                color: #6B4423;
-            
-            .address-list {
-                display: flex;
-                flex-direction: column;
-                gap: 15px;
-                margin-top: 20px;
-            }
-            .address-item {
-                border: 1px solid #D2691E;
-                border-radius: 8px;
-                padding: 15px;
-                background: #FFF;
-                position: relative;
-            }
-            .address-item.default {
-                border: 2px solid #8B4513;
-                background: #FFF9F0;
-            }
-            .address-item.default::after {
-                content: '默认';
-                position: absolute;
-                top: 10px;
-                right: 10px;
-                background: #8B4513;
-                color: #FFF;
-                padding: 2px 8px;
-                border-radius: 4px;
-                font-size: 12px;
-            }
-            .address-actions {
-                margin-top: 10px;
-                display: flex;
-                gap: 10px;
-            }
-            .address-actions button {
-                padding: 5px 10px;
-                border: none;
-                border-radius: 4px;
-                cursor: pointer;
-                transition: all 0.3s ease;
-            }
-            .address-actions .set-default {
-                background: #D2691E;
-                color: #FFF;
-            }
-            .address-actions .edit {
-                background: #8B4513;
-                color: #FFF;
-            }
-            .address-actions .delete {
-                background: #DC3545;
-                color: #FFF;
-            }
-            .add-address-btn {
-                margin-top: 20px;
-                padding: 10px 20px;
-                background: #8B4513;
-                color: #FFF;
-                border: none;
-                border-radius: 6px;
-                cursor: pointer;
-                transition: all 0.3s ease;
-            }
-            .add-address-btn:hover {
-                background: #6B4423;
-            }
-        `;
-        document.head.appendChild(style);
+        // 添加地址管理样式
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = '/css/address-modal.css';
+        document.head.appendChild(link);
     } catch (error) {
         console.error('加载地址列表失败:', error);
         contentArea.innerHTML = '<div class="error">加载地址列表失败，请重试</div>';
