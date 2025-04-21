@@ -628,7 +628,13 @@ async function showAddressSettings() {
         });
 
         // 初始化省市区选择器
-        initAddressSelector();
+        import('./address-selector.js')
+            .then(module => {
+                module.initAddressSelector();
+            })
+            .catch(error => {
+                console.error('加载地址选择器失败:', error);
+            });
 
         // 绑定地址表单提交事件
         document.getElementById('addressForm').addEventListener('submit', handleAddressFormSubmit);

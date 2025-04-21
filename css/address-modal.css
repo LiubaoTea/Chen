@@ -1,0 +1,95 @@
+.address-modal {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 400px;
+    height: 100vh;
+    background: #fff;
+    box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    overflow-y: auto;
+    z-index: 1000;
+    transform: translateX(100%);
+    transition: transform 0.3s ease-in-out;
+}
+
+.address-modal.show {
+    transform: translateX(0);
+}
+
+.address-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #D2691E;
+}
+
+.address-modal-header h3 {
+    color: #8B4513;
+    margin: 0;
+}
+
+.close-modal {
+    background: none;
+    border: none;
+    color: #8B4513;
+    cursor: pointer;
+    font-size: 1.5em;
+}
+
+.address-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.form-group label {
+    color: #6B4423;
+    font-weight: 500;
+}
+
+.form-group input,
+.form-group select {
+    padding: 8px;
+    border: 1px solid #D2691E;
+    border-radius: 4px;
+    font-size: 1em;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: #8B4513;
+}
+
+.address-selects {
+    display: flex;
+    gap: 10px;
+}
+
+.address-selects select {
+    flex: 1;
+}
+
+.submit-btn {
+    background: #8B4513;
+    color: white;
+    border: none;
+    padding: 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1em;
+    margin-top: 10px;
+}
+
+.submit-btn:hover {
+    background: #6B3410;
+}
