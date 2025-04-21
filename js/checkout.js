@@ -105,26 +105,26 @@ async function loadAddresses() {
 
         // 添加现有地址
         addressHtml += addresses.map((address, index) => `
-            <div class="address-card ${index === 0 ? 'selected' : ''}" data-id="${address.id}">
+            <div class="address-card ${index === 0 ? 'selected' : ''}" data-id="${address.address_id}">
                 ${address.is_default ? '<div class="default-tag">已默认</div>' : ''}
                 <div class="address-radio">
-                    <input type="radio" name="address" ${index === 0 ? 'checked' : ''} id="address_${address.id}">
-                    <label for="address_${address.id}"></label>
+                    <input type="radio" name="address" ${index === 0 ? 'checked' : ''} id="address_${address.address_id}">
+                    <label for="address_${address.address_id}"></label>
                 </div>
                 <div class="address-content">
-                    <h3>${address.name} ${address.phone}</h3>
-                    <p>${address.province}${address.city}${address.district}${address.detail} ${address.postcode || ''}</p>
+                    <h3>${address.recipient_name} ${address.contact_phone}</h3>
+                    <p>${address.region} ${address.full_address} ${address.postal_code || ''}</p>
                 </div>
                 <div class="address-actions">
                     ${!address.is_default ? `
-                        <button class="address-btn set-default" data-id="${address.id}">
+                        <button class="address-btn set-default" data-id="${address.address_id}">
                             <i class="fas fa-check-circle"></i>设为默认
                         </button>
                     ` : ''}
-                    <button class="address-btn edit-btn" data-id="${address.id}">
+                    <button class="address-btn edit-btn" data-id="${address.address_id}">
                         <i class="fas fa-edit"></i>编辑
                     </button>
-                    <button class="address-btn delete-btn" data-id="${address.id}">
+                    <button class="address-btn delete-btn" data-id="${address.address_id}">
                         <i class="fas fa-trash"></i>删除
                     </button>
                 </div>
@@ -133,67 +133,12 @@ async function loadAddresses() {
 
         addressList.innerHTML = addressHtml;
 
-        // 添加地址选择事件
-        const addressCards = addressList.querySelectorAll('.address-card:not(.add-address)');
-        addressCards.forEach(card => {
-            const radio = card.querySelector('input[type="radio"]');
-            card.addEventListener('click', (e) => {
-                // 如果点击的是操作按钮，不触发选择事件
-                if (e.target.closest('.address-actions')) return;
-                
-                addressCards.forEach(c => {
-                    c.classList.remove('selected');
-                    c.querySelector('input[type="radio"]').checked = false;
-                });
-                card.classList.add('selected');
-                radio.checked = true;
-                updateOrderSummary();
-            });
-        });
-
-        // 添加设为默认地址事件
-        addressList.querySelectorAll('.set-default').forEach(btn => {
-            btn.addEventListener('click', async () => {
-                const addressId = btn.dataset.id;
-                try {
-                    const token = localStorage.getItem('userToken');
-                    const response = await fetch(`${API_BASE_URL}/api/addresses/${addressId}/default`, {
-                        method: 'PUT',
-                        headers: {
-                            'Authorization': `Bearer ${token}`
-                        }
-                    });
-
-                    if (!response.ok) {
-                        throw new Error('设置默认地址失败');
-                    }
-
-                    await loadAddresses(); // 重新加载地址列表
-                } catch (error) {
-                    console.error('设置默认地址失败:', error);
-                    alert('设置默认地址失败，请重试');
-                }
-            });
-        });
-
-        // 添加新增地址事件
-        const addAddressBtn = addressList.querySelector('.add-address');
-        if (addAddressBtn) {
-            addAddressBtn.addEventListener('click', showAddressModal);
-        }
-
-        // 添加编辑和删除事件
-        addressList.querySelectorAll('.edit-address').forEach(btn => {
-            btn.addEventListener('click', () => editAddress(btn.dataset.id));
-        });
-
-        addressList.querySelectorAll('.delete-address').forEach(btn => {
-            btn.addEventListener('click', () => deleteAddress(btn.dataset.id));
-        });
+        // 绑定事件处理程序
+        bindAddressEvents();
 
     } catch (error) {
-        console.error('加载地址失败:', error);
-        alert('加载地址失败，请刷新页面重试');
+        console.error('加载地址列表失败:', error);
+        alert('加载地址列表失败，请刷新页面重试');
     }
 }
 
@@ -300,7 +245,7 @@ function showAddressModal(address = null) {
 async function editAddress(addressId) {
     try {
         const token = localStorage.getItem('userToken');
-        const response = await fetch(`${API_BASE_URL}/api/addresses/${addressId}`, {
+        const response = await fetch(`${API_BASE_URL}/api/user/addresses/${addressId}`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -325,7 +270,7 @@ async function deleteAddress(addressId) {
 
     try {
         const token = localStorage.getItem('userToken');
-        const response = await fetch(`${API_BASE_URL}/api/addresses/${addressId}`, {
+        const response = await fetch(`${API_BASE_URL}/api/user/addresses/${addressId}`, {
             method: 'DELETE',
             headers: {
                 'Authorization': `Bearer ${token}`
@@ -342,6 +287,69 @@ async function deleteAddress(addressId) {
         console.error('删除地址失败:', error);
         alert('删除地址失败，请重试');
     }
+}
+
+// 绑定地址相关事件
+function bindAddressEvents() {
+    const addressList = document.getElementById('addressList');
+    const addressCards = addressList.querySelectorAll('.address-card:not(.add-address)');
+
+    // 地址选择事件
+    addressCards.forEach(card => {
+        const radio = card.querySelector('input[type="radio"]');
+        card.addEventListener('click', (e) => {
+            if (e.target.closest('.address-actions')) return;
+            
+            addressCards.forEach(c => {
+                c.classList.remove('selected');
+                c.querySelector('input[type="radio"]').checked = false;
+            });
+            card.classList.add('selected');
+            radio.checked = true;
+            updateOrderSummary();
+        });
+    });
+
+    // 设为默认地址事件
+    addressList.querySelectorAll('.set-default').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const addressId = btn.dataset.id;
+            try {
+                const token = localStorage.getItem('userToken');
+                const response = await fetch(`${API_BASE_URL}/api/user/addresses/${addressId}/default`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('设置默认地址失败');
+                }
+
+                await loadAddresses();
+            } catch (error) {
+                console.error('设置默认地址失败:', error);
+                alert('设置默认地址失败，请重试');
+            }
+        });
+    });
+
+    // 新增地址事件
+    const addAddressBtn = addressList.querySelector('.add-address');
+    if (addAddressBtn) {
+        addAddressBtn.addEventListener('click', showAddressModal);
+    }
+
+    // 编辑地址事件
+    addressList.querySelectorAll('.edit-btn').forEach(btn => {
+        btn.addEventListener('click', () => editAddress(btn.dataset.id));
+    });
+
+    // 删除地址事件
+    addressList.querySelectorAll('.delete-btn').forEach(btn => {
+        btn.addEventListener('click', () => deleteAddress(btn.dataset.id));
+    });
 }
 
 // 初始化订单备注功能
@@ -688,7 +696,28 @@ function initSubmitOrder() {
             const total = parseFloat(document.getElementById('total').textContent.slice(1));
             const remark = document.getElementById('orderRemark')?.value || '';
 
-            // 创建订单
+            // 获取购物车商品信息
+            const cartItems = JSON.parse(localStorage.getItem('cartItems') || '[]');
+            if (cartItems.length === 0) {
+                alert('购物车为空，无法提交订单');
+                return;
+            }
+
+            // 创建订单数据
+            const orderData = {
+                address_id: addressId,
+                payment_method: paymentMethod,
+                total_amount: total,
+                status: 'pending',
+                remark: remark,
+                items: cartItems.map(item => ({
+                    product_id: item.id,
+                    quantity: item.quantity,
+                    unit_price: item.price
+                }))
+            };
+
+            // 提交订单
             const token = localStorage.getItem('userToken');
             const response = await fetch(`${API_BASE_URL}/api/orders`, {
                 method: 'POST',
@@ -696,12 +725,7 @@ function initSubmitOrder() {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({
-                    addressId,
-                    paymentMethod,
-                    total,
-                    remark
-                })
+                body: JSON.stringify(orderData)
             });
 
             if (!response.ok) {
@@ -710,8 +734,11 @@ function initSubmitOrder() {
 
             const order = await response.json();
 
+            // 清空购物车
+            localStorage.removeItem('cartItems');
+
             // 跳转到支付页面
-            window.location.href = `payment.html?orderId=${order.id}&method=${paymentMethod}`;
+            window.location.href = `payment.html?orderId=${order.order_id}`;
 
         } catch (error) {
             console.error('提交订单失败:', error);
