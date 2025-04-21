@@ -1,14 +1,14 @@
 .address-modal {
     position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
+    top: 0;
+    right: 0;
+    bottom: 0;
+    transform: none;
     background: #fff;
     padding: 2rem;
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    max-width: 500px;
-    width: 90%;
+    width: 400px;
     max-height: 90vh;
     overflow-y: auto;
     z-index: 1000;
@@ -42,27 +42,13 @@
 .address-form {
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
-}
-
-.form-row {
-    display: flex;
     gap: 1rem;
-    width: 100%;
 }
 
 .form-group {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
-}
-
-.form-group.half-width {
-    flex: 1;
-}
-
-.form-group.full-width {
-    width: 100%;
 }
 
 .form-group label {
@@ -92,28 +78,18 @@
 
 .region-selects {
     display: flex;
-    gap: 1rem;
-    width: 100%;
+    gap: 0.5rem;
 }
 
 .region-selects select {
     flex: 1;
-    height: 38px;
-    background-color: #FEFCF7;
-    border: 1px solid #D2691E;
-    border-radius: 4px;
-    color: #5C4033;
-    font-family: 'SimSun', serif;
-    padding: 0 0.5rem;
 }
 
 .form-actions {
     display: flex;
-    justify-content: center;
-    gap: 1.5rem;
-    margin-top: 2rem;
-    border-top: 1px solid #D2691E;
-    padding-top: 1.5rem;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 1.5rem;
 }
 
 .btn {
