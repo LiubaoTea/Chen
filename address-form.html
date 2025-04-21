@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>地址管理 - 陳記六堡茶</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/address-form.css">
+</head>
+<body>
+    <div class="container">
+        <div class="tea-theme">
+            <h2 class="form-title">收货地址</h2>
+            <form id="addressForm" class="settings-form">
+                <div class="form-group">
+                    <label for="recipient_name">收货人姓名</label>
+                    <input type="text" id="recipient_name" name="recipient_name" required>
+                </div>
+                <div class="form-group">
+                    <label for="contact_phone">联系电话</label>
+                    <input type="tel" id="contact_phone" name="contact_phone" required>
+                </div>
+                <div class="form-group">
+                    <label for="region">所在地区</label>
+                    <input type="text" id="region" name="region" required>
+                </div>
+                <div class="form-group">
+                    <label for="full_address">详细地址</label>
+                    <textarea id="full_address" name="full_address" class="tea-textarea" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="postal_code">邮政编码</label>
+                    <input type="text" id="postal_code" name="postal_code">
+                </div>
+                <div class="form-group">
+                    <label class="tea-checkbox">
+                        <input type="checkbox" id="is_default" name="is_default">
+                        <span class="checkbox-text">设为默认地址</span>
+                    </label>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="submit-btn tea-btn">保存</button>
+                    <button type="button" class="cancel-btn tea-btn" onclick="window.location.href='user-center.html'">取消</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script type="module">
+        import { API_BASE_URL } from './js/config.js';
+
+        // 获取地址ID（如果是编辑模式）
+        const urlParams = new URLSearchParams(window.location.search);
+        const addressId = urlParams.get('id');
+
+        // 如果是编辑模式，加载地址信息
+        if (addressId) {
+            const token = localStorage.getItem('userToken');
+            fetch(`${API_BASE_URL}/api/user/addresses/${addressId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            })
+            .then(response => response.json())
+            .then(address => {
+                document.getElementById('recipient_name').value = address.recipient_name;
+                document.getElementById('contact_phone').value = address.contact_phone;
+                document.getElementById('region').value = address.region;
+                document.getElementById('full_address').value = address.full_address;
+                document.getElementById('postal_code').value = address.postal_code || '';
+                document.getElementById('is_default').checked = address.is_default === 1;
+            })
+            .catch(error => {
+                console.error('加载地址信息失败:', error);
+                alert('加载地址信息失败，请重试');
+            });
+        }
+
+        // 表单提交处理
+        document.getElementById('addressForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = {
+                recipient_name: document.getElementById('recipient_name').value.trim(),
+                contact_phone: document.getElementById('contact_phone').value.trim(),
+                region: document.getElementById('region').value.trim(),
+                full_address: document.getElementById('full_address').value.trim(),
+                postal_code: document.getElementById('postal_code').value.trim() || '',
+                is_default: document.getElementById('is_default').checked ? 1 : 0
+            };
+
+            // 表单验证
+            if (!formData.recipient_name) {
+                alert('请输入收货人姓名');
+                return;
+            }
+            if (!formData.contact_phone) {
+                alert('请输入联系电话');
+                return;
+            }
+            if (!formData.region) {
+                alert('请输入所在地区');
+                return;
+            }
+            if (!formData.full_address) {
+                alert('请输入详细地址');
+                return;
+            }
+
+            const token = localStorage.getItem('userToken');
+            if (!token) {
+                alert('登录已过期，请重新登录');
+                window.location.href = 'login.html';
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/user/addresses${addressId ? `/${addressId}` : ''}`, {
+                    method: addressId ? 'PUT' : 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || '保存地址失败');
+                }
+
+                alert(addressId ? '地址更新成功' : '地址添加成功');
+                window.location.href = 'user-center.html';
+            } catch (error) {
+                console.error('保存地址失败:', error);
+                alert('保存地址失败，请重试');
+            }
+        });
+    </script>
+</body>
+</html>
