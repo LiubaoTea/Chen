@@ -4,14 +4,14 @@
     right: 0;
     bottom: 0;
     transform: none;
-    background: #FFF;
-    padding: 2.5rem;
-    width: 450px;
+    background: #FFF9F0;
+    padding: 2.5rem 2rem;
+    width: 480px;
     max-height: 100vh;
     overflow-y: auto;
     z-index: 1000;
     border-left: 3px solid #8B4513;
-    box-shadow: -4px 0 15px rgba(139, 69, 19, 0.15);
+    box-shadow: -4px 0 20px rgba(139, 69, 19, 0.15);
 }
 
 .address-modal::before {
@@ -30,10 +30,11 @@
     text-align: center;
     color: #8B4513;
     font-size: 1.8rem;
-    margin-bottom: 2rem;
+    margin-bottom: 2.5rem;
     font-family: 'SimSun', serif;
     position: relative;
-    padding-bottom: 1rem;
+    padding-bottom: 1.2rem;
+    letter-spacing: 0.1em;
 }
 
 .address-modal-title::after {
@@ -49,8 +50,11 @@
 .address-form {
     display: flex;
     flex-direction: column;
-    gap: 1.8rem;
-    padding: 1.5rem;
+    gap: 2rem;
+    padding: 2rem;
+    background: rgba(255, 255, 255, 0.6);
+    border-radius: 8px;
+    border: 1px solid rgba(139, 69, 19, 0.2);
 }
 
 .form-group {
@@ -72,14 +76,15 @@
 .form-group input,
 .form-group select,
 .form-group textarea {
-    padding: 0.8rem 1rem;
-    border: 1px solid #D2691E;
-    border-radius: 4px;
-    background-color: rgba(255, 248, 220, 0.3);
+    padding: 1rem 1.2rem;
+    border: 1px solid #8B4513;
+    border-radius: 6px;
+    background-color: rgba(255, 255, 255, 0.8);
     color: #5C4033;
     font-family: 'SimSun', serif;
-    font-size: 1rem;
+    font-size: 1.05rem;
     transition: all 0.3s ease;
+    box-shadow: inset 0 2px 4px rgba(139, 69, 19, 0.05);
 }
 
 .form-group input:focus,
@@ -114,9 +119,9 @@
     display: flex;
     justify-content: center;
     gap: 2rem;
-    margin-top: 2rem;
-    padding-top: 1.5rem;
-    border-top: 1px solid #D2691E;
+    margin-top: 2.5rem;
+    padding-top: 2rem;
+    border-top: 1px solid rgba(139, 69, 19, 0.2);
 }
 
 .address-list {

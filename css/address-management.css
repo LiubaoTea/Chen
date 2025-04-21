@@ -13,13 +13,14 @@
 
 /* 地址卡片样式 */
 .address-card {
-    background: #FFFFFF;
-    border: 1px solid #D2691E;
+    background: #FFF9F0;
+    border: 2px solid #8B4513;
     border-radius: 8px;
-    padding: 1.5rem;
+    padding: 1.8rem;
     position: relative;
     transition: all 0.3s ease;
-    box-shadow: 0 2px 8px rgba(139, 69, 19, 0.1);
+    box-shadow: 0 4px 12px rgba(139, 69, 19, 0.08);
+    margin-bottom: 1rem;
 }
 
 /* 添加装饰边框 */
@@ -49,18 +50,23 @@
 
 .address-content h3 {
     color: #8B4513;
-    font-size: 1.1rem;
+    font-size: 1.2rem;
     font-family: 'SimSun', serif;
-    margin-bottom: 0.8rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.8rem;
     border-bottom: 1px solid rgba(139, 69, 19, 0.2);
-    padding-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
 }
 
 .address-content p {
     color: #5C4033;
-    line-height: 1.6;
-    font-size: 1rem;
+    line-height: 1.8;
+    font-size: 1.05rem;
     margin: 0;
+    padding-left: 0.5rem;
+    border-left: 3px solid rgba(139, 69, 19, 0.2);
 }
 
 /* 地址操作按钮 */
@@ -76,14 +82,15 @@
 /* 默认地址标签 */
 .default-tag {
     position: absolute;
-    top: 1rem;
-    right: 1rem;
-    background: rgba(139, 69, 19, 0.1);
-    color: #8B4513;
-    padding: 0.3rem 0.8rem;
-    border-radius: 4px;
+    top: 0;
+    right: 2rem;
+    background: #8B4513;
+    color: #FFF9F0;
+    padding: 0.4rem 1rem;
+    border-radius: 0 0 8px 8px;
     font-size: 0.9rem;
     font-family: 'SimSun', serif;
+    box-shadow: 0 2px 4px rgba(139, 69, 19, 0.2);
 }
 
 /* 添加新地址卡片 */
@@ -117,43 +124,75 @@
 }
 
 /* 按钮样式 */
+.address-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 1.2rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(139, 69, 19, 0.2);
+}
+
 .address-btn {
-    padding: 0.5rem 1rem;
-    border: 1px solid #D2691E;
+    padding: 0.6rem 1.2rem;
+    border: 1px solid #8B4513;
     border-radius: 4px;
     background: transparent;
-    color: #D2691E;
+    color: #8B4513;
     font-family: 'SimSun', serif;
     cursor: pointer;
     transition: all 0.3s ease;
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.address-btn::before {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    right: 2px;
+    bottom: 2px;
+    border: 1px solid rgba(139, 69, 19, 0.3);
+    border-radius: 3px;
+    pointer-events: none;
+    transition: all 0.3s ease;
 }
 
 .address-btn:hover {
-    background: #D2691E;
-    color: #FFF;
+    background: #8B4513;
+    color: #FFF9F0;
+}
+
+.address-btn:hover::before {
+    border-color: rgba(255, 249, 240, 0.3);
+}
+
+.address-btn.set-default {
+    border-style: dashed;
+    background: rgba(139, 69, 19, 0.05);
 }
 
 .address-btn.edit-btn {
-    border-color: #8B4513;
-    color: #8B4513;
-}
-
-.address-btn.edit-btn:hover {
-    background: #8B4513;
-    color: #FFF;
+    background: rgba(139, 69, 19, 0.1);
 }
 
 .address-btn.delete-btn {
     border-color: #CD5C5C;
     color: #CD5C5C;
+    background: rgba(205, 92, 92, 0.05);
 }
 
 .address-btn.delete-btn:hover {
     background: #CD5C5C;
-    color: #FFF;
+    color: #FFF9F0;
+}
+
+.address-btn i {
+    font-size: 1.1em;
 }
 
 /* 响应式布局 */
