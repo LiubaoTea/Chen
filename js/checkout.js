@@ -106,20 +106,26 @@ async function loadAddresses() {
         // 添加现有地址
         addressHtml += addresses.map((address, index) => `
             <div class="address-card ${index === 0 ? 'selected' : ''}" data-id="${address.id}">
+                ${address.is_default ? '<div class="default-tag">已默认</div>' : ''}
                 <div class="address-radio">
                     <input type="radio" name="address" ${index === 0 ? 'checked' : ''} id="address_${address.id}">
                     <label for="address_${address.id}"></label>
                 </div>
                 <div class="address-content">
                     <h3>${address.name} ${address.phone}</h3>
-                    <p>${address.province}${address.city}${address.district}${address.detail}</p>
+                    <p>${address.province}${address.city}${address.district}${address.detail} ${address.postcode || ''}</p>
                 </div>
                 <div class="address-actions">
-                    <button class="edit-address" data-id="${address.id}">
-                        <i class="fas fa-edit"></i> 编辑
+                    ${!address.is_default ? `
+                        <button class="address-btn set-default" data-id="${address.id}">
+                            <i class="fas fa-check-circle"></i>设为默认
+                        </button>
+                    ` : ''}
+                    <button class="address-btn edit-btn" data-id="${address.id}">
+                        <i class="fas fa-edit"></i>编辑
                     </button>
-                    <button class="delete-address" data-id="${address.id}">
-                        <i class="fas fa-trash"></i> 删除
+                    <button class="address-btn delete-btn" data-id="${address.id}">
+                        <i class="fas fa-trash"></i>删除
                     </button>
                 </div>
             </div>
@@ -142,6 +148,31 @@ async function loadAddresses() {
                 card.classList.add('selected');
                 radio.checked = true;
                 updateOrderSummary();
+            });
+        });
+
+        // 添加设为默认地址事件
+        addressList.querySelectorAll('.set-default').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const addressId = btn.dataset.id;
+                try {
+                    const token = localStorage.getItem('userToken');
+                    const response = await fetch(`${API_BASE_URL}/api/addresses/${addressId}/default`, {
+                        method: 'PUT',
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('设置默认地址失败');
+                    }
+
+                    await loadAddresses(); // 重新加载地址列表
+                } catch (error) {
+                    console.error('设置默认地址失败:', error);
+                    alert('设置默认地址失败，请重试');
+                }
             });
         });
 
@@ -174,11 +205,19 @@ function showAddressModal(address = null) {
         modal.remove();
     }
 
+    // 添加新的样式文件
+    if (!document.querySelector('link[href="/css/address-management.css"]')) {
+        const styleLink = document.createElement('link');
+        styleLink.rel = 'stylesheet';
+        styleLink.href = '/css/address-management.css';
+        document.head.appendChild(styleLink);
+    }
+
     const modalHtml = `
-        <div class="modal" id="addressModal" style="position: fixed; top: 0; right: 0; bottom: 0; width: 400px; background: white; box-shadow: -2px 0 5px rgba(0,0,0,0.1); overflow-y: auto; z-index: 1000;">
+        <div class="modal address-management" id="addressModal" style="position: fixed; top: 0; right: 0; bottom: 0; width: 400px; background: #FFF9F0; box-shadow: -2px 0 5px rgba(139, 69, 19, 0.15); overflow-y: auto; z-index: 1000;">
             <div class="modal-content" style="padding: 20px;">
-                <h2>${address ? '编辑地址' : '新增地址'}</h2>
-                <form id="addressForm">
+                <h2 class="form-title">${address ? '编辑地址' : '新增地址'}</h2>
+                <form id="addressForm" class="settings-form">
                     <div class="form-group">
                         <label>收货人姓名</label>
                         <input type="text" name="name" value="${address ? address.name : ''}" required>
