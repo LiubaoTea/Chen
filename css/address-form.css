@@ -20,6 +20,18 @@
     margin-bottom: 20px;
 }
 
+.settings-form .form-group.inline-form-group {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.settings-form .form-group.inline-form-group label {
+    width: 100px;
+    margin-bottom: 0;
+    flex-shrink: 0;
+}
+
 .settings-form label {
     color: #6B4423;
     font-size: 1.1em;
@@ -87,6 +99,8 @@
     font-size: 1.1em;
     cursor: pointer;
     transition: all 0.3s ease;
+    min-width: 120px;
+    text-align: center;
 }
 
 .submit-btn.tea-btn {
