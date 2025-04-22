@@ -18,9 +18,10 @@ export class AddressEditor {
 
     render() {
         this.container.innerHTML = `
-            <div class="address-editor">
-                <h2>编辑收货地址</h2>
-                <form class="address-form" id="addressForm">
+            <div class="address-editor-sidebar">
+                <div class="address-editor">
+                    <h2>编辑收货地址</h2>
+                    <form class="address-form" id="addressForm">
                     <div class="form-group">
                         <label for="recipientName">收货人姓名</label>
                         <input type="text" id="recipientName" required>
@@ -55,7 +56,8 @@ export class AddressEditor {
                         <button type="submit" class="save-address">保存地址</button>
                         <button type="button" class="cancel-edit">取消</button>
                     </div>
-                </form>
+                    </form>
+                </div>
             </div>
         `;
     }
