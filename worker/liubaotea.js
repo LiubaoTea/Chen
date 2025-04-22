@@ -58,7 +58,20 @@ const handleUserAuth = async (request, env) => {
     const url = new URL(request.url);
     const path = url.pathname;
 
-    if (path === '/api/register' && request.method === 'POST') {
+    // 生成符合要求的6位用户ID（不含4且首位非0）
+function generateValidUserId() {
+    const digits = [1,2,3,5,6,7,8,9];
+    let id = digits[Math.floor(Math.random() * digits.length)].toString();
+    const remainingDigits = [0,1,2,3,5,6,7,8,9];
+    
+    for (let i = 0; i < 5; i++) {
+        id += remainingDigits[Math.floor(Math.random() * remainingDigits.length)];
+    }
+    
+    return parseInt(id);
+}
+
+if (path === '/api/register' && request.method === 'POST') {
         try {
             const { username, email, password } = await request.json();
             
@@ -74,13 +87,38 @@ const handleUserAuth = async (request, env) => {
                 });
             }
 
+            // 生成用户ID（最多重试5次）
+            let userId;
+            let retryCount = 0;
+            while (retryCount < 5) {
+                try {
+                    userId = generateValidUserId();
+                    // 检查ID是否已存在
+                    const existingId = await env.DB.prepare(
+                        'SELECT 1 FROM users WHERE user_id = ?'
+                    ).bind(userId).first();
+                    
+                    if (!existingId) break;
+                } catch (error) {
+                    console.error('生成用户ID时出错:', error);
+                }
+                retryCount++;
+            }
+
+            if (retryCount >= 5) {
+                return new Response(JSON.stringify({ error: '无法生成有效的用户ID，请稍后重试' }), {
+                    status: 500,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+
             // 创建新用户
             const timestamp = new Date().toISOString();
             await env.DB.prepare(
-                'INSERT INTO users (username, email, password_hash, created_at) VALUES (?, ?, ?, ?)'
-            ).bind(username, email, password, timestamp).run();
+                'INSERT INTO users (user_id, username, email, password_hash, created_at) VALUES (?, ?, ?, ?, ?)'
+            ).bind(userId, username, email, password, timestamp).run();
 
-            return new Response(JSON.stringify({ message: '注册成功' }), {
+            return new Response(JSON.stringify({ message: '注册成功', userId }), {
                 status: 201,
                 headers: { 'Content-Type': 'application/json' }
             });
