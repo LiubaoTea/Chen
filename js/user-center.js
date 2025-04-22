@@ -364,14 +364,26 @@ async function showAddressForm(addressId = null) {
     const formTitle = document.getElementById('addressFormTitle');
     const form = document.getElementById('addressForm');
     
-    formContainer.style.display = 'block';
+    // 显示遮罩层
+    let overlay = document.getElementById('addressOverlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'addressOverlay';
+        overlay.className = 'address-overlay';
+        overlay.addEventListener('click', hideAddressForm);
+        document.body.appendChild(overlay);
+    }
+    overlay.classList.add('show');
+    
+    formContainer.classList.add('show');
     formTitle.textContent = addressId ? '编辑地址' : '添加新地址';
     form.reset();
 
     if (addressId) {
         try {
             const token = localStorage.getItem('userToken');
-            const response = await fetch(`${API_BASE_URL}/api/user/addresses/${addressId}`, {
+            // 修改API端点，使用正确的地址详情接口
+            const response = await fetch(`${API_BASE_URL}/api/user/address/${addressId}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -505,8 +517,11 @@ async function showAddressSettings() {
         
         // 创建地址编辑表单的HTML
         const addressFormHtml = `
-            <div id="addressFormContainer" style="display: none;" class="address-form-container">
-                <h3 id="addressFormTitle">添加新地址</h3>
+            <div id="addressFormContainer" class="address-form-container">
+                <div class="address-modal-header">
+                    <h3 id="addressFormTitle">添加新地址</h3>
+                    <button type="button" class="close-modal" onclick="hideAddressForm()"><i class="fas fa-times"></i></button>
+                </div>
                 <form id="addressForm" class="settings-form">
                     <input type="hidden" id="addressId">
                     <div class="form-group">
@@ -537,7 +552,7 @@ async function showAddressSettings() {
                     </div>
                     <div class="form-group">
                         <label for="postal_code">邮政编码</label>
-                        <input type="text" id="postal_code" name="postal_code">
+                        <input type="text" id="postal_code" name="postal_code" placeholder="选填">
                     </div>
                     <div class="form-group">
                         <label class="checkbox-container">
@@ -562,8 +577,7 @@ async function showAddressSettings() {
                     <div class="address-item ${address.is_default ? 'default' : ''}">
                         <div class="address-info">
                             <p><strong>${address.recipient_name}</strong> ${address.contact_phone}</p>
-                            <p>${address.region} ${address.full_address}</p>
-                            ${address.postal_code ? `<p>邮编：${address.postal_code}</p>` : ''}
+                            <p>${address.region} ${address.full_address} ${address.postal_code ? `邮编：${address.postal_code}` : ''}</p>
                         </div>
                         <div class="address-actions">
                             ${!address.is_default ? `<button class="set-default" data-id="${address.address_id}">设为默认</button>` : ''}
@@ -582,13 +596,12 @@ async function showAddressSettings() {
                 const addressId = e.target.dataset.id;
                 if (e.target.classList.contains('set-default')) {
                     try {
-                        const response = await fetch(`${API_BASE_URL}/api/user/addresses/${addressId}`, {
+                        const response = await fetch(`${API_BASE_URL}/api/user/addresses/${addressId}/default`, {
                             method: 'PUT',
                             headers: {
                                 'Content-Type': 'application/json',
                                 'Authorization': `Bearer ${token}`
-                            },
-                            body: JSON.stringify({ is_default: 1 })
+                            }
                         });
                         if (!response.ok) {
                             throw new Error('设置默认地址失败');
@@ -641,18 +654,67 @@ async function showAddressSettings() {
 
         // 初始化取消按钮事件
         window.hideAddressForm = () => {
-            document.getElementById('addressFormContainer').style.display = 'none';
+            document.getElementById('addressFormContainer').classList.remove('show');
+            const overlay = document.getElementById('addressOverlay');
+            if (overlay) {
+                overlay.classList.remove('show');
+            }
         };
 
         // 为地址列表添加样式
         const style = document.createElement('style');
         style.textContent = `
             .address-form-container {
+                position: fixed;
+                top: 0;
+                right: 0;
+                width: 350px;
+                height: 100vh;
                 background: #FFF9F0;
-                border: 1px solid #D2691E;
-                border-radius: 8px;
+                border-left: 2px solid #D2691E;
                 padding: 20px;
+                margin-bottom: 0;
+                z-index: 1001;
+                overflow-y: auto;
+                box-shadow: -2px 0 10px rgba(139, 69, 19, 0.2);
+                transform: translateX(100%);
+                transition: transform 0.3s ease-in-out;
+            }
+            
+            .address-form-container.show {
+                transform: translateX(0);
+            }
+            
+            .address-modal-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
                 margin-bottom: 20px;
+                padding-bottom: 10px;
+                border-bottom: 1px solid #D2691E;
+            }
+            
+            .close-modal {
+                background: none;
+                border: none;
+                color: #8B4513;
+                cursor: pointer;
+                font-size: 1.2em;
+            }
+            
+            .address-overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 1000;
+            }
+            
+            .address-overlay.show {
+                display: block;
             }
             .select-container {
                 display: flex;
