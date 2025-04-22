@@ -8,12 +8,6 @@ export class AddressEditor {
         this.currentAddress = null;
         this.init();
         this.isVisible = false;
-        // 添加点击外部关闭的事件监听
-        document.addEventListener('click', (e) => {
-            if (this.isVisible && !this.container.contains(e.target)) {
-                this.hide();
-            }
-        });
     }
 
     init() {
@@ -161,7 +155,6 @@ export class AddressEditor {
             document.dispatchEvent(event);
 
             this.resetForm();
-            this.hide(); // 保存成功后关闭编辑器
         } catch (error) {
             console.error('保存地址失败:', error);
             alert('保存地址失败，请重试');

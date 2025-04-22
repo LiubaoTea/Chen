@@ -496,7 +496,7 @@ async function handleAddressFormSubmit(e) {
         }
 
         alert(addressId ? '地址更新成功' : '地址添加成功');
-        window.hideAddressForm();
+        hideAddressForm();
         await showAddressSettings();
     } catch (error) {
         console.error('保存地址失败:', error);
@@ -666,21 +666,14 @@ async function showAddressSettings() {
         // 绑定地址表单提交事件
         document.getElementById('addressForm').addEventListener('submit', handleAddressFormSubmit);
 
-        // 初始化取消按钮事件和点击外部区域关闭功能
+        // 初始化取消按钮事件
         window.hideAddressForm = () => {
             document.getElementById('addressFormContainer').classList.remove('show');
             const overlay = document.getElementById('addressOverlay');
             if (overlay) {
                 overlay.classList.remove('show');
-                overlay.removeEventListener('click', window.hideAddressForm);
             }
         };
-
-        // 添加点击遮罩层关闭表单的功能
-        const overlay = document.getElementById('addressOverlay');
-        if (overlay) {
-            overlay.addEventListener('click', window.hideAddressForm);
-        }
 
         // 为地址列表添加样式
         const style = document.createElement('style');
@@ -692,7 +685,7 @@ async function showAddressSettings() {
                 width: 350px;
                 height: 100vh;
                 background: #FFF9F0;
-                box-shadow: -2px 0 10px rgba(139, 69, 19, 0.2);
+                border-left: 2px solid #D2691E;
                 padding: 20px;
                 margin-bottom: 0;
                 z-index: 1001;
