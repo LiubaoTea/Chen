@@ -174,7 +174,7 @@ async function loadAddresses() {
 async function editAddress(addressId) {
     try {
         const token = localStorage.getItem('userToken');
-        const response = await fetch(`${API_BASE_URL}/api/user/address/${addressId}`, {
+        const response = await fetch(`${API_BASE_URL}/api/user/addresses/${addressId}`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
