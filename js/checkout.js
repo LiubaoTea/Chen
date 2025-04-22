@@ -1,6 +1,6 @@
-// 导入API基础URL和地址管理器
+// 导入API基础URL和地址模态框
 import { API_BASE_URL } from './config.js';
-import { showAddressForm, handleAddressFormSubmit, hideAddressForm, deleteAddress, initAddressSelector } from './address-manager.js';
+import { showAddressModal } from './address-modal.js';
 
 // 生成订单编号
 function generateOrderNumber() {
@@ -150,12 +150,12 @@ async function loadAddresses() {
         // 添加新增地址事件
         const addAddressBtn = addressList.querySelector('.add-address');
         if (addAddressBtn) {
-            addAddressBtn.addEventListener('click', () => showAddressForm());
+            addAddressBtn.addEventListener('click', showAddressModal);
         }
 
         // 添加编辑和删除事件
         addressList.querySelectorAll('.edit-address').forEach(btn => {
-            btn.addEventListener('click', () => showAddressForm(btn.dataset.id));
+            btn.addEventListener('click', () => editAddress(btn.dataset.id));
         });
 
         addressList.querySelectorAll('.delete-address').forEach(btn => {
@@ -165,6 +165,56 @@ async function loadAddresses() {
     } catch (error) {
         console.error('加载地址失败:', error);
         alert('加载地址失败，请刷新页面重试');
+    }
+}
+
+
+
+// 编辑地址
+async function editAddress(addressId) {
+    try {
+        const token = localStorage.getItem('userToken');
+        const response = await fetch(`${API_BASE_URL}/api/user/addresses/${addressId}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('获取地址信息失败');
+        }
+
+        const address = await response.json();
+        showAddressModal(address);
+
+    } catch (error) {
+        console.error('编辑地址失败:', error);
+        alert('获取地址信息失败，请重试');
+    }
+}
+
+// 删除地址
+async function deleteAddress(addressId) {
+    if (!confirm('确定要删除这个地址吗？')) return;
+
+    try {
+        const token = localStorage.getItem('userToken');
+        const response = await fetch(`${API_BASE_URL}/api/user/addresses/${addressId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('删除地址失败');
+        }
+
+        await loadAddresses(); // 重新加载地址列表
+
+    } catch (error) {
+        console.error('删除地址失败:', error);
+        alert('删除地址失败，请重试');
     }
 }
 
