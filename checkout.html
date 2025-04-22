@@ -96,8 +96,6 @@
 
             <!-- 右侧区域 -->
             <div class="checkout-right">
-                <!-- 地址编辑器区域 -->
-                <div id="addressEditorContainer"></div>
                 <!-- 订单总结区域 -->
                 <div class="order-summary-container">
                     <h2 class="summary-title">订单总结</h2>
@@ -144,6 +142,11 @@
     <script type="module" src="./js/cart.js"></script>
     <script type="module" src="./js/address-editor.js"></script>
     <script type="module" src="./js/checkout.js"></script>
+    <!-- 地址编辑器侧边栏 -->
+    <div id="addressEditorContainer" class="address-editor-sidebar">
+        <div class="address-editor-content"></div>
+    </div>
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             initCart();

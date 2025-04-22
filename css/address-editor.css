@@ -1,8 +1,27 @@
+.address-editor-sidebar {
+    position: fixed;
+    top: 0;
+    right: -100%;
+    width: 400px;
+    height: 100vh;
+    background: #fff;
+    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+    transition: right 0.3s ease-in-out;
+    z-index: 1000;
+    overflow-y: auto;
+}
+
+.address-editor-sidebar.active {
+    right: 0;
+}
+
+.address-editor-content {
+    padding: 1.5rem;
+}
+
 .address-editor {
     background: #fff;
-    border-radius: 8px;
     padding: 1.5rem;
-    margin-bottom: 1.5rem;
 }
 
 .address-editor h2 {

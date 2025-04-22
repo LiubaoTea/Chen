@@ -7,6 +7,7 @@ export class AddressEditor {
         this.container = container;
         this.currentAddress = null;
         this.init();
+        this.isVisible = false;
     }
 
     init() {
@@ -170,12 +171,14 @@ export class AddressEditor {
 
     handleCancel() {
         this.resetForm();
+        this.hide();
     }
 
     resetForm() {
         const form = this.container.querySelector('#addressForm');
         form.reset();
         this.currentAddress = null;
+        this.show();
     }
 
     editAddress(address) {
@@ -188,5 +191,16 @@ export class AddressEditor {
         this.container.querySelector('#postalCode').value = address.postal_code || '';
 
         // TODO: 根据地址解析设置省市区选择器的值
+        this.show();
+    }
+
+    show() {
+        this.container.classList.add('active');
+        this.isVisible = true;
+    }
+
+    hide() {
+        this.container.classList.remove('active');
+        this.isVisible = false;
     }
 }
