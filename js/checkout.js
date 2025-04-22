@@ -174,7 +174,7 @@ async function loadAddresses() {
 async function editAddress(addressId) {
     try {
         const token = localStorage.getItem('userToken');
-        const response = await fetch(`${API_BASE_URL}/api/user/addresses/${addressId}`, {
+        const response = await fetch(`${API_BASE_URL}/api/user/address/${addressId}`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -571,10 +571,12 @@ function initSubmitOrder() {
                     'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({
-                    addressId,
-                    paymentMethod,
-                    total,
-                    remark
+                    order_id: document.getElementById('orderNumber').textContent.split('：')[1],
+                    address_id: addressId,
+                    payment_method: paymentMethod,
+                    total_amount: total,
+                    status: 'pending',
+                    remark: remark
                 })
             });
 
