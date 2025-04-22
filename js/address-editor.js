@@ -14,6 +14,13 @@ export class AddressEditor {
         this.render();
         this.initEventListeners();
         this.loadProvinces();
+        
+        // 添加点击遮罩层关闭功能
+        this.container.addEventListener('click', (e) => {
+            if (e.target === this.container) {
+                this.hide();
+            }
+        });
     }
 
     render() {
@@ -154,6 +161,8 @@ export class AddressEditor {
             const event = new CustomEvent('addressUpdated');
             document.dispatchEvent(event);
 
+            // 保存成功后关闭编辑器
+            this.hide();
             this.resetForm();
         } catch (error) {
             console.error('保存地址失败:', error);
