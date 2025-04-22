@@ -164,11 +164,14 @@
 
 /* 地址卡片样式 */
 .address-card {
-    padding: 1.2rem;
-    background: #fdfbf8;
-    border: 1px solid #e8d5c4;
+    position: relative;
+    padding: 15px;
+    border: 1px solid #ddd;
     border-radius: 8px;
-    margin-bottom: 1rem;
+    margin-bottom: 15px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
     cursor: pointer;
     transition: all 0.3s ease;
 }
@@ -183,15 +186,15 @@
     border-color: #d4b69b;
 }
 
-.address-card .address-content h3 {
-    color: #5c3c1d;
-    font-size: 1.1rem;
-    margin-bottom: 0.5rem;
+.address-radio {
+    margin-right: 15px;
+    display: flex;
+    align-items: center;
 }
 
-.address-card .address-content p {
-    color: #7c5c3c;
-    font-size: 0.9rem;
+.address-content {
+    flex: 1;
+    margin-right: 15px;
 }
 
 .address-card .address-actions {
