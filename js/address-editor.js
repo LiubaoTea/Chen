@@ -18,10 +18,9 @@ export class AddressEditor {
 
     render() {
         this.container.innerHTML = `
-            <div class="address-editor-sidebar">
-                <div class="address-editor">
-                    <h2>编辑收货地址</h2>
-                    <form class="address-form" id="addressForm">
+            <div class="address-editor">
+                <h2>编辑收货地址</h2>
+                <form class="address-form" id="addressForm">
                     <div class="form-group">
                         <label for="recipientName">收货人姓名</label>
                         <input type="text" id="recipientName" required>
@@ -56,8 +55,7 @@ export class AddressEditor {
                         <button type="submit" class="save-address">保存地址</button>
                         <button type="button" class="cancel-edit">取消</button>
                     </div>
-                    </form>
-                </div>
+                </form>
             </div>
         `;
     }
@@ -72,13 +70,6 @@ export class AddressEditor {
         provinceSelect.addEventListener('change', () => this.handleProvinceChange());
         citySelect.addEventListener('change', () => this.handleCityChange());
         cancelBtn.addEventListener('click', () => this.handleCancel());
-
-        // 添加点击外部关闭功能
-        document.addEventListener('click', (e) => {
-            if (this.isVisible && !this.container.contains(e.target)) {
-                this.hide();
-            }
-        });
     }
 
     loadProvinces() {
@@ -163,7 +154,6 @@ export class AddressEditor {
             const event = new CustomEvent('addressUpdated');
             document.dispatchEvent(event);
 
-            this.hide();
             this.resetForm();
         } catch (error) {
             console.error('保存地址失败:', error);
