@@ -362,28 +362,16 @@ function initAddressSelector() {
 async function showAddressForm(addressId = null) {
     const formContainer = document.getElementById('addressFormContainer');
     const formTitle = document.getElementById('addressFormTitle');
-    const form = document.getElementById('addressForm');
     
-    // 显示遮罩层
-    let overlay = document.getElementById('addressOverlay');
-    if (!overlay) {
-        overlay = document.createElement('div');
-        overlay.id = 'addressOverlay';
-        overlay.className = 'address-overlay';
-        overlay.addEventListener('click', hideAddressForm);
-        document.body.appendChild(overlay);
-    }
-    overlay.classList.add('show');
+    // 重置表单
+    document.getElementById('addressForm').reset();
+    document.getElementById('addressId').value = '';
     
-    formContainer.classList.add('show');
-    formTitle.textContent = addressId ? '编辑地址' : '添加新地址';
-    form.reset();
-
     if (addressId) {
+        formTitle.textContent = '编辑地址';
         try {
             const token = localStorage.getItem('userToken');
-            // 修改API端点，使用正确的地址详情接口
-            const response = await fetch(`${API_BASE_URL}/api/user/address/${addressId}`, {
+            const response = await fetch(`${API_BASE_URL}/api/user/addresses/${addressId}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -394,47 +382,43 @@ async function showAddressForm(addressId = null) {
             }
             
             const address = await response.json();
+            
+            // 填充表单数据
             document.getElementById('addressId').value = addressId;
             document.getElementById('recipient_name').value = address.recipient_name;
             document.getElementById('contact_phone').value = address.contact_phone;
             document.getElementById('full_address').value = address.full_address;
             document.getElementById('postal_code').value = address.postal_code || '';
-            document.getElementById('is_default').checked = address.is_default === 1;
-
-            // 设置省市区选择器的值
-            const regionParts = address.region.split(' ');
-            if (regionParts.length === 3) {
-                // 找到对应的省份代码
-                for (const provinceCode in addressData['86']) {
-                    if (addressData['86'][provinceCode] === regionParts[0]) {
-                        document.getElementById('province').value = provinceCode;
-                        document.getElementById('province').dispatchEvent(new Event('change'));
-
-                        // 找到对应的城市代码
-                        for (const cityCode in addressData[provinceCode]) {
-                            if (addressData[provinceCode][cityCode] === regionParts[1]) {
-                                document.getElementById('city').value = cityCode;
-                                document.getElementById('city').dispatchEvent(new Event('change'));
-
-                                // 找到对应的区县代码
-                                for (const districtCode in addressData[cityCode]) {
-                                    if (addressData[cityCode][districtCode] === regionParts[2]) {
-                                        document.getElementById('district').value = districtCode;
-                                        break;
-                                    }
-                                }
-                                break;
-                            }
-                        }
-                        break;
-                    }
-                }
-            }
+            document.getElementById('is_default').checked = address.is_default;
+            
+            // 解析并设置地区信息
+            const [province, city, district] = address.region.split(' ');
+            document.getElementById('province').value = province;
+            await updateCityOptions(province);
+            document.getElementById('city').value = city;
+            await updateDistrictOptions(city);
+            document.getElementById('district').value = district;
         } catch (error) {
             console.error('加载地址信息失败:', error);
             alert('加载地址信息失败，请重试');
+            return;
         }
+    } else {
+        formTitle.textContent = '添加新地址';
     }
+    
+    // 显示表单
+    formContainer.classList.add('show');
+    
+    // 添加遮罩层
+    let overlay = document.getElementById('addressOverlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'addressOverlay';
+        overlay.className = 'address-overlay';
+        document.body.appendChild(overlay);
+    }
+    overlay.classList.add('show');
 }
 
 // 处理地址表单提交
@@ -596,12 +580,13 @@ async function showAddressSettings() {
                 const addressId = e.target.dataset.id;
                 if (e.target.classList.contains('set-default')) {
                     try {
-                        const response = await fetch(`${API_BASE_URL}/api/user/addresses/${addressId}/default`, {
+                        const response = await fetch(`${API_BASE_URL}/api/user/addresses/${addressId}`, {
                             method: 'PUT',
                             headers: {
                                 'Content-Type': 'application/json',
                                 'Authorization': `Bearer ${token}`
-                            }
+                            },
+                            body: JSON.stringify({ is_default: true })
                         });
                         if (!response.ok) {
                             throw new Error('设置默认地址失败');

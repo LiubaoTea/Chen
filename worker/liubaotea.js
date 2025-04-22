@@ -249,6 +249,18 @@ const handleUserAuth = async (request, env) => {
     // 获取用户通知设置
     if (path === '/api/user/settings' && request.method === 'GET') {
         try {
+            const authHeader = request.headers.get('Authorization');
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
+                    status: 401,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+
+            const token = authHeader.split(' ')[1];
+            const decoded = JSON.parse(atob(token));
+            const userId = decoded.userId;
+
             const settings = await env.DB.prepare(
                 'SELECT notification_prefs FROM user_settings WHERE user_id = ?'
             ).bind(userId).first();
@@ -268,6 +280,18 @@ const handleUserAuth = async (request, env) => {
     // 更新用户通知设置
     if (path === '/api/user/settings' && request.method === 'PUT') {
         try {
+            const authHeader = request.headers.get('Authorization');
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
+                    status: 401,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+
+            const token = authHeader.split(' ')[1];
+            const decoded = JSON.parse(atob(token));
+            const userId = decoded.userId;
+
             const { notification_prefs } = await request.json();
             
             // 检查是否已有设置记录
@@ -370,6 +394,36 @@ const handleAddresses = async (request, env) => {
             });
         } catch (error) {
             return new Response(JSON.stringify({ error: '添加地址失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+
+    // 获取单个地址信息
+    const getAddressMatch = path.match(/^\/api\/user\/addresses\/(\d+)$/);    
+    if (getAddressMatch && request.method === 'GET') {
+        try {
+            const addressId = getAddressMatch[1];
+
+            // 验证地址所有权
+            const address = await env.DB.prepare(
+                'SELECT * FROM user_addresses WHERE address_id = ? AND user_id = ?'
+            ).bind(addressId, userId).first();
+
+            if (!address) {
+                return new Response(JSON.stringify({ error: '地址不存在或无权限访问' }), {
+                    status: 403,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+
+            return new Response(JSON.stringify(address), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '获取地址信息失败', details: error.message }), {
                 status: 500,
                 headers: { 'Content-Type': 'application/json' }
             });
@@ -625,6 +679,18 @@ const handleProducts = async (request, env) => {
     // 获取用户通知设置
     if (path === '/api/user/settings' && request.method === 'GET') {
         try {
+            const authHeader = request.headers.get('Authorization');
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
+                    status: 401,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+
+            const token = authHeader.split(' ')[1];
+            const decoded = JSON.parse(atob(token));
+            const userId = decoded.userId;
+
             const settings = await env.DB.prepare(
                 'SELECT notification_prefs FROM user_settings WHERE user_id = ?'
             ).bind(userId).first();
@@ -644,6 +710,18 @@ const handleProducts = async (request, env) => {
     // 更新用户通知设置
     if (path === '/api/user/settings' && request.method === 'PUT') {
         try {
+            const authHeader = request.headers.get('Authorization');
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
+                    status: 401,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+
+            const token = authHeader.split(' ')[1];
+            const decoded = JSON.parse(atob(token));
+            const userId = decoded.userId;
+
             const { notification_prefs } = await request.json();
             
             // 检查是否已有设置记录
@@ -997,6 +1075,18 @@ const handleCartOperations = async (request, env) => {
     // 获取用户通知设置
     if (path === '/api/user/settings' && request.method === 'GET') {
         try {
+            const authHeader = request.headers.get('Authorization');
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
+                    status: 401,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+
+            const token = authHeader.split(' ')[1];
+            const decoded = JSON.parse(atob(token));
+            const userId = decoded.userId;
+
             const settings = await env.DB.prepare(
                 'SELECT notification_prefs FROM user_settings WHERE user_id = ?'
             ).bind(userId).first();
@@ -1016,6 +1106,18 @@ const handleCartOperations = async (request, env) => {
     // 更新用户通知设置
     if (path === '/api/user/settings' && request.method === 'PUT') {
         try {
+            const authHeader = request.headers.get('Authorization');
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
+                    status: 401,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+
+            const token = authHeader.split(' ')[1];
+            const decoded = JSON.parse(atob(token));
+            const userId = decoded.userId;
+
             const { notification_prefs } = await request.json();
             
             // 检查是否已有设置记录
@@ -1266,6 +1368,18 @@ const handleOrderOperations = async (request, env) => {
     // 获取用户通知设置
     if (path === '/api/user/settings' && request.method === 'GET') {
         try {
+            const authHeader = request.headers.get('Authorization');
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
+                    status: 401,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+
+            const token = authHeader.split(' ')[1];
+            const decoded = JSON.parse(atob(token));
+            const userId = decoded.userId;
+
             const settings = await env.DB.prepare(
                 'SELECT notification_prefs FROM user_settings WHERE user_id = ?'
             ).bind(userId).first();
@@ -1285,6 +1399,18 @@ const handleOrderOperations = async (request, env) => {
     // 更新用户通知设置
     if (path === '/api/user/settings' && request.method === 'PUT') {
         try {
+            const authHeader = request.headers.get('Authorization');
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
+                    status: 401,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+
+            const token = authHeader.split(' ')[1];
+            const decoded = JSON.parse(atob(token));
+            const userId = decoded.userId;
+
             const { notification_prefs } = await request.json();
             
             // 检查是否已有设置记录
@@ -1567,6 +1693,18 @@ const handleUserCenter = async (request, env) => {
     // 获取用户通知设置
     if (path === '/api/user/settings' && request.method === 'GET') {
         try {
+            const authHeader = request.headers.get('Authorization');
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
+                    status: 401,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+
+            const token = authHeader.split(' ')[1];
+            const decoded = JSON.parse(atob(token));
+            const userId = decoded.userId;
+
             const settings = await env.DB.prepare(
                 'SELECT notification_prefs FROM user_settings WHERE user_id = ?'
             ).bind(userId).first();
@@ -1586,6 +1724,18 @@ const handleUserCenter = async (request, env) => {
     // 更新用户通知设置
     if (path === '/api/user/settings' && request.method === 'PUT') {
         try {
+            const authHeader = request.headers.get('Authorization');
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
+                    status: 401,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+
+            const token = authHeader.split(' ')[1];
+            const decoded = JSON.parse(atob(token));
+            const userId = decoded.userId;
+
             const { notification_prefs } = await request.json();
             
             // 检查是否已有设置记录
@@ -1780,6 +1930,18 @@ const handleOrders = async (request, env) => {
     // 获取用户通知设置
     if (path === '/api/user/settings' && request.method === 'GET') {
         try {
+            const authHeader = request.headers.get('Authorization');
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
+                    status: 401,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+
+            const token = authHeader.split(' ')[1];
+            const decoded = JSON.parse(atob(token));
+            const userId = decoded.userId;
+
             const settings = await env.DB.prepare(
                 'SELECT notification_prefs FROM user_settings WHERE user_id = ?'
             ).bind(userId).first();
@@ -1799,6 +1961,18 @@ const handleOrders = async (request, env) => {
     // 更新用户通知设置
     if (path === '/api/user/settings' && request.method === 'PUT') {
         try {
+            const authHeader = request.headers.get('Authorization');
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
+                    status: 401,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+
+            const token = authHeader.split(' ')[1];
+            const decoded = JSON.parse(atob(token));
+            const userId = decoded.userId;
+
             const { notification_prefs } = await request.json();
             
             // 检查是否已有设置记录
@@ -1866,6 +2040,18 @@ const handleImageRequest = async (request, env) => {
     // 获取用户通知设置
     if (path === '/api/user/settings' && request.method === 'GET') {
         try {
+            const authHeader = request.headers.get('Authorization');
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
+                    status: 401,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+
+            const token = authHeader.split(' ')[1];
+            const decoded = JSON.parse(atob(token));
+            const userId = decoded.userId;
+
             const settings = await env.DB.prepare(
                 'SELECT notification_prefs FROM user_settings WHERE user_id = ?'
             ).bind(userId).first();
@@ -1885,6 +2071,18 @@ const handleImageRequest = async (request, env) => {
     // 更新用户通知设置
     if (path === '/api/user/settings' && request.method === 'PUT') {
         try {
+            const authHeader = request.headers.get('Authorization');
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
+                    status: 401,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+
+            const token = authHeader.split(' ')[1];
+            const decoded = JSON.parse(atob(token));
+            const userId = decoded.userId;
+
             const { notification_prefs } = await request.json();
             
             // 检查是否已有设置记录
@@ -2068,6 +2266,18 @@ const handleUserAddress = async (request, env) => {
     // 获取用户通知设置
     if (path === '/api/user/settings' && request.method === 'GET') {
         try {
+            const authHeader = request.headers.get('Authorization');
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
+                    status: 401,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+
+            const token = authHeader.split(' ')[1];
+            const decoded = JSON.parse(atob(token));
+            const userId = decoded.userId;
+
             const settings = await env.DB.prepare(
                 'SELECT notification_prefs FROM user_settings WHERE user_id = ?'
             ).bind(userId).first();
@@ -2087,6 +2297,18 @@ const handleUserAddress = async (request, env) => {
     // 更新用户通知设置
     if (path === '/api/user/settings' && request.method === 'PUT') {
         try {
+            const authHeader = request.headers.get('Authorization');
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
+                    status: 401,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+
+            const token = authHeader.split(' ')[1];
+            const decoded = JSON.parse(atob(token));
+            const userId = decoded.userId;
+
             const { notification_prefs } = await request.json();
             
             // 检查是否已有设置记录
@@ -2210,6 +2432,18 @@ const handleUserSettings = async (request, env) => {
     // 获取用户通知设置
     if (path === '/api/user/settings' && request.method === 'GET') {
         try {
+            const authHeader = request.headers.get('Authorization');
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
+                    status: 401,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+
+            const token = authHeader.split(' ')[1];
+            const decoded = JSON.parse(atob(token));
+            const userId = decoded.userId;
+
             const settings = await env.DB.prepare(
                 'SELECT notification_prefs FROM user_settings WHERE user_id = ?'
             ).bind(userId).first();
@@ -2229,6 +2463,18 @@ const handleUserSettings = async (request, env) => {
     // 更新用户通知设置
     if (path === '/api/user/settings' && request.method === 'PUT') {
         try {
+            const authHeader = request.headers.get('Authorization');
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
+                    status: 401,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+
+            const token = authHeader.split(' ')[1];
+            const decoded = JSON.parse(atob(token));
+            const userId = decoded.userId;
+
             const { notification_prefs } = await request.json();
             
             // 检查是否已有设置记录
@@ -2352,6 +2598,18 @@ const handleProductCategories = async (request, env) => {
     // 获取用户通知设置
     if (path === '/api/user/settings' && request.method === 'GET') {
         try {
+            const authHeader = request.headers.get('Authorization');
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
+                    status: 401,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+
+            const token = authHeader.split(' ')[1];
+            const decoded = JSON.parse(atob(token));
+            const userId = decoded.userId;
+
             const settings = await env.DB.prepare(
                 'SELECT notification_prefs FROM user_settings WHERE user_id = ?'
             ).bind(userId).first();
@@ -2371,6 +2629,18 @@ const handleProductCategories = async (request, env) => {
     // 更新用户通知设置
     if (path === '/api/user/settings' && request.method === 'PUT') {
         try {
+            const authHeader = request.headers.get('Authorization');
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
+                    status: 401,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+
+            const token = authHeader.split(' ')[1];
+            const decoded = JSON.parse(atob(token));
+            const userId = decoded.userId;
+
             const { notification_prefs } = await request.json();
             
             // 检查是否已有设置记录
@@ -2504,6 +2774,18 @@ const handleProductReviews = async (request, env) => {
     // 获取用户通知设置
     if (path === '/api/user/settings' && request.method === 'GET') {
         try {
+            const authHeader = request.headers.get('Authorization');
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
+                    status: 401,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+
+            const token = authHeader.split(' ')[1];
+            const decoded = JSON.parse(atob(token));
+            const userId = decoded.userId;
+
             const settings = await env.DB.prepare(
                 'SELECT notification_prefs FROM user_settings WHERE user_id = ?'
             ).bind(userId).first();
@@ -2523,6 +2805,18 @@ const handleProductReviews = async (request, env) => {
     // 更新用户通知设置
     if (path === '/api/user/settings' && request.method === 'PUT') {
         try {
+            const authHeader = request.headers.get('Authorization');
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
+                    status: 401,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+
+            const token = authHeader.split(' ')[1];
+            const decoded = JSON.parse(atob(token));
+            const userId = decoded.userId;
+
             const { notification_prefs } = await request.json();
             
             // 检查是否已有设置记录
@@ -2645,6 +2939,18 @@ const handleShoppingSession = async (request, env) => {
     // 获取用户通知设置
     if (path === '/api/user/settings' && request.method === 'GET') {
         try {
+            const authHeader = request.headers.get('Authorization');
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
+                    status: 401,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+
+            const token = authHeader.split(' ')[1];
+            const decoded = JSON.parse(atob(token));
+            const userId = decoded.userId;
+
             const settings = await env.DB.prepare(
                 'SELECT notification_prefs FROM user_settings WHERE user_id = ?'
             ).bind(userId).first();
@@ -2664,6 +2970,18 @@ const handleShoppingSession = async (request, env) => {
     // 更新用户通知设置
     if (path === '/api/user/settings' && request.method === 'PUT') {
         try {
+            const authHeader = request.headers.get('Authorization');
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
+                    status: 401,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+
+            const token = authHeader.split(' ')[1];
+            const decoded = JSON.parse(atob(token));
+            const userId = decoded.userId;
+
             const { notification_prefs } = await request.json();
             
             // 检查是否已有设置记录
@@ -2763,6 +3081,18 @@ const handleRequest = {
             // 获取用户通知设置
     if (path === '/api/user/settings' && request.method === 'GET') {
         try {
+            const authHeader = request.headers.get('Authorization');
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
+                    status: 401,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+
+            const token = authHeader.split(' ')[1];
+            const decoded = JSON.parse(atob(token));
+            const userId = decoded.userId;
+
             const settings = await env.DB.prepare(
                 'SELECT notification_prefs FROM user_settings WHERE user_id = ?'
             ).bind(userId).first();
@@ -2782,6 +3112,18 @@ const handleRequest = {
     // 更新用户通知设置
     if (path === '/api/user/settings' && request.method === 'PUT') {
         try {
+            const authHeader = request.headers.get('Authorization');
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
+                    status: 401,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+
+            const token = authHeader.split(' ')[1];
+            const decoded = JSON.parse(atob(token));
+            const userId = decoded.userId;
+
             const { notification_prefs } = await request.json();
             
             // 检查是否已有设置记录
