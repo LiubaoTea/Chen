@@ -383,7 +383,7 @@ async function showAddressForm(addressId = null) {
         try {
             const token = localStorage.getItem('userToken');
             // 修改API端点，使用正确的地址详情接口
-            const response = await fetch(`${API_BASE_URL}/api/user/addresses/${addressId}`, {
+            const response = await fetch(`${API_BASE_URL}/api/user/address/${addressId}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -524,11 +524,11 @@ async function showAddressSettings() {
                 </div>
                 <form id="addressForm" class="settings-form">
                     <input type="hidden" id="addressId">
-                    <div class="form-group inline-form-group">
+                    <div class="form-group">
                         <label for="recipient_name">收货人姓名</label>
                         <input type="text" id="recipient_name" name="recipient_name" required>
                     </div>
-                    <div class="form-group inline-form-group">
+                    <div class="form-group">
                         <label for="contact_phone">联系电话</label>
                         <input type="tel" id="contact_phone" name="contact_phone" required>
                     </div>
@@ -554,16 +554,15 @@ async function showAddressSettings() {
                         <label for="postal_code">邮政编码</label>
                         <input type="text" id="postal_code" name="postal_code" placeholder="选填">
                     </div>
-                    <div class="form-group inline-form-group">
-                        <label for="is_default">设为默认地址</label>
-                        <div class="checkbox-container" style="display: flex; align-items: center;">
+                    <div class="form-group">
+                        <label class="checkbox-container">
                             <input type="checkbox" id="is_default" name="is_default">
-                            <span class="checkbox-text"></span>
-                        </div>
+                            <span class="checkbox-text">设为默认地址</span>
+                        </label>
                     </div>
                     <div class="form-actions">
-                        <button type="submit" class="submit-btn tea-btn">保存</button>
-                        <button type="button" class="cancel-btn tea-btn" onclick="hideAddressForm()">取消</button>
+                        <button type="submit" class="submit-btn">保存</button>
+                        <button type="button" class="cancel-btn" onclick="hideAddressForm()">取消</button>
                     </div>
                 </form>
             </div>
@@ -597,8 +596,7 @@ async function showAddressSettings() {
                 const addressId = e.target.dataset.id;
                 if (e.target.classList.contains('set-default')) {
                     try {
-                        // 修正API路径，确保与后端一致
-                        const response = await fetch(`${API_BASE_URL}/api/user/addresses/${addressId}/set-default`, {
+                        const response = await fetch(`${API_BASE_URL}/api/user/addresses/${addressId}/default`, {
                             method: 'PUT',
                             headers: {
                                 'Content-Type': 'application/json',
