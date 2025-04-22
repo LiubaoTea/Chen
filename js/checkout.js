@@ -1,6 +1,6 @@
-// 导入API基础URL和地址模态框
+// 导入API基础URL和地址编辑器
 import { API_BASE_URL } from './config.js';
-import { showAddressModal } from './address-modal.js';
+import { AddressEditor } from './address-editor.js';
 
 // 生成订单编号
 function generateOrderNumber() {
@@ -11,6 +11,8 @@ function generateOrderNumber() {
     const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
     return `LB${year}${month}${day}${random}`;
 }
+
+let addressEditor;
 
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', async () => {
@@ -27,6 +29,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 生成并显示订单编号
     const orderNumber = generateOrderNumber();
     document.getElementById('orderNumber').textContent = `订单编号：${orderNumber}`;
+
+    // 初始化地址编辑器
+    addressEditor = new AddressEditor(document.getElementById('addressEditorContainer'));
+
+    // 监听地址更新事件
+    document.addEventListener('addressUpdated', () => {
+        loadAddresses();
+    });
 
     // 初始化各个功能模块
     await loadAddresses();
@@ -150,12 +160,34 @@ async function loadAddresses() {
         // 添加新增地址事件
         const addAddressBtn = addressList.querySelector('.add-address');
         if (addAddressBtn) {
-            addAddressBtn.addEventListener('click', showAddressModal);
+            addAddressBtn.addEventListener('click', () => {
+                addressEditor.resetForm();
+            });
         }
 
         // 添加编辑和删除事件
         addressList.querySelectorAll('.edit-address').forEach(btn => {
-            btn.addEventListener('click', () => editAddress(btn.dataset.id));
+            btn.addEventListener('click', async () => {
+                const addressId = btn.dataset.id;
+                try {
+                    const token = localStorage.getItem('userToken');
+                    const response = await fetch(`${API_BASE_URL}/api/user/addresses/${addressId}`, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('获取地址信息失败');
+                    }
+
+                    const address = await response.json();
+                    addressEditor.editAddress(address);
+                } catch (error) {
+                    console.error('编辑地址失败:', error);
+                    alert('获取地址信息失败，请重试');
+                }
+            });
         });
 
         addressList.querySelectorAll('.delete-address').forEach(btn => {

@@ -6,6 +6,7 @@
     <title>订单结算 - 陳記六堡茶</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/checkout.css">
+    <link rel="stylesheet" href="css/address-editor.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </head>
 <body>
@@ -93,8 +94,11 @@
                 </div>
             </div>
 
-            <!-- 右侧订单总结区域 -->
+            <!-- 右侧区域 -->
             <div class="checkout-right">
+                <!-- 地址编辑器区域 -->
+                <div id="addressEditorContainer"></div>
+                <!-- 订单总结区域 -->
                 <div class="order-summary-container">
                     <h2 class="summary-title">订单总结</h2>
                     <div class="order-info">
@@ -138,6 +142,7 @@
 
     <script type="module" src="./js/api.js"></script>
     <script type="module" src="./js/cart.js"></script>
+    <script type="module" src="./js/address-editor.js"></script>
     <script type="module" src="./js/checkout.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
