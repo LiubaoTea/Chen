@@ -180,6 +180,10 @@ async function editAddress(addressId) {
             }
         });
 
+        if (response.status === 404) {
+            throw new Error('地址不存在或已被删除');
+        }
+
         if (!response.ok) {
             throw new Error('获取地址信息失败');
         }
@@ -189,7 +193,7 @@ async function editAddress(addressId) {
 
     } catch (error) {
         console.error('编辑地址失败:', error);
-        alert('获取地址信息失败，请重试');
+        alert(error.message || '获取地址信息失败，请重试');
     }
 }
 
