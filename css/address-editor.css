@@ -5,8 +5,8 @@
     width: 400px;
     height: 100vh;
     background: #fff;
-    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
-    transition: right 0.3s ease-in-out;
+    box-shadow: -4px 0 20px rgba(139, 69, 19, 0.15);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 1000;
     overflow-y: auto;
 }
@@ -20,8 +20,10 @@
 }
 
 .address-editor {
-    background: #fff;
+    background: #FFF9F0;
     padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(139, 69, 19, 0.1);
 }
 
 .address-editor h2 {
@@ -56,6 +58,8 @@
     border-radius: 4px;
     font-size: 0.9rem;
     color: #5c3c1d;
+    transition: all 0.2s ease;
+    background: #fff;
 }
 
 .form-group input:focus,
