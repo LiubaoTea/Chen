@@ -1,5 +1,6 @@
-// 导入API基础URL
+// 导入API基础URL和地址模态框
 import { API_BASE_URL } from './config.js';
+import { showAddressModal } from './address-modal.js';
 
 // 生成订单编号
 function generateOrderNumber() {
@@ -105,14 +106,14 @@ async function loadAddresses() {
 
         // 添加现有地址
         addressHtml += addresses.map((address, index) => `
-            <div class="address-card ${index === 0 ? 'selected' : ''}" data-id="${address.id}">
+            <div class="address-card ${index === 0 ? 'selected' : ''}" data-id="${address.address_id}">
                 <div class="address-radio">
-                    <input type="radio" name="address" ${index === 0 ? 'checked' : ''} id="address_${address.id}">
-                    <label for="address_${address.id}"></label>
+                    <input type="radio" name="address" ${index === 0 ? 'checked' : ''} id="address_${address.address_id}">
+                    <label for="address_${address.address_id}"></label>
                 </div>
                 <div class="address-content">
-                    <h3>${address.name} ${address.phone}</h3>
-                    <p>${address.province}${address.city}${address.district}${address.detail}</p>
+                    <h3>${address.recipient_name} ${address.contact_phone}</h3>
+                    <p>${address.region} ${address.full_address}</p>
                 </div>
                 <div class="address-actions">
                     <button class="edit-address" data-id="${address.id}">
