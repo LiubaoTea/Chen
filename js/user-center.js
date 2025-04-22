@@ -367,6 +367,15 @@ async function showAddressForm(addressId = null) {
     document.getElementById('addressForm').reset();
     document.getElementById('addressId').value = '';
     
+    // 初始化地址选择器
+    import('./address-selector.js')
+        .then(module => {
+            module.initAddressSelector();
+        })
+        .catch(error => {
+            console.error('加载地址选择器失败:', error);
+        });
+    
     if (addressId) {
         formTitle.textContent = '编辑地址';
         try {
@@ -394,10 +403,22 @@ async function showAddressForm(addressId = null) {
             // 解析并设置地区信息
             const [province, city, district] = address.region.split(' ');
             document.getElementById('province').value = province;
-            await updateCityOptions(province);
-            document.getElementById('city').value = city;
-            await updateDistrictOptions(city);
-            document.getElementById('district').value = district;
+            // 等待地址选择器初始化完成后再设置值
+            setTimeout(() => {
+                const provinceSelect = document.getElementById('province');
+                provinceSelect.dispatchEvent(new Event('change'));
+                
+                setTimeout(() => {
+                    const citySelect = document.getElementById('city');
+                    citySelect.value = city;
+                    citySelect.dispatchEvent(new Event('change'));
+                    
+                    setTimeout(() => {
+                        const districtSelect = document.getElementById('district');
+                        districtSelect.value = district;
+                    }, 100);
+                }, 100);
+            }, 100);
         } catch (error) {
             console.error('加载地址信息失败:', error);
             alert('加载地址信息失败，请重试');
@@ -580,13 +601,21 @@ async function showAddressSettings() {
                 const addressId = e.target.dataset.id;
                 if (e.target.classList.contains('set-default')) {
                     try {
+                        const addressId = e.target.dataset.id;
                         const response = await fetch(`${API_BASE_URL}/api/user/addresses/${addressId}`, {
                             method: 'PUT',
                             headers: {
                                 'Content-Type': 'application/json',
                                 'Authorization': `Bearer ${token}`
                             },
-                            body: JSON.stringify({ is_default: true })
+                            body: JSON.stringify({
+                                recipient_name: e.target.closest('.address-item').querySelector('strong').textContent,
+                                contact_phone: e.target.closest('.address-item').querySelector('p').textContent.split(' ')[1],
+                                region: e.target.closest('.address-item').querySelector('p:nth-child(2)').textContent.split(' ').slice(0, 3).join(' '),
+                                full_address: e.target.closest('.address-item').querySelector('p:nth-child(2)').textContent.split(' ')[3],
+                                postal_code: e.target.closest('.address-item').querySelector('p:nth-child(2)').textContent.match(/邮编：(\d+)/)?.[1] || '',
+                                is_default: true
+                            })
                         });
                         if (!response.ok) {
                             throw new Error('设置默认地址失败');

@@ -3196,7 +3196,9 @@ export default {
                 response = await handleCartOperations(request, env);
             } else if (url.pathname.startsWith('/api/orders')) {
                 response = await handleOrders(request, env);
-            } else if (url.pathname.startsWith('/api/user/') || url.pathname.startsWith('/api/addresses')) {
+            } else if (url.pathname.startsWith('/api/user/addresses')) {
+                response = await handleAddresses(request, env);
+            } else if (url.pathname.startsWith('/api/user/')) {
                 response = await handleUserCenter(request, env);
             } else if (['/api/register', '/api/login', '/api/user'].includes(url.pathname)) {
                 response = await handleUserAuth(request, env);
