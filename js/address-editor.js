@@ -70,6 +70,13 @@ export class AddressEditor {
         provinceSelect.addEventListener('change', () => this.handleProvinceChange());
         citySelect.addEventListener('change', () => this.handleCityChange());
         cancelBtn.addEventListener('click', () => this.handleCancel());
+
+        // 添加点击外部关闭功能
+        document.addEventListener('click', (e) => {
+            if (this.isVisible && !this.container.contains(e.target)) {
+                this.hide();
+            }
+        });
     }
 
     loadProvinces() {
@@ -154,6 +161,7 @@ export class AddressEditor {
             const event = new CustomEvent('addressUpdated');
             document.dispatchEvent(event);
 
+            this.hide();
             this.resetForm();
         } catch (error) {
             console.error('保存地址失败:', error);
