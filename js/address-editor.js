@@ -229,6 +229,7 @@ export class AddressEditor {
     show() {
         this.container.classList.add('active');
         this.isVisible = true;
+        this.container.querySelector('.address-editor-content').style.display = 'block';
     }
 
     hide() {
