@@ -162,6 +162,7 @@ async function loadAddresses() {
         if (addAddressBtn) {
             addAddressBtn.addEventListener('click', () => {
                 addressEditor.resetForm();
+                addressEditor.show(); // 显示地址编辑器
             });
         }
 
@@ -183,6 +184,7 @@ async function loadAddresses() {
 
                     const address = await response.json();
                     addressEditor.editAddress(address);
+                    addressEditor.show(); // 显示地址编辑器
                 } catch (error) {
                     console.error('编辑地址失败:', error);
                     alert('获取地址信息失败，请重试');

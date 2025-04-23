@@ -28,6 +28,20 @@ export class AddressEditor {
                 this.hide();
             }
         });
+        
+        // 添加ESC键关闭功能
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && this.isVisible) {
+                this.hide();
+            }
+        });
+        
+        // 添加ESC键关闭功能
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && this.isVisible) {
+                this.hide();
+            }
+        });
     }
 
     render() {
