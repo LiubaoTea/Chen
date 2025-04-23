@@ -70,9 +70,15 @@
 }
 
 .region-selects {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    display: flex;
+    flex-direction: column;
     gap: 0.5rem;
+    width: 100%;
+}
+
+.region-selects select {
+    width: 100%;
+    max-width: 100%;
 }
 
 .address-actions {
