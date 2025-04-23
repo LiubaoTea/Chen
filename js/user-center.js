@@ -1,6 +1,5 @@
 import { API_BASE_URL } from './config.js';
 import { checkAuthStatus } from './auth.js';
-import { AddressEditor } from './address-editor.js';
 
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', async () => {
@@ -174,6 +173,8 @@ function initNavMenu() {
     document.querySelector('[data-section="orders"]').click();
 }
 
+
+
 // 显示个人资料设置
 async function showProfileSettings() {
     const contentArea = document.getElementById('contentArea');
@@ -336,10 +337,10 @@ async function showAddressSettings() {
                         </div>
                         <div class="address-actions">
                             ${!address.is_default ? `
-                                <button onclick="setDefaultAddress('${address.id}')">设为默认</button>
+                                <button class="set-default" onclick="setDefaultAddress('${address.id}')">设为默认</button>
                             ` : ''}
-                            <button onclick="editAddress('${address.id}')">编辑</button>
-                            <button onclick="deleteAddress('${address.id}')">删除</button>
+                            <button class="edit" onclick="editAddress('${address.id}')">编辑</button>
+                            <button class="delete" onclick="deleteAddress('${address.id}')">删除</button>
                         </div>
                     </div>
                 `).join('')}
@@ -407,98 +408,17 @@ async function showAddressSettings() {
     }
 }
 
-// 初始化地址编辑器
-let addressEditor;
-
 // 显示地址编辑器
-window.showAddressEditor = function() {
-    if (!addressEditor) {
-        addressEditor = new AddressEditor(document.getElementById('addressEditorContainer').querySelector('.address-editor-content'));
+function showAddressEditor(addressId = null) {
+    const addressEditorContainer = document.getElementById('addressEditorContainer');
+    addressEditorContainer.classList.add('active');
+    
+    // 初始化地址编辑器
+    const addressEditor = new AddressEditor(addressEditorContainer.querySelector('.address-editor-content'));
+    if (addressId) {
+        addressEditor.loadAddress(addressId);
     }
-    addressEditor.resetForm();
     addressEditor.show();
-}
-
-// 设置默认地址
-window.setDefaultAddress = async function(addressId) {
-    try {
-        const token = localStorage.getItem('userToken');
-        const response = await fetch(`${API_BASE_URL}/api/user/addresses/${addressId}/default`, {
-            method: 'PUT',
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
-
-        if (!response.ok) {
-            throw new Error('设置默认地址失败');
-        }
-
-        alert('默认地址设置成功');
-        await showAddressSettings(); // 刷新地址列表
-    } catch (error) {
-        console.error('设置默认地址失败:', error);
-        alert('设置默认地址失败，请重试');
-    }
-}
-
-// 显示地址编辑器
-window.showAddressEditor = function() {
-    if (!addressEditor) {
-        addressEditor = new AddressEditor(document.getElementById('addressEditorContainer').querySelector('.address-editor-content'));
-    }
-    addressEditor.resetForm();
-    addressEditor.show();
-}
-
-// 编辑地址
-window.editAddress = async function(addressId) {
-    try {
-        if (!addressEditor) {
-            addressEditor = new AddressEditor(document.getElementById('addressEditorContainer').querySelector('.address-editor-content'));
-        }
-        
-        const token = localStorage.getItem('userToken');
-        const response = await fetch(`${API_BASE_URL}/api/user/addresses/${addressId}`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
-
-        if (!response.ok) {
-            throw new Error('获取地址信息失败');
-        }
-
-        const address = await response.json();
-        addressEditor.editAddress(address);
-        addressEditor.show();
-    } catch (error) {
-        console.error('编辑地址失败:', error);
-        alert('获取地址信息失败，请重试');
-    }
-}
-
-// 设置默认地址
-window.setDefaultAddress = async function(addressId) {
-    try {
-        const token = localStorage.getItem('userToken');
-        const response = await fetch(`${API_BASE_URL}/api/user/addresses/${addressId}/default`, {
-            method: 'PUT',
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
-
-        if (!response.ok) {
-            throw new Error('设置默认地址失败');
-        }
-
-        alert('默认地址设置成功');
-        await showAddressSettings(); // 刷新地址列表
-    } catch (error) {
-        console.error('设置默认地址失败:', error);
-        alert('设置默认地址失败，请重试');
-    }
 }
 
 // 显示通知设置
@@ -599,33 +519,176 @@ async function viewOrderDetail(orderId) {
                     <p><strong>订单状态:</strong> ${getOrderStatus(orderDetail.status)}</p>
                     <p><strong>订单金额:</strong> ¥${orderDetail.total_amount.toFixed(2)}</p>
                 </div>
+                <h4>订单商品</h4>
                 <div class="order-items">
-                    <h4>商品列表</h4>
-                    ${orderDetail.items.map(item => `
-                        <div class="order-item">
-                            <div class="item-info">
-                                <p><strong>${item.product_name}</strong></p>
-                                <p>数量: ${item.quantity}</p>
-                                <p>单价: ¥${item.price.toFixed(2)}</p>
-                                <p>小计: ¥${(item.quantity * item.price).toFixed(2)}</p>
-                            </div>
+        `;
+        
+        if (orderDetail.items && orderDetail.items.length > 0) {
+            orderDetail.items.forEach(item => {
+                orderDetailHTML += `
+                    <div class="order-item">
+                        <div class="item-info">
+                            <h5>${item.product_name}</h5>
+                            <p>单价: ¥${item.unit_price.toFixed(2)}</p>
+                            <p>数量: ${item.quantity}</p>
+                            <p>小计: ¥${(item.unit_price * item.quantity).toFixed(2)}</p>
                         </div>
-                    `).join('')}
+                    </div>
+                `;
+            });
+        } else {
+            orderDetailHTML += '<p>暂无商品信息</p>';
+        }
+        
+        orderDetailHTML += `
                 </div>
-                <div class="order-address">
-                    <h4>收货信息</h4>
-                    <p><strong>收货人:</strong> ${orderDetail.shipping_address.recipient_name}</p>
-                    <p><strong>联系电话:</strong> ${orderDetail.shipping_address.contact_phone}</p>
-                    <p><strong>收货地址:</strong> ${orderDetail.shipping_address.region} ${orderDetail.shipping_address.full_address}</p>
-                    <p><strong>邮政编码:</strong> ${orderDetail.shipping_address.postal_code || '未提供'}</p>
+                <div class="order-actions">
+                    <button onclick="loadOrders()">返回订单列表</button>
                 </div>
             </div>
         `;
         
         contentArea.innerHTML = orderDetailHTML;
     } catch (error) {
-        console.error('获取订单详情失败:', error);
+        console.error('加载订单详情失败:', error);
         document.getElementById('contentArea').innerHTML = 
-            '<div class="error-message">获取订单详情失败，请稍后重试</div>';
+            '<div class="error-message">加载订单详情失败，请稍后重试</div>';
     }
+}
+
+// 显示设置模态框
+function showSettingsModal(content) {
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            ${content}
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // 关闭按钮事件
+    modal.querySelector('.close').onclick = () => {
+        document.body.removeChild(modal);
+    };
+    
+    // 点击模态框外部关闭
+    modal.onclick = (e) => {
+        if (e.target === modal) {
+            document.body.removeChild(modal);
+        }
+    };
+}
+
+// 初始化退出登录按钮
+function initLogoutButton() {
+    const logoutBtn = document.createElement('button');
+    logoutBtn.className = 'logout-btn';
+    logoutBtn.innerHTML = '<i class="fas fa-sign-out-alt"></i>退出登录';
+    logoutBtn.onclick = () => {
+        if (confirm('确定要退出登录吗？')) {
+            localStorage.removeItem('userToken');
+            localStorage.removeItem('username');
+            localStorage.removeItem('userEmail');
+            window.location.href = 'login.html';
+        }
+    };
+
+    // 将退出按钮添加到导航菜单底部
+    const navMenu = document.querySelector('.nav-menu');
+    navMenu.appendChild(logoutBtn);
+}
+
+// 获取用户信息
+async function getUserInfo() {
+    const token = localStorage.getItem('userToken');
+    if (!token) {
+        throw new Error('未找到登录凭证');
+    }
+
+    const response = await fetch(`${API_BASE_URL}/api/user/profile`, {
+        headers: {
+            'Authorization': `Bearer ${token}`
+        }
+    });
+    
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || '获取用户信息失败');
+    }
+    
+    return await response.json();
+}
+
+// 获取用户地址列表
+async function getUserAddresses() {
+    const token = localStorage.getItem('userToken');
+    const response = await fetch(`${API_BASE_URL}/api/user/addresses`, {
+        headers: {
+            'Authorization': `Bearer ${token}`
+        }
+    });
+    
+    if (!response.ok) {
+        throw new Error('获取地址列表失败');
+    }
+    
+    return await response.json();
+}
+
+// 添加用户地址
+async function addUserAddress(addressData) {
+    const token = localStorage.getItem('userToken');
+    const response = await fetch(`${API_BASE_URL}/api/user/addresses`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(addressData)
+    });
+    
+    if (!response.ok) {
+        throw new Error('添加地址失败');
+    }
+    
+    return await response.json();
+}
+
+// 更新用户地址
+async function updateUserAddress(addressId, addressData) {
+    const token = localStorage.getItem('userToken');
+    const response = await fetch(`${API_BASE_URL}/api/user/addresses/${addressId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(addressData)
+    });
+    
+    if (!response.ok) {
+        throw new Error('更新地址失败');
+    }
+    
+    return await response.json();
+}
+
+// 删除用户地址
+async function deleteUserAddress(addressId) {
+    const token = localStorage.getItem('userToken');
+    const response = await fetch(`${API_BASE_URL}/api/user/addresses/${addressId}`, {
+        method: 'DELETE',
+        headers: {
+            'Authorization': `Bearer ${token}`
+        }
+    });
+    
+    if (!response.ok) {
+        throw new Error('删除地址失败');
+    }
+    
+    return true;
 }
