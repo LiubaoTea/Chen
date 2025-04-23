@@ -5,8 +5,8 @@
     width: 400px;
     height: 100vh;
     background: #fff;
-    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
-    transition: right 0.3s ease-in-out;
+    box-shadow: -4px 0 15px rgba(139, 69, 19, 0.2);
+    transition: right 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     z-index: 1000;
     overflow-y: auto;
 }
@@ -22,6 +22,8 @@
 .address-editor {
     background: #fff;
     padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(139, 69, 19, 0.1);
 }
 
 .address-editor h2 {
@@ -56,12 +58,15 @@
     border-radius: 4px;
     font-size: 0.9rem;
     color: #5c3c1d;
+    transition: all 0.3s ease;
+    box-shadow: 0 1px 3px rgba(139, 69, 19, 0.05);
 }
 
 .form-group input:focus,
 .form-group select:focus {
     outline: none;
     border-color: #7c5c3c;
+    box-shadow: 0 0 0 3px rgba(124, 92, 60, 0.1);
 }
 
 .region-selects {

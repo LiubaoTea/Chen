@@ -21,6 +21,13 @@ export class AddressEditor {
                 this.hide();
             }
         });
+        
+        // 添加点击编辑器外部区域关闭功能
+        document.addEventListener('click', (e) => {
+            if (this.isVisible && !this.container.contains(e.target) && e.target !== this.container) {
+                this.hide();
+            }
+        });
     }
 
     render() {
@@ -161,9 +168,12 @@ export class AddressEditor {
             const event = new CustomEvent('addressUpdated');
             document.dispatchEvent(event);
 
-            // 保存成功后关闭编辑器
+            // 保存成功后自动关闭编辑器
             this.hide();
             this.resetForm();
+            
+            // 显示成功提示
+            alert('地址保存成功');
         } catch (error) {
             console.error('保存地址失败:', error);
             alert('保存地址失败，请重试');

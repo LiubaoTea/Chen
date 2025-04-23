@@ -495,9 +495,12 @@ async function handleAddressFormSubmit(e) {
             throw new Error(errorData.error || '保存地址失败');
         }
 
-        alert(addressId ? '地址更新成功' : '地址添加成功');
+        // 保存成功后自动关闭编辑界面
         hideAddressForm();
         await showAddressSettings();
+        
+        // 显示成功提示
+        alert(addressId ? '地址更新成功' : '地址添加成功');
     } catch (error) {
         console.error('保存地址失败:', error);
         alert('保存地址失败，请重试');
@@ -674,6 +677,18 @@ async function showAddressSettings() {
                 overlay.classList.remove('show');
             }
         };
+        
+        // 添加点击外部区域关闭功能
+        document.addEventListener('click', (e) => {
+            const formContainer = document.getElementById('addressFormContainer');
+            const overlay = document.getElementById('addressOverlay');
+            if (formContainer && formContainer.classList.contains('show') && 
+                !formContainer.contains(e.target) && 
+                e.target !== document.getElementById('addAddressBtn') &&
+                !e.target.classList.contains('edit')) {
+                hideAddressForm();
+            }
+        });
 
         // 为地址列表添加样式
         const style = document.createElement('style');
@@ -685,14 +700,13 @@ async function showAddressSettings() {
                 width: 350px;
                 height: 100vh;
                 background: #FFF9F0;
-                border-left: 2px solid #D2691E;
                 padding: 20px;
                 margin-bottom: 0;
                 z-index: 1001;
                 overflow-y: auto;
-                box-shadow: -2px 0 10px rgba(139, 69, 19, 0.2);
+                box-shadow: -4px 0 15px rgba(139, 69, 19, 0.2);
                 transform: translateX(100%);
-                transition: transform 0.3s ease-in-out;
+                transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             }
             
             .address-form-container.show {
