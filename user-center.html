@@ -248,24 +248,41 @@
             width: 100%;
         }
         
-        .address-selectors select {
-            width: 100%;
+        .address-selectors > select {
+            width: 100% !important;
+            margin: 8px 0 !important;
+            height: 40px;
             box-sizing: border-box;
         }
         
         .address-selectors select {
             width: 100%;
-            margin-bottom: 10px;
+            box-sizing: border-box;
+        }
+        
+        .address-selectors > select {
+            width: 100% !important;
+            margin: 8px 0 !important;
+            height: 40px;
+            box-sizing: border-box;
         }
         
         /* 默认地址复选框布局 */
         .default-address-container {
-            display: flex;
+            display: flex !important;
             align-items: center;
-            gap: 10px;
-            margin-top: 15px;
+            justify-content: flex-start;
+            gap: 12px;
+            margin: 15px 0 0;
+            padding: 12px 0;
             width: 100%;
-            padding: 8px 0;
+        }
+        .default-address-container > input[type="checkbox"] {
+            margin: 0 8px 0 0 !important;
+            transform: translateY(1px);
+        }
+        .default-address-container > label {
+            margin: 0 !important;
         }
 
         .form-group input:focus,
