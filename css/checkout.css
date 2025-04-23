@@ -204,13 +204,15 @@
 }
 
 .address-card .address-actions button {
-    padding: 0.5rem 1rem;
-    border: 1px solid #d4b69b;
-    border-radius: 4px;
-    background: transparent;
-    color: #8b5e34;
-    cursor: pointer;
-    transition: all 0.3s ease;
+    padding: 8px 20px;
+    min-width: 100px;
+    border-radius: 25px;
+    font-size: 0.9em;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 4px rgba(139, 69, 19, 0.1);
+    border: none;
+    background: #8B4513;
+    color: white;
 }
 
 .address-card .address-actions button:hover {
