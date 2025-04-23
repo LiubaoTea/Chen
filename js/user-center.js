@@ -834,17 +834,40 @@ async function showAddressSettings() {
                 color: #FFF;
             }
             .add-address-btn {
-                margin-top: 20px;
-                padding: 10px 20px;
+                position: fixed;
+                bottom: 30px;
+                left: 50%;
+                transform: translateX(-50%);
+                padding: 12px 24px;
                 background: #8B4513;
-                color: #FFF;
+                color: white;
                 border: none;
                 border-radius: 6px;
                 cursor: pointer;
-                transition: all 0.3s ease;
+                font-size: 1em;
+                transition: background 0.3s;
+                z-index: 100;
             }
             .add-address-btn:hover {
-                background: #6B4423;
+                background: #6B3410;
+            }
+            .logout-btn {
+                margin-top: 20px;
+                padding: 12px 24px;
+                background: #8B4513;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                cursor: pointer;
+                font-size: 1em;
+                transition: background 0.3s;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                width: 100%;
+            }
+            .logout-btn:hover {
+                background: #6B3410;
             }
         `;
         document.head.appendChild(style);
