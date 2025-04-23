@@ -140,6 +140,46 @@
             box-shadow: 0 2px 6px rgba(139, 69, 19, 0.1);
         }
 
+        .address-item {
+            position: relative;
+            padding-bottom: 50px;
+        }
+
+        .address-actions {
+            position: absolute;
+            bottom: 15px;
+            right: 15px;
+            display: flex;
+            gap: 12px;
+        }
+
+        .address-actions button {
+            background: #8B4513;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.9em;
+        }
+
+        .address-actions button:hover {
+            background: #6B3410;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 6px rgba(139, 69, 19, 0.2);
+        }
+
+        @media (max-width: 768px) {
+            .address-actions {
+                position: static;
+                justify-content: flex-end;
+                margin-top: 15px;
+            }
+        }
         .address-item:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(139, 69, 19, 0.2);
