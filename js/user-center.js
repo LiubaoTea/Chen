@@ -1,5 +1,6 @@
 import { API_BASE_URL } from './config.js';
 import { checkAuthStatus } from './auth.js';
+import { UserAddressEditor } from './user-address-editor.js';
 
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', async () => {
@@ -305,6 +306,18 @@ async function showSecuritySettings() {
             alert('修改失败，请重试');
         }
     });
+}
+
+// 初始化地址编辑器
+let addressEditor;
+
+// 显示地址编辑器
+function showAddressEditor() {
+    if (!addressEditor) {
+        const container = document.getElementById('addressEditorContainer');
+        addressEditor = new UserAddressEditor(container);
+    }
+    addressEditor.show();
 }
 
 // 显示地址设置
