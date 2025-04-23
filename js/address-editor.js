@@ -227,12 +227,20 @@ export class AddressEditor {
     }
 
     show() {
-        this.container.classList.add('active');
-        this.isVisible = true;
+        this.container.style.display = 'block';
+        // 使用setTimeout确保display生效后再添加active类，以触发过渡动画
+        setTimeout(() => {
+            this.container.classList.add('active');
+            this.isVisible = true;
+        }, 10);
     }
 
     hide() {
         this.container.classList.remove('active');
-        this.isVisible = false;
+        // 等待过渡动画完成后再隐藏元素
+        setTimeout(() => {
+            this.container.style.display = 'none';
+            this.isVisible = false;
+        }, 400); // 与CSS过渡时间相匹配
     }
 }
