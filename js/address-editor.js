@@ -47,7 +47,7 @@ export class AddressEditor {
     render() {
         this.container.innerHTML = `
             <div class="address-editor">
-                <h2>编辑收货地址</h2>
+                <h2>${this.currentAddress ? '编辑收货地址' : '添加新地址'}</h2>
                 <form class="address-form" id="addressForm">
                     <div class="form-group">
                         <label for="recipientName">收货人姓名</label>
@@ -78,6 +78,10 @@ export class AddressEditor {
                     <div class="form-group">
                         <label for="postalCode">邮政编码</label>
                         <input type="text" id="postalCode" pattern="[0-9]{6}">
+                    </div>
+                    <div class="form-group default-address-group">
+                        <input type="checkbox" id="isDefaultAddress">
+                        <label for="isDefaultAddress">设为默认地址</label>
                     </div>
                     <div class="address-actions">
                         <button type="submit" class="save-address">保存地址</button>
@@ -156,7 +160,8 @@ export class AddressEditor {
             contact_phone: this.container.querySelector('#contactPhone').value,
             region: this.getSelectedRegion(),
             full_address: this.container.querySelector('#detailAddress').value,
-            postal_code: this.container.querySelector('#postalCode').value
+            postal_code: this.container.querySelector('#postalCode').value,
+            is_default: this.container.querySelector('#isDefaultAddress').checked // 添加默认地址字段
         };
 
         try {
@@ -210,19 +215,47 @@ export class AddressEditor {
     resetForm() {
         const form = this.container.querySelector('#addressForm');
         form.reset();
+        this.container.querySelector('#city').innerHTML = '<option value="">请选择城市</option>';
+        this.container.querySelector('#district').innerHTML = '<option value="">请选择区县</option>';
+        this.container.querySelector('#isDefaultAddress').checked = false; // 重置默认地址复选框
         this.currentAddress = null;
+        this.container.querySelector('h2').textContent = '添加新地址';
     }
 
     editAddress(address) {
         this.currentAddress = address;
-        
-        // 填充表单数据
+        this.container.querySelector('h2').textContent = '编辑收货地址';
         this.container.querySelector('#recipientName').value = address.recipient_name;
         this.container.querySelector('#contactPhone').value = address.contact_phone;
         this.container.querySelector('#detailAddress').value = address.full_address;
         this.container.querySelector('#postalCode').value = address.postal_code || '';
+        this.container.querySelector('#isDefaultAddress').checked = address.is_default; // 设置默认地址复选框状态
 
-        // TODO: 根据地址解析设置省市区选择器的值
+        // 设置地区选择
+        const regionParts = address.region.split(' ');
+        if (regionParts.length === 3) {
+            const [provinceName, cityName, districtName] = regionParts;
+            
+            // 找到省份代码
+            const provinceCode = Object.keys(addressData['86']).find(code => addressData['86'][code] === provinceName);
+            if (provinceCode) {
+                this.container.querySelector('#province').value = provinceCode;
+                this.handleProvinceChange(); // 加载城市
+
+                // 找到城市代码
+                const cityCode = Object.keys(addressData[provinceCode]).find(code => addressData[provinceCode][code] === cityName);
+                if (cityCode) {
+                    this.container.querySelector('#city').value = cityCode;
+                    this.handleCityChange(); // 加载区县
+
+                    // 找到区县代码
+                    const districtCode = Object.keys(addressData[cityCode]).find(code => addressData[cityCode][code] === districtName);
+                    if (districtCode) {
+                        this.container.querySelector('#district').value = districtCode;
+                    }
+                }
+            }
+        }
         this.show();
     }
 
