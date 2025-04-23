@@ -79,10 +79,6 @@ export class AddressEditor {
                         <label for="postalCode">邮政编码</label>
                         <input type="text" id="postalCode" pattern="[0-9]{6}">
                     </div>
-                    <div class="default-address-group">
-                        <input type="checkbox" id="isDefault">
-                        <label for="isDefault">设为默认地址</label>
-                    </div>
                     <div class="address-actions">
                         <button type="submit" class="save-address">保存地址</button>
                         <button type="button" class="cancel-edit">取消</button>
