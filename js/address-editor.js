@@ -211,7 +211,6 @@ export class AddressEditor {
         const form = this.container.querySelector('#addressForm');
         form.reset();
         this.currentAddress = null;
-        this.show();
     }
 
     editAddress(address) {
