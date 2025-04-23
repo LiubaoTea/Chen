@@ -419,6 +419,38 @@ window.showAddressEditor = function() {
     addressEditor.show();
 }
 
+// 设置默认地址
+window.setDefaultAddress = async function(addressId) {
+    try {
+        const token = localStorage.getItem('userToken');
+        const response = await fetch(`${API_BASE_URL}/api/user/addresses/${addressId}/default`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('设置默认地址失败');
+        }
+
+        alert('默认地址设置成功');
+        await showAddressSettings(); // 刷新地址列表
+    } catch (error) {
+        console.error('设置默认地址失败:', error);
+        alert('设置默认地址失败，请重试');
+    }
+}
+
+// 显示地址编辑器
+window.showAddressEditor = function() {
+    if (!addressEditor) {
+        addressEditor = new AddressEditor(document.getElementById('addressEditorContainer').querySelector('.address-editor-content'));
+    }
+    addressEditor.resetForm();
+    addressEditor.show();
+}
+
 // 编辑地址
 window.editAddress = async function(addressId) {
     try {
