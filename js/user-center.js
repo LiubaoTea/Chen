@@ -411,7 +411,7 @@ async function showAddressSettings() {
 let addressEditor;
 
 // 显示地址编辑器
-function showAddressEditor() {
+window.showAddressEditor = function() {
     if (!addressEditor) {
         addressEditor = new AddressEditor(document.getElementById('addressEditorContainer').querySelector('.address-editor-content'));
     }
@@ -420,7 +420,7 @@ function showAddressEditor() {
 }
 
 // 编辑地址
-async function editAddress(addressId) {
+window.editAddress = async function(addressId) {
     try {
         if (!addressEditor) {
             addressEditor = new AddressEditor(document.getElementById('addressEditorContainer').querySelector('.address-editor-content'));
@@ -447,7 +447,7 @@ async function editAddress(addressId) {
 }
 
 // 设置默认地址
-async function setDefaultAddress(addressId) {
+window.setDefaultAddress = async function(addressId) {
     try {
         const token = localStorage.getItem('userToken');
         const response = await fetch(`${API_BASE_URL}/api/user/addresses/${addressId}/default`, {
