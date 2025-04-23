@@ -162,7 +162,8 @@ async function loadAddresses() {
         if (addAddressBtn) {
             addAddressBtn.addEventListener('click', () => {
                 addressEditor.resetForm();
-                addressEditor.show(); // 显示地址编辑器
+                // 注意：resetForm方法内部已经调用了show方法，所以这里不需要再次调用
+                // addressEditor.show();
             });
         }
 
