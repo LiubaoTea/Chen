@@ -542,7 +542,7 @@ async function showAddressSettings() {
                     </div>
                     <div class="form-group address-select-group">
                         <label>所在地区</label>
-                        <div class="select-container">
+                        <div class="address-selectors">
                             <select id="province" required>
                                 <option value="">请选择省份</option>
                             </select>
@@ -562,11 +562,9 @@ async function showAddressSettings() {
                         <label for="postal_code">邮政编码</label>
                         <input type="text" id="postal_code" name="postal_code" placeholder="选填">
                     </div>
-                    <div class="form-group">
-                        <label class="checkbox-container">
-                            <input type="checkbox" id="is_default" name="is_default">
-                            <span class="checkbox-text">设为默认地址</span>
-                        </label>
+                    <div class="default-address-container">
+                        <input type="checkbox" id="is_default" name="is_default">
+                        <label class="checkbox-text">设为默认地址</label>
                     </div>
                     <div class="form-actions">
                         <button type="submit" class="submit-btn">保存</button>
