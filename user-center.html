@@ -116,13 +116,16 @@
         }
 
         .add-address-container {
-            position: absolute;
+            position: fixed;
             bottom: 20px;
-            left: 0;
-            right: 0;
+            left: 50%;
+            transform: translateX(-50%);
             display: flex;
             justify-content: center;
             padding: 20px;
+            z-index: 10;
+            width: 100%;
+            max-width: calc(100% - 250px - 30px);
         }
 
         .address-list {
@@ -133,7 +136,7 @@
 
         .address-item {
             background: #FFFFFF;
-            border: 1px solid #D2691E;
+            border: 1px solid #E8D5C4;
             border-radius: 8px;
             padding: 20px;
             transition: all 0.3s ease;
