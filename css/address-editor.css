@@ -72,67 +72,19 @@
 .region-selects {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 0.5rem;
     width: 100%;
 }
 
 .region-selects select {
     width: 100%;
-    max-width: 340px;
-    box-sizing: border-box;
+    max-width: 100%;
 }
 
 .address-actions {
     display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.address-actions .save-address,
-.address-actions .cancel-edit {
-    width: 100%;
-    box-sizing: border-box;
-}
-
-.form-group {
-    border: 1px solid #e8d5c4;
-    border-radius: 6px;
-    padding: 10px 0 0 0;
-    margin-bottom: 18px;
-    background: transparent;
-}
-
-input, select, textarea {
-    border: 1px solid #e8d5c4;
-    border-radius: 4px;
-    font-size: 0.9rem;
-    transition: border-color 0.3s;
-}
-
-input:focus, select:focus, textarea:focus {
-    border-color: #bfa88a;
-    outline: none;
-}
-
-.form-group.default-address-group {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 0.5rem;
-    border: none;
-    margin-bottom: 18px;
-    padding: 0;
-}
-
-.form-group.default-address-group input[type="checkbox"] {
-    width: auto;
-    margin: 0 8px 0 0;
-    flex-shrink: 0;
-}
-
-.form-group.default-address-group label {
-    margin-bottom: 0;
-    font-weight: normal;
+    gap: 1rem;
+    margin-top: 1rem;
 }
 
 .save-address,
