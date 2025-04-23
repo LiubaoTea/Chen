@@ -408,17 +408,66 @@ async function showAddressSettings() {
     }
 }
 
+// 初始化地址编辑器
+let addressEditor;
+
 // 显示地址编辑器
-function showAddressEditor(addressId = null) {
-    const addressEditorContainer = document.getElementById('addressEditorContainer');
-    addressEditorContainer.classList.add('active');
-    
-    // 初始化地址编辑器
-    const addressEditor = new AddressEditor(addressEditorContainer.querySelector('.address-editor-content'));
-    if (addressId) {
-        addressEditor.loadAddress(addressId);
+function showAddressEditor() {
+    if (!addressEditor) {
+        addressEditor = new AddressEditor(document.getElementById('addressEditorContainer').querySelector('.address-editor-content'));
     }
+    addressEditor.resetForm();
     addressEditor.show();
+}
+
+// 编辑地址
+async function editAddress(addressId) {
+    try {
+        if (!addressEditor) {
+            addressEditor = new AddressEditor(document.getElementById('addressEditorContainer').querySelector('.address-editor-content'));
+        }
+        
+        const token = localStorage.getItem('userToken');
+        const response = await fetch(`${API_BASE_URL}/api/user/addresses/${addressId}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('获取地址信息失败');
+        }
+
+        const address = await response.json();
+        addressEditor.editAddress(address);
+        addressEditor.show();
+    } catch (error) {
+        console.error('编辑地址失败:', error);
+        alert('获取地址信息失败，请重试');
+    }
+}
+
+// 设置默认地址
+async function setDefaultAddress(addressId) {
+    try {
+        const token = localStorage.getItem('userToken');
+        const response = await fetch(`${API_BASE_URL}/api/user/addresses/${addressId}/default`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('设置默认地址失败');
+        }
+
+        alert('默认地址设置成功');
+        await showAddressSettings(); // 刷新地址列表
+    } catch (error) {
+        console.error('设置默认地址失败:', error);
+        alert('设置默认地址失败，请重试');
+    }
 }
 
 // 显示通知设置
