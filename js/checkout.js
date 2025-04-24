@@ -426,11 +426,7 @@ async function loadOrderItems() {
 
         updateOrderSummary(); // 更新订单总结
 
-        // 更新订单总结
-function updateOrderSummary() {
-    const selectedAddress = document.querySelector('.address-card.selected');
-    const selectedItems = document.querySelectorAll('.order-item.selected');
-    const selectedPayment = document.querySelector('.payment-method.selected');
+        
 
     // 更新收货地址信息
     const addressInfo = document.getElementById('selectedAddressInfo');
