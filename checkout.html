@@ -62,21 +62,20 @@
                                 margin-bottom: 10px;
                             }
                             .radio-container {
-                                margin: 0 25px 0 0 !important;
+                                margin: 0 35px 0 0 !important;
                                 display: flex !important;
                                 align-items: center;
-                                transform: translateY(2px);
+                                justify-content: center;
                                 order: -1;
+                                width: 40px; /* 固定宽度确保对齐稳定性 */
+                                height: 100%; /* 继承父容器高度 */
                             }
                             
                             .address-card {
-                                display: flex !important;
-                                align-items: center;
-                                min-height: 80px;
-                                gap: 15px;
-                                padding: 12px;
+                                align-items: center !important; /* 强制垂直居中 */
+                                padding: 12px 20px;
+                                min-height: 90px; /* 增加最小高度 */
                             }
-                            
                             .address-info {
                                 flex: 1;
                                 display: flex;
