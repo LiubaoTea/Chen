@@ -127,14 +127,12 @@ async function loadAddresses() {
                     <p>邮政编码：${address.postal_code || '无'}</p>
                 </div>
                 <div class="address-actions">
-                    <div style="display: flex; gap: 10px;">
-                        <button class="edit-address" data-id="${address.address_id}">
-                            <i class="fas fa-edit"></i> 编辑
-                        </button>
-                        <button class="delete-address" data-id="${address.address_id}">
-                            <i class="fas fa-trash"></i> 删除
-                        </button>
-                    </div>
+                    <button class="edit-address" data-id="${address.address_id}">
+                        <i class="fas fa-edit"></i> 编辑
+                    </button>
+                    <button class="delete-address" data-id="${address.address_id}">
+                        <i class="fas fa-trash"></i> 删除
+                    </button>
                 </div>
             </div>
         `).join('');
