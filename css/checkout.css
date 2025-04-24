@@ -170,10 +170,19 @@
     border-radius: 8px;
     margin-bottom: 15px;
     display: flex;
-    flex-direction: row;
-    align-items: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.address-info {
+    flex: 1;
+}
+
+.address-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 10px;
 }
 
 .address-card:hover {
