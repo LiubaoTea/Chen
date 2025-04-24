@@ -83,8 +83,10 @@
 /* 超小设备 (手机, 576px 及以上) */
 @media (max-width: 767px) {
     .address-actions {
-        gap: 8px;
-        padding: 8px 0;
+        gap: 8px !important;
+        padding: 8px 0 !important;
+        flex-wrap: nowrap !important;
+        min-width: 250px !important;
     }
     .address-btn {
         min-width: 80px;
