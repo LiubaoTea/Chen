@@ -198,12 +198,11 @@
 }
 
 .address-card .address-actions {
-    margin-top: 0 !important;
+    margin-top: 1rem !important;
     display: flex !important;
     gap: 1rem !important;
     flex-wrap: nowrap !important;
     width: 100% !important;
-    align-items: center !important;
 }
 
 .address-card .address-actions button {
