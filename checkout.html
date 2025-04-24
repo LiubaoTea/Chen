@@ -62,27 +62,30 @@
                                 margin-bottom: 10px;
                             }
                             #addressList .radio-container {
-                                position: absolute;
-                                left: 12px;
-                                top: 50%;
-                                transform: translateY(-50%);
-                                margin: 0 !important;
                                 display: flex !important;
-                                align-items: center;
-                                justify-content: center;
-                                width: 40px;
-                                height: 40px;
-                                z-index: 2;
+                                align-items: center !important;
+                                padding: 0 12px 0 8px !important;
+                                margin: 0 12px 0 0 !important;
                             }
                             
                             .address-card {
-                                position: relative;
-                                display: flex;
-                                align-items: center;
-                                padding: 15px 20px 15px 75px;
-                                min-height: 100px;
-                                gap: 8px;
-                                margin-top: 5px;
+                                display: flex !important;
+                                align-items: flex-start !important;
+                                padding: 12px 15px !important;
+                                margin: 8px 0 !important;
+                                gap: 10px !important;
+                            }
+                            .radio-container {
+                                display: flex !important;
+                                align-items: flex-start !important;
+                                padding: 0 8px 0 5px !important;
+                                margin: 0 10px 0 0 !important;
+                            }
+                            .address-info {
+                                flex: 1;
+                                display: flex !important;
+                                flex-direction: column !important;
+                                gap: 4px !important;
                             }
                             .address-info {
                                 flex: 1;
@@ -93,8 +96,16 @@
                             }
                         </style>
                     <div class="address-list" id="addressList">
-                        <!-- 地址列表将通过JavaScript动态加载 -->
-                    </div>
+                                <div class="address-card">
+                                    <div class="radio-container">
+                                        <input type="radio" name="address">
+                                    </div>
+                                    <div class="address-info">
+                                        <div class="user-info">张三 13800138000</div>
+                                        <div class="full-address">广东省深圳市南山区科技园123号</div>
+                                    </div>
+                                </div>
+                            </div>
                 </div>
 
                 <div class="nav-item" data-section="order">
