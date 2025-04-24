@@ -207,15 +207,18 @@
 }
 
 .address-card .address-actions {
-    margin-top: 1rem !important;
     display: flex !important;
-    gap: 1rem !important;
+    flex-direction: row;
+    gap: 15px;
+    margin-top: 10px;
+    align-items: center;
     flex-wrap: nowrap !important;
     width: 100% !important;
 }
 
 .address-card .address-actions button {
     padding: 8px 20px;
+    margin: 0;
     min-width: 100px;
     border-radius: 25px;
     font-size: 0.9em;
