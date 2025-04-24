@@ -143,14 +143,21 @@
 
         .address-actions {
             display: flex !important;
-            gap: 12px !important;
+            gap: 8px !important;
             margin: 15px 0 0 !important;
             justify-content: flex-end !important;
             align-items: center !important;
             padding: 8px 0 !important;
             border-top: 1px solid #eee !important;
+            flex-wrap: nowrap !important;
         }
 
+        .address-actions button,
+        .address-actions .address-btn {
+            flex: 0 0 auto !important;
+            min-width: 80px !important;
+            margin: 0 !important;
+        }
         .address-btn {
             background: #8B4513;
             color: white;
