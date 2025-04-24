@@ -586,9 +586,9 @@ async function showAddressSettings() {
                             <p>${address.region} ${address.full_address} ${address.postal_code ? `邮编：${address.postal_code}` : ''}</p>
                         </div>
                         <div class="address-actions">
-                            ${!address.is_default ? `<button class="set-default" data-id="${address.address_id}">设为默认</button>` : ''}
-                            <button class="edit" data-id="${address.address_id}">编辑</button>
-                            <button class="delete" data-id="${address.address_id}">删除</button>
+                            <button class="address-btn set-default" data-id="${address.id}">设为默认</button>
+                            <button class="address-btn edit" data-id="${address.id}">编辑</button>
+                            <button class="address-btn delete" data-id="${address.id}">删除</button>
                         </div>
                     </div>
                 `).join('')}
