@@ -73,13 +73,12 @@
                             
                             #addressList .address-card {
                                 display: flex !important;
-                                align-items: center !important;
+                                align-items: flex-start !important;
                                 flex-direction: row !important;
                                 padding: 12px 15px !important;
                                 margin: 8px 0 !important;
                                 gap: 15px !important;
-                                flex-wrap: nowrap !important;
-                                height: 80px;
+                                flex-wrap: wrap !important;
                             }
                             #addressList .radio-container {
                                 display: flex !important;
@@ -87,9 +86,8 @@
                                 justify-content: center !important;
                                 margin: 0 12px 0 0 !important;
                                 padding: 0 8px 0 5px !important;
-                                height: inherit;
-                                min-height: inherit;
-                                flex: 0 0 auto;
+                                height: 100%;
+                                align-self: center !important;
                             }
                             .address-info {
                                 flex: 1;
