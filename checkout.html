@@ -213,30 +213,28 @@
     </script>
 </body>
 </html>
-.address-card {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    padding: 12px;
-    margin-bottom: 10px;
+#addressList .address-card {
+    flex-direction: column !important;
+    align-items: stretch !important;
 }
 
-.address-info {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.actions-container {
-    display: flex;
-    gap: 15px;
-    margin-top: 12px;
-    padding-top: 12px;
-    border-top: 1px solid #e0e0e0;
+#addressList .address-info {
     width: 100%;
 }
 
+#addressList .actions-container {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: flex-start !important;
+    margin-top: 15px !important;
+    padding-top: 15px !important;
+    border-top: 1px solid #eee !important;
+    width: 100% !important;
+}
+
+#addressList .actions-container button {
+    margin-right: 10px !important;
+}
 .edit-btn, .delete-btn {
     padding: 6px 15px;
     border-radius: 4px;
