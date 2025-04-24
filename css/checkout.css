@@ -206,20 +206,14 @@
     margin-right: 15px;
 }
 
-#checkout-container .address-card > .actions-container {
-    display: block !important;
+.address-card .address-actions {
+    display: flex !important;
+    flex-direction: row;
+    gap: 15px;
+    margin-top: 10px;
+    align-items: center;
+    flex-wrap: nowrap !important;
     width: 100% !important;
-    margin: 15px 0 0 !important;
-    padding: 15px 0 0 !important;
-    border-top: 2px solid #e0e0e0 !important;
-    clear: both !important;
-}
-
-#checkout-container .address-card .actions-container button {
-    display: inline-block !important;
-    margin: 10px 15px 0 0 !important;
-    min-width: 100px !important;
-    border-radius: 25px !important;
 }
 
 .address-card .address-actions button {
