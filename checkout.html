@@ -62,20 +62,27 @@
                                 margin-bottom: 10px;
                             }
                             .radio-container {
-                                margin: 0 5px 0 15px;
-                                display: flex;
+                                margin: 0 25px 0 0 !important;
+                                display: flex !important;
                                 align-items: center;
+                                transform: translateY(2px);
                                 order: -1;
                             }
+                            
                             .address-card {
-                                display: flex;
+                                display: flex !important;
                                 align-items: center;
+                                min-height: 80px;
                                 gap: 15px;
                                 padding: 12px;
-                                margin-bottom: 10px;
                             }
+                            
                             .address-info {
-                                flex-grow: 1;
+                                flex: 1;
+                                display: flex;
+                                flex-direction: column;
+                                justify-content: center;
+                                gap: 8px;
                             }
                         </style>
                     <div class="address-list" id="addressList">
