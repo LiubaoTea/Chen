@@ -115,24 +115,18 @@ async function loadAddresses() {
         `;
 
         // 添加现有地址
-        addressHtml += addresses.map((address, index) => `
-            <div class="address-card ${index === 0 ? 'selected' : ''}" data-id="${address.address_id}">
-                <div class="address-radio">
-                    <input type="radio" name="address" ${index === 0 ? 'checked' : ''} id="address_${address.address_id}">
-                    <label for="address_${address.address_id}"></label>
+        const addressHtml = addresses.map((address, index) => `
+            <div class="address-card" data-id="${address.address_id}">
+                <div class="radio-container">
+                    <input type="radio" name="address" ${index === 0 ? 'checked' : ''}>
                 </div>
-                <div class="address-content">
-                    <h3>${address.recipient_name} ${address.contact_phone}</h3>
-                    <p>${address.region} ${address.full_address}</p>
-                    <p>邮政编码：${address.postal_code || '无'}</p>
+                <div class="address-info">
+                    <div class="user-info">${address.recipient_name} ${address.contact_phone}</div>
+                    <div class="full-address">${address.region} ${address.full_address}</div>
                 </div>
-                <div class="address-actions">
-                    <button class="edit-address" data-id="${address.address_id}">
-                        <i class="fas fa-edit"></i> 编辑
-                    </button>
-                    <button class="delete-address" data-id="${address.address_id}">
-                        <i class="fas fa-trash"></i> 删除
-                    </button>
+                <div class="button-container">
+                    <button class="edit-btn">编辑</button>
+                    <button class="delete-btn">删除</button>
                 </div>
             </div>
         `).join('');
