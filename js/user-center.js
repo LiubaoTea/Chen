@@ -2020,4 +2020,4 @@ actionsDiv.appendChild(e);
 actionsDiv.appendChild(e);
 actionsDiv.appendChild(e);
 actionsDiv.appendChild(e);
-actionsDiv.appendChild(e
+actionsDiv.appendChild(e)
