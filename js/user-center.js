@@ -585,10 +585,10 @@ async function showAddressSettings() {
                             <p><strong>${address.recipient_name}</strong> ${address.contact_phone}</p>
                             <p>${address.region} ${address.full_address} ${address.postal_code ? `邮编：${address.postal_code}` : ''}</p>
                         </div>
-                        <div class="address-actions" style="display: flex; flex-wrap: nowrap; gap: 8px; justify-content: flex-end; align-items: center; width: 100%;">
-                            <button class="address-btn set-default" data-id="${address.id}" style="flex: 0 0 auto; min-width: 70px; margin: 0;">设为默认</button>
-                            <button class="address-btn edit" data-id="${address.id}" style="flex: 0 0 auto; min-width: 70px; margin: 0;">编辑</button>
-                            <button class="address-btn delete" data-id="${address.id}" style="flex: 0 0 auto; min-width: 70px; margin: 0;">删除</button>
+                        <div class="address-actions">
+                            <button class="address-btn set-default" data-id="${address.address_id}">设为默认</button>
+                            <button class="address-btn edit" data-id="${address.address_id}">编辑</button>
+                            <button class="address-btn delete" data-id="${address.address_id}">删除</button>
                         </div>
                     </div>
                 `).join('')}
