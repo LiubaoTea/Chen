@@ -73,12 +73,13 @@
                             
                             #addressList .address-card {
                                 display: flex !important;
-                                align-items: flex-start !important;
+                                align-items: center !important;
                                 flex-direction: row !important;
                                 padding: 12px 15px !important;
                                 margin: 8px 0 !important;
                                 gap: 15px !important;
-                                flex-wrap: wrap !important;
+                                flex-wrap: nowrap !important;
+                                height: 80px;
                             }
                             #addressList .radio-container {
                                 display: flex !important;
@@ -86,8 +87,9 @@
                                 justify-content: center !important;
                                 margin: 0 12px 0 0 !important;
                                 padding: 0 8px 0 5px !important;
-                                height: 100%;
-                                align-self: stretch !important;
+                                height: inherit;
+                                min-height: inherit;
+                                flex: 0 0 auto;
                             }
                             .address-info {
                                 flex: 1;
@@ -138,11 +140,10 @@
                             }
                             
                             .address-card {
-                                display: flex;
+                                flex-wrap: wrap;
                                 align-items: center;
-                                min-height: 90px;
-                                padding: 12px 15px !important;
                             }
+                            
                             .button-container {
                                 width: 100%;
                                 margin-top: 10px;
