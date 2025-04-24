@@ -216,20 +216,119 @@
 #addressList .address-card {
     flex-direction: column !important;
     align-items: stretch !important;
+    padding: 15px !important;
+    position: relative !important;
 }
 
 #addressList .address-info {
     width: 100%;
 }
 
-#addressList .actions-container {
-    display: flex !important;
-    flex-direction: row !important;
-    justify-content: flex-start !important;
-    margin-top: 15px !important;
-    padding-top: 15px !important;
-    border-top: 1px solid #eee !important;
+#addressList .address-card > .actions-container {
+    display: block !important;
     width: 100% !important;
+    margin: 15px 0 0 !important;
+    padding: 15px 0 0 0 !important;
+    border-top: 2px solid #e0e0e0 !important;
+    clear: both !important;
+    position: static !important;
+    order: 999 !important;
+}
+
+#addressList .address-card > .actions-container .edit-btn,
+#addressList .address-card > .actions-container .delete-btn {
+    display: inline-block !important;
+    margin-right: 15px !important;
+}
+
+#addressList > li.address-card {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    padding: 15px !important;
+    position: relative !important;
+}
+
+#addressList > li.address-card > .actions-container {
+    display: block !important;
+    width: 100% !important;
+    margin: 15px 0 0 0 !important;
+    padding: 15px 0 0 0 !important;
+    border-top: 2px solid #e0e0e0 !important;
+    clear: both !important;
+}
+
+#addressList li.address-card > .actions-container {
+    display: block !important;
+    width: 100% !important;
+    margin: 15px 0 0 0 !important;
+    padding: 15px 0 0 0 !important;
+    border-top: 1px solid #e0e0e0 !important;
+    clear: both !important;
+}
+
+#addressList li.address-card > .actions-container {
+    display: block !important;
+    width: 100% !important;
+    margin: 15px 0 0 !important;
+    padding: 15px 0 0 !important;
+    border-top: 2px solid #e0e0e0 !important;
+    clear: both !important;
+    position: relative !important;
+}
+
+#addressList li.address-card > .actions-container button {
+    display: inline-block !important;
+    margin-right: 20px !important;
+    padding: 10px 25px !important;
+    border-radius: 5px !important;
+    background: #8B4513 !important;
+    color: white !important;
+    vertical-align: top !important;
+}
+
+#addressList li.address-card > .actions-container button {
+    display: inline-block !important;
+    margin: 0 15px 0 0 !important;
+} {
+    display: inline-block !important;
+    margin-right: 15px !important;
+    padding: 8px 20px !important;
+    border-radius: 4px !important;
+    background: #8B4513 !important;
+    color: white !important;
+}
+
+#addressList li.address-card > .actions-container {
+    display: block !important;
+    width: 100% !important;
+    margin: 15px 0 0 !important;
+    padding: 15px 0 0 !important;
+    border-top: 2px solid #e0e0e0 !important;
+    clear: both !important;
+    position: relative !important;
+}
+
+#addressList li.address-card > .actions-container button {
+    display: inline-block !important;
+    margin-right: 20px !important;
+    padding: 10px 25px !important;
+    border-radius: 5px !important;
+    background: #8B4513 !important;
+    color: white !important;
+    vertical-align: top !important;
+}
+
+#addressList li.address-card > .actions-container button {
+    display: inline-block !important;
+    margin: 0 15px 0 0 !important;
+} {
+    margin: 0 12px 0 0 !important;
+    display: inline-block !important;
+    padding: 8px 20px !important;
+    border-radius: 4px !important;
+    background: #8B4513 !important;
+    color: white !important;
 }
 
 #addressList .actions-container button {
