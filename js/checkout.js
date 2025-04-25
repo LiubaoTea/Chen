@@ -107,14 +107,21 @@ async function loadAddresses() {
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json',
+                'Accept': 'application/json',
                 'X-Requested-With': 'XMLHttpRequest',
                 'Access-Control-Allow-Origin': window.location.origin
             },
             credentials: 'include',
             mode: 'cors'
+        }).then(async res => {
+            if (!res.ok) {
+                const error = await res.json();
+                throw new Error(error.message || '获取地址列表失败');
+            }
+            return res;
         }).catch(error => {
             console.error('地址加载失败:', error);
-            alert('无法连接服务器，请检查网络状态');
+            alert(`地址加载失败: ${error.message}`);
             throw error;
         });
 
