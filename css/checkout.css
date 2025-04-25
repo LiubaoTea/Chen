@@ -179,25 +179,10 @@
 }
 
 .address-actions {
-    width: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
-}
-
-.button-container {
-    width: 100% !important;
-    margin-top: 12px !important;
-    padding-top: 12px !important;
-    border-top: 1px solid #eee;
-    display: flex !important;
-    flex-direction: column;
+    display: flex;
+    justify-content: flex-end;
     gap: 8px;
-}
-
-.address-actions {
-    width: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
+    margin-top: 10px;
 }
 
 .address-card:hover {
@@ -221,21 +206,20 @@
     margin-right: 15px;
 }
 
-.button-container {
+.address-card .address-actions {
     display: flex !important;
-    flex-direction: row !important;
-    gap: 15px !important;
-    margin-top: 15px !important;
-    padding-top: 10px !important;
-    border-top: 1px solid #eee !important;
+    flex-direction: row;
+    gap: 15px;
+    margin-top: 10px;
+    align-items: center;
+    flex-wrap: nowrap !important;
     width: 100% !important;
 }
 
-.button-container button {
-    flex: 1;
-    min-width: 120px;
+.address-card .address-actions button {
     padding: 8px 20px;
     margin: 0;
+    min-width: 100px;
     border-radius: 25px;
     font-size: 0.9em;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
