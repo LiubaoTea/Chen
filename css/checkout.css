@@ -211,6 +211,8 @@
     flex-direction: row;
     gap: 15px;
     margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #eee;
     align-items: center;
     flex-wrap: nowrap !important;
     width: 100% !important;
