@@ -1,5 +1,5 @@
 // 导入地址数据
-import addressData from '../src/utils/data.json';
+import addressData from '../src/utils/data.json' assert { type: 'json' };
 
 // 初始化地址选择器
 export function initAddressSelector() {
