@@ -1,6 +1,6 @@
 // 导入API基础URL和地址数据
 import { API_BASE_URL } from './config.js';
-import addressData from '../src/utils/data.json' assert { type: 'json' };
+import addressData from '../src/utils/data.json';
 
 export class AddressEditor {
     constructor(container) {
