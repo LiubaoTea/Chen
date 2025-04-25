@@ -94,18 +94,21 @@
                                 flex-direction: column !important;
                                 gap: 8px !important;
                                 width: 100%;
+                                display: flex;
+                                flex-direction: row;
+                                flex-wrap: wrap;
+                                gap: 10px;
                                 margin-top: 15px;
                                 padding-top: 10px;
                                 border-top: 1px solid #eee;
-                                order: 3;
-                                flex-basis: 100%;
                             }
                             
                             .button-container {
                                 display: flex !important;
                                 flex-direction: column !important;
                                 gap: 8px !important;
-                                width: 100%;
+                                flex-direction: column;
+                                gap: 8px;
                             }
                             .button-container button {
                                 width: 100%;
@@ -128,18 +131,6 @@
                                 flex-direction: column;
                                 justify-content: center;
                                 gap: 8px;
-                            }
-                            
-                            .address-card {
-                                flex-wrap: wrap;
-                                align-items: flex-start;
-                            }
-                            
-                            .button-container {
-                                width: 100%;
-                                margin-top: 10px;
-                                padding-top: 10px;
-                                border-top: 1px solid #eee;
                             }
                         </style>
                     <div class="address-list" id="addressList">
