@@ -92,11 +92,23 @@ function initNavigation() {
 // 加载收货地址列表
 async function loadAddresses() {
     try {
+        // 检查浏览器是否支持localStorage
+        if (!window.localStorage) {
+            throw new Error('浏览器不支持本地存储，请关闭无痕模式');
+        }
+        
         const token = localStorage.getItem('userToken');
+        if (!token) {
+            window.location.href = 'login.html';
+            return;
+        }
+
         const response = await fetch(`${API_BASE_URL}/api/user/addresses`, {
             headers: {
-                'Authorization': `Bearer ${token}`
-            }
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            credentials: 'include'
         });
 
         if (!response.ok) {
@@ -198,8 +210,19 @@ async function loadAddresses() {
         });
 
     } catch (error) {
-        console.error('加载地址失败:', error);
-        alert('加载地址失败，请刷新页面重试');
+        console.error('地址加载失败详情:', {
+            error: error.message,
+            api: `${API_BASE_URL}/api/user/addresses`,
+            authHeader: localStorage.getItem('userToken') ? '存在' : '缺失',
+            localStorageSupport: !!window.localStorage
+        });
+        
+        if (error.message.includes('401')) {
+            localStorage.removeItem('userToken');
+            window.location.href = 'login.html';
+        } else {
+            alert(`加载失败: ${error.message}`);
+        }
     }
 }
 
