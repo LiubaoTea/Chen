@@ -412,15 +412,21 @@ async function loadOrderItems() {
         let items;
         if (productId && quantity) {
             // 直接购买商品
-            const response = await fetch(`${API_BASE_URL}/api/products/${productId}`, {
-            headers: {
-                'Access-Control-Allow-Origin': window.location.origin
+            const token = localStorage.getItem('userToken');
+            if (!token) {
+                window.location.href = 'login.html';
+                return;
             }
-        }).catch(error => {
-            console.error('商品请求失败:', error);
-            alert('商品信息获取失败，请稍后重试');
-            throw error;
-        });
+            
+            const response = await fetch(`${API_BASE_URL}/api/products/${productId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': window.location.origin
+                },
+                credentials: 'include',
+                mode: 'cors'
+            });
             if (!response.ok) {
                 throw new Error('获取商品信息失败');
             }
@@ -449,6 +455,12 @@ async function loadOrderItems() {
                 throw new Error('获取购物车信息失败');
             }
             items = await response.json();
+            
+            if (!items || items.length === 0) {
+                document.getElementById('orderItems').innerHTML = 
+                    '<div class="empty-cart">购物车为空，请先添加商品</div>';
+                return;
+            }
         }
 
         // 显示订单商品
