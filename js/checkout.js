@@ -126,7 +126,7 @@ async function loadAddresses() {
                     <p>${address.region} ${address.full_address}</p>
                     <p>邮政编码：${address.postal_code || '无'}</p>
                 </div>
-                <div class="address-actions">
+                <div class="button-container">
                     <button class="edit-address" data-id="${address.address_id}">
                         <i class="fas fa-edit"></i> 编辑
                     </button>

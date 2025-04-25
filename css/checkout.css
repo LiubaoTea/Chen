@@ -221,27 +221,21 @@
     margin-right: 15px;
 }
 
-.address-card .address-actions {
+.button-container {
     display: flex !important;
-    flex-direction: row;
-    gap: 15px;
-    margin-top: 15px;
-    padding-top: 10px;
-    border-top: 1px solid #eee;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
+    flex-direction: row !important;
+    gap: 15px !important;
+    margin-top: 15px !important;
+    padding-top: 10px !important;
+    border-top: 1px solid #eee !important;
+    width: 100% !important;
 }
 
-.address-card .address-actions button {
+.button-container button {
     flex: 1;
     min-width: 120px;
-}
-
-.address-card .address-actions button {
     padding: 8px 20px;
     margin: 0;
-    min-width: 100px;
     border-radius: 25px;
     font-size: 0.9em;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
