@@ -106,9 +106,16 @@ async function loadAddresses() {
         const response = await fetch(`${API_BASE_URL}/api/user/addresses`, {
             headers: {
                 'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'Access-Control-Allow-Origin': window.location.origin
             },
-            credentials: 'include'
+            credentials: 'include',
+            mode: 'cors'
+        }).catch(error => {
+            console.error('地址加载失败:', error);
+            alert('无法连接服务器，请检查网络状态');
+            throw error;
         });
 
         if (!response.ok) {
@@ -210,6 +217,12 @@ async function loadAddresses() {
         });
 
     } catch (error) {
+        console.error('获取地址列表失败:', {
+            error: error.message,
+            browser: navigator.userAgent,
+            timestamp: new Date().toISOString()
+        });
+        alert('地址加载失败，请检查控制台日志');
         console.error('地址加载失败详情:', {
             error: error.message,
             api: `${API_BASE_URL}/api/user/addresses`,
@@ -234,7 +247,9 @@ async function editAddress(addressId) {
         const token = localStorage.getItem('userToken');
         const response = await fetch(`${API_BASE_URL}/api/user/addresses/${addressId}`, {
             headers: {
-                'Authorization': `Bearer ${token}`
+                'Authorization': `Bearer ${token}`,
+                'Access-Control-Allow-Origin': 'http://your-frontend-domain.com',
+                'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS'
             }
         });
 
@@ -260,7 +275,9 @@ async function deleteAddress(addressId) {
         const response = await fetch(`${API_BASE_URL}/api/user/addresses/${addressId}`, {
             method: 'DELETE',
             headers: {
-                'Authorization': `Bearer ${token}`
+                'Authorization': `Bearer ${token}`,
+                'Access-Control-Allow-Origin': 'http://your-frontend-domain.com',
+                'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS'
             }
         });
 
@@ -395,7 +412,15 @@ async function loadOrderItems() {
         let items;
         if (productId && quantity) {
             // 直接购买商品
-            const response = await fetch(`${API_BASE_URL}/api/products/${productId}`);
+            const response = await fetch(`${API_BASE_URL}/api/products/${productId}`, {
+            headers: {
+                'Access-Control-Allow-Origin': window.location.origin
+            }
+        }).catch(error => {
+            console.error('商品请求失败:', error);
+            alert('商品信息获取失败，请稍后重试');
+            throw error;
+        });
             if (!response.ok) {
                 throw new Error('获取商品信息失败');
             }
@@ -412,8 +437,13 @@ async function loadOrderItems() {
             const token = localStorage.getItem('userToken');
             const response = await fetch(`${API_BASE_URL}/api/cart`, {
                 headers: {
-                    'Authorization': `Bearer ${token}`
+                    'Authorization': `Bearer ${token}`,
+                    'Access-Control-Allow-Origin': window.location.origin
                 }
+            }).catch(error => {
+                console.error('购物车请求失败:', error);
+                alert('无法连接服务器，请检查网络状态');
+                throw error;
             });
             if (!response.ok) {
                 throw new Error('获取购物车信息失败');
