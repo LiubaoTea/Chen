@@ -577,6 +577,10 @@ function initSubmitOrder() {
 
             // 创建订单
             const token = localStorage.getItem('userToken');
+            const addressId = selectedAddress.dataset.id;
+            const orderRemark = document.getElementById('orderRemark').value.trim();
+            const orderNumber = document.getElementById('orderNumber').textContent.split('：')[1];
+
             const response = await fetch(`${API_BASE_URL}/api/orders`, {
                 method: 'POST',
                 headers: {
@@ -584,9 +588,16 @@ function initSubmitOrder() {
                     'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({
+                    order_id: orderNumber,
+                    address_id: addressId,
                     total_amount: total,
                     status: 'pending',
-                    order_items: selectedItems
+                    remark: orderRemark,
+                    order_items: selectedItems.map(item => ({
+                        product_id: item.product_id,
+                        quantity: item.quantity,
+                        unit_price: item.unit_price
+                    }))
                 })
             });
 
