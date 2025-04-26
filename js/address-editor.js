@@ -4,7 +4,8 @@ import { API_BASE_URL } from './config.js';
 // 获取地址数据
 async function getAddressData() {
     try {
-        const response = await fetch('/src/utils/data.json');
+        // 使用相对路径加载JSON数据
+        const response = await fetch('../src/utils/data.json');
         if (!response.ok) {
             throw new Error('加载地址数据失败');
         }

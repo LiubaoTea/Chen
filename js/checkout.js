@@ -106,19 +106,8 @@ async function loadAddresses() {
         const response = await fetch(`${API_BASE_URL}/api/user/addresses`, {
             headers: {
                 'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest',
-                'Access-Control-Allow-Origin': window.location.origin
-            },
-            credentials: 'include',
-            mode: 'cors'
-        }).then(async res => {
-            if (!res.ok) {
-                const error = await res.json();
-                throw new Error(error.message || '获取地址列表失败');
+                'Content-Type': 'application/json'
             }
-            return res;
         }).catch(error => {
             console.error('地址加载失败:', error);
             alert(`地址加载失败: ${error.message}`);
@@ -255,8 +244,7 @@ async function editAddress(addressId) {
         const response = await fetch(`${API_BASE_URL}/api/user/addresses/${addressId}`, {
             headers: {
                 'Authorization': `Bearer ${token}`,
-                'Access-Control-Allow-Origin': 'http://your-frontend-domain.com',
-                'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS'
+                'Content-Type': 'application/json'
             }
         });
 
@@ -283,8 +271,7 @@ async function deleteAddress(addressId) {
             method: 'DELETE',
             headers: {
                 'Authorization': `Bearer ${token}`,
-                'Access-Control-Allow-Origin': 'http://your-frontend-domain.com',
-                'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS'
+                'Content-Type': 'application/json'
             }
         });
 
@@ -300,72 +287,7 @@ async function deleteAddress(addressId) {
     }
 }
 
-// 加载订单商品
-async function loadOrderItems() {
-    try {
-        const token = localStorage.getItem('userToken');
-        if (!token) {
-            window.location.href = 'login.html';
-            return;
-        }
-
-        const response = await fetch(`${API_BASE_URL}/api/cart`, {
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest',
-                'Access-Control-Allow-Origin': window.location.origin
-            },
-            credentials: 'include',
-            mode: 'cors'
-        });
-
-        if (!response.ok) {
-            throw new Error('获取购物车商品失败');
-        }
-
-        const cartItems = await response.json();
-        const orderItemsContainer = document.getElementById('orderItems');
-        
-        if (cartItems.length === 0) {
-            orderItemsContainer.innerHTML = '<p class="empty-cart-message">购物车为空</p>';
-            return;
-        }
-
-        const itemsHtml = cartItems.map(item => `
-            <div class="order-item" data-id="${item.product_id}">
-                <div class="item-checkbox">
-                    <input type="checkbox" checked>
-                </div>
-                <div class="item-image">
-                    <img src="${item.image_url}" alt="${item.name}">
-                </div>
-                <div class="item-info">
-                    <h3 class="item-name">${item.name}</h3>
-                    <p class="item-price">¥${item.price.toFixed(2)}</p>
-                    <p class="item-quantity">数量：${item.quantity}</p>
-                </div>
-            </div>
-        `).join('');
-
-        orderItemsContainer.innerHTML = itemsHtml;
-
-        // 添加商品选择事件
-        const checkboxes = orderItemsContainer.querySelectorAll('input[type="checkbox"]');
-        checkboxes.forEach(checkbox => {
-            checkbox.addEventListener('change', updateOrderSummary);
-        });
-
-        // 初始计算订单总额
-        updateOrderSummary();
-
-    } catch (error) {
-        console.error('加载订单商品失败:', error);
-        const orderItemsContainer = document.getElementById('orderItems');
-        orderItemsContainer.innerHTML = '<p class="error-message">加载商品失败，请刷新页面重试</p>';
-    }
-}
+// 这个函数已在下方重新定义，删除此处的重复定义
 
 // 初始化订单备注功能
 function initOrderRemark() {
@@ -495,11 +417,8 @@ async function loadOrderItems() {
             const response = await fetch(`${API_BASE_URL}/api/products/${productId}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': window.location.origin
-                },
-                credentials: 'include',
-                mode: 'cors'
+                    'Content-Type': 'application/json'
+                }
             });
             if (!response.ok) {
                 throw new Error('获取商品信息失败');
@@ -510,7 +429,7 @@ async function loadOrderItems() {
                 name: product.name,
                 price: product.price,
                 quantity: parseInt(quantity),
-                image_url: `/image/Goods/Goods_${product.product_id}.png`
+                image_url: `../image/Goods/Goods_${product.product_id}.png`
             }];
         } else {
             // 从购物车结算
@@ -518,7 +437,7 @@ async function loadOrderItems() {
             const response = await fetch(`${API_BASE_URL}/api/cart`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
-                    'Access-Control-Allow-Origin': window.location.origin
+                    'Content-Type': 'application/json'
                 }
             }).catch(error => {
                 console.error('购物车请求失败:', error);

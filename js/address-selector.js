@@ -1,7 +1,7 @@
 // 获取地址数据
 async function getAddressData() {
     try {
-        const response = await fetch('/src/utils/data.json');
+        const response = await fetch('../src/utils/data.json');
         if (!response.ok) {
             throw new Error('加载地址数据失败');
         }
