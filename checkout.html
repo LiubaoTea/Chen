@@ -56,8 +56,7 @@
                         <style>
                             .address-card {
                                 display: flex;
-                                align-items: center;
-                                gap: 15px;
+                                flex-direction: column;
                                 padding: 12px;
                                 margin-bottom: 10px;
                             }
@@ -70,11 +69,10 @@
                             
                             #addressList .address-card {
                                 display: flex !important;
-                                align-items: center !important;
-                                flex-direction: row !important;
+                                flex-direction: column !important;
                                 padding: 12px 15px !important;
                                 margin: 8px 0 !important;
-                                gap: 15px !important;
+                                gap: 10px !important;
                                 flex-wrap: nowrap !important;
                             }
                             #addressList .radio-container {
@@ -91,13 +89,10 @@
                             }
                             .button-container {
                                 display: flex !important;
-                                flex-direction: column !important;
+                                flex-direction: row !important;
                                 gap: 8px !important;
                                 width: 100%;
-                                display: flex;
-                                flex-direction: row;
-                                flex-wrap: wrap;
-                                gap: 10px;
+                                justify-content: flex-end !important;
                                 margin-top: 15px;
                                 padding-top: 10px;
                                 border-top: 1px solid #eee;
@@ -135,12 +130,14 @@
                         </style>
                     <div class="address-list" id="addressList">
                                 <div class="address-card">
-                                    <div class="radio-container">
-                                        <input type="radio" name="address">
-                                    </div>
-                                    <div class="address-info">
-                                        <div class="user-info">张三 13800138000</div>
-                                        <div class="full-address">广东省深圳市南山区科技园123号</div>
+                                    <div style="display: flex; align-items: center; width: 100%;">
+                                        <div class="radio-container">
+                                            <input type="radio" name="address">
+                                        </div>
+                                        <div class="address-info">
+                                            <div class="user-info">张三 13800138000</div>
+                                            <div class="full-address">广东省深圳市南山区科技园123号</div>
+                                        </div>
                                     </div>
                                     <div class="button-container">
                                         <button class="edit-btn">编辑</button>
