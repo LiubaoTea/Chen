@@ -312,8 +312,13 @@ async function loadOrderItems() {
         const response = await fetch(`${API_BASE_URL}/api/cart`, {
             headers: {
                 'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'Access-Control-Allow-Origin': window.location.origin
+            },
+            credentials: 'include',
+            mode: 'cors'
         });
 
         if (!response.ok) {

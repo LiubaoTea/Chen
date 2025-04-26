@@ -1,8 +1,23 @@
-// 导入地址数据
-import addressData from '../src/utils/data.json';
+// 获取地址数据
+async function getAddressData() {
+    try {
+        const response = await fetch('/src/utils/data.json');
+        if (!response.ok) {
+            throw new Error('加载地址数据失败');
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('获取地址数据失败:', error);
+        return {};
+    }
+}
+
+let addressData = {};
 
 // 初始化地址选择器
-export function initAddressSelector() {
+export async function initAddressSelector() {
+    // 获取地址数据
+    addressData = await getAddressData();
     const provinceSelect = document.getElementById('province');
     const citySelect = document.getElementById('city');
     const districtSelect = document.getElementById('district');
