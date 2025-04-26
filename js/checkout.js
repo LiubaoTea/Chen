@@ -557,10 +557,23 @@ function initSubmitOrder() {
             }
 
             // 获取订单信息
-            const addressId = selectedAddress.dataset.id;
-            const paymentMethod = selectedPayment.dataset.method;
             const total = parseFloat(document.getElementById('total').textContent.slice(1));
-            const remark = document.getElementById('orderRemark')?.value || '';
+
+            // 获取所有选中的商品
+            const selectedItems = Array.from(document.querySelectorAll('.order-item input[type="checkbox"]:checked'))
+                .map(checkbox => {
+                    const itemDiv = checkbox.closest('.order-item');
+                    return {
+                        product_id: parseInt(itemDiv.dataset.id),
+                        quantity: parseInt(itemDiv.querySelector('.item-quantity').textContent.split('：')[1]),
+                        unit_price: parseFloat(itemDiv.querySelector('.item-price').textContent.slice(1))
+                    };
+                });
+
+            if (selectedItems.length === 0) {
+                alert('请至少选择一件商品');
+                return;
+            }
 
             // 创建订单
             const token = localStorage.getItem('userToken');
@@ -571,12 +584,9 @@ function initSubmitOrder() {
                     'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({
-                    order_id: document.getElementById('orderNumber').textContent.split('：')[1],
-                    address_id: addressId,
-                    payment_method: paymentMethod,
                     total_amount: total,
                     status: 'pending',
-                    remark: remark
+                    order_items: selectedItems
                 })
             });
 
@@ -587,7 +597,7 @@ function initSubmitOrder() {
             const order = await response.json();
 
             // 跳转到支付页面
-            window.location.href = `payment.html?orderId=${order.id}&method=${paymentMethod}`;
+            window.location.href = `payment.html?orderId=${order.order_id}&method=${selectedPayment.dataset.method}`;
 
         } catch (error) {
             console.error('提交订单失败:', error);
