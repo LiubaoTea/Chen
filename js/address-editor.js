@@ -1,6 +1,19 @@
-// 导入API基础URL和地址数据
+// 导入API基础URL
 import { API_BASE_URL } from './config.js';
-import addressData from '../src/utils/data.json';
+
+// 获取地址数据
+async function getAddressData() {
+    try {
+        const response = await fetch('/src/utils/data.json');
+        if (!response.ok) {
+            throw new Error('加载地址数据失败');
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('获取地址数据失败:', error);
+        return {};
+    }
+}
 
 export class AddressEditor {
     constructor(container) {
