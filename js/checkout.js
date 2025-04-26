@@ -300,6 +300,68 @@ async function deleteAddress(addressId) {
     }
 }
 
+// 加载订单商品
+async function loadOrderItems() {
+    try {
+        const token = localStorage.getItem('userToken');
+        if (!token) {
+            window.location.href = 'login.html';
+            return;
+        }
+
+        const response = await fetch(`${API_BASE_URL}/api/cart`, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('获取购物车商品失败');
+        }
+
+        const cartItems = await response.json();
+        const orderItemsContainer = document.getElementById('orderItems');
+        
+        if (cartItems.length === 0) {
+            orderItemsContainer.innerHTML = '<p class="empty-cart-message">购物车为空</p>';
+            return;
+        }
+
+        const itemsHtml = cartItems.map(item => `
+            <div class="order-item" data-id="${item.product_id}">
+                <div class="item-checkbox">
+                    <input type="checkbox" checked>
+                </div>
+                <div class="item-image">
+                    <img src="${item.image_url}" alt="${item.name}">
+                </div>
+                <div class="item-info">
+                    <h3 class="item-name">${item.name}</h3>
+                    <p class="item-price">¥${item.price.toFixed(2)}</p>
+                    <p class="item-quantity">数量：${item.quantity}</p>
+                </div>
+            </div>
+        `).join('');
+
+        orderItemsContainer.innerHTML = itemsHtml;
+
+        // 添加商品选择事件
+        const checkboxes = orderItemsContainer.querySelectorAll('input[type="checkbox"]');
+        checkboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', updateOrderSummary);
+        });
+
+        // 初始计算订单总额
+        updateOrderSummary();
+
+    } catch (error) {
+        console.error('加载订单商品失败:', error);
+        const orderItemsContainer = document.getElementById('orderItems');
+        orderItemsContainer.innerHTML = '<p class="error-message">加载商品失败，请刷新页面重试</p>';
+    }
+}
+
 // 初始化订单备注功能
 function initOrderRemark() {
     const remarkTextarea = document.getElementById('orderRemark');

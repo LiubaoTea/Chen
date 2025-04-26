@@ -100,9 +100,10 @@ export class AddressEditor {
         cancelBtn.addEventListener('click', () => this.handleCancel());
     }
 
-    loadProvinces() {
+    async loadProvinces() {
         const provinceSelect = this.container.querySelector('#province');
-        const provinces = addressData['86'];
+        const addressData = await getAddressData();
+        const provinces = addressData['86'] || {};
         
         for (const code in provinces) {
             const option = document.createElement('option');
@@ -112,40 +113,46 @@ export class AddressEditor {
         }
     }
 
-    handleProvinceChange() {
+    async handleProvinceChange() {
         const provinceSelect = this.container.querySelector('#province');
         const citySelect = this.container.querySelector('#city');
         const districtSelect = this.container.querySelector('#district');
 
-        const selectedProvince = provinceSelect.value;
-        const cities = addressData[selectedProvince];
-
+        // 清空城市和区县下拉框
         citySelect.innerHTML = '<option value="">请选择城市</option>';
         districtSelect.innerHTML = '<option value="">请选择区县</option>';
 
-        for (const code in cities) {
+        const selectedProvince = provinceSelect.value;
+        if (!selectedProvince) return;
+
+        const addressData = await getAddressData();
+        const cities = addressData[selectedProvince] || {};
+        Object.entries(cities).forEach(([code, name]) => {
             const option = document.createElement('option');
             option.value = code;
-            option.textContent = cities[code];
+            option.textContent = name;
             citySelect.appendChild(option);
-        }
+        });
     }
 
-    handleCityChange() {
+    async handleCityChange() {
         const citySelect = this.container.querySelector('#city');
         const districtSelect = this.container.querySelector('#district');
 
-        const selectedCity = citySelect.value;
-        const districts = addressData[selectedCity];
-
+        // 清空区县下拉框
         districtSelect.innerHTML = '<option value="">请选择区县</option>';
 
-        for (const code in districts) {
+        const selectedCity = citySelect.value;
+        if (!selectedCity) return;
+
+        const addressData = await getAddressData();
+        const districts = addressData[selectedCity] || {};
+        Object.entries(districts).forEach(([code, name]) => {
             const option = document.createElement('option');
             option.value = code;
-            option.textContent = districts[code];
+            option.textContent = name;
             districtSelect.appendChild(option);
-        }
+        });
     }
 
     async handleSubmit(e) {
