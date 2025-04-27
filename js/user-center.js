@@ -925,7 +925,8 @@ async function showNotificationSettings() {
 }
 
 // 查看订单详情
-async function viewOrderDetail(orderId) {
+// 将viewOrderDetail函数设置为全局可访问，以便HTML中的onclick事件可以调用它
+window.viewOrderDetail = async function(orderId) {
     try {
         const token = localStorage.getItem('userToken');
         const response = await fetch(`${API_BASE_URL}/api/orders/${orderId}`, {
