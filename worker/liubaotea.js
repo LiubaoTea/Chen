@@ -1288,10 +1288,10 @@ const handleOrderOperations = async (request, env) => {
                 headers: { 'Content-Type': 'application/json' }
             }));
         } catch (error) {
-            return new Response(JSON.stringify({ error: '创建订单失败', details: error.message }), {
+            return addCorsToResponse(new Response(JSON.stringify({ error: '创建订单失败', details: error.message }), {
                 status: 500,
                 headers: { 'Content-Type': 'application/json' }
-            });
+            }));
         }
     }
 
@@ -1311,10 +1311,10 @@ const handleOrderOperations = async (request, env) => {
                 headers: { 'Content-Type': 'application/json' }
             }));
         } catch (error) {
-            return new Response(JSON.stringify({ error: '获取订单列表失败', details: error.message }), {
+            return addCorsToResponse(new Response(JSON.stringify({ error: '获取订单列表失败', details: error.message }), {
                 status: 500,
                 headers: { 'Content-Type': 'application/json' }
-            });
+            }));
         }
     }
 
@@ -1813,6 +1813,11 @@ const handleUserCenter = async (request, env) => {
 //                  处理订单创建、订单列表查询和订单详情的相关请求
 //==========================================================================
 const handleOrders = async (request, env) => {
+    // 处理OPTIONS预检请求
+    if (request.method === 'OPTIONS') {
+        return handleOptions(request);
+    }
+    
     const url = new URL(request.url);
     const path = url.pathname;
 
@@ -1833,43 +1838,44 @@ const handleOrders = async (request, env) => {
             const userId = decoded.userId;
 
             // 获取订单数据
-            const { items, shippingInfo, totalAmount } = await request.json();
+            const orderData = await request.json();
+            const { order_id, address_id, total_amount, remark, order_items } = orderData;
             
             // 开始数据库事务
-            const timestamp = new Date().toISOString();
+            const timestamp = Math.floor(Date.now() / 1000); // Unix时间戳
+            
+            // 创建订单 - 使用前端提供的order_id或生成新的
+            const orderId = order_id || `ORD${Date.now().toString().slice(-8)}${Math.floor(Math.random() * 1000)}`;
             
             // 创建订单
-            const orderResult = await env.DB.prepare(
-                'INSERT INTO orders (user_id, total_amount, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?)'
-            ).bind(userId, totalAmount, 'pending', timestamp, timestamp).run();
-            
-            const orderId = orderResult.meta.last_row_id;
+            await env.DB.prepare(
+                'INSERT INTO orders (order_id, user_id, total_amount, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)'
+            ).bind(orderId, userId, total_amount, 'pending', timestamp, timestamp).run();
             
             // 添加订单项
-            for (const item of items) {
+            for (const item of order_items) {
                 await env.DB.prepare(
                     'INSERT INTO order_items (order_id, product_id, quantity, unit_price) VALUES (?, ?, ?, ?)'
-                ).bind(orderId, item.productId, item.quantity, item.price).run();
+                ).bind(orderId, item.product_id, item.quantity, item.unit_price).run();
                 
                 // 更新库存
                 await env.DB.prepare(
                     'UPDATE products SET stock = stock - ? WHERE product_id = ?'
-                ).bind(item.quantity, item.productId).run();
+                ).bind(item.quantity, item.product_id).run();
             }
 
-            return new Response(JSON.stringify({ 
+            return addCorsToResponse(new Response(JSON.stringify({ 
                 message: '订单创建成功', 
-                orderId,
-                orderNumber: `ORD${Date.now().toString().slice(-8)}${Math.floor(Math.random() * 1000)}`
+                order_id: orderId
             }), {
                 status: 201,
                 headers: { 'Content-Type': 'application/json' }
-            });
+            }));
         } catch (error) {
-            return new Response(JSON.stringify({ error: '创建订单失败', details: error.message }), {
+            return addCorsToResponse(new Response(JSON.stringify({ error: '创建订单失败', details: error.message }), {
                 status: 500,
                 headers: { 'Content-Type': 'application/json' }
-            });
+            }));
         }
     }
 
@@ -1899,10 +1905,10 @@ const handleOrders = async (request, env) => {
                 headers: { 'Content-Type': 'application/json' }
             }));
         } catch (error) {
-            return new Response(JSON.stringify({ error: '获取订单列表失败', details: error.message }), {
+            return addCorsToResponse(new Response(JSON.stringify({ error: '获取订单列表失败', details: error.message }), {
                 status: 500,
                 headers: { 'Content-Type': 'application/json' }
-            });
+            }));
         }
     }
 

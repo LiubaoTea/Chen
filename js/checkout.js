@@ -607,6 +607,14 @@ function initSubmitOrder() {
 
             const order = await response.json();
 
+            // 将订单信息存储到localStorage中，以便payment页面获取
+            const checkoutData = {
+                orderNumber: orderNumber,
+                paymentMethod: selectedPayment.dataset.method === 'alipay' ? '支付宝' : '微信支付',
+                totalAmount: total.toFixed(2)
+            };
+            localStorage.setItem('checkoutData', JSON.stringify(checkoutData));
+            
             // 跳转到支付页面
             window.location.href = `payment.html?orderId=${order.order_id}&method=${selectedPayment.dataset.method}`;
 

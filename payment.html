@@ -8,15 +8,18 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <style>
         .payment-container {
-            max-width: 800px;
+            max-width: 1000px;
             margin: 40px auto;
             padding: 20px;
             background: rgba(255, 255, 255, 0.95);
             border-radius: 8px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-wrap: wrap;
         }
 
         .payment-header {
+            width: 100%;
             text-align: center;
             margin-bottom: 30px;
         }
@@ -30,6 +33,24 @@
         .payment-header p {
             color: #6B4423;
             font-size: 1.2em;
+        }
+
+        /* 左侧区域 - 二维码 */
+        .payment-left {
+            flex: 1;
+            min-width: 300px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* 右侧区域 - 订单信息和支付说明 */
+        .payment-right {
+            flex: 1;
+            min-width: 300px;
+            padding: 20px;
         }
 
         .order-info {
@@ -68,6 +89,9 @@
             padding: 10px;
             border: 1px solid #D2691E;
             border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .payment-instructions {
@@ -96,6 +120,7 @@
         .payment-status {
             text-align: center;
             margin-top: 30px;
+            width: 100%;
         }
 
         .payment-status .status {
@@ -132,6 +157,12 @@
             .payment-container {
                 margin: 20px;
                 padding: 15px;
+                flex-direction: column;
+            }
+
+            .payment-left, .payment-right {
+                width: 100%;
+                padding: 10px;
             }
 
             .qr-code {
@@ -184,45 +215,50 @@
                 <p>请在15分钟内完成支付</p>
             </div>
 
-            <div class="order-info">
-                <div class="order-info-row">
-                    <span>订单编号</span>
-                    <span id="orderId">--</span>
+            <!-- 左侧区域 - 二维码 -->
+            <div class="payment-left">
+                <div class="qr-code-container">
+                    <div class="qr-code" id="qrCode">
+                        <!-- 支付二维码将通过JavaScript动态生成 -->
+                    </div>
                 </div>
-                <div class="order-info-row">
-                    <span>支付方式</span>
-                    <span id="paymentMethod">--</span>
-                </div>
-                <div class="order-info-row">
-                    <span>应付金额</span>
-                    <span id="totalAmount">¥0.00</span>
+                <div class="payment-status">
+                    <div class="status" id="paymentStatus">等待支付...</div>
+                    <div class="timer" id="paymentTimer">剩余支付时间：15:00</div>
                 </div>
             </div>
 
-            <div class="qr-code-container">
-                <div class="qr-code" id="qrCode">
-                    <!-- 支付二维码将通过JavaScript动态生成 -->
+            <!-- 右侧区域 - 订单信息和支付说明 -->
+            <div class="payment-right">
+                <div class="order-info">
+                    <div class="order-info-row">
+                        <span>订单编号</span>
+                        <span id="orderId">--</span>
+                    </div>
+                    <div class="order-info-row">
+                        <span>支付方式</span>
+                        <span id="paymentMethod">--</span>
+                    </div>
+                    <div class="order-info-row">
+                        <span>应付金额</span>
+                        <span id="totalAmount">¥0.00</span>
+                    </div>
                 </div>
-            </div>
 
-            <div class="payment-instructions">
-                <h2>支付说明</h2>
-                <ol>
-                    <li>请使用手机扫描上方二维码进行支付</li>
-                    <li>支付完成后，请勿关闭页面，系统会自动验证支付状态</li>
-                    <li>如遇支付问题，请联系客服处理</li>
-                </ol>
-            </div>
+                <div class="payment-instructions">
+                    <h2>支付说明</h2>
+                    <ol>
+                        <li>请使用手机扫描左侧二维码进行支付</li>
+                        <li>支付完成后，请勿关闭页面，系统会自动验证支付状态</li>
+                        <li>如遇支付问题，请联系客服处理</li>
+                    </ol>
+                </div>
 
-            <div class="payment-status">
-                <div class="status" id="paymentStatus">等待支付...</div>
-                <div class="timer" id="paymentTimer">剩余支付时间：15:00</div>
+                <a href="user-center.html" class="btn-return">返回用户中心</a>
             </div>
-
-            <a href="user-center.html" class="btn-return">返回用户中心</a>
         </div>
     </main>
 
-    <script src="js/payment.js"></script>
+    <script type="module" src="js/payment.js"></script>
 </body>
 </html>

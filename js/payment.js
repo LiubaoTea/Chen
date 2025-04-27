@@ -42,21 +42,32 @@ async function initPaymentPage(orderId, paymentMethod) {
 
         const order = await response.json();
 
+        // 从localStorage获取checkout页面传递的订单信息
+        const checkoutData = JSON.parse(localStorage.getItem('checkoutData') || '{}');
+        
+        // 优先使用checkout页面传递的数据，如果没有则使用API返回的数据
+        const orderNumber = checkoutData.orderNumber || orderId;
+        const paymentMethodText = checkoutData.paymentMethod || 
+            (paymentMethod === 'alipay' ? '支付宝' : '微信支付');
+        const totalAmount = checkoutData.totalAmount || 
+            (order.total_amount ? order.total_amount.toFixed(2) : '0.00');
+
         // 更新页面信息
-        document.getElementById('orderId').textContent = orderId;
-        document.getElementById('paymentMethod').textContent = 
-            paymentMethod === 'alipay' ? '支付宝' : '微信支付';
-        document.getElementById('totalAmount').textContent = 
-            `¥${order.total_amount.toFixed(2)}`;
+        document.getElementById('orderId').textContent = orderNumber;
+        document.getElementById('paymentMethod').textContent = paymentMethodText;
+        document.getElementById('totalAmount').textContent = `¥${totalAmount}`;
 
         // 生成支付二维码
-        await generatePaymentQRCode(orderId, paymentMethod, order.total_amount);
+        await generatePaymentQRCode(orderId, paymentMethod, parseFloat(totalAmount));
 
         // 开始检查支付状态
         startPaymentCheck(orderId);
 
         // 开始倒计时
         startPaymentTimer();
+        
+        // 清除localStorage中的临时数据
+        localStorage.removeItem('checkoutData');
     } catch (error) {
         console.error('初始化支付页面失败:', error);
         alert('加载订单信息失败，请刷新页面重试');
@@ -132,6 +143,9 @@ function startPaymentTimer() {
     let minutes = 15;
     let seconds = 0;
     const timerElement = document.getElementById('paymentTimer');
+    
+    // 立即更新一次显示
+    updateTimerDisplay();
 
     const timer = setInterval(() => {
         if (seconds === 0) {
@@ -149,7 +163,12 @@ function startPaymentTimer() {
             seconds--;
         }
 
+        updateTimerDisplay();
+    }, 1000);
+    
+    // 更新倒计时显示
+    function updateTimerDisplay() {
         timerElement.textContent = 
             `剩余支付时间：${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-    }, 1000);
+    }
 }
