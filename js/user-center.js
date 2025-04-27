@@ -205,7 +205,7 @@ async function showProfileSettings() {
                 <div class="form-group">
                     <label for="phone">手机号码</label>
                     <input type="tel" id="phone" name="phone" value="${profile.phone_number || ''}" 
-                           pattern="\+[0-9]{11,}" placeholder="+86开头的手机号">
+                           pattern="^\\+[0-9]{11,}$" placeholder="+86开头的手机号">
                 </div>
                 <button type="submit" class="submit-btn">保存修改</button>
             </form>
