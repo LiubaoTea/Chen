@@ -1361,10 +1361,11 @@ const handleOrderOperations = async (request, env) => {
                 headers: { 'Content-Type': 'application/json' }
             });
         } catch (error) {
-            return new Response(JSON.stringify({ error: '获取订单详情失败', details: error.message }), {
+            console.error('获取订单详情失败:', error);
+            return addCorsToResponse(new Response(JSON.stringify({ error: '获取订单详情失败', details: error.message }), {
                 status: 500,
                 headers: { 'Content-Type': 'application/json' }
-            });
+            }));
         }
     }
 
@@ -1913,7 +1914,7 @@ const handleOrders = async (request, env) => {
     }
 
     // 获取订单详情
-    if (path.match(/\/api\/orders\/\d+$/) && request.method === 'GET') {
+    if (path.match(/\/api\/orders\/([A-Za-z0-9]+)$/) && request.method === 'GET') {
         try {
             // 从请求头中获取token
             const authHeader = request.headers.get('Authorization');
@@ -1936,38 +1937,52 @@ const handleOrders = async (request, env) => {
             ).bind(orderId, userId).first();
 
             if (!order) {
-                return new Response(JSON.stringify({ error: '订单不存在或无权访问' }), {
+                return addCorsToResponse(new Response(JSON.stringify({ error: '订单不存在或无权访问' }), {
                     status: 404,
                     headers: { 'Content-Type': 'application/json' }
-                });
+                }));
             }
 
             // 获取订单项
             const orderItems = await env.DB.prepare(
-                `SELECT oi.*, p.name, p.image_filename 
+                `SELECT oi.*, p.name as product_name, p.specifications 
                 FROM order_items oi 
                 JOIN products p ON oi.product_id = p.product_id 
                 WHERE oi.order_id = ?`
             ).bind(orderId).all();
 
-            // 处理产品图片URL
-            const itemsWithImages = orderItems.results.map(item => {
-                const imageUrl = `https://${env.R2_DOMAIN}/image/Goods/${item.image_filename}`;
-                return { ...item, image_url: imageUrl };
+            // 处理订单项数据
+            const processedItems = orderItems.results.map(item => {
+                // 尝试解析规格信息（如果有）
+                let specs = {};
+                try {
+                    if (item.specifications) {
+                        specs = JSON.parse(item.specifications);
+                    }
+                } catch (e) {
+                    console.error('解析商品规格失败:', e);
+                }
+                
+                return { 
+                    ...item,
+                    specifications: specs
+                };
             });
 
-            return new Response(JSON.stringify({
-                order,
-                items: itemsWithImages
+
+            return addCorsToResponse(new Response(JSON.stringify({
+                ...order,
+                items: processedItems
             }), {
                 status: 200,
                 headers: { 'Content-Type': 'application/json' }
-            });
+            }));
         } catch (error) {
-            return new Response(JSON.stringify({ error: '获取订单详情失败', details: error.message }), {
+            console.error('获取订单详情失败:', error);
+            return addCorsToResponse(new Response(JSON.stringify({ error: '获取订单详情失败', details: error.message }), {
                 status: 500,
                 headers: { 'Content-Type': 'application/json' }
-            });
+            }));
         }
     }
 
