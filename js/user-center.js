@@ -67,7 +67,7 @@ async function loadUserInfo() {
 }
 
 // 加载用户订单
-window.loadOrders = async function() {
+async function loadOrders() {
     try {
         const token = localStorage.getItem('userToken');
         const response = await fetch(`${API_BASE_URL}/api/orders`, {
@@ -146,11 +146,6 @@ window.viewOrderDetail = async function(orderId) {
         const orderDetail = await response.json();
         const contentArea = document.getElementById('contentArea');
         
-        // 计算商品总金额（不含运费）
-        const productTotal = orderDetail.items.reduce((sum, item) => sum + (item.unit_price * item.quantity), 0);
-        // 运费金额 = 总金额 - 商品金额
-        const shippingFee = orderDetail.total_amount - productTotal;
-        
         let orderDetailHTML = `
             <div class="order-detail">
                 <h3>订单详情</h3>
@@ -158,9 +153,7 @@ window.viewOrderDetail = async function(orderId) {
                     <p><strong>订单号:</strong> ${orderDetail.order_id}</p>
                     <p><strong>下单时间:</strong> ${new Date(orderDetail.created_at * 1000).toLocaleString()}</p>
                     <p><strong>订单状态:</strong> ${getOrderStatus(orderDetail.status)}</p>
-                    <p><strong>商品金额:</strong> ¥${productTotal.toFixed(2)}</p>
-                    <p><strong>运费金额:</strong> ¥${shippingFee.toFixed(2)}</p>
-                    <p><strong>订单总额:</strong> ¥${orderDetail.total_amount.toFixed(2)}</p>
+                    <p><strong>订单金额:</strong> ¥${orderDetail.total_amount.toFixed(2)}</p>
                 </div>
                 <h4>订单商品</h4>
                 <div class="order-items">
@@ -168,15 +161,8 @@ window.viewOrderDetail = async function(orderId) {
         
         if (orderDetail.items && orderDetail.items.length > 0) {
             orderDetail.items.forEach(item => {
-                // 构建商品图片URL - 使用R2存储中的图片
-                // 格式：Goods_1.png, Goods_2.png, ...
-                const imageUrl = `${API_BASE_URL}/image/Goods/Goods_${item.product_id}.png`;
-                
                 orderDetailHTML += `
                     <div class="order-item">
-                        <div class="item-image">
-                            <img src="${imageUrl}" alt="${item.product_name}">
-                        </div>
                         <div class="item-info">
                             <h5>${item.product_name}</h5>
                             <p>单价: ¥${item.unit_price.toFixed(2)}</p>
@@ -190,21 +176,10 @@ window.viewOrderDetail = async function(orderId) {
             orderDetailHTML += '<p>暂无商品信息</p>';
         }
         
-        // 添加订单操作按钮
         orderDetailHTML += `
                 </div>
                 <div class="order-actions">
-                    <button onclick="window.loadOrders()">返回订单列表</button>
-        `;
-        
-        // 如果订单状态为待付款，添加立即付款按钮
-        if (orderDetail.status === 'pending') {
-            orderDetailHTML += `
-                    <button onclick="window.location.href='payment.html?order_id=${orderDetail.order_id}'" class="pay-now-btn">立即付款</button>
-            `;
-        }
-        
-        orderDetailHTML += `
+                    <button onclick="loadOrders()">返回订单列表</button>
                 </div>
             </div>
         `;
@@ -217,92 +192,10 @@ window.viewOrderDetail = async function(orderId) {
     }
 }
 
-// 添加订单详情样式
-function addOrderDetailStyles() {
-    // 检查是否已添加样式
-    if (document.getElementById('orderDetailStyles')) return;
-    
-    const styleElement = document.createElement('style');
-    styleElement.id = 'orderDetailStyles';
-    styleElement.textContent = `
-        .order-item {
-            display: flex;
-            margin-bottom: 15px;
-            padding: 10px;
-            border: 1px solid #e0e0e0;
-            border-radius: 5px;
-            background-color: #fff;
-        }
-        
-        .item-image {
-            width: 80px;
-            height: 80px;
-            margin-right: 15px;
-            flex-shrink: 0;
-        }
-        
-        .item-image img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            border-radius: 4px;
-        }
-        
-        .item-info {
-            flex-grow: 1;
-        }
-        
-        .item-info h5 {
-            margin-top: 0;
-            margin-bottom: 8px;
-            color: #333;
-        }
-        
-        .item-info p {
-            margin: 4px 0;
-            color: #666;
-        }
-        
-        .order-actions {
-            display: flex;
-            justify-content: flex-start;
-            gap: 10px;
-            margin-top: 20px;
-        }
-        
-        .order-actions button {
-            padding: 8px 16px;
-            border: none;
-            border-radius: 4px;
-            background-color: #8B4513;
-            color: white;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-        
-        .order-actions button:hover {
-            background-color: #6B3410;
-        }
-        
-        .pay-now-btn {
-            background-color: #D2691E !important;
-        }
-        
-        .pay-now-btn:hover {
-            background-color: #A0522D !important;
-        }
-    `;
-    
-    document.head.appendChild(styleElement);
-}
-
 // 初始化导航菜单
 function initNavMenu() {
     const navItems = document.querySelectorAll('.nav-item');
     const contentArea = document.getElementById('contentArea');
-    
-    // 添加订单详情样式
-    addOrderDetailStyles();
 
     navItems.forEach(item => {
         item.addEventListener('click', async () => {
