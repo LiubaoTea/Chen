@@ -12,8 +12,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // 获取订单ID和支付方式
     const urlParams = new URLSearchParams(window.location.search);
-    const orderId = urlParams.get('orderId');
-    const paymentMethod = urlParams.get('method');
+    const orderId = urlParams.get('orderId') || urlParams.get('order_id');
+    const paymentMethod = urlParams.get('method') || 'alipay'; // 默认使用支付宝支付
 
     if (!orderId || !paymentMethod) {
         alert('订单信息不完整');
