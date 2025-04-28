@@ -102,9 +102,6 @@ async function loadOrders() {
                         </div>
                         <div class="order-actions">
                             <button onclick="viewOrderDetail('${order.order_id}')">查看详情</button>
-                            ${order.status === 'pending' ? 
-                                `<button onclick="window.location.href='payment.html?order_id=${order.order_id}'">立即付款</button>` : 
-                                ''}
                         </div>
                     </div>
                 `;
@@ -156,6 +153,7 @@ window.viewOrderDetail = async function(orderId) {
                     <p><strong>订单号:</strong> ${orderDetail.order_id}</p>
                     <p><strong>下单时间:</strong> ${new Date(orderDetail.created_at * 1000).toLocaleString()}</p>
                     <p><strong>订单状态:</strong> ${getOrderStatus(orderDetail.status)}</p>
+                    <p><strong>订单金额:</strong> ¥${orderDetail.total_amount.toFixed(2)}</p>
                 </div>
                 <h4>订单商品</h4>
                 <div class="order-items">
@@ -163,10 +161,8 @@ window.viewOrderDetail = async function(orderId) {
         
         if (orderDetail.items && orderDetail.items.length > 0) {
             orderDetail.items.forEach(item => {
-                const imageUrl = `${API_BASE_URL}/image/Goods/Goods_${item.product_id}.png`;
                 orderDetailHTML += `
                     <div class="order-item">
-                        <img src="${imageUrl}" alt="${item.product_name}" class="item-image">
                         <div class="item-info">
                             <h5>${item.product_name}</h5>
                             <p>单价: ¥${item.unit_price.toFixed(2)}</p>
@@ -182,25 +178,8 @@ window.viewOrderDetail = async function(orderId) {
         
         orderDetailHTML += `
                 </div>
-                <div class="order-summary">
-                    <p>
-                        <span>商品总额:</span>
-                        <span>¥${orderDetail.items_total.toFixed(2)}</span>
-                    </p>
-                    <p>
-                        <span>运费:</span>
-                        <span>¥${orderDetail.shipping_fee.toFixed(2)}</span>
-                    </p>
-                    <p>
-                        <span>订单总额:</span>
-                        <span>¥${orderDetail.total_amount.toFixed(2)}</span>
-                    </p>
-                </div>
                 <div class="order-actions">
-                    <button onclick="window.loadOrders()">返回订单列表</button>
-                    ${orderDetail.status === 'pending' ? 
-                        `<button onclick="window.location.href='payment.html?order_id=${orderDetail.order_id}'">立即付款</button>` : 
-                        ''}
+                    <button onclick="loadOrders()">返回订单列表</button>
                 </div>
             </div>
         `;
