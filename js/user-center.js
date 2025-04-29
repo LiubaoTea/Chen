@@ -164,8 +164,6 @@ window.viewOrderDetail = async function(orderId) {
                     <p><strong>订单号:</strong> ${orderDetail.order_id}</p>
                     <p><strong>下单时间:</strong> ${new Date(orderDetail.created_at * 1000).toLocaleString()}</p>
                     <p><strong>订单状态:</strong> ${getOrderStatus(orderDetail.status)}</p>
-                    <p><strong>商品金额:</strong> ¥${productTotal.toFixed(2)}</p>
-                    <p><strong>运费金额:</strong> ¥${shippingFee.toFixed(2)}</p>
                     <p><strong>订单总额:</strong> ¥${orderDetail.total_amount.toFixed(2)}</p>
                 </div>
                 <h4>订单商品</h4>
@@ -200,7 +198,7 @@ window.viewOrderDetail = async function(orderId) {
         let actionButtons = `
                 </div>
                 <div class="order-actions">
-                    <button onclick="window.loadOrders()">返回订单列表</button>
+                    <button onclick="loadOrders()">返回订单列表</button>
         `;
         
         // 如果订单状态为待付款，添加立即付款按钮
