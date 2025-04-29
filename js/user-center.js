@@ -174,7 +174,7 @@ window.viewOrderDetail = async function(orderId) {
         
         if (orderDetail.items && orderDetail.items.length > 0) {
             orderDetail.items.forEach(item => {
-                // 构建商品图片URL - 使用R2存储中的图片，与shop.js相同的逻辑
+                // 构建商品图片URL - 使用R2存储中的图片
                 const imageUrl = `${API_BASE_URL}/image/Goods/Goods_${item.product_id}.png`;
                 
                 orderDetailHTML += `
@@ -218,35 +218,83 @@ window.viewOrderDetail = async function(orderId) {
         // 添加订单商品项的样式
         const style = document.createElement('style');
         style.textContent = `
+            .order-detail {
+                padding: 20px;
+                background: #FFF;
+                border-radius: 8px;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            }
+            .order-info {
+                margin-bottom: 20px;
+                padding-bottom: 15px;
+                border-bottom: 1px solid #e0e0e0;
+            }
+            .order-info p {
+                margin: 8px 0;
+                color: #333;
+            }
+            .order-items {
+                margin-bottom: 20px;
+            }
             .order-item {
                 display: flex;
                 margin-bottom: 15px;
                 padding: 10px;
                 border: 1px solid #e0e0e0;
                 border-radius: 5px;
+                background: #f9f9f9;
             }
             .item-image {
                 width: 80px;
                 height: 80px;
                 margin-right: 15px;
                 overflow: hidden;
+                border-radius: 4px;
+                border: 1px solid #eee;
             }
             .item-image img {
                 width: 100%;
                 height: 100%;
                 object-fit: cover;
             }
+            .item-info {
+                flex: 1;
+            }
+            .item-info h5 {
+                margin: 0 0 8px 0;
+                color: #8B4513;
+            }
+            .item-info p {
+                margin: 4px 0;
+                color: #666;
+            }
+            .order-actions {
+                display: flex;
+                justify-content: flex-end;
+                gap: 10px;
+                margin-top: 20px;
+            }
+            .order-actions button {
+                padding: 8px 16px;
+                background: #8B4513;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+            }
+            .order-actions button:hover {
+                background: #6B4423;
+            }
             .pay-now-btn {
-                background-color: #D2691E;
+                background-color: #D2691E !important;
                 color: white;
                 border: none;
                 padding: 8px 16px;
-                margin-left: 10px;
                 cursor: pointer;
                 border-radius: 4px;
             }
             .pay-now-btn:hover {
-                background-color: #A0522D;
+                background-color: #A0522D !important;
             }
         `;
         document.head.appendChild(style);
