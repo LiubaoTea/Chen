@@ -1055,67 +1055,7 @@ async function showNotificationSettings() {
 
 // 查看订单详情
 // 将viewOrderDetail函数设置为全局可访问，以便HTML中的onclick事件可以调用它
-window.viewOrderDetail = async function(orderId) {
-    try {
-        const token = localStorage.getItem('userToken');
-        const response = await fetch(`${API_BASE_URL}/api/orders/${orderId}`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
-        
-        if (!response.ok) {
-            throw new Error('获取订单详情失败');
-        }
-        
-        const orderDetail = await response.json();
-        const contentArea = document.getElementById('contentArea');
-        
-        let orderDetailHTML = `
-            <div class="order-detail">
-                <h3>订单详情</h3>
-                <div class="order-info">
-                    <p><strong>订单号:</strong> ${orderDetail.order_id}</p>
-                    <p><strong>下单时间:</strong> ${new Date(orderDetail.created_at * 1000).toLocaleString()}</p>
-                    <p><strong>订单状态:</strong> ${getOrderStatus(orderDetail.status)}</p>
-                    <p><strong>订单金额:</strong> ¥${orderDetail.total_amount.toFixed(2)}</p>
-                </div>
-                <h4>订单商品</h4>
-                <div class="order-items">
-        `;
-        
-        if (orderDetail.items && orderDetail.items.length > 0) {
-            orderDetail.items.forEach(item => {
-                orderDetailHTML += `
-                    <div class="order-item">
-                        <div class="item-info">
-                            <h5>${item.product_name}</h5>
-                            <p>单价: ¥${item.unit_price.toFixed(2)}</p>
-                            <p>数量: ${item.quantity}</p>
-                            <p>小计: ¥${(item.unit_price * item.quantity).toFixed(2)}</p>
-                        </div>
-                    </div>
-                `;
-            });
-        } else {
-            orderDetailHTML += '<p>暂无商品信息</p>';
-        }
-        
-        orderDetailHTML += `
-                </div>
-                <div class="order-actions">
-                    <button onclick="loadOrders()">返回订单列表</button>
-                </div>
-            </div>
-        `;
-        
-        contentArea.innerHTML = orderDetailHTML;
-    } catch (error) {
-        console.error('加载订单详情失败:', error);
-        document.getElementById('contentArea').innerHTML = 
-            '<div class="error-message">加载订单详情失败，请稍后重试</div>';
-    }
-}
+// 此处已删除重复的viewOrderDetail函数实现，使用文件前部的完整实现
 
 // 显示设置模态框
 function showSettingsModal(content) {
