@@ -146,6 +146,17 @@ window.viewOrderDetail = async function(orderId) {
         const orderDetail = await response.json();
         const contentArea = document.getElementById('contentArea');
         
+        // 计算商品总金额（不含运费）
+        let productTotal = 0;
+        if (orderDetail.items && orderDetail.items.length > 0) {
+            orderDetail.items.forEach(item => {
+                productTotal += item.unit_price * item.quantity;
+            });
+        }
+        
+        // 计算运费（总金额减去商品金额）
+        const shippingFee = orderDetail.total_amount - productTotal;
+        
         let orderDetailHTML = `
             <div class="order-detail">
                 <h3>订单详情</h3>
@@ -153,7 +164,9 @@ window.viewOrderDetail = async function(orderId) {
                     <p><strong>订单号:</strong> ${orderDetail.order_id}</p>
                     <p><strong>下单时间:</strong> ${new Date(orderDetail.created_at * 1000).toLocaleString()}</p>
                     <p><strong>订单状态:</strong> ${getOrderStatus(orderDetail.status)}</p>
-                    <p><strong>订单金额:</strong> ¥${orderDetail.total_amount.toFixed(2)}</p>
+                    <p><strong>商品金额:</strong> ¥${productTotal.toFixed(2)}</p>
+                    <p><strong>运费金额:</strong> ¥${shippingFee.toFixed(2)}</p>
+                    <p><strong>订单总额:</strong> ¥${orderDetail.total_amount.toFixed(2)}</p>
                 </div>
                 <h4>订单商品</h4>
                 <div class="order-items">
@@ -161,8 +174,15 @@ window.viewOrderDetail = async function(orderId) {
         
         if (orderDetail.items && orderDetail.items.length > 0) {
             orderDetail.items.forEach(item => {
+                // 构建商品图片URL - 使用R2存储中的图片
+                // 格式：Goods_1.png, Goods_2.png, ...
+                const imageUrl = `${API_BASE_URL}/image/Goods/Goods_${item.product_id}.png`;
+                
                 orderDetailHTML += `
                     <div class="order-item">
+                        <div class="item-image">
+                            <img src="${imageUrl}" alt="${item.product_name}" style="width: 80px; height: 80px; object-fit: cover;">
+                        </div>
                         <div class="item-info">
                             <h5>${item.product_name}</h5>
                             <p>单价: ¥${item.unit_price.toFixed(2)}</p>
@@ -179,12 +199,40 @@ window.viewOrderDetail = async function(orderId) {
         orderDetailHTML += `
                 </div>
                 <div class="order-actions">
-                    <button onclick="loadOrders()">返回订单列表</button>
+                    <button onclick="window.loadOrders()">返回订单列表</button>
+        `;
+        
+        // 如果订单状态为待付款，添加立即付款按钮
+        if (orderDetail.status === 'pending') {
+            orderDetailHTML += `
+                    <button onclick="window.location.href='payment.html?orderId=${orderDetail.order_id}&method=alipay'" style="margin-left: 10px; background-color: #4CAF50;">立即付款</button>
+            `;
+        }
+        
+        orderDetailHTML += `
                 </div>
             </div>
         `;
         
         contentArea.innerHTML = orderDetailHTML;
+        
+        // 添加样式以美化订单项目显示
+        const style = document.createElement('style');
+        style.textContent = `
+            .order-items .order-item {
+                display: flex;
+                margin-bottom: 15px;
+                padding-bottom: 15px;
+                border-bottom: 1px solid #eee;
+            }
+            .order-items .item-image {
+                margin-right: 15px;
+            }
+            .order-items .item-info {
+                flex: 1;
+            }
+        `;
+        document.head.appendChild(style);
     } catch (error) {
         console.error('加载订单详情失败:', error);
         document.getElementById('contentArea').innerHTML = 
