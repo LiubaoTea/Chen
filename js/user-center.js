@@ -101,10 +101,40 @@ window.loadOrders = async function() {
                             <p>订单金额: ¥${order.total_amount.toFixed(2)}</p>
                         </div>
                         <div class="order-actions">
-                            <button onclick="viewOrderDetail('${order.order_id}')">查看详情</button>
+                            <button class="view-btn" onclick="viewOrderDetail('${order.order_id}')">查看详情</button>
+                            <button class="delete-btn" onclick="deleteOrder('${order.order_id}')">删除订单</button>
                         </div>
                     </div>
+                    <style>
+                        .order-actions {
+                            display: flex;
+                            gap: 10px;
+                        }
+                        .view-btn {
+                            background-color: #8B4513;
+                            color: white;
+                            border: none;
+                            padding: 8px 16px;
+                            border-radius: 4px;
+                            cursor: pointer;
+                        }
+                        .view-btn:hover {
+                            background-color: #6B4423;
+                        }
+                        .delete-btn {
+                            background-color: #DC3545;
+                            color: white;
+                            border: none;
+                            padding: 8px 16px;
+                            border-radius: 4px;
+                            cursor: pointer;
+                        }
+                        .delete-btn:hover {
+                            background-color: #C82333;
+                        }
+                    </style>
                 `;
+
             });
         }
         
@@ -114,6 +144,34 @@ window.loadOrders = async function() {
         console.error('加载订单列表失败:', error);
         document.getElementById('contentArea').innerHTML = 
             '<div class="error-message">加载订单列表失败，请稍后重试</div>';
+    }
+}
+
+// 删除订单
+window.deleteOrder = async function(orderId) {
+    if (!confirm('确定要删除这个订单吗？此操作不可恢复。')) {
+        return;
+    }
+
+    try {
+        const token = localStorage.getItem('userToken');
+        const response = await fetch(`${API_BASE_URL}/api/orders/${orderId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('删除订单失败');
+        }
+
+        alert('订单已成功删除');
+        // 重新加载订单列表
+        await loadOrders();
+    } catch (error) {
+        console.error('删除订单失败:', error);
+        alert('删除订单失败，请稍后重试');
     }
 }
 
