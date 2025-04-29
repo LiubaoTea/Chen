@@ -67,7 +67,7 @@ async function loadUserInfo() {
 }
 
 // 加载用户订单
-async function loadOrders() {
+window.loadOrders = async function() {
     try {
         const token = localStorage.getItem('userToken');
         const response = await fetch(`${API_BASE_URL}/api/orders`, {
