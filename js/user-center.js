@@ -290,9 +290,9 @@ window.deleteOrder = async function(orderId) {
             successMessage.textContent = '订单已成功删除';
             successMessage.style.cssText = `
                 position: fixed;
-                top: 20px;
+                top: 50%;
                 left: 50%;
-                transform: translateX(-50%);
+                transform: translate(-50%, -50%);
                 background-color: #4CAF50;
                 color: white;
                 padding: 15px 25px;
@@ -318,9 +318,9 @@ window.deleteOrder = async function(orderId) {
             errorMessage.textContent = '删除订单失败，请稍后重试';
             errorMessage.style.cssText = `
                 position: fixed;
-                top: 20px;
+                top: 50%;
                 left: 50%;
-                transform: translateX(-50%);
+                transform: translate(-50%, -50%);
                 background-color: #DC3545;
                 color: white;
                 padding: 15px 25px;
