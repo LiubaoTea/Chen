@@ -1403,6 +1403,46 @@ const handleOrderOperations = async (request, env) => {
             });
         }
     }
+    
+    // 删除订单
+    const deleteOrderMatch = path.match(/^\/api\/orders\/([\w\d]+)$/);
+    if (deleteOrderMatch && request.method === 'DELETE') {
+        try {
+            const orderId = deleteOrderMatch[1];
+            
+            // 验证订单所有权
+            const order = await env.DB.prepare(
+                'SELECT * FROM orders WHERE order_id = ? AND user_id = ?'
+            ).bind(orderId, userId).first();
+
+            if (!order) {
+                return new Response(JSON.stringify({ error: '订单不存在或无权限删除' }), {
+                    status: 404,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+
+            // 删除订单项
+            await env.DB.prepare(
+                'DELETE FROM order_items WHERE order_id = ?'
+            ).bind(orderId).run();
+            
+            // 删除订单
+            await env.DB.prepare(
+                'DELETE FROM orders WHERE order_id = ?'
+            ).bind(orderId).run();
+
+            return addCorsToResponse(new Response(JSON.stringify({ message: '订单删除成功' }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            }));
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '删除订单失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
 
     // 获取用户通知设置
     if (path === '/api/user/settings' && request.method === 'GET') {
@@ -1980,6 +2020,59 @@ const handleOrders = async (request, env) => {
         } catch (error) {
             console.error('获取订单详情失败:', error);
             return addCorsToResponse(new Response(JSON.stringify({ error: '获取订单详情失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            }));
+        }
+    }
+    
+    // 删除订单
+    if (path.match(/\/api\/user\/orders\/([A-Za-z0-9]+)$/) && request.method === 'DELETE') {
+        try {
+            // 从请求头中获取token
+            const authHeader = request.headers.get('Authorization');
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
+                    status: 401,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+
+            const token = authHeader.split(' ')[1];
+            const decoded = JSON.parse(atob(token));
+            const userId = decoded.userId;
+
+            const orderId = path.split('/').pop();
+            
+            // 验证订单所有权
+            const order = await env.DB.prepare(
+                'SELECT * FROM orders WHERE order_id = ? AND user_id = ?'
+            ).bind(orderId, userId).first();
+
+            if (!order) {
+                return addCorsToResponse(new Response(JSON.stringify({ error: '订单不存在或无权删除' }), {
+                    status: 404,
+                    headers: { 'Content-Type': 'application/json' }
+                }));
+            }
+
+            // 删除订单项
+            await env.DB.prepare(
+                'DELETE FROM order_items WHERE order_id = ?'
+            ).bind(orderId).run();
+            
+            // 删除订单
+            await env.DB.prepare(
+                'DELETE FROM orders WHERE order_id = ?'
+            ).bind(orderId).run();
+
+            return addCorsToResponse(new Response(JSON.stringify({ message: '订单删除成功' }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            }));
+        } catch (error) {
+            console.error('删除订单失败:', error);
+            return addCorsToResponse(new Response(JSON.stringify({ error: '删除订单失败', details: error.message }), {
                 status: 500,
                 headers: { 'Content-Type': 'application/json' }
             }));

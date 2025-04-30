@@ -272,8 +272,8 @@ window.deleteOrder = async function(orderId) {
     createConfirmDialog('确定要删除这个订单吗？此操作不可恢复。', async () => {
         try {
             const token = localStorage.getItem('userToken');
-            // 修改API路径，确保正确处理订单ID
-            const response = await fetch(`${API_BASE_URL}/api/user/orders/${orderId}`, {
+            // 使用正确的API路径
+            const response = await fetch(`${API_BASE_URL}/api/orders/${orderId}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`
