@@ -2027,7 +2027,7 @@ const handleOrders = async (request, env) => {
     }
     
     // 删除订单
-    if (path.match(/\/api\/user\/orders\/([A-Za-z0-9]+)$/) && request.method === 'DELETE') {
+    if ((path.match(/\/api\/user\/orders\/([A-Za-z0-9]+)$/) || path.match(/\/api\/orders\/([A-Za-z0-9]+)$/)) && request.method === 'DELETE') {
         try {
             // 从请求头中获取token
             const authHeader = request.headers.get('Authorization');
