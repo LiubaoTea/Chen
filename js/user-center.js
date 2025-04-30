@@ -108,6 +108,7 @@ window.loadOrders = async function() {
                     <style>
                         .order-actions {
                             display: flex;
+                            flex-direction: column;
                             gap: 10px;
                         }
                         .view-btn {
@@ -148,31 +149,193 @@ window.loadOrders = async function() {
 }
 
 // 删除订单
-window.deleteOrder = async function(orderId) {
-    if (!confirm('确定要删除这个订单吗？此操作不可恢复。')) {
-        return;
-    }
-
-    try {
-        const token = localStorage.getItem('userToken');
-        const response = await fetch(`${API_BASE_URL}/api/orders/${orderId}`, {
-            method: 'DELETE',
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
-
-        if (!response.ok) {
-            throw new Error('删除订单失败');
+// 创建自定义确认对话框
+function createConfirmDialog(message, onConfirm, onCancel) {
+    // 创建对话框容器
+    const dialogOverlay = document.createElement('div');
+    dialogOverlay.className = 'confirm-dialog-overlay';
+    
+    const dialogBox = document.createElement('div');
+    dialogBox.className = 'confirm-dialog-box';
+    
+    // 添加消息内容
+    const messageElement = document.createElement('p');
+    messageElement.className = 'confirm-dialog-message';
+    messageElement.textContent = message;
+    
+    // 添加按钮容器
+    const buttonContainer = document.createElement('div');
+    buttonContainer.className = 'confirm-dialog-buttons';
+    
+    // 取消按钮
+    const cancelButton = document.createElement('button');
+    cancelButton.className = 'confirm-dialog-button cancel';
+    cancelButton.textContent = '取消';
+    cancelButton.onclick = () => {
+        document.body.removeChild(dialogOverlay);
+        if (onCancel) onCancel();
+    };
+    
+    // 确认按钮
+    const confirmButton = document.createElement('button');
+    confirmButton.className = 'confirm-dialog-button confirm';
+    confirmButton.textContent = '确认删除';
+    confirmButton.onclick = () => {
+        document.body.removeChild(dialogOverlay);
+        if (onConfirm) onConfirm();
+    };
+    
+    // 组装对话框
+    buttonContainer.appendChild(cancelButton);
+    buttonContainer.appendChild(confirmButton);
+    dialogBox.appendChild(messageElement);
+    dialogBox.appendChild(buttonContainer);
+    dialogOverlay.appendChild(dialogBox);
+    
+    // 添加样式
+    const style = document.createElement('style');
+    style.textContent = `
+        .confirm-dialog-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
         }
+        
+        .confirm-dialog-box {
+            background-color: #FFF9F0;
+            border-radius: 8px;
+            padding: 25px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 4px 12px rgba(139, 69, 19, 0.2);
+            border: 1px solid #D2691E;
+        }
+        
+        .confirm-dialog-message {
+            color: #6B4423;
+            font-size: 16px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .confirm-dialog-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+        
+        .confirm-dialog-button {
+            padding: 10px 20px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        .confirm-dialog-button.cancel {
+            background-color: #E0E0E0;
+            color: #6B4423;
+        }
+        
+        .confirm-dialog-button.cancel:hover {
+            background-color: #D0D0D0;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .confirm-dialog-button.confirm {
+            background-color: #DC3545;
+            color: white;
+        }
+        
+        .confirm-dialog-button.confirm:hover {
+            background-color: #C82333;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 4px rgba(139, 69, 19, 0.2);
+        }
+    `;
+    
+    // 添加到文档
+    document.head.appendChild(style);
+    document.body.appendChild(dialogOverlay);
+}
 
-        alert('订单已成功删除');
-        // 重新加载订单列表
-        await loadOrders();
-    } catch (error) {
-        console.error('删除订单失败:', error);
-        alert('删除订单失败，请稍后重试');
-    }
+window.deleteOrder = async function(orderId) {
+    createConfirmDialog('确定要删除这个订单吗？此操作不可恢复。', async () => {
+        try {
+            const token = localStorage.getItem('userToken');
+            // 修改API路径，确保正确处理订单ID
+            const response = await fetch(`${API_BASE_URL}/api/user/orders/${orderId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('删除订单失败');
+            }
+
+            // 创建成功提示
+            const successMessage = document.createElement('div');
+            successMessage.className = 'success-message';
+            successMessage.textContent = '订单已成功删除';
+            successMessage.style.cssText = `
+                position: fixed;
+                top: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                background-color: #4CAF50;
+                color: white;
+                padding: 15px 25px;
+                border-radius: 6px;
+                z-index: 1000;
+                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            `;
+            document.body.appendChild(successMessage);
+            
+            // 3秒后移除提示
+            setTimeout(() => {
+                document.body.removeChild(successMessage);
+            }, 3000);
+            
+            // 重新加载订单列表
+            await loadOrders();
+        } catch (error) {
+            console.error('删除订单失败:', error);
+            
+            // 创建错误提示
+            const errorMessage = document.createElement('div');
+            errorMessage.className = 'error-message';
+            errorMessage.textContent = '删除订单失败，请稍后重试';
+            errorMessage.style.cssText = `
+                position: fixed;
+                top: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                background-color: #DC3545;
+                color: white;
+                padding: 15px 25px;
+                border-radius: 6px;
+                z-index: 1000;
+                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            `;
+            document.body.appendChild(errorMessage);
+            
+            // 3秒后移除提示
+            setTimeout(() => {
+                document.body.removeChild(errorMessage);
+            }, 3000);
+        }
+    });
 }
 
 // 获取订单状态描述
