@@ -466,17 +466,22 @@ window.viewOrderDetail = async function(orderId) {
                 background: #f9f9f9;
             }
             .item-image {
-                width: 80px;
-                height: 80px;
+                width: 100px;
+                height: 100px;
                 margin-right: 15px;
                 overflow: hidden;
-                border-radius: 4px;
-                border: 1px solid #eee;
+                border-radius: 8px;
+                border: 2px solid #8B4513;
+                background-color: #FFF;
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
             .item-image img {
                 width: 100%;
                 height: 100%;
-                object-fit: cover;
+                object-fit: contain;
+                padding: 4px;
             }
             .item-info {
                 flex: 1;
