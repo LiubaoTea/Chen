@@ -1,0 +1,147 @@
+<!-- 商品管理页面 -->
+<div class="container-fluid">
+    <!-- 页面标题和操作按钮 -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4>商品管理</h4>
+        <button id="addProductBtn" class="btn btn-primary">
+            <i class="bi bi-plus-circle me-1"></i>添加商品
+        </button>
+    </div>
+    
+    <!-- 筛选和搜索 -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label for="productCategoryFilter" class="form-label">商品分类</label>
+                    <select id="productCategoryFilter" class="form-select">
+                        <option value="">所有分类</option>
+                        <!-- 分类选项将通过JS动态加载 -->
+                    </select>
+                </div>
+                <div class="col-md-8">
+                    <label for="productSearchInput" class="form-label">搜索商品</label>
+                    <form id="productSearchForm" class="input-group">
+                        <input type="text" id="productSearchInput" class="form-control" placeholder="输入商品名称、ID或关键词搜索">
+                        <button class="btn btn-outline-secondary" type="submit">
+                            <i class="bi bi-search"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 商品列表 -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>商品信息</th>
+                            <th>分类</th>
+                            <th>价格</th>
+                            <th>库存</th>
+                            <th>状态</th>
+                            <th>创建时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="productsList">
+                        <!-- 商品数据将通过JS动态加载 -->
+                        <tr>
+                            <td colspan="7" class="text-center">加载中...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- 分页 -->
+            <nav aria-label="商品列表分页" class="mt-4">
+                <ul id="productsPagination" class="pagination justify-content-center">
+                    <!-- 分页控件将通过JS动态生成 -->
+                </ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+<!-- 商品添加/编辑模态框 -->
+<div class="modal fade" id="productModal" tabindex="-1" aria-labelledby="productModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="productModalLabel">添加商品</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="关闭"></button>
+            </div>
+            <div class="modal-body">
+                <form id="productForm" class="needs-validation" novalidate>
+                    <input type="hidden" id="productId">
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="productName" class="form-label">商品名称 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="productName" required>
+                            <div class="invalid-feedback">请输入商品名称</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="productCategory" class="form-label">商品分类 <span class="text-danger">*</span></label>
+                            <select class="form-select" id="productCategory" required>
+                                <option value="">选择分类</option>
+                                <!-- 分类选项将通过JS动态加载 -->
+                            </select>
+                            <div class="invalid-feedback">请选择商品分类</div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="productPrice" class="form-label">售价 (¥) <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="productPrice" min="0" step="0.01" required>
+                            <div class="invalid-feedback">请输入有效的售价</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="productOriginalPrice" class="form-label">原价 (¥)</label>
+                            <input type="number" class="form-control" id="productOriginalPrice" min="0" step="0.01">
+                            <div class="form-text">如果有折扣，请填写原价</div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="productStock" class="form-label">库存 <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="productStock" min="0" required>
+                            <div class="invalid-feedback">请输入库存数量</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="productStatus" class="form-label">状态 <span class="text-danger">*</span></label>
+                            <select class="form-select" id="productStatus" required>
+                                <option value="active">上架</option>
+                                <option value="inactive">下架</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="productDescription" class="form-label">商品描述</label>
+                        <textarea class="form-control" id="productDescription" rows="4"></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="productImage" class="form-label">商品图片</label>
+                        <input type="file" class="form-control" id="productImage" accept="image/*">
+                        <div class="form-text">建议上传比例为1:1的图片，最大支持2MB</div>
+                        <div class="mt-2">
+                            <img id="productImagePreview" class="img-thumbnail d-none" style="max-height: 150px;" alt="商品图片预览">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" id="saveProductBtn" class="btn btn-primary">保存</button>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,133 @@
+<!-- 分类管理页面 -->
+<div class="container-fluid">
+    <!-- 页面标题和操作按钮 -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4>分类管理</h4>
+        <button id="addCategoryBtn" class="btn btn-primary">
+            <i class="bi bi-plus-circle me-1"></i>添加分类
+        </button>
+    </div>
+    
+    <!-- 搜索 -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-12">
+                    <label for="categorySearchInput" class="form-label">搜索分类</label>
+                    <form id="categorySearchForm" class="input-group">
+                        <input type="text" id="categorySearchInput" class="form-control" placeholder="输入分类名称或关键词搜索">
+                        <button class="btn btn-outline-secondary" type="submit">
+                            <i class="bi bi-search"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 分类列表 -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>分类ID</th>
+                            <th>分类名称</th>
+                            <th>商品数量</th>
+                            <th>排序</th>
+                            <th>创建时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="categoriesList">
+                        <!-- 分类数据将通过JS动态加载 -->
+                        <tr>
+                            <td colspan="6" class="text-center">加载中...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- 分页 -->
+            <nav aria-label="分类列表分页" class="mt-4">
+                <ul id="categoriesPagination" class="pagination justify-content-center">
+                    <!-- 分页控件将通过JS动态生成 -->
+                </ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+<!-- 分类添加/编辑模态框 -->
+<div class="modal fade" id="categoryModal" tabindex="-1" aria-labelledby="categoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="categoryModalLabel">添加分类</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="关闭"></button>
+            </div>
+            <div class="modal-body">
+                <form id="categoryForm" class="needs-validation" novalidate>
+                    <input type="hidden" id="categoryId">
+                    
+                    <div class="mb-3">
+                        <label for="categoryName" class="form-label">分类名称 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="categoryName" required>
+                        <div class="invalid-feedback">请输入分类名称</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="categoryDescription" class="form-label">分类描述</label>
+                        <textarea class="form-control" id="categoryDescription" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="categorySort" class="form-label">排序</label>
+                        <input type="number" class="form-control" id="categorySort" min="0" value="0">
+                        <div class="form-text">数字越小排序越靠前</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="categoryIcon" class="form-label">分类图标</label>
+                        <input type="file" class="form-control" id="categoryIcon" accept="image/*">
+                        <div class="form-text">建议上传正方形图片，大小不超过200KB</div>
+                    </div>
+                    
+                    <div class="mb-3" id="categoryIconPreviewContainer" style="display: none;">
+                        <label class="form-label">图标预览</label>
+                        <div class="text-center">
+                            <img id="categoryIconPreview" class="product-image-preview" src="" alt="分类图标预览">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" id="saveCategoryBtn" class="btn btn-primary">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 删除确认模态框 -->
+<div class="modal fade" id="deleteCategoryModal" tabindex="-1" aria-labelledby="deleteCategoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteCategoryModalLabel">确认删除</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="关闭"></button>
+            </div>
+            <div class="modal-body">
+                <p>您确定要删除分类 <span id="deleteCategoryName" class="fw-bold"></span> 吗？</p>
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>警告：删除分类将会影响到属于该分类的所有商品。
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" id="confirmDeleteCategoryBtn" class="btn btn-danger">确认删除</button>
+            </div>
+        </div>
+    </div>
+</div>

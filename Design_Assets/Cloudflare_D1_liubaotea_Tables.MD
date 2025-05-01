@@ -184,7 +184,24 @@ CREATE INDEX idx_sessions_expiry ON shopping_sessions(expires_at);
 
 
 
+-- 删除旧表（操作前请备份数据）
+DROP TABLE IF EXISTS admins;
 
+11、admins创建管理员表（独立账户体系）
+-- 创建管理员表（独立账户体系）
+CREATE TABLE admins (
+  admin_id INTEGER PRIMARY KEY AUTOINCREMENT,  -- 管理员唯一标识
+  username TEXT NOT NULL UNIQUE,              -- 管理员账号（唯一）
+  password_hash TEXT NOT NULL,                -- 密码哈希（BCrypt加密存储）
+  role TEXT NOT NULL CHECK (role IN ('superadmin', 'admin')),  -- 角色类型
+  permissions JSON DEFAULT '[]',              -- 扩展权限字段（JSON数组存储）
+  created_at INTEGER DEFAULT (CAST(strftime('%s','now') AS INTEGER)),  -- 创建时间
+  last_login TIMESTAMP                        -- 最后登录时间
+);
+
+-- 高频查询索引
+CREATE INDEX idx_admins_role ON admins(role);       -- 按角色快速筛选
+CREATE INDEX idx_admins_username ON admins(username);  -- 登录优化
 
 
 

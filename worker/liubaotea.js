@@ -1,5 +1,36 @@
 // Cloudflare Worker for 陳記六堡茶
 
+/**
+ * 使用Web Crypto API进行密码哈希处理
+ * 由于Cloudflare Worker不支持bcryptjs，改用内置的Web Crypto API
+ * @param {string} password - 原始密码
+ * @returns {Promise<string>} - 哈希后的密码（Base64编码）
+ */
+async function hashPassword(password) {
+  // 将密码字符串转换为Uint8Array
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password);
+  
+  // 使用SHA-256算法生成哈希
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  
+  // 将哈希值转换为Base64字符串
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  return hashHex;
+}
+
+/**
+ * 比较密码与哈希值是否匹配
+ * @param {string} password - 原始密码
+ * @param {string} hash - 哈希值
+ * @returns {Promise<boolean>} - 是否匹配
+ */
+async function hashCompare(password, hash) {
+  const passwordHash = await hashPassword(password);
+  return passwordHash === hash;
+}
+
 // CORS配置
 //==========================================================================
 //                        一、CORS配置
@@ -45,6 +76,581 @@ const handleOptions = (request) => {
         status: 204
     });
 };
+
+//==========================================================================
+//                       管理员认证和权限验证
+//==========================================================================
+// 验证管理员身份
+const verifyAdmin = async (request) => {
+    const authHeader = request.headers.get('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return null;
+    }
+    
+    const token = authHeader.split(' ')[1];
+    try {
+        // 解析token（实际应用中应使用更安全的JWT验证）
+        const decoded = JSON.parse(atob(token));
+        if (decoded.role === 'admin' || decoded.role === 'superadmin') {
+            return decoded;
+        }
+        return null;
+    } catch (error) {
+        console.error('验证管理员身份失败:', error);
+        return null;
+    }
+};
+
+// 管理员API路由处理
+const handleAdminAPI = async (request, env) => {
+    // 处理OPTIONS预检请求
+    if (request.method === 'OPTIONS') {
+        return handleOptions(request);
+    }
+    
+    const url = new URL(request.url);
+    const path = url.pathname;
+    
+    // 管理员登录接口
+    if (path === '/api/admin/login' && request.method === 'POST') {
+        try {
+            const { username, password } = await request.json();
+            
+            // 从数据库中获取管理员信息
+            const admin = await env.DB.prepare(
+                'SELECT admin_id, username, password_hash, role FROM admins WHERE username = ?'
+            ).bind(username).first();
+            
+            if (!admin) {
+                return new Response(JSON.stringify({ error: '用户名或密码错误' }), {
+                    status: 401,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+            
+            // 验证密码
+            const isPasswordValid = await hashCompare(password, admin.password_hash);
+            
+            if (isPasswordValid) {
+                // 更新最后登录时间
+                await env.DB.prepare(
+                    'UPDATE admins SET last_login = CURRENT_TIMESTAMP WHERE admin_id = ?'
+                ).bind(admin.admin_id).run();
+                
+                // 生成管理员token
+                const adminInfo = {
+                    username: admin.username,
+                    role: admin.role,
+                    adminId: admin.admin_id,
+                    timestamp: new Date().toISOString()
+                };
+                
+                const token = btoa(JSON.stringify(adminInfo));
+                
+                return new Response(JSON.stringify({
+                    token,
+                    username: admin.username,
+                    role: admin.role,
+                    adminId: admin.admin_id
+                }), {
+                    status: 200,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+            
+            return new Response(JSON.stringify({ error: '用户名或密码错误' }), {
+                status: 401,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '登录失败', details: error.message }), {
+                status: 500,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        }
+    }
+    
+    // 验证管理员身份
+    const adminInfo = await verifyAdmin(request);
+    if (!adminInfo) {
+        return new Response(JSON.stringify({ error: '未授权访问' }), {
+            status: 401,
+            headers: { 'Content-Type': 'application/json' }
+        });
+    }
+    
+    // 仪表盘统计数据
+    if (path === '/api/admin/dashboard/stats' && request.method === 'GET') {
+        try {
+            // 获取订单总数
+            const ordersCount = await env.DB.prepare(
+                'SELECT COUNT(*) as count FROM orders'
+            ).first();
+            
+            // 获取总销售额
+            const salesTotal = await env.DB.prepare(
+                'SELECT SUM(total_amount) as total FROM orders WHERE status != "cancelled"'
+            ).first();
+            
+            // 获取用户总数
+            const usersCount = await env.DB.prepare(
+                'SELECT COUNT(*) as count FROM users'
+            ).first();
+            
+            // 获取商品总数
+            const productsCount = await env.DB.prepare(
+                'SELECT COUNT(*) as count FROM products'
+            ).first();
+            
+            return new Response(JSON.stringify({
+                totalOrders: ordersCount?.count || 0,
+                totalSales: salesTotal?.total || 0,
+                totalUsers: usersCount?.count || 0,
+                totalProducts: productsCount?.count || 0
+            }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '获取仪表盘数据失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+    
+    // 获取最近订单
+    if (path === '/api/admin/orders/recent' && request.method === 'GET') {
+        try {
+            const limit = parseInt(url.searchParams.get('limit') || '5');
+            
+            const { results: orders } = await env.DB.prepare(
+                `SELECT o.*, u.username 
+                FROM orders o 
+                JOIN users u ON o.user_id = u.user_id 
+                ORDER BY o.created_at DESC 
+                LIMIT ?`
+            ).bind(limit).all();
+            
+            return new Response(JSON.stringify(orders), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '获取最近订单失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+    
+    // 获取热销商品
+    if (path === '/api/admin/products/top' && request.method === 'GET') {
+        try {
+            const limit = parseInt(url.searchParams.get('limit') || '5');
+            
+            // 获取销量最高的商品
+            const { results: products } = await env.DB.prepare(
+                `SELECT p.*, 
+                (SELECT COUNT(*) FROM order_items oi JOIN orders o ON oi.order_id = o.order_id 
+                WHERE oi.product_id = p.product_id AND o.status != 'cancelled') as sales_count 
+                FROM products p 
+                ORDER BY sales_count DESC 
+                LIMIT ?`
+            ).bind(limit).all();
+            
+            return new Response(JSON.stringify(products), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '获取热销商品失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+    
+    // 获取销售趋势数据
+    if (path === '/api/admin/sales/trend' && request.method === 'GET') {
+        try {
+            const period = url.searchParams.get('period') || 'month';
+            let timeFormat, limit;
+            
+            // 根据时间周期设置SQL日期格式和数据点数量
+            if (period === 'week') {
+                timeFormat = '%Y-%m-%d'; // 按天
+                limit = 7;
+            } else if (period === 'year') {
+                timeFormat = '%Y-%m'; // 按月
+                limit = 12;
+            } else { // month
+                timeFormat = '%Y-%m-%d'; // 按天
+                limit = 30;
+            }
+            
+            // 获取销售额趋势
+            const { results: salesData } = await env.DB.prepare(
+                `SELECT 
+                strftime('${timeFormat}', datetime(created_at, 'unixepoch')) as time_period,
+                SUM(total_amount) as sales,
+                COUNT(*) as orders
+                FROM orders
+                WHERE status != 'cancelled'
+                AND created_at >= unixepoch('now', '-${limit} days')
+                GROUP BY time_period
+                ORDER BY time_period ASC
+                LIMIT ${limit}`
+            ).all();
+            
+            // 格式化数据
+            const labels = salesData.map(item => item.time_period);
+            const sales = salesData.map(item => item.sales || 0);
+            const orders = salesData.map(item => item.orders || 0);
+            
+            return new Response(JSON.stringify({
+                labels,
+                sales,
+                orders
+            }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '获取销售趋势数据失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+    
+    // 获取分类占比数据
+    if (path === '/api/admin/categories/distribution' && request.method === 'GET') {
+        try {
+            // 获取各分类的商品数量
+            const { results: categoryData } = await env.DB.prepare(
+                `SELECT 
+                c.category_name,
+                COUNT(p.product_id) as product_count
+                FROM product_categories c
+                LEFT JOIN products p ON p.category_id = c.category_id
+                GROUP BY c.category_id
+                ORDER BY product_count DESC`
+            ).all();
+            
+            // 格式化数据
+            const labels = categoryData.map(item => item.category_name);
+            const values = categoryData.map(item => item.product_count);
+            
+            return new Response(JSON.stringify({
+                labels,
+                values
+            }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '获取分类占比数据失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+    
+    // 商品管理API
+    // 获取商品列表
+    if (path === '/api/admin/products' && request.method === 'GET') {
+        try {
+            const page = parseInt(url.searchParams.get('page') || '1');
+            const limit = parseInt(url.searchParams.get('limit') || '10');
+            const offset = (page - 1) * limit;
+            
+            // 构建查询条件
+            let whereClause = '';
+            const queryParams = [];
+            
+            const category = url.searchParams.get('category');
+            const search = url.searchParams.get('search');
+            const minPrice = url.searchParams.get('minPrice');
+            const maxPrice = url.searchParams.get('maxPrice');
+            
+            if (category) {
+                whereClause += whereClause ? ' AND ' : ' WHERE ';
+                whereClause += 'p.category_id = ?';
+                queryParams.push(category);
+            }
+            
+            if (search) {
+                whereClause += whereClause ? ' AND ' : ' WHERE ';
+                whereClause += '(p.name LIKE ? OR p.description LIKE ?)';
+                queryParams.push(`%${search}%`, `%${search}%`);
+            }
+            
+            if (minPrice) {
+                whereClause += whereClause ? ' AND ' : ' WHERE ';
+                whereClause += 'p.price >= ?';
+                queryParams.push(minPrice);
+            }
+            
+            if (maxPrice) {
+                whereClause += whereClause ? ' AND ' : ' WHERE ';
+                whereClause += 'p.price <= ?';
+                queryParams.push(maxPrice);
+            }
+            
+            // 获取总记录数
+            const countQuery = `SELECT COUNT(*) as total FROM products p${whereClause}`;
+            const totalResult = await env.DB.prepare(countQuery).bind(...queryParams).first();
+            
+            // 获取分页数据
+            const productsQuery = `
+                SELECT p.*, c.category_name 
+                FROM products p 
+                LEFT JOIN product_categories c ON p.category_id = c.category_id
+                ${whereClause}
+                ORDER BY p.created_at DESC 
+                LIMIT ? OFFSET ?`;
+            
+            const { results: products } = await env.DB.prepare(productsQuery)
+                .bind(...queryParams, limit, offset)
+                .all();
+            
+            return new Response(JSON.stringify({
+                products,
+                pagination: {
+                    total: totalResult.total,
+                    page,
+                    limit,
+                    pages: Math.ceil(totalResult.total / limit)
+                }
+            }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '获取商品列表失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+    
+    // 创建新商品
+    if (path === '/api/admin/products' && request.method === 'POST') {
+        try {
+            const productData = await request.json();
+            
+            // 验证必填字段
+            if (!productData.name || !productData.price) {
+                return new Response(JSON.stringify({ error: '商品名称和价格为必填项' }), {
+                    status: 400,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+            
+            // 插入商品数据
+            const result = await env.DB.prepare(
+                `INSERT INTO products (
+                    name, description, specifications, aging_years, 
+                    price, stock, category_id, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+            ).bind(
+                productData.name,
+                productData.description || '',
+                productData.specifications || '{}',
+                productData.aging_years || 0,
+                productData.price,
+                productData.stock || 0,
+                productData.category_id || null,
+                Math.floor(Date.now() / 1000)
+            ).run();
+            
+            return new Response(JSON.stringify({
+                message: '商品创建成功',
+                productId: result.lastRowId
+            }), {
+                status: 201,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '创建商品失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+    
+    // 获取单个商品详情
+    const getProductMatch = path.match(/^\/api\/admin\/products\/(\d+)$/);
+    if (getProductMatch && request.method === 'GET') {
+        try {
+            const productId = getProductMatch[1];
+            
+            const product = await env.DB.prepare(
+                `SELECT p.*, c.category_name 
+                FROM products p 
+                LEFT JOIN product_categories c ON p.category_id = c.category_id 
+                WHERE p.product_id = ?`
+            ).bind(productId).first();
+            
+            if (!product) {
+                return new Response(JSON.stringify({ error: '商品不存在' }), {
+                    status: 404,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+            
+            return new Response(JSON.stringify(product), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '获取商品详情失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+    
+    // 更新商品
+    const updateProductMatch = path.match(/^\/api\/admin\/products\/(\d+)$/);
+    if (updateProductMatch && request.method === 'PUT') {
+        try {
+            const productId = updateProductMatch[1];
+            const productData = await request.json();
+            
+            // 检查商品是否存在
+            const existingProduct = await env.DB.prepare(
+                'SELECT 1 FROM products WHERE product_id = ?'
+            ).bind(productId).first();
+            
+            if (!existingProduct) {
+                return new Response(JSON.stringify({ error: '商品不存在' }), {
+                    status: 404,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+            
+            // 更新商品数据
+            await env.DB.prepare(
+                `UPDATE products SET 
+                name = ?, 
+                description = ?, 
+                specifications = ?, 
+                aging_years = ?, 
+                price = ?, 
+                stock = ?, 
+                category_id = ? 
+                WHERE product_id = ?`
+            ).bind(
+                productData.name,
+                productData.description || '',
+                productData.specifications || '{}',
+                productData.aging_years || 0,
+                productData.price,
+                productData.stock || 0,
+                productData.category_id || null,
+                productId
+            ).run();
+            
+            return new Response(JSON.stringify({
+                message: '商品更新成功',
+                productId
+            }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '更新商品失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+    
+    // 删除商品
+    const deleteProductMatch = path.match(/^\/api\/admin\/products\/(\d+)$/);
+    if (deleteProductMatch && request.method === 'DELETE') {
+        try {
+            const productId = deleteProductMatch[1];
+            
+            // 检查商品是否存在
+            const existingProduct = await env.DB.prepare(
+                'SELECT 1 FROM products WHERE product_id = ?'
+            ).bind(productId).first();
+            
+            if (!existingProduct) {
+                return new Response(JSON.stringify({ error: '商品不存在' }), {
+                    status: 404,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+            
+            // 删除商品
+            await env.DB.prepare(
+                'DELETE FROM products WHERE product_id = ?'
+            ).bind(productId).run();
+            
+            return new Response(JSON.stringify({
+                message: '商品删除成功'
+            }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '删除商品失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+    
+    // 更新商品库存
+    const updateStockMatch = path.match(/^\/api\/admin\/products\/(\d+)\/stock$/);
+    if (updateStockMatch && request.method === 'PUT') {
+        try {
+            const productId = updateStockMatch[1];
+            const { stock } = await request.json();
+            
+            // 检查商品是否存在
+            const existingProduct = await env.DB.prepare(
+                'SELECT 1 FROM products WHERE product_id = ?'
+            ).bind(productId).first();
+            
+            if (!existingProduct) {
+                return new Response(JSON.stringify({ error: '商品不存在' }), {
+                    status: 404,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+            
+            // 更新库存
+            await env.DB.prepare(
+                'UPDATE products SET stock = ? WHERE product_id = ?'
+            ).bind(stock, productId).run();
+            
+            return new Response(JSON.stringify({
+                message: '库存更新成功',
+                productId,
+                stock
+            }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '更新库存失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+    
+    return new Response(JSON.stringify({ error: '请求的API不存在' }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' }
+    });
+};
+
 
 //==========================================================================
 //                         四、用户相关API路由处理
@@ -114,9 +720,11 @@ if (path === '/api/register' && request.method === 'POST') {
 
             // 创建新用户
             const timestamp = new Date().toISOString();
+            // 对密码进行哈希处理
+            const hashedPassword = await hashPassword(password);
             await env.DB.prepare(
                 'INSERT INTO users (user_id, username, email, password_hash, created_at) VALUES (?, ?, ?, ?, ?)'
-            ).bind(userId, username, email, password, timestamp).run();
+            ).bind(userId, username, email, hashedPassword, timestamp).run();
 
             return new Response(JSON.stringify({ message: '注册成功', userId }), {
                 status: 201,
@@ -1610,12 +2218,21 @@ const handleUserCenter = async (request, env) => {
         try {
             const { oldPassword, newPassword } = await request.json();
 
-            // 验证旧密码
+            // 获取用户信息
             const user = await env.DB.prepare(
-                'SELECT * FROM users WHERE user_id = ? AND password_hash = ?'
-            ).bind(userId, oldPassword).first();
+                'SELECT * FROM users WHERE user_id = ?'
+            ).bind(userId).first();
 
             if (!user) {
+                return new Response(JSON.stringify({ error: '用户不存在' }), {
+                    status: 404,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+
+            // 验证旧密码
+            const isPasswordValid = await hashCompare(oldPassword, user.password_hash);
+            if (!isPasswordValid) {
                 return new Response(JSON.stringify({ error: '旧密码错误' }), {
                     status: 400,
                     headers: { 'Content-Type': 'application/json' }

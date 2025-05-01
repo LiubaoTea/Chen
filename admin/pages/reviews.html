@@ -1,0 +1,185 @@
+<!-- 评价管理页面 -->
+<div class="container-fluid">
+    <!-- 页面标题和操作按钮 -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4>评价管理</h4>
+        <div>
+            <button id="exportReviewsBtn" class="btn btn-outline-secondary me-2">
+                <i class="bi bi-download me-1"></i>导出评价
+            </button>
+            <button id="refreshReviewsBtn" class="btn btn-outline-primary">
+                <i class="bi bi-arrow-clockwise me-1"></i>刷新
+            </button>
+        </div>
+    </div>
+    
+    <!-- 筛选和搜索 -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label for="reviewStatusFilter" class="form-label">评价状态</label>
+                    <select id="reviewStatusFilter" class="form-select">
+                        <option value="">所有状态</option>
+                        <option value="pending">待审核</option>
+                        <option value="approved">已通过</option>
+                        <option value="rejected">已拒绝</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="reviewRatingFilter" class="form-label">评分</label>
+                    <select id="reviewRatingFilter" class="form-select">
+                        <option value="">所有评分</option>
+                        <option value="5">5星</option>
+                        <option value="4">4星</option>
+                        <option value="3">3星</option>
+                        <option value="2">2星</option>
+                        <option value="1">1星</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="reviewSearchInput" class="form-label">搜索评价</label>
+                    <form id="reviewSearchForm" class="input-group">
+                        <input type="text" id="reviewSearchInput" class="form-control" placeholder="输入商品名称、用户名或评价内容搜索">
+                        <button class="btn btn-outline-secondary" type="submit">
+                            <i class="bi bi-search"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 评价列表 -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>商品信息</th>
+                            <th>用户</th>
+                            <th>评分</th>
+                            <th>评价内容</th>
+                            <th>评价时间</th>
+                            <th>状态</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reviewsList">
+                        <!-- 评价数据将通过JS动态加载 -->
+                        <tr>
+                            <td colspan="7" class="text-center">加载中...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- 分页 -->
+            <nav aria-label="评价列表分页" class="mt-4">
+                <ul id="reviewsPagination" class="pagination justify-content-center">
+                    <!-- 分页控件将通过JS动态生成 -->
+                </ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+<!-- 评价详情模态框 -->
+<div class="modal fade" id="reviewDetailModal" tabindex="-1" aria-labelledby="reviewDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="reviewDetailModalLabel">评价详情</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="关闭"></button>
+            </div>
+            <div class="modal-body" id="reviewDetailContent">
+                <!-- 评价详情内容将通过JS动态加载 -->
+                <div class="text-center p-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">加载中...</span>
+                    </div>
+                    <p class="mt-3">正在加载评价详情...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                <button type="button" id="rejectReviewBtn" class="btn btn-danger">
+                    <i class="bi bi-x-circle me-1"></i>拒绝评价
+                </button>
+                <button type="button" id="approveReviewBtn" class="btn btn-success">
+                    <i class="bi bi-check-circle me-1"></i>通过评价
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 回复评价模态框 -->
+<div class="modal fade" id="replyReviewModal" tabindex="-1" aria-labelledby="replyReviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="replyReviewModalLabel">回复评价</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="关闭"></button>
+            </div>
+            <div class="modal-body">
+                <form id="replyReviewForm">
+                    <input type="hidden" id="replyReviewId">
+                    <div class="mb-3">
+                        <label for="replyContent" class="form-label">回复内容</label>
+                        <textarea class="form-control" id="replyContent" rows="4" required></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" id="submitReplyBtn" class="btn btn-primary">提交回复</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 评分星级显示样式 -->
+<style>
+    .review-stars {
+        color: #B87333; /* 古铜色 */
+        font-size: 1rem;
+    }
+    
+    .review-content {
+        max-width: 300px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    
+    .review-images {
+        display: flex;
+        gap: 5px;
+        margin-top: 5px;
+    }
+    
+    .review-image-thumbnail {
+        width: 40px;
+        height: 40px;
+        object-fit: cover;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    
+    .status-pending {
+        background-color: #F5F5DC; /* 米黄色 */
+        color: #8B4513; /* 褐色 */
+    }
+    
+    .status-approved {
+        background-color: #E6F2E6; /* 淡绿色 */
+        color: #2F4F4F; /* 墨绿 */
+    }
+    
+    .status-rejected {
+        background-color: #F9E4E4; /* 淡红色 */
+        color: #8B0000; /* 暗红色 */
+    }
+</style>
