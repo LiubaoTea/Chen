@@ -3943,62 +3943,6 @@ const handleRequest = {
 //==========================================================================
 //                         十七、Worker主处理函数
 //==========================================================================
-//==========================================================================
-//                         处理静态文件请求
-//==========================================================================
-const handleStaticFile = async (request, env) => {
-    const url = new URL(request.url);
-    const path = url.pathname;
-    
-    try {
-        // 确定文件的MIME类型
-        const getMimeType = (filePath) => {
-            const extension = filePath.split('.').pop().toLowerCase();
-            const mimeTypes = {
-                'html': 'text/html',
-                'css': 'text/css',
-                'js': 'application/javascript',
-                'json': 'application/json',
-                'png': 'image/png',
-                'jpg': 'image/jpeg',
-                'jpeg': 'image/jpeg',
-                'gif': 'image/gif',
-                'svg': 'image/svg+xml',
-                'ico': 'image/x-icon',
-                'ttf': 'font/ttf',
-                'woff': 'font/woff',
-                'woff2': 'font/woff2',
-                'eot': 'application/vnd.ms-fontobject',
-                'otf': 'font/otf'
-            };
-            return mimeTypes[extension] || 'text/plain';
-        };
-        
-        // 设置适当的Content-Type和缓存控制
-        const headers = new Headers();
-        const contentType = getMimeType(path);
-        headers.set('Content-Type', contentType);
-        headers.set('Cache-Control', 'public, max-age=86400'); // 缓存一天
-        
-        // 从R2存储中获取静态文件
-        // 注意：这里假设静态文件存储在与图片相同的R2存储桶中
-        // 如果不是，需要调整路径或使用不同的存储桶
-        const filePath = path.startsWith('/') ? path.substring(1) : path;
-        const object = await env.BUCKET.get(filePath);
-        
-        if (!object) {
-            // 如果文件不在R2存储中，返回404
-            return new Response('File not found', { status: 404, headers });
-        }
-        
-        // 返回文件内容，并设置正确的MIME类型
-        return new Response(object.body, { headers });
-    } catch (error) {
-        console.error('Error fetching static file:', error);
-        return new Response('Error fetching file: ' + error.message, { status: 500 });
-    }
-};
-
 export default {
     async fetch(request, env, ctx) {
         const url = new URL(request.url);
@@ -4012,29 +3956,10 @@ export default {
         }
 
         try {
-            // 处理静态文件请求
-            if (url.pathname.startsWith('/css/') || 
-                url.pathname.startsWith('/js/') || 
-                url.pathname.startsWith('/admin/css/') || 
-                url.pathname.startsWith('/admin/js/') ||
-                url.pathname.endsWith('.css') || 
-                url.pathname.endsWith('.js') ||
-                url.pathname.includes('/admin/') && (
-                    url.pathname.endsWith('.css') || 
-                    url.pathname.endsWith('.js') ||
-                    url.pathname.includes('/css/') ||
-                    url.pathname.includes('/js/')
-                )) {
-                // 处理CSS和JavaScript等静态文件
-                return await handleStaticFile(request, env);
-            }
-            
-            // API路由分发
+            // 路由分发
             let response;
 
-            if (url.pathname.startsWith('/api/admin')) {
-                response = await handleAdminAPI(request, env);
-            } else if (url.pathname.startsWith('/api/products')) {
+            if (url.pathname.startsWith('/api/products')) {
                 response = await handleProducts(request, env);
             } else if (url.pathname.startsWith('/api/cart')) {
                 response = await handleCartOperations(request, env);
