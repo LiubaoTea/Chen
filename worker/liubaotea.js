@@ -3941,6 +3941,73 @@ const handleRequest = {
 
 //                      
 //==========================================================================
+//                         十六、静态文件处理函数
+//==========================================================================
+/**
+ * 根据文件扩展名获取对应的MIME类型
+ * @param {string} filename - 文件名
+ * @returns {string} - MIME类型
+ */
+function getMimeType(filename) {
+    const ext = filename.split('.').pop().toLowerCase();
+    const mimeTypes = {
+        'html': 'text/html',
+        'css': 'text/css',
+        'js': 'application/javascript',
+        'json': 'application/json',
+        'png': 'image/png',
+        'jpg': 'image/jpeg',
+        'jpeg': 'image/jpeg',
+        'gif': 'image/gif',
+        'svg': 'image/svg+xml',
+        'ico': 'image/x-icon',
+        'txt': 'text/plain',
+        'pdf': 'application/pdf',
+        'woff': 'font/woff',
+        'woff2': 'font/woff2',
+        'ttf': 'font/ttf',
+        'eot': 'application/vnd.ms-fontobject',
+        'otf': 'font/otf',
+        'mp4': 'video/mp4',
+        'webm': 'video/webm',
+        'mp3': 'audio/mpeg',
+        'wav': 'audio/wav'
+    };
+    
+    return mimeTypes[ext] || 'application/octet-stream';
+}
+
+/**
+ * 处理静态文件请求
+ * @param {Request} request - 请求对象
+ * @param {Object} env - 环境变量
+ * @returns {Promise<Response>} - 响应对象
+ */
+const handleStaticFileRequest = async (request, env) => {
+    const url = new URL(request.url);
+    const path = url.pathname;
+    
+    try {
+        // 从R2存储中获取静态文件
+        const filePath = path.startsWith('/') ? path.substring(1) : path;
+        const object = await env.BUCKET.get(filePath);
+        
+        if (!object) {
+            return new Response('File not found', { status: 404 });
+        }
+        
+        // 设置适当的Content-Type
+        const headers = new Headers();
+        headers.set('Content-Type', getMimeType(path));
+        headers.set('Cache-Control', 'public, max-age=86400'); // 缓存一天
+        
+        return new Response(object.body, { headers });
+    } catch (error) {
+        return new Response('Error fetching file: ' + error.message, { status: 500 });
+    }
+};
+
+//==========================================================================
 //                         十七、Worker主处理函数
 //==========================================================================
 export default {
@@ -3973,6 +4040,9 @@ export default {
                 response = await handleUserAuth(request, env);
             } else if (url.pathname.startsWith('/image/')) {
                 return await handleImageRequest(request, env);
+            } else if (url.pathname.startsWith('/admin/') && (url.pathname.endsWith('.css') || url.pathname.endsWith('.js') || url.pathname.endsWith('.html') || url.pathname.includes('.js?') || url.pathname.includes('.css?'))) {
+                // 处理管理后台的静态资源
+                return await handleStaticFileRequest(request, env);
             } else {
                 return new Response('Not Found', { 
                     status: 404,
