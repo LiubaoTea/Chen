@@ -5,7 +5,7 @@
  */
 
 // 导入API基础URL配置
-import { API_BASE_URL } from '../config.js';
+import { API_BASE_URL, ADMIN_API_BASE_URL } from '../config.js';
 
 // 管理员认证状态
 let adminAuthState = {
@@ -67,7 +67,7 @@ async function adminLogin(username, password) {
     try {
         // 调用后端API验证管理员凭据
         // 后端API会查询D1数据库中的admins表进行验证
-        const response = await fetch(`${API_BASE_URL}/api/admin/login`, {
+        const response = await fetch(`${ADMIN_API_BASE_URL}/api/admin/login`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

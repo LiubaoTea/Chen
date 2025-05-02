@@ -29,6 +29,14 @@ const JWT_SECRET = typeof env !== 'undefined' && env.JWT_SECRET ? env.JWT_SECRET
 - 在`js/admin/admin-auth.js`中添加了对config.js的导入
 - 修改了`admin/login.html`中的脚本引入方式，使用模块方式导入
 
+### 4. 管理员API路径修复
+
+已修复管理员登录API 404错误问题：
+
+- 将`js/config.js`中的`ADMIN_API_BASE_URL`从`https://api.liubaotea.online`修改为`https://workers.liubaotea.online`，使其与前端部署在同一域名下
+- 更新了`js/admin/admin-api.js`中所有管理员API调用，确保使用正确的`ADMIN_API_BASE_URL`变量
+- 管理员API现在正确指向`/api/admin`路径，与functions目录中的API路由结构一致
+
 ## 环境变量配置说明
 
 在Cloudflare Workers/Pages中，您需要配置以下环境变量：

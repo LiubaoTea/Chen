@@ -3,12 +3,15 @@
  * 处理与后端的数据交互
  */
 
+// 导入API基础URL配置
+import { API_BASE_URL, ADMIN_API_BASE_URL } from '../config.js';
+
 // 管理后台API
 const adminAPI = {
     // 仪表盘数据
     getDashboardStats: async () => {
         try {
-            const response = await fetch(`${API_BASE_URL}/api/admin/dashboard/stats`, {
+            const response = await fetch(`${ADMIN_API_BASE_URL}/api/admin/dashboard/stats`, {
                 method: 'GET',
                 headers: {
                     ...adminAuth.getHeaders(),
@@ -30,7 +33,7 @@ const adminAPI = {
     // 获取最近订单
     getRecentOrders: async (limit = 5) => {
         try {
-            const response = await fetch(`${API_BASE_URL}/api/admin/orders/recent?limit=${limit}`, {
+            const response = await fetch(`${ADMIN_API_BASE_URL}/api/admin/orders/recent?limit=${limit}`, {
                 method: 'GET',
                 headers: {
                     ...adminAuth.getHeaders(),
@@ -52,7 +55,7 @@ const adminAPI = {
     // 获取热销商品
     getTopProducts: async (limit = 5) => {
         try {
-            const response = await fetch(`${API_BASE_URL}/api/admin/products/top?limit=${limit}`, {
+            const response = await fetch(`${ADMIN_API_BASE_URL}/api/admin/products/top?limit=${limit}`, {
                 method: 'GET',
                 headers: {
                     ...adminAuth.getHeaders(),
@@ -74,7 +77,7 @@ const adminAPI = {
     // 获取销售趋势数据
     getSalesTrend: async (period = 'month') => {
         try {
-            const response = await fetch(`${API_BASE_URL}/api/admin/sales/trend?period=${period}`, {
+            const response = await fetch(`${ADMIN_API_BASE_URL}/api/admin/sales/trend?period=${period}`, {
                 method: 'GET',
                 headers: {
                     ...adminAuth.getHeaders(),
@@ -96,7 +99,7 @@ const adminAPI = {
     // 获取分类占比数据
     getCategoryDistribution: async () => {
         try {
-            const response = await fetch(`${API_BASE_URL}/api/admin/categories/distribution`, {
+            const response = await fetch(`${ADMIN_API_BASE_URL}/api/admin/categories/distribution`, {
                 method: 'GET',
                 headers: {
                     ...adminAuth.getHeaders(),
@@ -120,7 +123,7 @@ const adminAPI = {
         // 获取商品列表
         getList: async (page = 1, limit = 10, filters = {}) => {
             try {
-                let url = `${API_BASE_URL}/api/admin/products?page=${page}&limit=${limit}`;
+                let url = `${ADMIN_API_BASE_URL}/api/admin/products?page=${page}&limit=${limit}`;
                 
                 // 添加过滤条件
                 if (filters.category) url += `&category=${filters.category}`;
@@ -150,7 +153,7 @@ const adminAPI = {
         // 获取单个商品详情
         getById: async (productId) => {
             try {
-                const response = await fetch(`${API_BASE_URL}/api/admin/products/${productId}`, {
+                const response = await fetch(`${ADMIN_API_BASE_URL}/api/admin/products/${productId}`, {
                     method: 'GET',
                     headers: {
                         ...adminAuth.getHeaders(),
@@ -172,7 +175,7 @@ const adminAPI = {
         // 创建新商品
         create: async (productData) => {
             try {
-                const response = await fetch(`${API_BASE_URL}/api/admin/products`, {
+                const response = await fetch(`${ADMIN_API_BASE_URL}/api/admin/products`, {
                     method: 'POST',
                     headers: {
                         ...adminAuth.getHeaders(),
@@ -196,7 +199,7 @@ const adminAPI = {
         // 更新商品
         update: async (productId, productData) => {
             try {
-                const response = await fetch(`${API_BASE_URL}/api/admin/products/${productId}`, {
+                const response = await fetch(`${ADMIN_API_BASE_URL}/api/admin/products/${productId}`, {
                     method: 'PUT',
                     headers: {
                         ...adminAuth.getHeaders(),
@@ -220,7 +223,7 @@ const adminAPI = {
         // 删除商品
         delete: async (productId) => {
             try {
-                const response = await fetch(`${API_BASE_URL}/api/admin/products/${productId}`, {
+                const response = await fetch(`${ADMIN_API_BASE_URL}/api/admin/products/${productId}`, {
                     method: 'DELETE',
                     headers: {
                         ...adminAuth.getHeaders(),
@@ -243,7 +246,7 @@ const adminAPI = {
         // 更新商品库存
         updateStock: async (productId, stock) => {
             try {
-                const response = await fetch(`${API_BASE_URL}/api/admin/products/${productId}/stock`, {
+                const response = await fetch(`${ADMIN_API_BASE_URL}/api/admin/products/${productId}/stock`, {
                     method: 'PUT',
                     headers: {
                         ...adminAuth.getHeaders(),
@@ -270,7 +273,7 @@ const adminAPI = {
         // 获取订单列表
         getList: async (page = 1, limit = 10, filters = {}) => {
             try {
-                let url = `${API_BASE_URL}/api/admin/orders?page=${page}&limit=${limit}`;
+                let url = `${ADMIN_API_BASE_URL}/api/admin/orders?page=${page}&limit=${limit}`;
                 
                 // 添加过滤条件
                 if (filters.status) url += `&status=${filters.status}`;
@@ -300,7 +303,7 @@ const adminAPI = {
         // 获取订单详情
         getById: async (orderId) => {
             try {
-                const response = await fetch(`${API_BASE_URL}/api/admin/orders/${orderId}`, {
+                const response = await fetch(`${ADMIN_API_BASE_URL}/api/admin/orders/${orderId}`, {
                     method: 'GET',
                     headers: {
                         ...adminAuth.getHeaders(),
@@ -322,7 +325,7 @@ const adminAPI = {
         // 更新订单状态
         updateStatus: async (orderId, status) => {
             try {
-                const response = await fetch(`${API_BASE_URL}/api/admin/orders/${orderId}/status`, {
+                const response = await fetch(`${ADMIN_API_BASE_URL}/api/admin/orders/${orderId}/status`, {
                     method: 'PUT',
                     headers: {
                         ...adminAuth.getHeaders(),
@@ -349,7 +352,7 @@ const adminAPI = {
         // 获取用户列表
         getList: async (page = 1, limit = 10, search = '') => {
             try {
-                let url = `${API_BASE_URL}/api/admin/users?page=${page}&limit=${limit}`;
+                let url = `${ADMIN_API_BASE_URL}/api/admin/users?page=${page}&limit=${limit}`;
                 if (search) url += `&search=${encodeURIComponent(search)}`;
                 
                 const response = await fetch(url, {
@@ -374,7 +377,7 @@ const adminAPI = {
         // 获取用户详情
         getById: async (userId) => {
             try {
-                const response = await fetch(`${API_BASE_URL}/api/admin/users/${userId}`, {
+                const response = await fetch(`${ADMIN_API_BASE_URL}/api/admin/users/${userId}`, {
                     method: 'GET',
                     headers: {
                         ...adminAuth.getHeaders(),
@@ -396,7 +399,7 @@ const adminAPI = {
         // 获取用户订单历史
         getOrderHistory: async (userId, page = 1, limit = 10) => {
             try {
-                const response = await fetch(`${API_BASE_URL}/api/admin/users/${userId}/orders?page=${page}&limit=${limit}`, {
+                const response = await fetch(`${ADMIN_API_BASE_URL}/api/admin/users/${userId}/orders?page=${page}&limit=${limit}`, {
                     method: 'GET',
                     headers: {
                         ...adminAuth.getHeaders(),
@@ -421,7 +424,7 @@ const adminAPI = {
         // 获取所有分类
         getAll: async () => {
             try {
-                const response = await fetch(`${API_BASE_URL}/api/admin/categories`, {
+                const response = await fetch(`${ADMIN_API_BASE_URL}/api/admin/categories`, {
                     method: 'GET',
                     headers: {
                         ...adminAuth.getHeaders(),
@@ -443,7 +446,7 @@ const adminAPI = {
         // 创建分类
         create: async (categoryData) => {
             try {
-                const response = await fetch(`${API_BASE_URL}/api/admin/categories`, {
+                const response = await fetch(`${ADMIN_API_BASE_URL}/api/admin/categories`, {
                     method: 'POST',
                     headers: {
                         ...adminAuth.getHeaders(),
@@ -467,7 +470,7 @@ const adminAPI = {
         // 更新分类
         update: async (categoryId, categoryData) => {
             try {
-                const response = await fetch(`${API_BASE_URL}/api/admin/categories/${categoryId}`, {
+                const response = await fetch(`${ADMIN_API_BASE_URL}/api/admin/categories/${categoryId}`, {
                     method: 'PUT',
                     headers: {
                         ...adminAuth.getHeaders(),
@@ -491,7 +494,7 @@ const adminAPI = {
         // 删除分类
         delete: async (categoryId) => {
             try {
-                const response = await fetch(`${API_BASE_URL}/api/admin/categories/${categoryId}`, {
+                const response = await fetch(`${ADMIN_API_BASE_URL}/api/admin/categories/${categoryId}`, {
                     method: 'DELETE',
                     headers: {
                         ...adminAuth.getHeaders(),
@@ -517,7 +520,7 @@ const adminAPI = {
         // 获取评价列表
         getList: async (page = 1, limit = 10, filters = {}) => {
             try {
-                let url = `${API_BASE_URL}/api/admin/reviews?page=${page}&limit=${limit}`;
+                let url = `${ADMIN_API_BASE_URL}/api/admin/reviews?page=${page}&limit=${limit}`;
                 
                 // 添加过滤条件
                 if (filters.status) url += `&status=${filters.status}`;
@@ -547,7 +550,7 @@ const adminAPI = {
         // 更新评价状态
         updateStatus: async (reviewId, status) => {
             try {
-                const response = await fetch(`${API_BASE_URL}/api/admin/reviews/${reviewId}/status`, {
+                const response = await fetch(`${ADMIN_API_BASE_URL}/api/admin/reviews/${reviewId}/status`, {
                     method: 'PUT',
                     headers: {
                         ...adminAuth.getHeaders(),
@@ -571,7 +574,7 @@ const adminAPI = {
         // 删除评价
         delete: async (reviewId) => {
             try {
-                const response = await fetch(`${API_BASE_URL}/api/admin/reviews/${reviewId}`, {
+                const response = await fetch(`${ADMIN_API_BASE_URL}/api/admin/reviews/${reviewId}`, {
                     method: 'DELETE',
                     headers: {
                         ...adminAuth.getHeaders(),

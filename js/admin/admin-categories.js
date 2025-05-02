@@ -5,7 +5,7 @@
 
 // 导入adminAuth模块
 import { adminAuth } from './admin-auth.js';
-import { API_BASE_URL } from '../config.js';
+import { ADMIN_API_BASE_URL } from '../config.js';
 
 // 分类列表数据
 let categoriesData = [];
@@ -36,16 +36,16 @@ async function initCategoriesPage() {
 // 加载分类列表
 async function loadCategories(page, searchQuery = '') {
     try {
-        currentPage = page;
+        categoriesCurrentPage = page;
         
         // 显示加载状态
         const categoriesList = document.getElementById('categoriesList');
         categoriesList.innerHTML = '<tr><td colspan="6" class="text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">加载中...</span></div></td></tr>';
         
         // 获取分类数据
-        const result = await adminAPI.getCategories(page, pageSize, searchQuery);
+        const result = await adminAPI.getCategories(page, categoriesPageSize, searchQuery);
         categoriesData = result.categories;
-        totalPages = result.totalPages;
+        categoriesTotalPages = result.totalPages;
         
         // 更新分类列表
         updateCategoriesList();
@@ -117,27 +117,27 @@ function updateCategoriesPagination() {
     const pagination = document.getElementById('categoriesPagination');
     pagination.innerHTML = '';
     
-    if (totalPages <= 1) {
+    if (categoriesTotalPages <= 1) {
         return;
     }
     
     // 上一页按钮
     const prevLi = document.createElement('li');
-    prevLi.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
+    prevLi.className = `page-item ${categoriesCurrentPage === 1 ? 'disabled' : ''}`;
     prevLi.innerHTML = `<a class="page-link" href="#" aria-label="上一页"><i class="bi bi-chevron-left"></i></a>`;
     pagination.appendChild(prevLi);
     
-    if (currentPage > 1) {
+    if (categoriesCurrentPage > 1) {
         prevLi.addEventListener('click', (e) => {
             e.preventDefault();
-            loadCategories(currentPage - 1);
+            loadCategories(categoriesCurrentPage - 1);
         });
     }
     
     // 页码按钮
     const maxPages = 5; // 最多显示的页码数
-    let startPage = Math.max(1, currentPage - Math.floor(maxPages / 2));
-    let endPage = Math.min(totalPages, startPage + maxPages - 1);
+    let startPage = Math.max(1, categoriesCurrentPage - Math.floor(maxPages / 2));
+    let endPage = Math.min(categoriesTotalPages, startPage + maxPages - 1);
     
     if (endPage - startPage + 1 < maxPages) {
         startPage = Math.max(1, endPage - maxPages + 1);
@@ -145,11 +145,11 @@ function updateCategoriesPagination() {
     
     for (let i = startPage; i <= endPage; i++) {
         const pageLi = document.createElement('li');
-        pageLi.className = `page-item ${i === currentPage ? 'active' : ''}`;
+        pageLi.className = `page-item ${i === categoriesCurrentPage ? 'active' : ''}`;
         pageLi.innerHTML = `<a class="page-link" href="#">${i}</a>`;
         pagination.appendChild(pageLi);
         
-        if (i !== currentPage) {
+        if (i !== categoriesCurrentPage) {
             pageLi.addEventListener('click', (e) => {
                 e.preventDefault();
                 loadCategories(i);
@@ -159,14 +159,14 @@ function updateCategoriesPagination() {
     
     // 下一页按钮
     const nextLi = document.createElement('li');
-    nextLi.className = `page-item ${currentPage === totalPages ? 'disabled' : ''}`;
+    nextLi.className = `page-item ${categoriesCurrentPage === categoriesTotalPages ? 'disabled' : ''}`;
     nextLi.innerHTML = `<a class="page-link" href="#" aria-label="下一页"><i class="bi bi-chevron-right"></i></a>`;
     pagination.appendChild(nextLi);
     
-    if (currentPage < totalPages) {
+    if (categoriesCurrentPage < categoriesTotalPages) {
         nextLi.addEventListener('click', (e) => {
             e.preventDefault();
-            loadCategories(currentPage + 1);
+            loadCategories(categoriesCurrentPage + 1);
         });
     }
 }
