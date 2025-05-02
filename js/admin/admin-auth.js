@@ -4,6 +4,9 @@
  * 使用D1数据库中的admins表进行管理员认证
  */
 
+// 导入API基础URL配置
+import { API_BASE_URL } from '../config.js';
+
 // 管理员认证状态
 let adminAuthState = {
     isLoggedIn: false,

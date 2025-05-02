@@ -7,7 +7,7 @@ compatibility_date = "2023-10-30"
 [[d1_databases]]
 binding = "DB"
 database_name = "liubaocha-db"
-database_id = "your-database-id"
+database_id = "440ba7f7-c29c-406c-95ba-ebb2b6aa98cd"
 
 # 标记外部依赖，解决构建错误
 [build]

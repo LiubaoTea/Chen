@@ -4,8 +4,8 @@
  * 使用Web Crypto API代替外部JWT库
  */
 
-// JWT密钥，实际应用中应存储在环境变量中
-const JWT_SECRET = 'liubaocha-admin-secret-key';
+// JWT密钥，从环境变量中获取，如果不存在则使用默认值
+const JWT_SECRET = typeof env !== 'undefined' && env.JWT_SECRET ? env.JWT_SECRET : 'liubaocha-admin-secret-key';
 
 /**
  * 生成JWT令牌
