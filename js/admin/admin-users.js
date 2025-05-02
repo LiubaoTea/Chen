@@ -3,11 +3,18 @@
  * 处理用户的展示、详情查看和状态管理
  */
 
+// 导入adminAuth模块
+import { adminAuth } from './admin-auth.js';
+import { API_BASE_URL } from '../config.js';
+
 // 用户列表数据
 let usersData = [];
-let currentPage = 1;
-let totalPages = 1;
-let pageSize = 10;
+let usersCurrentPage = 1;
+let usersTotalPages = 1;
+let usersPageSize = 10;
+
+// 导出为全局变量，供其他模块使用
+window.initUsersPage = initUsersPage;
 
 // 初始化用户管理页面
 async function initUsersPage() {

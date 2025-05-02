@@ -38,6 +38,20 @@ function initAdminAuth() {
     return false;
 }
 
+// 导出adminAuth对象，使其可以被其他模块导入
+window.adminAuth = {
+    init: initAdminAuth,
+    login: adminLogin,
+    logout: adminLogout,
+    check: checkAdminAuth,
+    getToken: getAdminToken,
+    getAdminInfo: getAdminInfo,
+    isLoggedIn: isAdminLoggedIn
+};
+
+// 导出为ES模块
+export const adminAuth = window.adminAuth;
+
 // 管理员登录
 async function adminLogin(username, password) {
     try {

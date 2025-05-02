@@ -3,13 +3,20 @@
  * 处理评价的展示、审核和回复
  */
 
+// 导入adminAuth模块
+import { adminAuth } from './admin-auth.js';
+import { API_BASE_URL } from '../config.js';
+
 // 评价列表数据
 let reviewsData = [];
-let currentPage = 1;
-let totalPages = 1;
-let pageSize = 10;
-let selectedStatus = '';
-let selectedRating = '';
+let reviewsCurrentPage = 1;
+let reviewsTotalPages = 1;
+let reviewsPageSize = 10;
+let reviewsSelectedStatus = '';
+let reviewsSelectedRating = '';
+
+// 导出为全局变量，供其他模块使用
+window.initReviewsPage = initReviewsPage;
 
 // 初始化评价管理页面
 async function initReviewsPage() {

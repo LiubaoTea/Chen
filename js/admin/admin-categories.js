@@ -3,11 +3,18 @@
  * 处理分类的展示、添加、编辑和删除
  */
 
+// 导入adminAuth模块
+import { adminAuth } from './admin-auth.js';
+import { API_BASE_URL } from '../config.js';
+
 // 分类列表数据
 let categoriesData = [];
-let currentPage = 1;
-let totalPages = 1;
-let pageSize = 10;
+let categoriesCurrentPage = 1;
+let categoriesTotalPages = 1;
+let categoriesPageSize = 10;
+
+// 导出为全局变量，供其他模块使用
+window.initCategoriesPage = initCategoriesPage;
 
 // 初始化分类管理页面
 async function initCategoriesPage() {

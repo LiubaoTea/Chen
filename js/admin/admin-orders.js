@@ -3,12 +3,19 @@
  * 处理订单的展示、详情查看和状态更新
  */
 
+// 导入adminAuth模块
+import { adminAuth } from './admin-auth.js';
+import { API_BASE_URL } from '../config.js';
+
 // 订单列表数据
 let ordersData = [];
-let currentPage = 1;
-let totalPages = 1;
-let pageSize = 10;
-let selectedStatus = '';
+let ordersCurrentPage = 1;
+let ordersTotalPages = 1;
+let ordersPageSize = 10;
+let ordersSelectedStatus = '';
+
+// 导出为全局变量，供其他模块使用
+window.initOrdersPage = initOrdersPage;
 
 // 初始化订单管理页面
 async function initOrdersPage() {
@@ -30,17 +37,17 @@ async function initOrdersPage() {
 // 加载订单列表
 async function loadOrders(page, status = '', searchQuery = '') {
     try {
-        currentPage = page;
-        selectedStatus = status;
+        ordersCurrentPage = page;
+        ordersSelectedStatus = status;
         
         // 显示加载状态
         const ordersList = document.getElementById('ordersList');
         ordersList.innerHTML = '<tr><td colspan="7" class="text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">加载中...</span></div></td></tr>';
         
         // 获取订单数据
-        const result = await adminAPI.getOrders(page, pageSize, status, searchQuery);
+        const result = await adminAPI.getOrders(page, ordersPageSize, status, searchQuery);
         ordersData = result.orders;
-        totalPages = result.totalPages;
+        ordersTotalPages = result.totalPages;
         
         // 更新订单列表
         updateOrdersList();
@@ -161,29 +168,29 @@ function updateOrdersPagination() {
     const pagination = document.getElementById('ordersPagination');
     pagination.innerHTML = '';
     
-    if (totalPages <= 1) return;
+    if (ordersTotalPages <= 1) return;
     
     // 上一页按钮
     const prevLi = document.createElement('li');
-    prevLi.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
-    prevLi.innerHTML = `<a class="page-link" href="#" data-page="${currentPage - 1}">上一页</a>`;
+    prevLi.className = `page-item ${ordersCurrentPage === 1 ? 'disabled' : ''}`;
+    prevLi.innerHTML = `<a class="page-link" href="#" data-page="${ordersCurrentPage - 1}">上一页</a>`;
     pagination.appendChild(prevLi);
     
     // 页码按钮
-    const startPage = Math.max(1, currentPage - 2);
-    const endPage = Math.min(totalPages, startPage + 4);
+    const startPage = Math.max(1, ordersCurrentPage - 2);
+    const endPage = Math.min(ordersTotalPages, startPage + 4);
     
     for (let i = startPage; i <= endPage; i++) {
         const pageLi = document.createElement('li');
-        pageLi.className = `page-item ${i === currentPage ? 'active' : ''}`;
+        pageLi.className = `page-item ${i === ordersCurrentPage ? 'active' : ''}`;
         pageLi.innerHTML = `<a class="page-link" href="#" data-page="${i}">${i}</a>`;
         pagination.appendChild(pageLi);
     }
     
     // 下一页按钮
     const nextLi = document.createElement('li');
-    nextLi.className = `page-item ${currentPage === totalPages ? 'disabled' : ''}`;
-    nextLi.innerHTML = `<a class="page-link" href="#" data-page="${currentPage + 1}">下一页</a>`;
+    nextLi.className = `page-item ${ordersCurrentPage === ordersTotalPages ? 'disabled' : ''}`;
+    nextLi.innerHTML = `<a class="page-link" href="#" data-page="${ordersCurrentPage + 1}">下一页</a>`;
     pagination.appendChild(nextLi);
     
     // 添加分页事件监听器
@@ -191,8 +198,8 @@ function updateOrdersPagination() {
         link.addEventListener('click', (e) => {
             e.preventDefault();
             const page = parseInt(e.target.getAttribute('data-page'));
-            if (page >= 1 && page <= totalPages) {
-                loadOrders(page, selectedStatus, document.getElementById('orderSearchInput').value);
+            if (page >= 1 && page <= ordersTotalPages) {
+                loadOrders(page, ordersSelectedStatus, document.getElementById('orderSearchInput').value);
             }
         });
     });
@@ -209,7 +216,7 @@ function setupOrdersEventListeners() {
     document.getElementById('orderSearchForm').addEventListener('submit', (e) => {
         e.preventDefault();
         const searchQuery = document.getElementById('orderSearchInput').value;
-        loadOrders(1, selectedStatus, searchQuery);
+        loadOrders(1, ordersSelectedStatus, searchQuery);
     });
 }
 
@@ -394,7 +401,7 @@ async function updateOrderStatus(orderId, status) {
         showSuccessToast(`订单 #${orderId} 状态已更新为"${getStatusText(status)}"`);
         
         // 重新加载订单列表
-        await loadOrders(currentPage, selectedStatus, document.getElementById('orderSearchInput').value);
+        await loadOrders(ordersCurrentPage, ordersSelectedStatus, document.getElementById('orderSearchInput').value);
     } catch (error) {
         console.error('更新订单状态失败:', error);
         showErrorToast('更新订单状态失败: ' + error.message);

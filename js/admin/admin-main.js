@@ -3,6 +3,10 @@
  * 处理页面导航和初始化
  */
 
+// 导入adminAuth模块
+import { adminAuth } from './admin-auth.js';
+import { API_BASE_URL } from '../config.js';
+
 // 页面加载完成后执行
 document.addEventListener('DOMContentLoaded', () => {
     // 初始化管理员认证
