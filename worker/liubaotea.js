@@ -3949,11 +3949,20 @@ const handleRequest = {
  * @returns {string} - MIME类型
  */
 function getMimeType(filename) {
+    // 检查是否是JavaScript模块脚本
+    if (filename.includes('.js') && filename.includes('type=module')) {
+        return 'application/javascript';
+    }
+    
+    // 提取文件扩展名
     const ext = filename.split('.').pop().toLowerCase();
+    
+    // 定义MIME类型映射
     const mimeTypes = {
         'html': 'text/html',
         'css': 'text/css',
         'js': 'application/javascript',
+        'mjs': 'application/javascript',
         'json': 'application/json',
         'png': 'image/png',
         'jpg': 'image/jpeg',
@@ -3975,6 +3984,7 @@ function getMimeType(filename) {
     };
     
     return mimeTypes[ext] || 'application/octet-stream';
+
 }
 
 /**
@@ -3988,22 +3998,111 @@ const handleStaticFileRequest = async (request, env) => {
     const path = url.pathname;
     
     try {
-        // 从R2存储中获取静态文件
-        const filePath = path.startsWith('/') ? path.substring(1) : path;
-        const object = await env.BUCKET.get(filePath);
+        // 确定正确的MIME类型
+        const contentType = getMimeType(path);
         
-        if (!object) {
-            return new Response('File not found', { status: 404 });
+        // 设置适当的Content-Type和CORS头
+        const headers = new Headers(corsHeaders);
+        headers.set('Content-Type', contentType);
+        
+        // 处理admin目录下的静态资源
+        if (path.startsWith('/admin/')) {
+            console.log(`处理admin目录资源: ${path}, MIME类型: ${contentType}`);
+            
+            // 对于admin目录下的资源，强制设置正确的MIME类型
+            let forcedContentType = contentType;
+            
+            // 特别处理CSS和JS文件
+            if (path.endsWith('.css')) {
+                forcedContentType = 'text/css';
+            } else if (path.endsWith('.js')) {
+                forcedContentType = 'application/javascript';
+            } else if (path.includes('.js?') && path.includes('type=module')) {
+                forcedContentType = 'application/javascript';
+            }
+            
+            // 对于admin目录下的资源，直接从Pages获取
+            const targetUrl = new URL(path, 'https://www.liubaotea.online');
+            
+            // 获取原始资源
+            const response = await fetch(targetUrl.toString(), {
+                method: request.method,
+                headers: {
+                    // 确保请求头不会导致内容协商返回错误的MIME类型
+                    'Accept': '*/*'
+                }
+            });
+            
+            if (!response.ok) {
+                return new Response(`静态资源获取失败: ${response.status}`, { 
+                    status: response.status,
+                    headers: headers
+                });
+            }
+            
+            // 读取响应内容
+            const content = await response.arrayBuffer();
+            
+            // 返回带有正确MIME类型的响应
+            return new Response(content, {
+                status: 200,
+                headers: {
+                    'Content-Type': forcedContentType,
+                    'Cache-Control': 'public, max-age=86400', // 缓存一天
+                    ...corsHeaders
+                }
+            });
         }
         
-        // 设置适当的Content-Type
-        const headers = new Headers();
-        headers.set('Content-Type', getMimeType(path));
-        headers.set('Cache-Control', 'public, max-age=86400'); // 缓存一天
+        // 处理其他静态资源
+        const targetUrl = new URL(path, 'https://www.liubaotea.online');
         
-        return new Response(object.body, { headers });
+        // 强制设置正确的MIME类型
+        let forcedContentType = contentType;
+        
+        // 特别处理CSS和JS文件
+        if (path.endsWith('.css')) {
+            forcedContentType = 'text/css';
+        } else if (path.endsWith('.js')) {
+            forcedContentType = 'application/javascript';
+        } else if (path.includes('.js?') && path.includes('type=module')) {
+            forcedContentType = 'application/javascript';
+        }
+        
+        // 获取原始资源
+        const response = await fetch(targetUrl.toString(), {
+            method: request.method,
+            headers: {
+                // 确保请求头不会导致内容协商返回错误的MIME类型
+                'Accept': '*/*'
+            }
+        });
+        
+        if (!response.ok) {
+            return new Response(`静态资源获取失败: ${response.status}`, { 
+                status: response.status,
+                headers: headers
+            });
+        }
+        
+        // 读取响应内容
+        const content = await response.arrayBuffer();
+        
+        // 返回带有正确MIME类型的响应
+        return new Response(content, {
+            status: 200,
+            headers: {
+                'Content-Type': forcedContentType,
+                'Cache-Control': 'public, max-age=86400', // 缓存一天
+                ...corsHeaders
+            }
+        });
     } catch (error) {
-        return new Response('Error fetching file: ' + error.message, { status: 500 });
+        console.error('静态文件处理错误:', error);
+        return new Response('Error fetching file: ' + error.message, { 
+            status: 500,
+            headers: corsHeaders
+        });
     }
 };
 
@@ -4040,8 +4139,19 @@ export default {
                 response = await handleUserAuth(request, env);
             } else if (url.pathname.startsWith('/image/')) {
                 return await handleImageRequest(request, env);
-            } else if (url.pathname.startsWith('/admin/') && (url.pathname.endsWith('.css') || url.pathname.endsWith('.js') || url.pathname.endsWith('.html') || url.pathname.includes('.js?') || url.pathname.includes('.css?'))) {
-                // 处理管理后台的静态资源
+            } else if (url.pathname.startsWith('/admin/')) {
+                // 优先处理admin目录下的所有请求，确保正确设置MIME类型
+                console.log(`处理admin目录请求: ${url.pathname}`);
+                return await handleStaticFileRequest(request, env);
+            } else if (url.pathname.endsWith('.css') || url.pathname.endsWith('.js') || 
+                       url.pathname.endsWith('.html') || url.pathname.includes('.js?') || 
+                       url.pathname.includes('.css?') || url.pathname.endsWith('.png') || 
+                       url.pathname.endsWith('.jpg') || url.pathname.endsWith('.jpeg') || 
+                       url.pathname.endsWith('.gif') || url.pathname.endsWith('.svg') || 
+                       url.pathname.endsWith('.ico') || url.pathname.endsWith('.woff') || 
+                       url.pathname.endsWith('.woff2') || url.pathname.endsWith('.ttf') || 
+                       url.pathname.endsWith('.eot') || url.pathname.endsWith('.otf')) {
+                // 处理其他静态资源请求
                 return await handleStaticFileRequest(request, env);
             } else {
                 return new Response('Not Found', { 
