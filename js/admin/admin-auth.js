@@ -38,6 +38,16 @@ function initAdminAuth() {
     return false;
 }
 
+// 获取管理员令牌
+function getAdminToken() {
+    return adminAuthState.adminToken;
+}
+
+// 获取管理员信息
+function getAdminInfo() {
+    return adminAuthState.adminInfo;
+}
+
 // 导出adminAuth对象，使其可以被其他模块导入
 window.adminAuth = {
     init: initAdminAuth,
@@ -161,6 +171,7 @@ window.adminAuth = {
     logout: adminLogout,
     check: checkAdminAuth,
     getHeaders: getAdminAuthHeaders,
-    getAdminInfo: () => adminAuthState.adminInfo,
+    getToken: getAdminToken,
+    getAdminInfo: getAdminInfo,
     isLoggedIn: isAdminLoggedIn
 };
