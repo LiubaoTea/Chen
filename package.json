@@ -1,5 +1,13 @@
 {
   "dependencies": {
     "lodash-es": "^4.17.21"
-  }
+  },
+  "devDependencies": {
+    "@tsndr/cloudflare-worker-jwt": "^2.2.1",
+    "bcryptjs": "^2.4.3"
+  },
+  "externals": [
+    "@tsndr/cloudflare-worker-jwt",
+    "bcryptjs"
+  ]
 }

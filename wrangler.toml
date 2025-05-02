@@ -1,0 +1,21 @@
+# Cloudflare Pages配置文件
+
+name = "liubaocha-admin"
+compatibility_date = "2023-10-30"
+
+# 配置D1数据库绑定
+[[d1_databases]]
+binding = "DB"
+database_name = "liubaocha-db"
+database_id = "your-database-id"
+
+# 标记外部依赖，解决构建错误
+[build]
+command = ""
+
+[build.upload]
+format = "modules"
+
+# 将问题模块标记为external
+[build.external]
+packages = ["@tsndr/cloudflare-worker-jwt", "bcryptjs"]
