@@ -179,6 +179,19 @@
         margin-left: 0;
     }
     
+    .nav-list li a[href="admin/index.html"] {
+        background-color: rgba(184, 115, 51, 0.1);
+        padding: 8px 12px;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .nav-list li a[href="admin/index.html"] i {
+        font-size: 1.2em;
+    }
+    
     .hero-slider {
         height: 350px;
     }

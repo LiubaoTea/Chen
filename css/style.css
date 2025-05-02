@@ -143,6 +143,16 @@ img {
     position: relative;
 }
 
+.main-nav .nav-list a i {
+    margin-right: 5px;
+    color: var(--accent-color);
+}
+
+.main-nav .nav-list a[href="admin/index.html"] {
+    font-weight: bold;
+    color: var(--accent-color);
+}
+
 .main-nav .nav-list a::after {
     content: '';
     position: absolute;
