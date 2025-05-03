@@ -83,8 +83,8 @@
         window.API_BASE_URL = API_BASE_URL;
         window.ADMIN_API_BASE_URL = ADMIN_API_BASE_URL;
         window.adminAuth = adminAuth;
-    </script>
-    <script>
+        
+        // 等待DOM加载完成后执行
         document.addEventListener('DOMContentLoaded', function() {
             // 检查是否已登录，如果已登录则跳转到管理后台首页
             if (adminAuth.isLoggedIn()) {
