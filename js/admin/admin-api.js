@@ -6,6 +6,12 @@
 // 导入API基础URL配置
 import { API_BASE_URL, ADMIN_API_BASE_URL } from '../config.js';
 
+// 确保全局可访问API配置
+if (typeof window !== 'undefined') {
+    window.API_BASE_URL = API_BASE_URL;
+    window.ADMIN_API_BASE_URL = ADMIN_API_BASE_URL;
+}
+
 // 管理后台API
 const adminAPI = {
     // 仪表盘数据

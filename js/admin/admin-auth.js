@@ -7,6 +7,12 @@
 // 导入API基础URL配置
 import { API_BASE_URL, ADMIN_API_BASE_URL } from '../config.js';
 
+// 确保全局可访问API配置
+if (typeof window !== 'undefined') {
+    window.API_BASE_URL = API_BASE_URL;
+    window.ADMIN_API_BASE_URL = ADMIN_API_BASE_URL;
+}
+
 // 管理员认证状态
 let adminAuthState = {
     isLoggedIn: false,
@@ -48,19 +54,25 @@ function getAdminInfo() {
     return adminAuthState.adminInfo;
 }
 
-// 导出adminAuth对象，使其可以被其他模块导入
-window.adminAuth = {
+// 创建adminAuth对象
+const adminAuthObj = {
     init: initAdminAuth,
     login: adminLogin,
     logout: adminLogout,
     check: checkAdminAuth,
+    getHeaders: getAdminAuthHeaders,
     getToken: getAdminToken,
     getAdminInfo: getAdminInfo,
     isLoggedIn: isAdminLoggedIn
 };
 
 // 导出为ES模块
-export const adminAuth = window.adminAuth;
+export const adminAuth = adminAuthObj;
+
+// 确保全局可访问adminAuth
+if (typeof window !== 'undefined') {
+    window.adminAuth = adminAuthObj;
+}
 
 // 管理员登录
 async function adminLogin(username, password) {
@@ -164,14 +176,4 @@ function isAdminLoggedIn() {
     return adminAuthState.isLoggedIn;
 }
 
-// 导出函数
-window.adminAuth = {
-    init: initAdminAuth,
-    login: adminLogin,
-    logout: adminLogout,
-    check: checkAdminAuth,
-    getHeaders: getAdminAuthHeaders,
-    getToken: getAdminToken,
-    getAdminInfo: getAdminInfo,
-    isLoggedIn: isAdminLoggedIn
-};
+// 这部分已经在上面导出，不需要重复

@@ -20,8 +20,12 @@
         window.adminAuth = adminAuth;
         
         document.addEventListener('DOMContentLoaded', function() {
-            if (!adminAuth.init()) {
+            // 初始化认证状态并检查是否已登录
+            adminAuth.init();
+            if (!adminAuth.isLoggedIn()) {
+                // 未登录，重定向到登录页面
                 window.location.href = 'login.html';
+                return;
             }
         });
     </script>
