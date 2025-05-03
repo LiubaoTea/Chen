@@ -342,3 +342,6 @@ function showErrorToast(message) {
         document.body.removeChild(toastContainer);
     });
 }
+
+// 设置全局函数，供admin-main.js调用
+window.loadDashboardData = loadDashboardData;

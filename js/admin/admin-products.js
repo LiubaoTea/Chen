@@ -374,3 +374,6 @@ async function deleteProduct(productId) {
         showErrorToast('删除商品失败: ' + error.message);
     }
 }
+
+// 设置全局对象，供admin-main.js调用
+window.adminProducts = { init: initProductsPage };
