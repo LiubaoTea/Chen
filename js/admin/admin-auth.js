@@ -10,6 +10,8 @@ import config from '../config.js';
 // 解构导入的配置
 const { API_BASE_URL, ADMIN_API_BASE_URL } = config;
 
+console.log('加载admin-auth.js，配置:', config);
+
 // 确保ADMIN_API_BASE_URL已定义
 const ADMIN_API_URL = ADMIN_API_BASE_URL || API_BASE_URL;
 
@@ -19,6 +21,12 @@ if (typeof window !== 'undefined') {
     window.ADMIN_API_BASE_URL = ADMIN_API_BASE_URL;
     window.ADMIN_API_URL = ADMIN_API_URL;
 }
+
+console.log('admin-auth.js中的配置:', {
+    API_BASE_URL,
+    ADMIN_API_BASE_URL,
+    ADMIN_API_URL
+});
 
 // 管理员认证状态
 let adminAuthState = {
@@ -75,6 +83,7 @@ const adminAuthObj = {
 
 // 导出为ES模块
 export const adminAuth = adminAuthObj;
+export default adminAuthObj;
 
 // 确保全局可访问adminAuth
 if (typeof window !== 'undefined') {
@@ -108,18 +117,27 @@ async function adminLogin(username, password) {
         
         // 检查响应状态
         if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            const errorMessage = errorData.error || `登录失败 (${response.status})`;
+            let errorMessage = `登录失败 (${response.status})`;
+            try {
+                const errorData = await response.json();
+                if (errorData && errorData.error) {
+                    errorMessage = errorData.error;
+                }
+            } catch (e) {
+                console.error('解析错误响应失败:', e);
+            }
             console.error('登录失败:', errorMessage);
             throw new Error(errorMessage);
         }
         
-        const data = await response.json().catch(() => {
-            console.error('解析响应JSON失败');
+        let data;
+        try {
+            data = await response.json();
+            console.log('登录响应数据:', data);
+        } catch (e) {
+            console.error('解析响应JSON失败:', e);
             throw new Error('服务器响应格式错误');
-        });
-        
-        console.log('登录响应数据:', data);
+        }
         
         if (!data || !data.token) {
             console.error('登录响应缺少token');

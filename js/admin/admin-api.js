@@ -9,6 +9,8 @@ import config from '../config.js';
 // 解构导入的配置
 const { API_BASE_URL, ADMIN_API_BASE_URL } = config;
 
+console.log('admin-api.js中的配置:', config);
+
 // 确保全局可访问API配置
 if (typeof window !== 'undefined') {
     window.API_BASE_URL = API_BASE_URL;

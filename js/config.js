@@ -8,7 +8,9 @@ export const API_BASE_URL = 'https://workers.liubaotea.online';
 export const ADMIN_API_BASE_URL = 'https://workers.liubaotea.online';
 
 // 导出默认对象，确保模块兼容性
-export default {
+const config = {
     API_BASE_URL,
     ADMIN_API_BASE_URL
 };
+
+export default config;
