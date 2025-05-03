@@ -12,13 +12,25 @@ const { API_BASE_URL, ADMIN_API_BASE_URL } = config;
 
 console.log('加载admin-auth.js，配置:', config);
 
+// 清理API URL，移除所有可能的特殊字符和多余空格
+let cleanApiBaseUrl = API_BASE_URL ? API_BASE_URL.toString().replace(/[`\s]/g, '') : '';
+let cleanAdminApiBaseUrl = ADMIN_API_BASE_URL ? ADMIN_API_BASE_URL.toString().replace(/[`\s]/g, '') : '';
+
 // 确保ADMIN_API_BASE_URL已定义
-const ADMIN_API_URL = ADMIN_API_BASE_URL || API_BASE_URL;
+const ADMIN_API_URL = cleanAdminApiBaseUrl || cleanApiBaseUrl;
+
+console.log('API URL清理过程:', {
+    原始API_BASE_URL: API_BASE_URL,
+    原始ADMIN_API_BASE_URL: ADMIN_API_BASE_URL,
+    清理后API_BASE_URL: cleanApiBaseUrl,
+    清理后ADMIN_API_BASE_URL: cleanAdminApiBaseUrl,
+    最终ADMIN_API_URL: ADMIN_API_URL
+});
 
 // 确保全局可访问API配置
 if (typeof window !== 'undefined') {
-    window.API_BASE_URL = API_BASE_URL;
-    window.ADMIN_API_BASE_URL = ADMIN_API_BASE_URL;
+    window.API_BASE_URL = cleanApiBaseUrl;
+    window.ADMIN_API_BASE_URL = cleanAdminApiBaseUrl;
     window.ADMIN_API_URL = ADMIN_API_URL;
 }
 
@@ -93,15 +105,26 @@ if (typeof window !== 'undefined') {
 // 管理员登录
 async function adminLogin(username, password) {
     try {
-        console.log('尝试登录，API地址:', ADMIN_API_BASE_URL);
+        // 使用已清理的API地址
+        console.log('清理后的API地址:', window.ADMIN_API_BASE_URL);
+        
         // 构建完整的API URL
-        // 确保URL格式正确，避免重复的斜杠
-        let loginUrl = ADMIN_API_BASE_URL;
-        if (!loginUrl.endsWith('/')) {
-            loginUrl += '/';
+        let loginUrl = window.ADMIN_API_BASE_URL || window.ADMIN_API_URL || window.API_BASE_URL || '';
+        
+        // 确保loginUrl不为空
+        if (!loginUrl) {
+            console.error('错误: API URL未定义，使用默认URL');
+            loginUrl = 'https://workers.liubaotea.online';
         }
-        loginUrl += 'api/admin/login';
+        
+        // 移除URL末尾的斜杠
+        loginUrl = loginUrl.replace(/\/$/, '');
+        
+        // 添加路径
+        loginUrl += '/api/admin/login';
+        
         console.log('完整登录URL:', loginUrl);
+        console.log('URL类型:', typeof loginUrl);
         
         // 调用后端API验证管理员凭据
         // 后端API会查询D1数据库中的admins表进行验证
