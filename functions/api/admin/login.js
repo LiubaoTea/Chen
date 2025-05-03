@@ -37,11 +37,13 @@ export async function onRequestPost(context) {
     // 验证密码
     const passwordValid = await hashCompare(password, admin.password_hash);
     if (!passwordValid) {
+      console.error('密码验证失败，输入密码:', password, '存储的哈希值:', admin.password_hash);
       return new Response(
         JSON.stringify({ error: '用户名或密码错误' }),
         { status: 401, headers: { 'Content-Type': 'application/json' } }
       );
     }
+    console.log('密码验证成功，用户:', username);
     
     // 生成JWT令牌
     const token = generateToken({

@@ -7,17 +7,49 @@
  * @returns {Promise<string>} - 哈希后的密码（Base64编码）
  */
 async function hashPassword(password) {
-  // 将密码字符串转换为Uint8Array
-  const encoder = new TextEncoder();
-  const data = encoder.encode(password);
-  
-  // 使用SHA-256算法生成哈希
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  
-  // 将哈希值转换为Base64字符串
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  return hashHex;
+  try {
+    // 使用PBKDF2算法进行密码哈希
+    const encoder = new TextEncoder();
+    const passwordData = encoder.encode(password);
+    
+    // 生成随机盐值
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    
+    // 使用PBKDF2派生密钥
+    const keyMaterial = await crypto.subtle.importKey(
+      'raw',
+      passwordData,
+      { name: 'PBKDF2' },
+      false,
+      ['deriveBits', 'deriveKey']
+    );
+    
+    const key = await crypto.subtle.deriveKey(
+      {
+        name: 'PBKDF2',
+        salt: salt,
+        iterations: 100000,
+        hash: 'SHA-256'
+      },
+      keyMaterial,
+      { name: 'AES-GCM', length: 256 },
+      true,
+      ['encrypt']
+    );
+    
+    // 导出密钥
+    const keyBuffer = await crypto.subtle.exportKey('raw', key);
+    
+    // 将盐值和密钥合并并转为Base64
+    const result = new Uint8Array(salt.length + keyBuffer.byteLength);
+    result.set(salt, 0);
+    result.set(new Uint8Array(keyBuffer), salt.length);
+    
+    return btoa(String.fromCharCode.apply(null, [...result]));
+  } catch (error) {
+    console.error('哈希处理失败:', error);
+    throw error;
+  }
 }
 
 /**
@@ -27,8 +59,82 @@ async function hashPassword(password) {
  * @returns {Promise<boolean>} - 是否匹配
  */
 async function hashCompare(password, hash) {
-  const passwordHash = await hashPassword(password);
-  return passwordHash === hash;
+  try {
+    console.log('开始密码比较，输入密码:', password);
+    console.log('存储的哈希值:', hash);
+    
+    // 解码哈希值
+    const hashData = Uint8Array.from(atob(hash), c => c.charCodeAt(0));
+    console.log('解码后的哈希数据长度:', hashData.length);
+    
+    // 提取盐值和密钥
+    const salt = hashData.slice(0, 16);
+    console.log('提取的盐值长度:', salt.length);
+    
+    // 使用相同的参数重新计算哈希
+    const encoder = new TextEncoder();
+    const passwordData = encoder.encode(password);
+    console.log('编码后的密码数据长度:', passwordData.length);
+    
+    const keyMaterial = await crypto.subtle.importKey(
+      'raw',
+      passwordData,
+      { name: 'PBKDF2' },
+      false,
+      ['deriveBits', 'deriveKey']
+    );
+    
+    const key = await crypto.subtle.deriveKey(
+      {
+        name: 'PBKDF2',
+        salt: salt,
+        iterations: 100000,
+        hash: 'SHA-256'
+      },
+      keyMaterial,
+      { name: 'AES-GCM', length: 256 },
+      true,
+      ['encrypt']
+    );
+    
+    // 导出密钥
+    const keyBuffer = await crypto.subtle.exportKey('raw', key);
+    console.log('生成的密钥长度:', keyBuffer.byteLength);
+    
+    // 将计算出的密钥与存储的密钥进行比较
+    const storedKey = hashData.slice(16);
+    const newKey = new Uint8Array(keyBuffer);
+    
+    console.log('存储的密钥长度:', storedKey.length);
+    console.log('新生成的密钥长度:', newKey.length);
+    
+    if (storedKey.length !== newKey.length) {
+      console.log('密钥长度不匹配');
+      return false;
+    }
+    
+    // 比较每个字节
+    let mismatchCount = 0;
+    for (let i = 0; i < storedKey.length; i++) {
+      if (storedKey[i] !== newKey[i]) {
+        mismatchCount++;
+        if (mismatchCount <= 3) {
+          console.log(`密钥不匹配，位置 ${i}: 存储值=${storedKey[i]}, 计算值=${newKey[i]}`);
+        }
+      }
+    }
+    
+    if (mismatchCount > 0) {
+      console.log(`总共有 ${mismatchCount} 个字节不匹配`);
+      return false;
+    }
+    
+    console.log('密码验证成功');
+    return true;
+  } catch (error) {
+    console.error('密码比较失败:', error);
+    return false;
+  }
 }
 
 // CORS配置
@@ -128,8 +234,12 @@ const handleAdminAPI = async (request, env) => {
                 });
             }
             
+            console.log('正在验证管理员密码，用户名:', username);
+            console.log('数据库中的密码哈希:', admin.password_hash);
+            
             // 验证密码
             const isPasswordValid = await hashCompare(password, admin.password_hash);
+            console.log('密码验证结果:', isPasswordValid ? '成功' : '失败');
             
             if (isPasswordValid) {
                 // 更新最后登录时间
