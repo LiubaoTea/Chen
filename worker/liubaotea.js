@@ -37,7 +37,7 @@ async function hashCompare(password, hash) {
 //==========================================================================
 const corsHeaders = {
    
-    'Access-Control-Allow-Origin': 'https://www.liubaotea.online',
+    'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     'Access-Control-Max-Age': '86400'
