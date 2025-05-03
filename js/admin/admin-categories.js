@@ -5,7 +5,10 @@
 
 // 导入adminAuth模块
 import { adminAuth } from './admin-auth.js';
-import { ADMIN_API_BASE_URL } from '../config.js';
+import config from '../config.js';
+
+// 解构导入的配置
+const { ADMIN_API_BASE_URL } = config;
 
 // 分类列表数据
 let categoriesData = [];

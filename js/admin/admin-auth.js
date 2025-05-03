@@ -5,7 +5,10 @@
  */
 
 // 导入API基础URL配置
-import { API_BASE_URL, ADMIN_API_BASE_URL } from '../config.js';
+import config from '../config.js';
+
+// 解构导入的配置
+const { API_BASE_URL, ADMIN_API_BASE_URL } = config;
 
 // 确保ADMIN_API_BASE_URL已定义
 const ADMIN_API_URL = ADMIN_API_BASE_URL || API_BASE_URL;
@@ -81,15 +84,27 @@ if (typeof window !== 'undefined') {
 // 管理员登录
 async function adminLogin(username, password) {
     try {
+        console.log('尝试登录，API地址:', ADMIN_API_BASE_URL);
+        // 构建完整的API URL
+        // 确保URL格式正确，避免重复的斜杠
+        let loginUrl = ADMIN_API_BASE_URL;
+        if (!loginUrl.endsWith('/')) {
+            loginUrl += '/';
+        }
+        loginUrl += 'api/admin/login';
+        console.log('完整登录URL:', loginUrl);
+        
         // 调用后端API验证管理员凭据
         // 后端API会查询D1数据库中的admins表进行验证
-        const response = await fetch(`${ADMIN_API_BASE_URL}/api/admin/login`, {
+        const response = await fetch(loginUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({ username, password })
         });
+        
+        console.log('登录响应状态:', response.status);
         
         // 检查响应状态
         if (!response.ok) {
@@ -100,10 +115,14 @@ async function adminLogin(username, password) {
         }
         
         const data = await response.json().catch(() => {
+            console.error('解析响应JSON失败');
             throw new Error('服务器响应格式错误');
         });
         
+        console.log('登录响应数据:', data);
+        
         if (!data || !data.token) {
+            console.error('登录响应缺少token');
             throw new Error('登录响应缺少必要信息');
         }
         
@@ -120,6 +139,8 @@ async function adminLogin(username, password) {
         // 存储到本地存储
         localStorage.setItem('adminToken', data.token);
         localStorage.setItem('adminInfo', JSON.stringify(adminAuthState.adminInfo));
+        
+        console.log('认证信息已保存到本地存储');
         
         // 更新UI
         updateAdminUI();

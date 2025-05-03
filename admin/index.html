@@ -9,7 +9,10 @@
     <link rel="stylesheet" href="../css/admin/admin.css">
     <script type="module">
         // 导入配置和认证模块
-        import { API_BASE_URL, ADMIN_API_BASE_URL } from '../js/config.js';
+        import config from '../js/config.js';
+
+// 解构导入的配置
+const { API_BASE_URL, ADMIN_API_BASE_URL } = config;
         import { adminAuth } from '../js/admin/admin-auth.js';
         
         // 确保全局可访问API配置

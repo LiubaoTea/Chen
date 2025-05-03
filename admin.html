@@ -80,8 +80,11 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- 配置文件 -->
     <script type="module">
-        import { API_BASE_URL } from './js/config.js';
+        import config from './js/config.js';
+        // 解构导入的配置
+        const { API_BASE_URL, ADMIN_API_BASE_URL } = config;
         window.API_BASE_URL = API_BASE_URL;
+        window.ADMIN_API_BASE_URL = ADMIN_API_BASE_URL;
     </script>
     <!-- 管理后台认证模块 -->
     <script src="./js/admin/admin-auth.js"></script>

@@ -4,7 +4,10 @@
  */
 
 // 导入API基础URL配置
-import { API_BASE_URL, ADMIN_API_BASE_URL } from '../config.js';
+import config from '../config.js';
+
+// 解构导入的配置
+const { API_BASE_URL, ADMIN_API_BASE_URL } = config;
 
 // 确保全局可访问API配置
 if (typeof window !== 'undefined') {
