@@ -91,18 +91,26 @@ async function adminLogin(username, password) {
             body: JSON.stringify({ username, password })
         });
         
-        const data = await response.json();
-        
+        // 检查响应状态
         if (!response.ok) {
-            throw new Error(data.error || '登录失败');
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || `登录失败 (${response.status})`);
+        }
+        
+        const data = await response.json().catch(() => {
+            throw new Error('服务器响应格式错误');
+        });
+        
+        if (!data || !data.token) {
+            throw new Error('登录响应缺少必要信息');
         }
         
         // 保存认证信息
         adminAuthState.adminToken = data.token;
         adminAuthState.adminInfo = {
-            username: data.username,
-            role: data.role,
-            id: data.admin_id,
+            username: data.username || username,
+            role: data.role || 'admin',
+            id: data.admin_id || 0,
             permissions: data.permissions || []
         };
         adminAuthState.isLoggedIn = true;
