@@ -310,14 +310,18 @@ function loadStatisticsPage() {
             .then(response => response.text())
             .then(html => {
                 document.getElementById('statistics').innerHTML = html;
-                if (typeof initStatisticsPage === 'function') {
-                    initStatisticsPage();
+                if (window.initStatisticsPage && typeof window.initStatisticsPage === 'function') {
+                    window.initStatisticsPage();
+                } else {
+                    console.error('统计页面初始化函数未找到');
                 }
             })
             .catch(error => console.error('加载统计页面失败:', error));
     } else {
-        if (typeof refreshStatisticsData === 'function') {
-            refreshStatisticsData();
+        if (window.refreshStatisticsData && typeof window.refreshStatisticsData === 'function') {
+            window.refreshStatisticsData();
+        } else {
+            console.error('统计数据刷新函数未找到');
         }
     }
 }
@@ -328,14 +332,18 @@ function loadSettingsPage() {
             .then(response => response.text())
             .then(html => {
                 document.getElementById('settings').innerHTML = html;
-                if (typeof initSettingsPage === 'function') {
-                    initSettingsPage();
+                if (window.initSettingsPage && typeof window.initSettingsPage === 'function') {
+                    window.initSettingsPage();
+                } else {
+                    console.error('设置页面初始化函数未找到');
                 }
             })
             .catch(error => console.error('加载设置页面失败:', error));
     } else {
-        if (typeof refreshSettingsData === 'function') {
-            refreshSettingsData();
+        if (window.refreshSettingsData && typeof window.refreshSettingsData === 'function') {
+            window.refreshSettingsData();
+        } else {
+            console.error('设置数据刷新函数未找到');
         }
     }
 }

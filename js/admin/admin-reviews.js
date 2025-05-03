@@ -38,18 +38,18 @@ async function initReviewsPage() {
 // 加载评价列表
 async function loadReviews(page, status = '', rating = '', searchQuery = '') {
     try {
-        currentPage = page;
-        selectedStatus = status;
-        selectedRating = rating;
+        reviewsCurrentPage = page;
+        reviewsSelectedStatus = status;
+        reviewsSelectedRating = rating;
         
         // 显示加载状态
         const reviewsList = document.getElementById('reviewsList');
         reviewsList.innerHTML = '<tr><td colspan="7" class="text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">加载中...</span></div></td></tr>';
         
         // 获取评价数据
-        const result = await adminAPI.getReviews(page, pageSize, status, rating, searchQuery);
+        const result = await adminAPI.getReviews(page, reviewsPageSize, status, rating, searchQuery);
         reviewsData = result.reviews;
-        totalPages = result.totalPages;
+        reviewsTotalPages = result.totalPages;
         
         // 更新评价列表
         updateReviewsList();
@@ -168,27 +168,27 @@ function updateReviewsPagination() {
     const pagination = document.getElementById('reviewsPagination');
     pagination.innerHTML = '';
     
-    if (totalPages <= 1) {
+    if (reviewsTotalPages <= 1) {
         return;
     }
     
     // 上一页按钮
     const prevLi = document.createElement('li');
-    prevLi.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
+    prevLi.className = `page-item ${reviewsCurrentPage === 1 ? 'disabled' : ''}`;
     prevLi.innerHTML = `<a class="page-link" href="#" aria-label="上一页"><i class="bi bi-chevron-left"></i></a>`;
     pagination.appendChild(prevLi);
     
-    if (currentPage > 1) {
+    if (reviewsCurrentPage > 1) {
         prevLi.addEventListener('click', (e) => {
             e.preventDefault();
-            loadReviews(currentPage - 1, selectedStatus, selectedRating);
+            loadReviews(reviewsCurrentPage - 1, reviewsSelectedStatus, reviewsSelectedRating);
         });
     }
     
     // 页码按钮
     const maxPages = 5; // 最多显示的页码数
-    let startPage = Math.max(1, currentPage - Math.floor(maxPages / 2));
-    let endPage = Math.min(totalPages, startPage + maxPages - 1);
+    let startPage = Math.max(1, reviewsCurrentPage - Math.floor(maxPages / 2));
+    let endPage = Math.min(reviewsTotalPages, startPage + maxPages - 1);
     
     if (endPage - startPage + 1 < maxPages) {
         startPage = Math.max(1, endPage - maxPages + 1);
@@ -196,28 +196,28 @@ function updateReviewsPagination() {
     
     for (let i = startPage; i <= endPage; i++) {
         const pageLi = document.createElement('li');
-        pageLi.className = `page-item ${i === currentPage ? 'active' : ''}`;
+        pageLi.className = `page-item ${i === reviewsCurrentPage ? 'active' : ''}`;
         pageLi.innerHTML = `<a class="page-link" href="#">${i}</a>`;
         pagination.appendChild(pageLi);
         
-        if (i !== currentPage) {
+        if (i !== reviewsCurrentPage) {
             pageLi.addEventListener('click', (e) => {
                 e.preventDefault();
-                loadReviews(i, selectedStatus, selectedRating);
+                loadReviews(i, reviewsSelectedStatus, reviewsSelectedRating);
             });
         }
     }
     
     // 下一页按钮
     const nextLi = document.createElement('li');
-    nextLi.className = `page-item ${currentPage === totalPages ? 'disabled' : ''}`;
+    nextLi.className = `page-item ${reviewsCurrentPage === reviewsTotalPages ? 'disabled' : ''}`;
     nextLi.innerHTML = `<a class="page-link" href="#" aria-label="下一页"><i class="bi bi-chevron-right"></i></a>`;
     pagination.appendChild(nextLi);
     
-    if (currentPage < totalPages) {
+    if (reviewsCurrentPage < reviewsTotalPages) {
         nextLi.addEventListener('click', (e) => {
             e.preventDefault();
-            loadReviews(currentPage + 1, selectedStatus, selectedRating);
+            loadReviews(reviewsCurrentPage + 1, reviewsSelectedStatus, reviewsSelectedRating);
         });
     }
 }
@@ -227,25 +227,25 @@ function setupReviewsEventListeners() {
     // 状态筛选
     document.getElementById('reviewStatusFilter').addEventListener('change', (e) => {
         const status = e.target.value;
-        loadReviews(1, status, selectedRating);
+        loadReviews(1, status, reviewsSelectedRating);
     });
     
     // 评分筛选
     document.getElementById('reviewRatingFilter').addEventListener('change', (e) => {
         const rating = e.target.value;
-        loadReviews(1, selectedStatus, rating);
+        loadReviews(1, reviewsSelectedStatus, rating);
     });
     
     // 搜索表单
     document.getElementById('reviewSearchForm').addEventListener('submit', (e) => {
         e.preventDefault();
         const searchQuery = document.getElementById('reviewSearchInput').value.trim();
-        loadReviews(1, selectedStatus, selectedRating, searchQuery);
+        loadReviews(1, reviewsSelectedStatus, reviewsSelectedRating, searchQuery);
     });
     
     // 刷新按钮
     document.getElementById('refreshReviewsBtn').addEventListener('click', () => {
-        loadReviews(currentPage, selectedStatus, selectedRating);
+        loadReviews(reviewsCurrentPage, reviewsSelectedStatus, reviewsSelectedRating);
     });
     
     // 导出按钮
@@ -417,7 +417,7 @@ async function handleSubmitReply() {
         replyModal.hide();
         
         // 重新加载评价列表
-        await loadReviews(currentPage, selectedStatus, selectedRating);
+        await loadReviews(reviewsCurrentPage, reviewsSelectedStatus, reviewsSelectedRating);
         
         // 显示成功提示
         showSuccessToast('回复提交成功');
@@ -447,7 +447,7 @@ async function handleApproveReview(reviewId) {
         }
         
         // 重新加载评价列表
-        await loadReviews(currentPage, selectedStatus, selectedRating);
+        await loadReviews(reviewsCurrentPage, reviewsSelectedStatus, reviewsSelectedRating);
         
         // 显示成功提示
         showSuccessToast('评价已通过');
@@ -476,7 +476,7 @@ async function handleRejectReview(reviewId) {
         }
         
         // 重新加载评价列表
-        await loadReviews(currentPage, selectedStatus, selectedRating);
+        await loadReviews(reviewsCurrentPage, reviewsSelectedStatus, reviewsSelectedRating);
         
         // 显示成功提示
         showSuccessToast('评价已拒绝');
@@ -496,7 +496,7 @@ async function handleExportReviews() {
         showLoadingOverlay();
         
         // 调用API导出评价
-        const result = await adminAPI.exportReviews(selectedStatus, selectedRating);
+        const result = await adminAPI.exportReviews(reviewsSelectedStatus, reviewsSelectedRating);
         
         // 创建下载链接
         const blob = new Blob([result.data], { type: 'text/csv;charset=utf-8;' });
@@ -642,3 +642,6 @@ function createToastContainer() {
     document.body.appendChild(container);
     return container;
 }
+
+// 设置全局函数，供admin-main.js调用
+window.refreshReviewsData = loadReviews;

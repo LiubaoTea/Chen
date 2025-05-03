@@ -1,0 +1,113 @@
+<!-- 数据统计页面 -->
+<div class="container-fluid">
+    <!-- 页面标题和操作按钮 -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4>数据统计</h4>
+        <div>
+            <button id="refreshStatisticsBtn" class="btn btn-outline-primary">
+                <i class="bi bi-arrow-clockwise me-1"></i>刷新数据
+            </button>
+            <button id="exportStatisticsBtn" class="btn btn-outline-success ms-2">
+                <i class="bi bi-download me-1"></i>导出报表
+            </button>
+        </div>
+    </div>
+    
+    <!-- 时间范围选择 -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label for="statisticsPeriodSelect" class="form-label">统计周期</label>
+                    <select id="statisticsPeriodSelect" class="form-select">
+                        <option value="day">日报表</option>
+                        <option value="week">周报表</option>
+                        <option value="month" selected>月报表</option>
+                        <option value="year">年报表</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="statisticsStartDate" class="form-label">开始日期</label>
+                    <input type="date" id="statisticsStartDate" class="form-control">
+                </div>
+                <div class="col-md-4">
+                    <label for="statisticsEndDate" class="form-label">结束日期</label>
+                    <input type="date" id="statisticsEndDate" class="form-control">
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 销售统计图表 -->
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">销售趋势</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="salesTrendChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">商品销售占比</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="productSalesChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 用户和订单统计 -->
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">用户增长趋势</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="userGrowthChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">订单状态分布</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="orderStatusChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 热销商品排行 -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">热销商品排行</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>排名</th>
+                            <th>商品信息</th>
+                            <th>销售数量</th>
+                            <th>销售金额</th>
+                            <th>占比</th>
+                        </tr>
+                    </thead>
+                    <tbody id="topProductsList">
+                        <!-- 热销商品数据将通过JS动态加载 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

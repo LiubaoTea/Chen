@@ -433,3 +433,6 @@ function createToastContainer() {
     document.body.appendChild(container);
     return container;
 }
+
+// 设置全局函数，供admin-main.js调用
+window.refreshCategoriesData = loadCategories;

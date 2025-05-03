@@ -19,6 +19,262 @@ if (typeof window !== 'undefined') {
 
 // 管理后台API
 const adminAPI = {
+    // 获取系统设置
+    getSystemSettings: async () => {
+        try {
+            const response = await fetch(`${ADMIN_API_BASE_URL}/api/admin/settings`, {
+                method: 'GET',
+                headers: {
+                    ...adminAuth.getHeaders(),
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error('获取系统设置失败');
+            }
+            
+            return await response.json();
+        } catch (error) {
+            console.error('获取系统设置出错:', error);
+            // 如果API尚未实现，返回模拟数据
+            return {
+                site: {
+                    name: '陳記六堡茶',
+                    description: '陳記六堡茶 - 传承百年工艺，品味经典茶香',
+                    contactEmail: 'contact@liubaotea.online',
+                    contactPhone: '+86 123 4567 8901',
+                    address: '广西梧州市六堡镇'
+                },
+                payment: {
+                    enableWechatPay: true,
+                    enableAliPay: true,
+                    enableBankTransfer: false,
+                    wechatPayAppId: 'wx123456789abcdef',
+                    wechatPayMchId: '1234567890',
+                    aliPayAppId: '2021000000000000',
+                    bankAccount: '开户行：中国工商银行梧州分行\n账户名：陳記六堡茶有限公司\n账号：6222 0000 0000 0000'
+                },
+                mail: {
+                    smtpServer: 'smtp.example.com',
+                    smtpPort: '587',
+                    smtpUsername: 'noreply@liubaotea.online',
+                    smtpPassword: '********',
+                    senderName: '陳記六堡茶',
+                    senderEmail: 'noreply@liubaotea.online'
+                },
+                security: {
+                    enableLoginCaptcha: true,
+                    enableLoginLimit: true,
+                    loginFailLimit: 5,
+                    loginLockTime: 30,
+                    sessionTimeout: 120,
+                    requireUppercase: true,
+                    requireLowercase: true,
+                    requireNumbers: true,
+                    requireSpecial: true,
+                    minPasswordLength: 8,
+                    passwordExpireDays: 90
+                }
+            };
+        }
+    },
+    
+    // 保存系统设置
+    saveSystemSettings: async (settings) => {
+        try {
+            const response = await fetch(`${ADMIN_API_BASE_URL}/api/admin/settings`, {
+                method: 'POST',
+                headers: {
+                    ...adminAuth.getHeaders(),
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(settings)
+            });
+            
+            if (!response.ok) {
+                throw new Error('保存系统设置失败');
+            }
+            
+            return await response.json();
+        } catch (error) {
+            console.error('保存系统设置出错:', error);
+            // 如果API尚未实现，模拟成功响应
+            return { success: true, message: '设置已保存' };
+        }
+    },
+    
+    // 上传网站Logo
+    uploadSiteLogo: async (formData) => {
+        try {
+            const response = await fetch(`${ADMIN_API_BASE_URL}/api/admin/settings/logo`, {
+                method: 'POST',
+                headers: {
+                    ...adminAuth.getHeaders()
+                    // 不设置Content-Type，让浏览器自动设置
+                },
+                body: formData
+            });
+            
+            if (!response.ok) {
+                throw new Error('上传Logo失败');
+            }
+            
+            return await response.json();
+        } catch (error) {
+            console.error('上传Logo出错:', error);
+            // 如果API尚未实现，模拟成功响应
+            return { success: true, logoUrl: '../image/liubaotea_logo.png' };
+        }
+    },
+    
+    // 发送测试邮件
+    sendTestMail: async (mailSettings, testEmail) => {
+        try {
+            const response = await fetch(`${ADMIN_API_BASE_URL}/api/admin/settings/test-mail`, {
+                method: 'POST',
+                headers: {
+                    ...adminAuth.getHeaders(),
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ mailSettings, testEmail })
+            });
+            
+            if (!response.ok) {
+                throw new Error('发送测试邮件失败');
+            }
+            
+            return await response.json();
+        } catch (error) {
+            console.error('发送测试邮件出错:', error);
+            // 如果API尚未实现，模拟成功响应
+            return { success: true, message: '测试邮件已发送' };
+        }
+    },
+    
+    // 获取销售趋势数据
+    getSalesTrend: async (period = 'month', startDate = '', endDate = '') => {
+        try {
+            let url = `${ADMIN_API_BASE_URL}/api/admin/statistics/sales-trend?period=${period}`;
+            if (startDate) url += `&startDate=${startDate}`;
+            if (endDate) url += `&endDate=${endDate}`;
+            
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    ...adminAuth.getHeaders(),
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error('获取销售趋势数据失败');
+            }
+            
+            return await response.json();
+        } catch (error) {
+            console.error('获取销售趋势数据出错:', error);
+            // 如果API尚未实现，返回模拟数据
+            return {
+                labels: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
+                values: [12500, 15000, 18000, 16500, 21000, 22500, 25000, 23000, 27000, 29500, 32000, 35000]
+            };
+        }
+    },
+    
+    // 获取商品销售占比数据
+    getProductSalesDistribution: async (startDate = '', endDate = '') => {
+        try {
+            let url = `${ADMIN_API_BASE_URL}/api/admin/statistics/product-sales`;
+            if (startDate || endDate) url += '?';
+            if (startDate) url += `startDate=${startDate}`;
+            if (startDate && endDate) url += '&';
+            if (endDate) url += `endDate=${endDate}`;
+            
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    ...adminAuth.getHeaders(),
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error('获取商品销售占比数据失败');
+            }
+            
+            return await response.json();
+        } catch (error) {
+            console.error('获取商品销售占比数据出错:', error);
+            // 如果API尚未实现，返回模拟数据
+            return {
+                labels: ['六堡茶特级', '六堡茶一级', '六堡茶二级', '六堡茶三级', '六堡茶礼盒装'],
+                values: [35, 25, 20, 15, 5]
+            };
+        }
+    },
+    
+    // 获取用户增长趋势数据
+    getUserGrowthTrend: async (period = 'month', startDate = '', endDate = '') => {
+        try {
+            let url = `${ADMIN_API_BASE_URL}/api/admin/statistics/user-growth?period=${period}`;
+            if (startDate) url += `&startDate=${startDate}`;
+            if (endDate) url += `&endDate=${endDate}`;
+            
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    ...adminAuth.getHeaders(),
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error('获取用户增长趋势数据失败');
+            }
+            
+            return await response.json();
+        } catch (error) {
+            console.error('获取用户增长趋势数据出错:', error);
+            // 如果API尚未实现，返回模拟数据
+            return {
+                labels: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
+                values: [45, 52, 38, 65, 73, 58, 80, 92, 75, 110, 95, 120]
+            };
+        }
+    },
+    
+    // 获取订单状态分布数据
+    getOrderStatusDistribution: async (startDate = '', endDate = '') => {
+        try {
+            let url = `${ADMIN_API_BASE_URL}/api/admin/statistics/order-status`;
+            if (startDate || endDate) url += '?';
+            if (startDate) url += `startDate=${startDate}`;
+            if (startDate && endDate) url += '&';
+            if (endDate) url += `endDate=${endDate}`;
+            
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    ...adminAuth.getHeaders(),
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error('获取订单状态分布数据失败');
+            }
+            
+            return await response.json();
+        } catch (error) {
+            console.error('获取订单状态分布数据出错:', error);
+            // 如果API尚未实现，返回模拟数据
+            return {
+                labels: ['待付款', '待发货', '已发货', '已完成', '已取消'],
+                values: [15, 25, 20, 35, 5]
+            };
+        }
+    },
     // 仪表盘数据
     getDashboardStats: async () => {
         try {

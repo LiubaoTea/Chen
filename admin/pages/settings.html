@@ -1,0 +1,196 @@
+<!-- 系统设置页面 -->
+<div class="container-fluid">
+    <!-- 页面标题和操作按钮 -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4>系统设置</h4>
+        <button id="saveSettingsBtn" class="btn btn-primary">
+            <i class="bi bi-save me-1"></i>保存设置
+        </button>
+    </div>
+    
+    <!-- 设置选项卡 -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <ul class="nav nav-tabs" id="settingsTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="site-tab" data-bs-toggle="tab" data-bs-target="#site-settings" type="button" role="tab" aria-controls="site-settings" aria-selected="true">网站信息</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="payment-tab" data-bs-toggle="tab" data-bs-target="#payment-settings" type="button" role="tab" aria-controls="payment-settings" aria-selected="false">支付设置</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="mail-tab" data-bs-toggle="tab" data-bs-target="#mail-settings" type="button" role="tab" aria-controls="mail-settings" aria-selected="false">邮件设置</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="security-tab" data-bs-toggle="tab" data-bs-target="#security-settings" type="button" role="tab" aria-controls="security-settings" aria-selected="false">安全设置</button>
+                </li>
+            </ul>
+            
+            <div class="tab-content p-3" id="settingsTabContent">
+                <!-- 网站信息设置 -->
+                <div class="tab-pane fade show active" id="site-settings" role="tabpanel" aria-labelledby="site-tab">
+                    <form id="siteSettingsForm">
+                        <div class="mb-3">
+                            <label for="siteName" class="form-label">网站名称</label>
+                            <input type="text" class="form-control" id="siteName" value="陳記六堡茶">
+                        </div>
+                        <div class="mb-3">
+                            <label for="siteDescription" class="form-label">网站描述</label>
+                            <textarea class="form-control" id="siteDescription" rows="3">陳記六堡茶 - 传承百年工艺，品味经典茶香</textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="contactEmail" class="form-label">联系邮箱</label>
+                            <input type="email" class="form-control" id="contactEmail" value="contact@liubaotea.online">
+                        </div>
+                        <div class="mb-3">
+                            <label for="contactPhone" class="form-label">联系电话</label>
+                            <input type="text" class="form-control" id="contactPhone" value="+86 123 4567 8901">
+                        </div>
+                        <div class="mb-3">
+                            <label for="siteAddress" class="form-label">公司地址</label>
+                            <input type="text" class="form-control" id="siteAddress" value="广西梧州市六堡镇">
+                        </div>
+                        <div class="mb-3">
+                            <label for="siteLogo" class="form-label">网站Logo</label>
+                            <div class="input-group">
+                                <input type="file" class="form-control" id="siteLogo">
+                                <button class="btn btn-outline-secondary" type="button">上传</button>
+                            </div>
+                            <div class="mt-2">
+                                <img src="../image/liubaotea_logo.png" alt="当前Logo" height="50">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                
+                <!-- 支付设置 -->
+                <div class="tab-pane fade" id="payment-settings" role="tabpanel" aria-labelledby="payment-tab">
+                    <form id="paymentSettingsForm">
+                        <div class="mb-3">
+                            <label class="form-label">支付方式</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="enableWechatPay" checked>
+                                <label class="form-check-label" for="enableWechatPay">微信支付</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="enableAliPay" checked>
+                                <label class="form-check-label" for="enableAliPay">支付宝</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="enableBankTransfer">
+                                <label class="form-check-label" for="enableBankTransfer">银行转账</label>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="wechatPayAppId" class="form-label">微信支付AppID</label>
+                            <input type="text" class="form-control" id="wechatPayAppId" value="wx123456789abcdef">
+                        </div>
+                        <div class="mb-3">
+                            <label for="wechatPayMchId" class="form-label">微信支付商户号</label>
+                            <input type="text" class="form-control" id="wechatPayMchId" value="1234567890">
+                        </div>
+                        <div class="mb-3">
+                            <label for="aliPayAppId" class="form-label">支付宝AppID</label>
+                            <input type="text" class="form-control" id="aliPayAppId" value="2021000000000000">
+                        </div>
+                        <div class="mb-3">
+                            <label for="bankAccount" class="form-label">银行账户信息</label>
+                            <textarea class="form-control" id="bankAccount" rows="3">开户行：中国工商银行梧州分行
+账户名：陳記六堡茶有限公司
+账号：6222 0000 0000 0000</textarea>
+                        </div>
+                    </form>
+                </div>
+                
+                <!-- 邮件设置 -->
+                <div class="tab-pane fade" id="mail-settings" role="tabpanel" aria-labelledby="mail-tab">
+                    <form id="mailSettingsForm">
+                        <div class="mb-3">
+                            <label for="smtpServer" class="form-label">SMTP服务器</label>
+                            <input type="text" class="form-control" id="smtpServer" value="smtp.example.com">
+                        </div>
+                        <div class="mb-3">
+                            <label for="smtpPort" class="form-label">SMTP端口</label>
+                            <input type="number" class="form-control" id="smtpPort" value="587">
+                        </div>
+                        <div class="mb-3">
+                            <label for="smtpUsername" class="form-label">SMTP用户名</label>
+                            <input type="text" class="form-control" id="smtpUsername" value="noreply@liubaotea.online">
+                        </div>
+                        <div class="mb-3">
+                            <label for="smtpPassword" class="form-label">SMTP密码</label>
+                            <input type="password" class="form-control" id="smtpPassword" value="********">
+                        </div>
+                        <div class="mb-3">
+                            <label for="senderName" class="form-label">发件人名称</label>
+                            <input type="text" class="form-control" id="senderName" value="陳記六堡茶">
+                        </div>
+                        <div class="mb-3">
+                            <label for="senderEmail" class="form-label">发件人邮箱</label>
+                            <input type="email" class="form-control" id="senderEmail" value="noreply@liubaotea.online">
+                        </div>
+                        <div class="mb-3">
+                            <button type="button" class="btn btn-outline-primary" id="testMailBtn">发送测试邮件</button>
+                        </div>
+                    </form>
+                </div>
+                
+                <!-- 安全设置 -->
+                <div class="tab-pane fade" id="security-settings" role="tabpanel" aria-labelledby="security-tab">
+                    <form id="securitySettingsForm">
+                        <div class="mb-3">
+                            <label class="form-label">登录安全</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="enableLoginCaptcha" checked>
+                                <label class="form-check-label" for="enableLoginCaptcha">启用登录验证码</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="enableLoginLimit" checked>
+                                <label class="form-check-label" for="enableLoginLimit">启用登录失败限制</label>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="loginFailLimit" class="form-label">登录失败次数限制</label>
+                            <input type="number" class="form-control" id="loginFailLimit" value="5">
+                        </div>
+                        <div class="mb-3">
+                            <label for="loginLockTime" class="form-label">账户锁定时间（分钟）</label>
+                            <input type="number" class="form-control" id="loginLockTime" value="30">
+                        </div>
+                        <div class="mb-3">
+                            <label for="sessionTimeout" class="form-label">会话超时时间（分钟）</label>
+                            <input type="number" class="form-control" id="sessionTimeout" value="120">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">密码策略</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="requireUppercase" checked>
+                                <label class="form-check-label" for="requireUppercase">必须包含大写字母</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="requireLowercase" checked>
+                                <label class="form-check-label" for="requireLowercase">必须包含小写字母</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="requireNumbers" checked>
+                                <label class="form-check-label" for="requireNumbers">必须包含数字</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="requireSpecial" checked>
+                                <label class="form-check-label" for="requireSpecial">必须包含特殊字符</label>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="minPasswordLength" class="form-label">最小密码长度</label>
+                            <input type="number" class="form-control" id="minPasswordLength" value="8">
+                        </div>
+                        <div class="mb-3">
+                            <label for="passwordExpireDays" class="form-label">密码过期天数（0表示永不过期）</label>
+                            <input type="number" class="form-control" id="passwordExpireDays" value="90">
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
