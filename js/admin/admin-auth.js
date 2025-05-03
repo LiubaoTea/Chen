@@ -83,7 +83,7 @@ async function adminLogin(username, password) {
     try {
         // 调用后端API验证管理员凭据
         // 后端API会查询D1数据库中的admins表进行验证
-        const response = await fetch(`${ADMIN_API_URL}/api/admin/login`, {
+        const response = await fetch(`${ADMIN_API_BASE_URL}/api/admin/login`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -94,7 +94,9 @@ async function adminLogin(username, password) {
         // 检查响应状态
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.error || `登录失败 (${response.status})`);
+            const errorMessage = errorData.error || `登录失败 (${response.status})`;
+            console.error('登录失败:', errorMessage);
+            throw new Error(errorMessage);
         }
         
         const data = await response.json().catch(() => {
