@@ -114,13 +114,13 @@ async function adminLogin(username, password) {
         // 确保loginUrl不为空
         if (!loginUrl) {
             console.error('错误: API URL未定义，使用默认URL');
-            loginUrl = 'https://workers.liubaotea.online';
+            loginUrl = 'https://www.liubaotea.online';
         }
         
         // 移除URL末尾的斜杠
         loginUrl = loginUrl.replace(/\/$/, '');
         
-        // 添加路径
+        // 添加路径 - 根据functions目录结构，正确的路径是/api/admin/login
         loginUrl += '/api/admin/login';
         
         console.log('完整登录URL:', loginUrl);

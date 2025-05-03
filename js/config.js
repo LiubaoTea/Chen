@@ -2,11 +2,11 @@
 
 // API基础URL，根据实际部署环境修改（确保URL末尾没有斜杠）
 // 移除所有可能的特殊字符和多余空格
-export const API_BASE_URL = "https://workers.liubaotea.online";
+export const API_BASE_URL = "https://www.liubaotea.online";
 
 // 管理后台API基础URL
 // 管理员API已部署在同一域名下的/api/admin路径
-export const ADMIN_API_BASE_URL = "https://workers.liubaotea.online";
+export const ADMIN_API_BASE_URL = "https://www.liubaotea.online";
 
 // 导出默认对象，确保模块兼容性
 const config = {
