@@ -67,7 +67,8 @@ async function loadCategories() {
         
         console.log('发送分类请求，认证头:', headers);
         
-        const response = await fetch(`${ADMIN_API_BASE_URL}/api/admin/categories`, {
+        // 修改API路径，使用与前端商城相同的categories API
+        const response = await fetch(`${ADMIN_API_BASE_URL}/api/categories`, {
             method: 'GET',
             headers: headers
         });
@@ -79,7 +80,8 @@ async function loadCategories() {
         }
         
         const data = await response.json();
-        categoriesData = data.categories || [];
+        // 处理不同的响应格式：/api/categories直接返回数组，而/api/admin/categories返回{categories:[...]}对象
+        categoriesData = Array.isArray(data) ? data : (data.categories || []);
         
         console.log('成功加载分类数据:', categoriesData);
         
