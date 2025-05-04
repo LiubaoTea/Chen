@@ -67,7 +67,7 @@ async function loadCategories() {
         
         console.log('发送分类请求，认证头:', headers);
         
-        const response = await fetch(`${ADMIN_API_BASE_URL}/api/admin/categories`, {
+        const response = await fetch(`${ADMIN_API_BASE_URL}/admin/categories`, {
             method: 'GET',
             headers: headers
         });
@@ -101,31 +101,14 @@ async function loadCategories() {
         });
     } catch (error) {
         console.error('加载商品分类失败:', error);
-        // 如果API尚未实现或出错，使用D1数据库结构创建模拟分类数据
-        categoriesData = [
-            { category_id: 1, category_name: '特级六堡茶', rule_type: 'name_keyword', rule_value: '特级' },
-            { category_id: 2, category_name: '一级六堡茶', rule_type: 'name_keyword', rule_value: '一级' },
-            { category_id: 3, category_name: '二级六堡茶', rule_type: 'name_keyword', rule_value: '二级' },
-            { category_id: 4, category_name: '三级六堡茶', rule_type: 'name_keyword', rule_value: '三级' },
-            { category_id: 5, category_name: '陈年六堡茶', rule_type: 'aging_year', rule_value: '10' }
-        ];
-        
-        console.log('使用备用分类数据:', categoriesData);
-        
+        // 显示错误信息
         const categoryFilter = document.getElementById('productCategoryFilter');
         if (categoryFilter) {
-            // 清空现有选项
-            categoryFilter.innerHTML = '<option value="">所有分类</option>';
-            
-            // 添加分类选项
-            categoriesData.forEach(category => {
-                const option = document.createElement('option');
-                option.value = category.category_id;
-                option.textContent = category.category_name;
-                categoryFilter.appendChild(option);
-            });
+            // 清空现有选项并显示错误提示
+            categoryFilter.innerHTML = '<option value="">加载分类失败</option>';
         }
         
+        // 重新抛出错误，让上层函数处理
         throw error;
     }
 }
@@ -158,7 +141,7 @@ async function loadProducts(page, categoryId = '', searchQuery = '') {
         }
         
         // 构建API URL
-        let url = `${ADMIN_API_BASE_URL}/api/admin/products?page=${page}&pageSize=${pageSize}`;
+        let url = `${ADMIN_API_BASE_URL}/admin/products?page=${page}&pageSize=${pageSize}`;
         if (categoryId) url += `&category=${categoryId}`;
         if (searchQuery) url += `&search=${encodeURIComponent(searchQuery)}`;
         
@@ -197,59 +180,21 @@ async function loadProducts(page, categoryId = '', searchQuery = '') {
     } catch (error) {
         console.error('加载商品列表失败:', error);
         
-        // 如果API尚未实现或出错，使用D1数据库结构创建模拟商品数据
-        productsData = [
-            {
-                product_id: 1,
-                name: '特级六堡茶 2018年',
-                price: 288.00,
-                stock: 100,
-                aging_years: 5,
-                specifications: '250g/饼',
-                description: '特级六堡茶，2018年产，经过5年陈化，口感醇厚回甘。',
-                status: 'active',
-                created_at: Math.floor(Date.now() / 1000) - 86400 * 30,
-                category_id: 1
-            },
-            {
-                product_id: 2,
-                name: '一级六堡茶 2020年',
-                price: 168.00,
-                stock: 200,
-                aging_years: 3,
-                specifications: '200g/盒',
-                description: '一级六堡茶，2020年产，口感醇和。',
-                status: 'active',
-                created_at: Math.floor(Date.now() / 1000) - 86400 * 60,
-                category_id: 2
-            },
-            {
-                product_id: 3,
-                name: '陈年六堡茶 2010年',
-                price: 688.00,
-                stock: 50,
-                aging_years: 13,
-                specifications: '500g/盒',
-                description: '陈年六堡茶，2010年产，经过13年陈化，香气馥郁，滋味醇厚。',
-                status: 'active',
-                created_at: Math.floor(Date.now() / 1000) - 86400 * 90,
-                category_id: 5
-            }
-        ];
+        // 清空商品数据
+        productsData = [];
+        totalPages = 0;
         
-        totalPages = 1;
-        console.log('使用备用商品数据:', productsData);
-        
-        // 更新商品列表
-        updateProductsList();
+        // 显示错误信息
+        const productsList = document.getElementById('productsList');
+        if (productsList) {
+            productsList.innerHTML = '<tr><td colspan="7" class="text-center text-danger">加载商品列表失败，请稍后重试</td></tr>';
+        }
         
         // 更新分页控件
         updateProductsPagination();
         
-        const productsList = document.getElementById('productsList');
-        if (productsList && productsData.length === 0) {
-            productsList.innerHTML = '<tr><td colspan="7" class="text-center text-danger">加载商品列表失败，请稍后重试</td></tr>';
-        }
+        // 重新抛出错误，让上层函数处理
+        throw error;
     }
 }
 
@@ -484,7 +429,7 @@ async function showProductModal(productId = null) {
                     ...adminAuth.getHeaders() // 添加认证头信息
                 };
                 
-                const response = await fetch(`${ADMIN_API_BASE_URL}/api/admin/products/${productId}`, {
+                const response = await fetch(`${ADMIN_API_BASE_URL}/admin/products/${productId}`, {
                     method: 'GET',
                     headers: headers
                 });
@@ -576,11 +521,11 @@ async function saveProduct() {
         let url, method;
         if (productId) {
             // 更新商品
-            url = `${ADMIN_API_BASE_URL}/api/admin/products/${productId}`;
+            url = `${ADMIN_API_BASE_URL}/admin/products/${productId}`;
             method = 'PUT';
         } else {
             // 添加商品
-            url = `${ADMIN_API_BASE_URL}/api/admin/products`;
+            url = `${ADMIN_API_BASE_URL}/admin/products`;
             method = 'POST';
         }
         
@@ -658,7 +603,7 @@ async function deleteProduct(productId) {
             ...adminAuth.getHeaders() // 添加认证头信息
         };
         
-        const response = await fetch(`${ADMIN_API_BASE_URL}/api/admin/products/${productId}`, {
+        const response = await fetch(`${ADMIN_API_BASE_URL}/admin/products/${productId}`, {
             method: 'DELETE',
             headers: headers
         });
