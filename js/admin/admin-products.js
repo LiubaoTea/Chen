@@ -30,98 +30,9 @@ async function initProductsPage() {
     }
 }
 
-// 显示错误提示
-function showErrorToast(message) {
-    // 检查是否存在全局的toast函数
-    if (typeof showToast === 'function') {
-        showToast('error', message);
-    } else {
-        // 创建简单的toast提示
-        const toastContainer = document.getElementById('toastContainer') || createToastContainer();
-        const toast = document.createElement('div');
-        toast.className = 'toast show bg-danger text-white';
-        toast.setAttribute('role', 'alert');
-        toast.setAttribute('aria-live', 'assertive');
-        toast.setAttribute('aria-atomic', 'true');
-        toast.innerHTML = `
-            <div class="toast-header bg-danger text-white">
-                <strong class="me-auto">错误</strong>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="关闭"></button>
-            </div>
-            <div class="toast-body">
-                ${message}
-            </div>
-        `;
-        toastContainer.appendChild(toast);
-        
-        // 3秒后自动关闭
-        setTimeout(() => {
-            toast.classList.remove('show');
-            setTimeout(() => toast.remove(), 500);
-        }, 3000);
-    }
-}
-
-// 显示成功提示
-function showSuccessToast(message) {
-    // 检查是否存在全局的toast函数
-    if (typeof showToast === 'function') {
-        showToast('success', message);
-    } else {
-        // 创建简单的toast提示
-        const toastContainer = document.getElementById('toastContainer') || createToastContainer();
-        const toast = document.createElement('div');
-        toast.className = 'toast show bg-success text-white';
-        toast.setAttribute('role', 'alert');
-        toast.setAttribute('aria-live', 'assertive');
-        toast.setAttribute('aria-atomic', 'true');
-        toast.innerHTML = `
-            <div class="toast-header bg-success text-white">
-                <strong class="me-auto">成功</strong>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="关闭"></button>
-            </div>
-            <div class="toast-body">
-                ${message}
-            </div>
-        `;
-        toastContainer.appendChild(toast);
-        
-        // 3秒后自动关闭
-        setTimeout(() => {
-            toast.classList.remove('show');
-            setTimeout(() => toast.remove(), 500);
-        }, 3000);
-    }
-}
-
-// 创建toast容器
-function createToastContainer() {
-    const container = document.createElement('div');
-    container.id = 'toastContainer';
-    container.className = 'toast-container position-fixed bottom-0 end-0 p-3';
-    container.style.zIndex = '5000';
-    document.body.appendChild(container);
-    return container;
-}
-
-// 刷新商品数据
-async function refreshProductsData() {
-    try {
-        await loadProducts(currentPage, selectedCategoryId, document.getElementById('productSearchInput')?.value || '');
-        console.log('商品数据已刷新');
-    } catch (error) {
-        console.error('刷新商品数据失败:', error);
-        showErrorToast('刷新商品数据失败，请稍后重试');
-    }
-}
-
 // 导出为全局变量，供其他模块使用
-window.adminProducts = { 
-    init: initProductsPage,
-    refresh: refreshProductsData
-};
+window.adminProducts = { init: initProductsPage };
 window.initProductsPage = initProductsPage;
-window.refreshProductsData = refreshProductsData;
 
 // 加载商品分类
 async function loadCategories() {
@@ -133,29 +44,15 @@ async function loadCategories() {
         categoryFilter.innerHTML = '<option value="">所有分类</option>';
         
         // 添加分类选项
-        if (Array.isArray(categories)) {
-            categories.forEach(category => {
-                const option = document.createElement('option');
-                option.value = category.id || category.category_id;
-                option.textContent = category.name || category.category_name;
-                categoryFilter.appendChild(option);
-            });
-        } else if (categories && categories.categories && Array.isArray(categories.categories)) {
-            // 兼容旧格式的API响应
-            categories.categories.forEach(category => {
-                const option = document.createElement('option');
-                option.value = category.id || category.category_id;
-                option.textContent = category.name || category.category_name;
-                categoryFilter.appendChild(option);
-            });
-        } else {
-            console.warn('获取到的分类数据格式不正确:', categories);
-        }
-        
-        console.log('分类加载完成，选项数量:', categoryFilter.options.length);
+        categories.forEach(category => {
+            const option = document.createElement('option');
+            option.value = category.id;
+            option.textContent = category.name;
+            categoryFilter.appendChild(option);
+        });
     } catch (error) {
         console.error('加载商品分类失败:', error);
-        showErrorToast('加载商品分类失败，请稍后重试');
+        throw error;
     }
 }
 
@@ -171,22 +68,14 @@ async function loadProducts(page, categoryId = '', searchQuery = '') {
         
         // 获取商品数据
         const result = await adminAPI.getProducts(page, pageSize, categoryId, searchQuery);
-        console.log('获取到的商品数据结果:', result);
+        productsData = result.products;
+        totalPages = result.totalPages;
         
-        // 确保result.products存在
-        if (result && result.products && Array.isArray(result.products)) {
-            productsData = result.products;
-            totalPages = result.totalPages || 1;
-            
-            // 更新商品列表
-            updateProductsList();
-            
-            // 更新分页控件
-            updateProductsPagination();
-        } else {
-            console.error('商品数据格式不正确:', result);
-            productsList.innerHTML = '<tr><td colspan="7" class="text-center text-danger">商品数据格式不正确，请联系管理员</td></tr>';
-        }
+        // 更新商品列表
+        updateProductsList();
+        
+        // 更新分页控件
+        updateProductsPagination();
     } catch (error) {
         console.error('加载商品列表失败:', error);
         const productsList = document.getElementById('productsList');
@@ -199,89 +88,59 @@ function updateProductsList() {
     const productsList = document.getElementById('productsList');
     productsList.innerHTML = '';
     
-    if (!productsData || productsData.length === 0) {
+    if (productsData.length === 0) {
         productsList.innerHTML = '<tr><td colspan="7" class="text-center">暂无商品数据</td></tr>';
         return;
     }
     
     productsData.forEach(product => {
-        try {
-            const row = document.createElement('tr');
-            
-            // 安全获取商品属性，防止undefined错误
-            const productId = product.id || product.product_id || '未知';
-            const productName = product.name || '未命名商品';
-            const productPrice = product.price || 0;
-            const productStock = product.stock || 0;
-            const productStatus = product.status || 'inactive';
-            const productImage = product.image_url || '../images/products/default.jpg';
-            const categoryName = product.category_name || '未分类';
-            
-            // 格式化日期，确保created_at存在
-            let createdDate = '未知日期';
-            if (product.created_at) {
-                try {
-                    createdDate = new Date(product.created_at * 1000).toLocaleDateString('zh-CN');
-                } catch (e) {
-                    console.warn('日期格式化错误:', e);
-                }
-            }
-            
-            // 库存状态
-            const stockStatus = productStock > 0 ? 
-                `<span class="badge bg-success">有库存 (${productStock})</span>` : 
-                '<span class="badge bg-danger">无库存</span>';
-            
-            // 商品状态
-            const statusBadge = productStatus === 'active' ? 
-                '<span class="badge bg-success">上架中</span>' : 
-                '<span class="badge bg-secondary">已下架</span>';
-            
-            // 格式化价格，确保price是数字
-            let formattedPrice = '¥0.00';
-            try {
-                formattedPrice = `¥${Number(productPrice).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-            } catch (e) {
-                console.warn('价格格式化错误:', e);
-            }
-            
-            row.innerHTML = `
-                <td>
-                    <div class="d-flex align-items-center">
-                        <img src="${productImage}" alt="${productName}" class="product-thumbnail me-2" onerror="this.src='../images/products/default.jpg'">
-                        <div>
-                            <div class="fw-bold">${productName}</div>
-                            <small class="text-muted">ID: ${productId}</small>
-                        </div>
+        const row = document.createElement('tr');
+        
+        // 格式化日期
+        const createdDate = new Date(product.created_at * 1000).toLocaleDateString('zh-CN');
+        
+        // 库存状态
+        const stockStatus = product.stock > 0 ? 
+            `<span class="badge bg-success">有库存 (${product.stock})</span>` : 
+            '<span class="badge bg-danger">无库存</span>';
+        
+        // 商品状态
+        const statusBadge = product.status === 'active' ? 
+            '<span class="badge bg-success">上架中</span>' : 
+            '<span class="badge bg-secondary">已下架</span>';
+        
+        row.innerHTML = `
+            <td>
+                <div class="d-flex align-items-center">
+                    <img src="${product.image_url}" alt="${product.name}" class="product-thumbnail me-2">
+                    <div>
+                        <div class="fw-bold">${product.name}</div>
+                        <small class="text-muted">ID: ${product.id}</small>
                     </div>
-                </td>
-                <td>${categoryName}</td>
-                <td>${formattedPrice}</td>
-                <td>${stockStatus}</td>
-                <td>${statusBadge}</td>
-                <td>${createdDate}</td>
-                <td>
-                    <div class="btn-group">
-                        <button type="button" class="btn btn-sm btn-outline-primary edit-product" data-product-id="${productId}">
-                            <i class="bi bi-pencil"></i>
-                        </button>
-                        <button type="button" class="btn btn-sm btn-outline-danger delete-product" data-product-id="${productId}">
-                            <i class="bi bi-trash"></i>
-                        </button>
-                    </div>
-                </td>
-            `;
-            
-            productsList.appendChild(row);
-        } catch (error) {
-            console.error('处理商品数据时出错:', error, product);
-        }
+                </div>
+            </td>
+            <td>${product.category_name}</td>
+            <td>¥${product.price.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+            <td>${stockStatus}</td>
+            <td>${statusBadge}</td>
+            <td>${createdDate}</td>
+            <td>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-sm btn-outline-primary edit-product" data-product-id="${product.id}">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-danger delete-product" data-product-id="${product.id}">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            </td>
+        `;
+        
+        productsList.appendChild(row);
     });
     
     // 添加事件监听器
     addProductRowEventListeners();
-    
-    console.log('商品列表更新完成，显示商品数量:', productsData.length);
 }
 
 // 更新分页控件
