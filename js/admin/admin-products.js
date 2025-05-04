@@ -67,7 +67,7 @@ async function loadCategories() {
         
         console.log('发送分类请求，认证头:', headers);
         
-        const response = await fetch(`${ADMIN_API_BASE_URL}/api/admin/categories`, {
+        const response = await fetch(`${ADMIN_API_BASE_URL}/categories`, {
             method: 'GET',
             headers: headers
         });
@@ -141,7 +141,7 @@ async function loadProducts(page, categoryId = '', searchQuery = '') {
         }
         
         // 构建API URL
-        let url = `${ADMIN_API_BASE_URL}/api/admin/products?page=${page}&pageSize=${pageSize}`;
+        let url = `${ADMIN_API_BASE_URL}/products?page=${page}&pageSize=${pageSize}`;
         if (categoryId) url += `&category=${categoryId}`;
         if (searchQuery) url += `&search=${encodeURIComponent(searchQuery)}`;
         
@@ -429,7 +429,7 @@ async function showProductModal(productId = null) {
                     ...adminAuth.getHeaders() // 添加认证头信息
                 };
                 
-                const response = await fetch(`${ADMIN_API_BASE_URL}/api/admin/products/${productId}`, {
+                const response = await fetch(`${ADMIN_API_BASE_URL}/products/${productId}`, {
                     method: 'GET',
                     headers: headers
                 });
@@ -521,11 +521,11 @@ async function saveProduct() {
         let url, method;
         if (productId) {
             // 更新商品
-            url = `${ADMIN_API_BASE_URL}/api/admin/products/${productId}`;
+            url = `${ADMIN_API_BASE_URL}/products/${productId}`;
             method = 'PUT';
         } else {
             // 添加商品
-            url = `${ADMIN_API_BASE_URL}/api/admin/products`;
+            url = `${ADMIN_API_BASE_URL}/products`;
             method = 'POST';
         }
         
@@ -603,7 +603,7 @@ async function deleteProduct(productId) {
             ...adminAuth.getHeaders() // 添加认证头信息
         };
         
-        const response = await fetch(`${ADMIN_API_BASE_URL}/api/admin/products/${productId}`, {
+        const response = await fetch(`${ADMIN_API_BASE_URL}/products/${productId}`, {
             method: 'DELETE',
             headers: headers
         });
