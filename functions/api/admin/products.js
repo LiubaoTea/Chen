@@ -14,7 +14,7 @@ export async function onRequestGet(context) {
     const page = parseInt(url.searchParams.get('page') || '1');
     const pageSize = parseInt(url.searchParams.get('pageSize') || '10');
     const categoryId = url.searchParams.get('categoryId') || '';
-    const searchQuery = url.searchParams.get('q') || '';
+    const searchQuery = url.searchParams.get('search') || '';
     
     // 计算分页偏移量
     const offset = (page - 1) * pageSize;
@@ -62,7 +62,8 @@ export async function onRequestGet(context) {
         page,
         pageSize,
         totalPages,
-        total
+        total,
+        currentPage: page
       }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );

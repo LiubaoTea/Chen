@@ -20,7 +20,7 @@ export async function onRequestGet(context) {
     // 否则是请求分类列表
     const page = parseInt(url.searchParams.get('page') || '1');
     const pageSize = parseInt(url.searchParams.get('pageSize') || '10');
-    const searchQuery = url.searchParams.get('q') || '';
+    const searchQuery = url.searchParams.get('search') || '';
     
     // 计算分页偏移量
     const offset = (page - 1) * pageSize;
@@ -61,7 +61,8 @@ export async function onRequestGet(context) {
         page,
         pageSize,
         totalPages,
-        total
+        total,
+        currentPage: page
       }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
@@ -90,8 +91,11 @@ async function getCategoryDistribution(env) {
     
     const result = await env.DB.prepare(query).all();
     
+    // 确保至少返回一个空数组，而不是null
+    const data = result.results && result.results.length > 0 ? result.results : [];
+    
     return new Response(
-      JSON.stringify(result.results),
+      JSON.stringify(data),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
   } catch (error) {

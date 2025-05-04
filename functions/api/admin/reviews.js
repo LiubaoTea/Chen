@@ -63,7 +63,8 @@ export async function onRequestGet(context) {
         page,
         pageSize,
         totalPages,
-        total
+        total,
+        currentPage: page
       }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
