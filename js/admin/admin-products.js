@@ -45,7 +45,17 @@ window.initProductsPage = initProductsPage;
 async function loadCategories() {
     try {
         console.log('正在从D1数据库加载商品分类...');
-        const response = await fetch(`${ADMIN_API_BASE_URL}/api/admin/categories`);
+        
+        // 获取管理员认证头信息
+        const headers = {
+            'Content-Type': 'application/json',
+            ...adminAuth.getHeaders() // 添加认证头信息
+        };
+        
+        const response = await fetch(`${ADMIN_API_BASE_URL}/api/admin/categories`, {
+            method: 'GET',
+            headers: headers
+        });
         
         if (!response.ok) {
             throw new Error('获取分类列表失败，HTTP状态码: ' + response.status);
@@ -91,12 +101,16 @@ async function loadProducts(page, categoryId = '', searchQuery = '') {
         if (categoryId) url += `&category=${categoryId}`;
         if (searchQuery) url += `&search=${encodeURIComponent(searchQuery)}`;
         
+        // 获取管理员认证头信息
+        const headers = {
+            'Content-Type': 'application/json',
+            ...adminAuth.getHeaders() // 添加认证头信息
+        };
+        
         // 获取商品数据
         const response = await fetch(url, {
             method: 'GET',
-            headers: {
-                'Content-Type': 'application/json'
-            }
+            headers: headers
         });
         
         if (!response.ok) {
@@ -312,7 +326,16 @@ async function showProductModal(productId = null) {
             
             if (!product) {
                 // 如果在当前页面数据中找不到，则从API获取
-                const response = await fetch(`${ADMIN_API_BASE_URL}/api/admin/products/${productId}`);
+                // 获取管理员认证头信息
+                const headers = {
+                    'Content-Type': 'application/json',
+                    ...adminAuth.getHeaders() // 添加认证头信息
+                };
+                
+                const response = await fetch(`${ADMIN_API_BASE_URL}/api/admin/products/${productId}`, {
+                    method: 'GET',
+                    headers: headers
+                });
                 
                 if (!response.ok) {
                     throw new Error('获取商品详情失败，HTTP状态码: ' + response.status);
@@ -421,8 +444,12 @@ async function saveProduct() {
         }
         
         // 发送请求
+        // 获取管理员认证头信息
+        const authHeaders = adminAuth.getHeaders();
+        
         const response = await fetch(url, {
             method: method,
+            headers: authHeaders, // 添加认证头信息，不需要Content-Type，FormData会自动设置
             body: formData
         });
         
@@ -460,7 +487,7 @@ function editProduct(productId) {
 // 确认删除商品
 function confirmDeleteProduct(productId) {
     // 查找商品信息
-    const product = productsData.find(p => p.id === productId);
+    const product = productsData.find(p => p.product_id === productId);
     if (!product) return;
     
     // 显示确认对话框
@@ -473,11 +500,15 @@ function confirmDeleteProduct(productId) {
 async function deleteProduct(productId) {
     try {
         // 发送删除请求到D1数据库
+        // 获取管理员认证头信息
+        const headers = {
+            'Content-Type': 'application/json',
+            ...adminAuth.getHeaders() // 添加认证头信息
+        };
+        
         const response = await fetch(`${ADMIN_API_BASE_URL}/api/admin/products/${productId}`, {
             method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json'
-            }
+            headers: headers
         });
         
         if (!response.ok) {
