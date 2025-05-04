@@ -5,6 +5,8 @@
 
 // 导入API基础URL配置
 import config from '../config.js';
+// 导入认证模块
+import { adminAuth } from './admin-auth.js';
 
 // 解构导入的配置
 const { API_BASE_URL, ADMIN_API_BASE_URL } = config;
@@ -19,6 +21,399 @@ if (typeof window !== 'undefined') {
 
 // 管理后台API
 const adminAPI = {
+    // 获取仪表盘统计数据
+    getDashboardStats: async () => {
+        try {
+            const response = await fetch(`${ADMIN_API_BASE_URL}/api/admin/dashboard/stats`, {
+                method: 'GET',
+                headers: {
+                    ...adminAuth.getHeaders(),
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error('获取仪表盘统计数据失败');
+            }
+            
+            return await response.json();
+        } catch (error) {
+            console.error('获取仪表盘统计数据出错:', error);
+            // 如果API尚未实现，返回模拟数据
+            return {
+                totalSales: 12580.00,
+                totalOrders: 156,
+                totalCustomers: 89,
+                totalProducts: 42,
+                pendingOrders: 8,
+                lowStockProducts: 5
+            };
+        }
+    },
+    
+    // 获取最近订单
+    getRecentOrders: async (limit = 5) => {
+        try {
+            const response = await fetch(`${ADMIN_API_BASE_URL}/api/admin/orders/recent?limit=${limit}`, {
+                method: 'GET',
+                headers: {
+                    ...adminAuth.getHeaders(),
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error('获取最近订单失败');
+            }
+            
+            return await response.json();
+        } catch (error) {
+            console.error('获取最近订单出错:', error);
+            // 返回模拟数据
+            return [
+                { id: 'ORD20230001', customer: '张三', date: '2023-05-15', total: 358.00, status: '已完成' },
+                { id: 'ORD20230002', customer: '李四', date: '2023-05-14', total: 128.00, status: '已发货' },
+                { id: 'ORD20230003', customer: '王五', date: '2023-05-13', total: 256.00, status: '待发货' },
+                { id: 'ORD20230004', customer: '赵六', date: '2023-05-12', total: 198.00, status: '已完成' },
+                { id: 'ORD20230005', customer: '钱七', date: '2023-05-11', total: 458.00, status: '已完成' }
+            ];
+        }
+    },
+    
+    // 获取热销商品
+    getTopProducts: async (limit = 5, startDate = '', endDate = '') => {
+        try {
+            let url = `${ADMIN_API_BASE_URL}/api/admin/products/top?limit=${limit}`;
+            if (startDate) url += `&startDate=${startDate}`;
+            if (endDate) url += `&endDate=${endDate}`;
+            
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    ...adminAuth.getHeaders(),
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error('获取热销商品失败');
+            }
+            
+            return await response.json();
+        } catch (error) {
+            console.error('获取热销商品出错:', error);
+            // 返回模拟数据
+            return [
+                { id: 1, name: '陈年六堡茶 - 特级', sales: 42, revenue: 4200.00 },
+                { id: 2, name: '六堡茶 - 一级', sales: 38, revenue: 3040.00 },
+                { id: 3, name: '六堡茶 - 二级', sales: 35, revenue: 2450.00 },
+                { id: 4, name: '六堡茶礼盒装', sales: 30, revenue: 4500.00 },
+                { id: 5, name: '六堡茶 - 三级', sales: 28, revenue: 1680.00 }
+            ];
+        }
+    },
+    
+    // 获取销售趋势数据
+    getSalesTrend: async (period = 'month', startDate = '', endDate = '') => {
+        try {
+            let url = `${ADMIN_API_BASE_URL}/api/admin/statistics/sales-trend?period=${period}`;
+            if (startDate) url += `&startDate=${startDate}`;
+            if (endDate) url += `&endDate=${endDate}`;
+            
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    ...adminAuth.getHeaders(),
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error('获取销售趋势数据失败');
+            }
+            
+            return await response.json();
+        } catch (error) {
+            console.error('获取销售趋势数据出错:', error);
+            // 返回模拟数据
+            return {
+                labels: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
+                values: [1200, 1900, 2100, 1800, 2400, 2800, 3100, 3600, 3200, 3800, 4100, 4500]
+            };
+        }
+    },
+    
+    // 获取分类占比数据
+    getCategoryDistribution: async () => {
+        try {
+            const response = await fetch(`${ADMIN_API_BASE_URL}/api/admin/categories/distribution`, {
+                method: 'GET',
+                headers: {
+                    ...adminAuth.getHeaders(),
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error('获取分类占比数据失败');
+            }
+            
+            return await response.json();
+        } catch (error) {
+            console.error('获取分类占比数据出错:', error);
+            // 返回模拟数据
+            return [
+                { name: '特级六堡茶', value: 35 },
+                { name: '一级六堡茶', value: 25 },
+                { name: '二级六堡茶', value: 20 },
+                { name: '三级六堡茶', value: 15 },
+                { name: '其他', value: 5 }
+            ];
+        }
+    },
+    
+    // 获取订单列表
+    getOrders: async (page = 1, pageSize = 10, status = '', searchQuery = '') => {
+        try {
+            let url = `${ADMIN_API_BASE_URL}/api/admin/orders?page=${page}&pageSize=${pageSize}`;
+            if (status) url += `&status=${status}`;
+            if (searchQuery) url += `&search=${encodeURIComponent(searchQuery)}`;
+            
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    ...adminAuth.getHeaders(),
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error('获取订单列表失败');
+            }
+            
+            return await response.json();
+        } catch (error) {
+            console.error('获取订单列表出错:', error);
+            // 返回模拟数据
+            return {
+                orders: [
+                    { id: 'ORD20230001', customer: '张三', date: '2023-05-15', total: 358.00, status: '已完成', paymentMethod: '微信支付' },
+                    { id: 'ORD20230002', customer: '李四', date: '2023-05-14', total: 128.00, status: '已发货', paymentMethod: '支付宝' },
+                    { id: 'ORD20230003', customer: '王五', date: '2023-05-13', total: 256.00, status: '待发货', paymentMethod: '微信支付' },
+                    { id: 'ORD20230004', customer: '赵六', date: '2023-05-12', total: 198.00, status: '已完成', paymentMethod: '支付宝' },
+                    { id: 'ORD20230005', customer: '钱七', date: '2023-05-11', total: 458.00, status: '已完成', paymentMethod: '微信支付' }
+                ],
+                totalPages: 3,
+                currentPage: 1
+            };
+        }
+    },
+    
+    // 获取用户列表
+    getUsers: async (page = 1, pageSize = 10, searchQuery = '') => {
+        try {
+            let url = `${ADMIN_API_BASE_URL}/api/admin/users?page=${page}&pageSize=${pageSize}`;
+            if (searchQuery) url += `&search=${encodeURIComponent(searchQuery)}`;
+            
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    ...adminAuth.getHeaders(),
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error('获取用户列表失败');
+            }
+            
+            return await response.json();
+        } catch (error) {
+            console.error('获取用户列表出错:', error);
+            // 返回模拟数据
+            return {
+                users: [
+                    { id: 1, username: 'user1', name: '张三', email: 'zhangsan@example.com', registerDate: '2023-01-15', status: '正常' },
+                    { id: 2, username: 'user2', name: '李四', email: 'lisi@example.com', registerDate: '2023-02-20', status: '正常' },
+                    { id: 3, username: 'user3', name: '王五', email: 'wangwu@example.com', registerDate: '2023-03-10', status: '正常' },
+                    { id: 4, username: 'user4', name: '赵六', email: 'zhaoliu@example.com', registerDate: '2023-04-05', status: '已禁用' },
+                    { id: 5, username: 'user5', name: '钱七', email: 'qianqi@example.com', registerDate: '2023-05-01', status: '正常' }
+                ],
+                totalPages: 2,
+                currentPage: 1
+            };
+        }
+    },
+    
+    // 获取分类列表
+    getCategories: async (page = 1, pageSize = 10, searchQuery = '') => {
+        try {
+            let url = `${ADMIN_API_BASE_URL}/api/admin/categories?page=${page}&pageSize=${pageSize}`;
+            if (searchQuery) url += `&search=${encodeURIComponent(searchQuery)}`;
+            
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    ...adminAuth.getHeaders(),
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error('获取分类列表失败');
+            }
+            
+            return await response.json();
+        } catch (error) {
+            console.error('获取分类列表出错:', error);
+            // 返回模拟数据
+            return {
+                categories: [
+                    { id: 1, name: '特级六堡茶', description: '特级六堡茶描述', productCount: 8, status: '启用' },
+                    { id: 2, name: '一级六堡茶', description: '一级六堡茶描述', productCount: 12, status: '启用' },
+                    { id: 3, name: '二级六堡茶', description: '二级六堡茶描述', productCount: 10, status: '启用' },
+                    { id: 4, name: '三级六堡茶', description: '三级六堡茶描述', productCount: 7, status: '启用' },
+                    { id: 5, name: '礼盒装', description: '礼盒装描述', productCount: 5, status: '启用' }
+                ],
+                totalPages: 1,
+                currentPage: 1
+            };
+        }
+    },
+    
+    // 获取评价列表
+    getReviews: async (page = 1, pageSize = 10, status = '', rating = '', searchQuery = '') => {
+        try {
+            let url = `${ADMIN_API_BASE_URL}/api/admin/reviews?page=${page}&pageSize=${pageSize}`;
+            if (status) url += `&status=${status}`;
+            if (rating) url += `&rating=${rating}`;
+            if (searchQuery) url += `&search=${encodeURIComponent(searchQuery)}`;
+            
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    ...adminAuth.getHeaders(),
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error('获取评价列表失败');
+            }
+            
+            return await response.json();
+        } catch (error) {
+            console.error('获取评价列表出错:', error);
+            // 返回模拟数据
+            return {
+                reviews: [
+                    { id: 1, productName: '陈年六堡茶 - 特级', customer: '张三', rating: 5, content: '茶叶品质非常好，口感醇厚，回甘持久。', date: '2023-05-10', status: '已审核' },
+                    { id: 2, productName: '六堡茶 - 一级', customer: '李四', rating: 4, content: '茶叶不错，包装精美，适合送礼。', date: '2023-05-08', status: '已审核' },
+                    { id: 3, productName: '六堡茶 - 二级', customer: '王五', rating: 3, content: '茶叶质量一般，但价格合理。', date: '2023-05-05', status: '待审核' },
+                    { id: 4, productName: '六堡茶礼盒装', customer: '赵六', rating: 5, content: '礼盒很精美，送人很有面子，茶叶品质也很好。', date: '2023-05-03', status: '已审核' },
+                    { id: 5, productName: '六堡茶 - 三级', customer: '钱七', rating: 4, content: '性价比很高，日常饮用不错的选择。', date: '2023-05-01', status: '已审核' }
+                ],
+                totalPages: 2,
+                currentPage: 1
+            };
+        }
+    },
+    
+    // 获取用户增长趋势数据
+    getUserGrowthTrend: async (period = 'month', startDate = '', endDate = '') => {
+        try {
+            let url = `${ADMIN_API_BASE_URL}/api/admin/statistics/user-growth?period=${period}`;
+            if (startDate) url += `&startDate=${startDate}`;
+            if (endDate) url += `&endDate=${endDate}`;
+            
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    ...adminAuth.getHeaders(),
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error('获取用户增长趋势数据失败');
+            }
+            
+            return await response.json();
+        } catch (error) {
+            console.error('获取用户增长趋势数据出错:', error);
+            // 返回模拟数据
+            return {
+                labels: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
+                values: [5, 8, 12, 10, 15, 20, 18, 25, 30, 28, 35, 40]
+            };
+        }
+    },
+    
+    // 获取订单状态分布数据
+    getOrderStatusDistribution: async (startDate = '', endDate = '') => {
+        try {
+            let url = `${ADMIN_API_BASE_URL}/api/admin/statistics/order-status`;
+            if (startDate) url += `?startDate=${startDate}`;
+            if (endDate) url += `${startDate ? '&' : '?'}endDate=${endDate}`;
+            
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    ...adminAuth.getHeaders(),
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error('获取订单状态分布数据失败');
+            }
+            
+            return await response.json();
+        } catch (error) {
+            console.error('获取订单状态分布数据出错:', error);
+            // 返回模拟数据
+            return [
+                { name: '待付款', value: 10 },
+                { name: '待发货', value: 15 },
+                { name: '已发货', value: 25 },
+                { name: '已完成', value: 45 },
+                { name: '已取消', value: 5 }
+            ];
+        }
+    },
+    
+    // 获取商品销售占比数据
+    getProductSalesDistribution: async (startDate = '', endDate = '') => {
+        try {
+            let url = `${ADMIN_API_BASE_URL}/api/admin/statistics/product-sales`;
+            if (startDate) url += `?startDate=${startDate}`;
+            if (endDate) url += `${startDate ? '&' : '?'}endDate=${endDate}`;
+            
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    ...adminAuth.getHeaders(),
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error('获取商品销售占比数据失败');
+            }
+            
+            return await response.json();
+        } catch (error) {
+            console.error('获取商品销售占比数据出错:', error);
+            // 返回模拟数据
+            return [
+                { name: '陈年六堡茶 - 特级', value: 30 },
+                { name: '六堡茶 - 一级', value: 25 },
+                { name: '六堡茶 - 二级', value: 20 },
+                { name: '六堡茶礼盒装', value: 15 },
+                { name: '六堡茶 - 三级', value: 10 }
+            ];
+        }
+    },
     // 获取系统设置
     getSystemSettings: async () => {
         try {

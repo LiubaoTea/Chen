@@ -17,6 +17,8 @@ let reviewsSelectedRating = '';
 
 // 导出为全局变量，供其他模块使用
 window.initReviewsPage = initReviewsPage;
+window.refreshReviewsData = loadReviews;
+window.adminReviews = { init: initReviewsPage, refresh: loadReviews };
 
 // 初始化评价管理页面
 async function initReviewsPage() {

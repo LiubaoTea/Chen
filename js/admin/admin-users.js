@@ -36,16 +36,16 @@ async function initUsersPage() {
 // 加载用户列表
 async function loadUsers(page, searchQuery = '') {
     try {
-        currentPage = page;
+        usersCurrentPage = page;
         
         // 显示加载状态
         const usersList = document.getElementById('usersList');
         usersList.innerHTML = '<tr><td colspan="6" class="text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">加载中...</span></div></td></tr>';
         
         // 获取用户数据
-        const result = await adminAPI.getUsers(page, pageSize, searchQuery);
+        const result = await adminAPI.getUsers(page, usersPageSize, searchQuery);
         usersData = result.users;
-        totalPages = result.totalPages;
+        usersTotalPages = result.totalPages;
         
         // 更新用户列表
         updateUsersList();

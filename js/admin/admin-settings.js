@@ -20,6 +20,11 @@ async function initSettingsPage() {
     }
 }
 
+// 导出为全局变量，供其他模块使用
+window.initSettingsPage = initSettingsPage;
+window.refreshSettingsData = refreshSettingsData;
+window.adminSettings = { init: initSettingsPage, refresh: refreshSettingsData };
+
 // 刷新设置数据
 async function refreshSettingsData() {
     try {

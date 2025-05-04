@@ -31,6 +31,11 @@ async function initStatisticsPage() {
     }
 }
 
+// 导出为全局变量，供其他模块使用
+window.initStatisticsPage = initStatisticsPage;
+window.refreshStatisticsData = refreshStatisticsData;
+window.adminStatistics = { init: initStatisticsPage, refresh: refreshStatisticsData };
+
 // 刷新统计数据
 async function refreshStatisticsData() {
     try {
@@ -84,8 +89,11 @@ function renderSalesTrendChart(data) {
     const ctx = document.getElementById('salesTrendChart').getContext('2d');
     
     // 如果图表已存在，销毁它
-    if (window.salesTrendChart) {
+    if (window.salesTrendChart && typeof window.salesTrendChart.destroy === 'function') {
         window.salesTrendChart.destroy();
+    } else if (window.salesTrendChart) {
+        // 如果图表存在但destroy不是函数，则重置为null
+        window.salesTrendChart = null;
     }
     
     // 创建新图表

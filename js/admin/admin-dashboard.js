@@ -35,6 +35,10 @@ async function loadDashboardData() {
     }
 }
 
+// 导出为全局变量，供其他模块使用
+window.loadDashboardData = loadDashboardData;
+window.adminDashboard = { init: loadDashboardData, refresh: loadDashboardData };
+
 // 更新仪表盘统计数据
 function updateDashboardStats(data) {
     // 更新总订单数

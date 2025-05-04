@@ -30,6 +30,10 @@ async function initProductsPage() {
     }
 }
 
+// 导出为全局变量，供其他模块使用
+window.adminProducts = { init: initProductsPage };
+window.initProductsPage = initProductsPage;
+
 // 加载商品分类
 async function loadCategories() {
     try {

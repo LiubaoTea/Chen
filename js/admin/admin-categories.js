@@ -18,6 +18,8 @@ let categoriesPageSize = 10;
 
 // 导出为全局变量，供其他模块使用
 window.initCategoriesPage = initCategoriesPage;
+window.refreshCategoriesData = loadCategories;
+window.adminCategories = { init: initCategoriesPage, refresh: loadCategories };
 
 // 初始化分类管理页面
 async function initCategoriesPage() {
