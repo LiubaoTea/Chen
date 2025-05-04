@@ -137,17 +137,21 @@ CREATE TABLE user_settings (
 
 CREATE INDEX idx_user_settings_user ON user_settings(user_id);
 
-8、product_categories：（产品类别）
+8、product_categories：（产品分类）
 CREATE TABLE product_categories (
-  category_id INTEGER PRIMARY KEY AUTOINCREMENT,                                 --分类ID（自增主键）
-  category_name TEXT NOT NULL,                                                   --分类名称（如"六堡茶"）
-  parent_category_id INTEGER,	                                                 --父分类ID（支持多级分类）
-  description TEXT,                                                              --分类描述（可选）
-  created_at INTEGER DEFAULT (CAST(strftime('%s','now') AS INTEGER)),  	         --创建时间
-  
+  category_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  category_name TEXT NOT NULL,               -- 分类名称
+  rule_type TEXT NOT NULL,                   -- 分类规则类型（name_keyword/aging_year）
+  rule_value TEXT,                           -- 规则值（如关键词列表或年份条件）
+  parent_category_id INTEGER,                -- 父分类ID
+  description TEXT,                          -- 分类描述
+  created_at INTEGER DEFAULT (CAST(strftime('%s','now') AS INTEGER)),
+
   FOREIGN KEY (parent_category_id) REFERENCES product_categories(category_id)
 );
 
+-- 索引优化
+CREATE INDEX idx_categories_rule ON product_categories(rule_type, rule_value);
 CREATE INDEX idx_categories_parent ON product_categories(parent_category_id);
 
 9、product_reviews：（产品评论）
