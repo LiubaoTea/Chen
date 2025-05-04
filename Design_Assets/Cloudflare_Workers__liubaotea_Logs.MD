@@ -1,4 +1,5 @@
-日志1：admin-api.js:369 
+日志1：
+admin-api.js:369 
  GET https://workers.liubaotea.online/api/admin/categories/distribution 500 (Internal Server Error)
 getCategoryDistribution	@	admin-api.js:369
 loadDashboardData	@	admin-dashboard.js:29
@@ -18,7 +19,9 @@ admin-dashboard.js:32 加载仪表盘数据失败: Error: 获取分类占比数�
     at async loadDashboardData (admin-dashboard.js:29:38)
 loadDashboardData	@	admin-dashboard.js:32
 await in loadDashboardData		
-(anonymous)
+(anonymous)	@	admin-main.js:21
+
+﻿
 日志2：
 admin-products.js:50 加载商品分类失败: TypeError: adminAPI.getCategories is not a function
     at loadCategories (admin-products.js:36:43)
@@ -43,7 +46,6 @@ await in initProductsPage
 loadProductsPage	@	admin-main.js:230
 navigateToPage	@	admin-main.js:153
 (anonymous)	@	admin-main.js:42
-
 ﻿
 
 日志3：
@@ -59,6 +61,7 @@ loadOrdersPage	@	admin-main.js:248
 navigateToPage	@	admin-main.js:156
 (anonymous)	@	admin-main.js:42
 
+﻿
 日志4：
 admin-users.js:56 加载用户列表失败: ReferenceError: currentPage is not defined
     at loadUsers (admin-users.js:39:21)
@@ -85,7 +88,6 @@ navigateToPage	@	admin-main.js:162
 (anonymous)	@	admin-main.js:42
 
 ﻿
-
 日志6：
 admin-reviews.js:60 加载评价列表失败: TypeError: adminAPI.getReviews is not a function
     at loadReviews (admin-reviews.js:50:39)
@@ -96,6 +98,8 @@ loadReviews	@	admin-reviews.js:60
 loadReviewsPage	@	admin-main.js:302
 navigateToPage	@	admin-main.js:165
 (anonymous)	@	admin-main.js:42
+
+﻿
 日志7：
 admin-statistics.js:61 刷新统计数据失败: TypeError: window.salesTrendChart.destroy is not a function
     at renderSalesTrendChart (admin-statistics.js:88:32)
@@ -136,5 +140,6 @@ Promise.then
 loadSettingsPage	@	admin-main.js:333
 navigateToPage	@	admin-main.js:171
 (anonymous)	@	admin-main.js:42
+
 ﻿
 

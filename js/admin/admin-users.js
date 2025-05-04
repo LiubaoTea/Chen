@@ -122,41 +122,33 @@ function updateUsersPagination() {
     const pagination = document.getElementById('usersPagination');
     pagination.innerHTML = '';
     
-    if (totalPages <= 1) return;
+    if (usersTotalPages <= 1) return;
     
     // 上一页按钮
     const prevLi = document.createElement('li');
-    prevLi.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
-    prevLi.innerHTML = `<a class="page-link" href="#" data-page="${currentPage - 1}">上一页</a>`;
+    prevLi.className = `page-item ${usersCurrentPage === 1 ? 'disabled' : ''}`;
+    prevLi.innerHTML = `<a class="page-link" href="#" data-page="${usersCurrentPage - 1}">上一页</a>`;
     pagination.appendChild(prevLi);
     
     // 页码按钮
-    const startPage = Math.max(1, currentPage - 2);
-    const endPage = Math.min(totalPages, startPage + 4);
+    const startPage = Math.max(1, usersCurrentPage - 2);
+    const endPage = Math.min(usersTotalPages, startPage + 4);
     
     for (let i = startPage; i <= endPage; i++) {
         const pageLi = document.createElement('li');
-        pageLi.className = `page-item ${i === currentPage ? 'active' : ''}`;
+        pageLi.className = `page-item ${i === usersCurrentPage ? 'active' : ''}`;
         pageLi.innerHTML = `<a class="page-link" href="#" data-page="${i}">${i}</a>`;
         pagination.appendChild(pageLi);
     }
     
     // 下一页按钮
     const nextLi = document.createElement('li');
-    nextLi.className = `page-item ${currentPage === totalPages ? 'disabled' : ''}`;
-    nextLi.innerHTML = `<a class="page-link" href="#" data-page="${currentPage + 1}">下一页</a>`;
+    nextLi.className = `page-item ${usersCurrentPage === usersTotalPages ? 'disabled' : ''}`;
+    nextLi.innerHTML = `<a class="page-link" href="#" data-page="${usersCurrentPage + 1}">下一页</a>`;
     pagination.appendChild(nextLi);
     
     // 添加分页事件监听器
-    document.querySelectorAll('#usersPagination .page-link').forEach(link => {
-        link.addEventListener('click', (e) => {
-            e.preventDefault();
-            const page = parseInt(e.target.getAttribute('data-page'));
-            if (page >= 1 && page <= totalPages) {
-                loadUsers(page, document.getElementById('userSearchInput').value);
-            }
-        });
-    });
+    addUsersPaginationEventListeners();
 }
 
 // 设置用户管理页面的事件监听器
@@ -415,6 +407,31 @@ function getOrderStatusBadge(status) {
     }
     
     return `<span class="badge ${badgeClass}">${statusText}</span>`;
+}
+
+// 显示成功提示
+function showSuccessToast(message) {
+    // 实现提示功能，可以使用Bootstrap的Toast组件
+    alert(message);
+}
+
+// 显示错误提示
+function showErrorToast(message) {
+    // 实现提示功能，可以使用Bootstrap的Toast组件
+    alert(message);
+}
+
+// 添加用户分页事件监听器
+function addUsersPaginationEventListeners() {
+    document.querySelectorAll('#usersPagination .page-link').forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const page = parseInt(e.target.getAttribute('data-page'));
+            if (page >= 1 && page <= usersTotalPages) {
+                loadUsers(page, document.getElementById('userSearchInput').value);
+            }
+        });
+    });
 }
 
 // 显示成功提示

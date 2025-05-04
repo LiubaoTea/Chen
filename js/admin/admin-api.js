@@ -1258,5 +1258,42 @@ const adminAPI = {
     }
 };
 
-// 导出API
-window.adminAPI = adminAPI;
+// 确保所有API函数都被正确导出
+const adminAPIExport = {
+    // 仪表盘相关
+    getDashboardStats: adminAPI.getDashboardStats,
+    getRecentOrders: adminAPI.getRecentOrders,
+    getTopProducts: adminAPI.getTopProducts,
+    getSalesTrend: adminAPI.getSalesTrend,
+    getCategoryDistribution: adminAPI.getCategoryDistribution,
+    
+    // 订单相关
+    getOrders: adminAPI.getOrders,
+    
+    // 用户相关
+    getUsers: adminAPI.getUsers,
+    
+    // 商品相关
+    getProducts: adminAPI.getProducts,
+    
+    // 分类相关
+    getCategories: adminAPI.getCategories,
+    
+    // 评价相关
+    getReviews: adminAPI.getReviews,
+    
+    // 统计相关
+    getUserGrowthTrend: adminAPI.getUserGrowthTrend,
+    getOrderStatusDistribution: adminAPI.getOrderStatusDistribution,
+    getProductSalesDistribution: adminAPI.getProductSalesDistribution,
+    
+    // 系统设置相关
+    getSystemSettings: adminAPI.getSystemSettings,
+    updateSystemSettings: adminAPI.updateSystemSettings
+};
+
+// 将API对象挂载到全局window对象，方便其他模块直接使用
+window.adminAPI = adminAPIExport;
+
+// 导出模块
+export default adminAPIExport;

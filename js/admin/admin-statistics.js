@@ -88,52 +88,50 @@ function setupStatisticsEventListeners() {
 function renderSalesTrendChart(data) {
     const ctx = document.getElementById('salesTrendChart').getContext('2d');
     
-    // 如果图表已存在，销毁它
-    if (window.salesTrendChart && typeof window.salesTrendChart.destroy === 'function') {
-        window.salesTrendChart.destroy();
-    } else if (window.salesTrendChart) {
-        // 如果图表存在但destroy不是函数，则重置为null
+    // 检查图表元素是否存在
+    if (!ctx) {
+        console.error('销售趋势图表元素不存在');
+        return;
+    }
+    
+    // 如果图表已存在，先尝试销毁它
+    try {
+        if (window.salesTrendChart) {
+            if (typeof window.salesTrendChart.destroy === 'function') {
+                window.salesTrendChart.destroy();
+            } else {
+                // 如果destroy不是函数，则重置为null
+                window.salesTrendChart = null;
+            }
+        }
+    } catch (error) {
+        console.error('销毁旧图表时出错:', error);
         window.salesTrendChart = null;
     }
     
     // 创建新图表
-    window.salesTrendChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: data.labels,
-            datasets: [{
-                label: '销售额',
-                data: data.values,
-                backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                borderColor: 'rgba(54, 162, 235, 1)',
-                borderWidth: 2,
-                tension: 0.1
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        callback: function(value) {
-                            return '¥' + value.toLocaleString('zh-CN');
-                        }
-                    }
-                }
+    try {
+        window.salesTrendChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.labels,
+                datasets: [{
+                    label: '销售额',
+                    data: data.values,
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 2,
+                    tension: 0.1
+                }]
             },
-            plugins: {
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            return '销售额: ¥' + context.raw.toLocaleString('zh-CN');
-                        }
-                    }
-                }
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
             }
-        }
-    });
+        });
+    } catch (error) {
+        console.error('创建销售趋势图表时出错:', error);
+    }
 }
 
 // 渲染商品销售占比图表
