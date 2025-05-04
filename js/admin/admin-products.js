@@ -3,12 +3,17 @@
  * 处理商品的展示、添加、编辑和删除
  */
 
+// 导入API基础URL配置
+import config from '../config.js';
+const { API_BASE_URL, ADMIN_API_BASE_URL } = config;
+
 // 商品列表数据
 let productsData = [];
 let currentPage = 1;
 let totalPages = 1;
 let pageSize = 10;
 let selectedCategoryId = '';
+let categoriesData = []; // 存储分类数据
 
 // 初始化商品管理页面
 async function initProductsPage() {
@@ -16,6 +21,8 @@ async function initProductsPage() {
     if (!adminAuth.check()) return;
     
     try {
+        console.log('初始化商品管理页面...');
+        
         // 加载商品分类
         await loadCategories();
         
@@ -34,20 +41,31 @@ async function initProductsPage() {
 window.adminProducts = { init: initProductsPage };
 window.initProductsPage = initProductsPage;
 
-// 加载商品分类
+// 从D1数据库加载商品分类
 async function loadCategories() {
     try {
-        const categories = await adminAPI.getCategories();
+        console.log('正在从D1数据库加载商品分类...');
+        const response = await fetch(`${ADMIN_API_BASE_URL}/api/admin/categories`);
+        
+        if (!response.ok) {
+            throw new Error('获取分类列表失败，HTTP状态码: ' + response.status);
+        }
+        
+        const data = await response.json();
+        categoriesData = data.categories || [];
+        
+        console.log('成功加载分类数据:', categoriesData);
+        
         const categoryFilter = document.getElementById('productCategoryFilter');
         
         // 清空现有选项
         categoryFilter.innerHTML = '<option value="">所有分类</option>';
         
         // 添加分类选项
-        categories.forEach(category => {
+        categoriesData.forEach(category => {
             const option = document.createElement('option');
-            option.value = category.id;
-            option.textContent = category.name;
+            option.value = category.category_id;
+            option.textContent = category.category_name;
             categoryFilter.appendChild(option);
         });
     } catch (error) {
@@ -56,7 +74,7 @@ async function loadCategories() {
     }
 }
 
-// 加载商品列表
+// 从D1数据库加载商品列表
 async function loadProducts(page, categoryId = '', searchQuery = '') {
     try {
         currentPage = page;
@@ -66,10 +84,30 @@ async function loadProducts(page, categoryId = '', searchQuery = '') {
         const productsList = document.getElementById('productsList');
         productsList.innerHTML = '<tr><td colspan="7" class="text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">加载中...</span></div></td></tr>';
         
+        console.log('正在从D1数据库加载商品数据...');
+        
+        // 构建API URL
+        let url = `${ADMIN_API_BASE_URL}/api/admin/products?page=${page}&pageSize=${pageSize}`;
+        if (categoryId) url += `&category=${categoryId}`;
+        if (searchQuery) url += `&search=${encodeURIComponent(searchQuery)}`;
+        
         // 获取商品数据
-        const result = await adminAPI.getProducts(page, pageSize, categoryId, searchQuery);
-        productsData = result.products;
-        totalPages = result.totalPages;
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('获取商品列表失败，HTTP状态码: ' + response.status);
+        }
+        
+        const result = await response.json();
+        productsData = result.products || [];
+        totalPages = result.totalPages || 1;
+        
+        console.log('成功加载商品数据:', productsData);
         
         // 更新商品列表
         updateProductsList();
@@ -104,32 +142,45 @@ function updateProductsList() {
             `<span class="badge bg-success">有库存 (${product.stock})</span>` : 
             '<span class="badge bg-danger">无库存</span>';
         
-        // 商品状态
-        const statusBadge = product.status === 'active' ? 
+        // 商品状态 - 默认为上架中
+        const status = product.status || 'active';
+        const statusBadge = status === 'active' ? 
             '<span class="badge bg-success">上架中</span>' : 
             '<span class="badge bg-secondary">已下架</span>';
+        
+        // 查找分类名称
+        let categoryName = '未分类';
+        if (product.category_id && categoriesData.length > 0) {
+            const category = categoriesData.find(c => c.category_id === product.category_id);
+            if (category) {
+                categoryName = category.category_name;
+            }
+        }
+        
+        // 构建商品图片URL
+        const imageUrl = `${API_BASE_URL}/image/Goods/Goods_${product.product_id}.png`;
         
         row.innerHTML = `
             <td>
                 <div class="d-flex align-items-center">
-                    <img src="${product.image_url}" alt="${product.name}" class="product-thumbnail me-2">
+                    <img src="${imageUrl}" alt="${product.name}" class="product-thumbnail me-2">
                     <div>
                         <div class="fw-bold">${product.name}</div>
-                        <small class="text-muted">ID: ${product.id}</small>
+                        <small class="text-muted">ID: ${product.product_id}</small>
                     </div>
                 </div>
             </td>
-            <td>${product.category_name}</td>
+            <td>${categoryName}</td>
             <td>¥${product.price.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
             <td>${stockStatus}</td>
             <td>${statusBadge}</td>
             <td>${createdDate}</td>
             <td>
                 <div class="btn-group">
-                    <button type="button" class="btn btn-sm btn-outline-primary edit-product" data-product-id="${product.id}">
+                    <button type="button" class="btn btn-sm btn-outline-primary edit-product" data-product-id="${product.product_id}">
                         <i class="bi bi-pencil"></i>
                     </button>
-                    <button type="button" class="btn btn-sm btn-outline-danger delete-product" data-product-id="${product.id}">
+                    <button type="button" class="btn btn-sm btn-outline-danger delete-product" data-product-id="${product.product_id}">
                         <i class="bi bi-trash"></i>
                     </button>
                 </div>
@@ -238,40 +289,45 @@ async function showProductModal(productId = null) {
     const modalTitle = document.getElementById('productModalLabel');
     modalTitle.textContent = productId ? '编辑商品' : '添加商品';
     
-    // 加载分类选项
     try {
-        const categories = await adminAPI.getCategories();
         const categorySelect = document.getElementById('productCategory');
         
         // 清空现有选项
         categorySelect.innerHTML = '<option value="">选择分类</option>';
         
         // 添加分类选项
-        categories.forEach(category => {
+        categoriesData.forEach(category => {
             const option = document.createElement('option');
-            option.value = category.id;
-            option.textContent = category.name;
+            option.value = category.category_id;
+            option.textContent = category.category_name;
             categorySelect.appendChild(option);
         });
         
         // 如果是编辑模式，加载商品数据
         if (productId) {
-            const product = await adminAPI.getProductById(productId);
+            console.log('正在加载商品详情，ID:', productId);
             
-            // 填充表单
-            document.getElementById('productId').value = product.id;
-            document.getElementById('productName').value = product.name;
-            document.getElementById('productCategory').value = product.category_id;
-            document.getElementById('productPrice').value = product.price;
-            document.getElementById('productOriginalPrice').value = product.original_price || '';
-            document.getElementById('productStock').value = product.stock;
-            document.getElementById('productDescription').value = product.description;
-            document.getElementById('productStatus').value = product.status;
+            // 从已加载的商品数据中查找
+            const product = productsData.find(p => p.product_id.toString() === productId.toString());
             
-            // 显示商品图片
-            if (product.image_url) {
-                document.getElementById('productImagePreview').src = product.image_url;
-                document.getElementById('productImagePreview').classList.remove('d-none');
+            if (!product) {
+                // 如果在当前页面数据中找不到，则从API获取
+                const response = await fetch(`${ADMIN_API_BASE_URL}/api/admin/products/${productId}`);
+                
+                if (!response.ok) {
+                    throw new Error('获取商品详情失败，HTTP状态码: ' + response.status);
+                }
+                
+                const data = await response.json();
+                if (!data) {
+                    throw new Error('获取商品详情失败，未返回数据');
+                }
+                
+                // 使用API返回的数据
+                fillProductForm(data);
+            } else {
+                // 使用已加载的数据
+                fillProductForm(product);
             }
         } else {
             // 添加模式，设置默认值
@@ -286,6 +342,24 @@ async function showProductModal(productId = null) {
         console.error('加载商品数据失败:', error);
         showErrorToast('加载商品数据失败，请稍后重试');
     }
+}
+
+// 填充商品表单
+function fillProductForm(product) {
+    // 填充表单
+    document.getElementById('productId').value = product.product_id;
+    document.getElementById('productName').value = product.name;
+    document.getElementById('productCategory').value = product.category_id || '';
+    document.getElementById('productPrice').value = product.price;
+    document.getElementById('productOriginalPrice').value = product.original_price || '';
+    document.getElementById('productStock').value = product.stock;
+    document.getElementById('productDescription').value = product.description || '';
+    document.getElementById('productStatus').value = product.status || 'active';
+    
+    // 显示商品图片
+    const imageUrl = `${API_BASE_URL}/image/Goods/Goods_${product.product_id}.png`;
+    document.getElementById('productImagePreview').src = imageUrl;
+    document.getElementById('productImagePreview').classList.remove('d-none');
 }
 
 // 保存商品（添加或更新）
@@ -307,7 +381,11 @@ async function saveProduct() {
             parseFloat(document.getElementById('productOriginalPrice').value) : null,
         stock: parseInt(document.getElementById('productStock').value),
         description: document.getElementById('productDescription').value,
-        status: document.getElementById('productStatus').value
+        status: document.getElementById('productStatus').value,
+        specifications: document.getElementById('productSpecifications') ? 
+            document.getElementById('productSpecifications').value : '',
+        aging_years: document.getElementById('productAgingYears') ? 
+            parseInt(document.getElementById('productAgingYears').value || '0') : 0
     };
     
     // 获取图片文件
@@ -320,16 +398,42 @@ async function saveProduct() {
         saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 保存中...';
         saveBtn.disabled = true;
         
-        let result;
+        let url, method;
         if (productId) {
             // 更新商品
-            result = await adminAPI.updateProduct(productId, productData, imageFile);
-            showSuccessToast('商品更新成功');
+            url = `${ADMIN_API_BASE_URL}/api/admin/products/${productId}`;
+            method = 'PUT';
         } else {
             // 添加商品
-            result = await adminAPI.createProduct(productData, imageFile);
-            showSuccessToast('商品添加成功');
+            url = `${ADMIN_API_BASE_URL}/api/admin/products`;
+            method = 'POST';
         }
+        
+        // 准备表单数据
+        const formData = new FormData();
+        
+        // 添加商品数据
+        formData.append('data', JSON.stringify(productData));
+        
+        // 如果有图片文件，添加到表单数据
+        if (imageFile) {
+            formData.append('image', imageFile);
+        }
+        
+        // 发送请求
+        const response = await fetch(url, {
+            method: method,
+            body: formData
+        });
+        
+        if (!response.ok) {
+            throw new Error(`保存商品失败，HTTP状态码: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        
+        // 显示成功消息
+        showSuccessToast(productId ? '商品更新成功' : '商品添加成功');
         
         // 关闭模态框
         const productModal = bootstrap.Modal.getInstance(document.getElementById('productModal'));
@@ -368,7 +472,18 @@ function confirmDeleteProduct(productId) {
 // 删除商品
 async function deleteProduct(productId) {
     try {
-        await adminAPI.deleteProduct(productId);
+        // 发送删除请求到D1数据库
+        const response = await fetch(`${ADMIN_API_BASE_URL}/api/admin/products/${productId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`删除商品失败，HTTP状态码: ${response.status}`);
+        }
+        
         showSuccessToast('商品删除成功');
         
         // 重新加载商品列表
