@@ -52,36 +52,9 @@ async function loadCategories() {
             throw new Error('请先登录');
         }
         
-        // 获取管理员认证头信息
-        const token = adminAuth.getToken();
-        if (!token) {
-            console.error('管理员令牌不存在，无法加载分类数据');
-            throw new Error('认证令牌无效，请重新登录');
-        }
-        
-        // 构建请求头
-        const headers = {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-        };
-        
-        console.log('发送分类请求，认证头:', headers);
-        
-        // 使用与前端商城相同的categories API
-        const response = await fetch(`${API_BASE_URL}/api/categories`, {
-            method: 'GET',
-            headers: headers
-        });
-        
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('分类API响应错误:', response.status, errorText);
-            throw new Error('获取分类列表失败，HTTP状态码: ' + response.status);
-        }
-        
-        const data = await response.json();
-        // 处理不同的响应格式：/api/categories直接返回数组，而/api/admin/categories返回{categories:[...]}对象
-        categoriesData = Array.isArray(data) ? data : (data.categories || []);
+        // 使用adminAPI获取分类数据
+        const result = await adminAPI.getCategories();
+        categoriesData = result.categories || [];
         
         console.log('成功加载分类数据:', categoriesData);
         
@@ -135,40 +108,8 @@ async function loadProducts(page, categoryId = '', searchQuery = '') {
             throw new Error('请先登录');
         }
         
-        // 获取管理员认证头信息
-        const token = adminAuth.getToken();
-        if (!token) {
-            console.error('管理员令牌不存在，无法加载商品数据');
-            throw new Error('认证令牌无效，请重新登录');
-        }
-        
-        // 构建API URL - 使用与前端商城相同的products API
-        let url = `${API_BASE_URL}/api/products?page=${page}&pageSize=${pageSize}`;
-        if (categoryId) url += `&category=${categoryId}`;
-        if (searchQuery) url += `&search=${encodeURIComponent(searchQuery)}`;
-        
-        // 构建请求头
-        const headers = {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-        };
-        
-        console.log('发送商品请求，URL:', url);
-        console.log('认证头:', headers);
-        
-        // 获取商品数据
-        const response = await fetch(url, {
-            method: 'GET',
-            headers: headers
-        });
-        
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('商品API响应错误:', response.status, errorText);
-            throw new Error('获取商品列表失败，HTTP状态码: ' + response.status);
-        }
-        
-        const result = await response.json();
+        // 使用adminAPI获取商品数据
+        const result = await adminAPI.getProducts(page, pageSize, categoryId, searchQuery);
         productsData = result.products || [];
         totalPages = result.totalPages || 1;
         

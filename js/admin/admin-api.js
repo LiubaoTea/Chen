@@ -21,6 +21,39 @@ if (typeof window !== 'undefined') {
 
 // 管理后台API
 const adminAPI = {
+    // 获取商品列表
+    getProducts: async (page = 1, pageSize = 10, categoryId = '', searchQuery = '') => {
+        try {
+            // 使用与前端商城相同的products API
+            let url = `${API_BASE_URL}/api/products?page=${page}&pageSize=${pageSize}`;
+            if (categoryId) url += `&category=${categoryId}`;
+            if (searchQuery) url += `&search=${encodeURIComponent(searchQuery)}`;
+            
+            console.log('发送商品请求，URL:', url);
+            
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    ...adminAuth.getHeaders(),
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('商品API响应错误:', response.status, errorText);
+                throw new Error(`获取商品列表失败，HTTP状态码: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            console.log('成功获取商品数据:', data);
+            
+            return data;
+        } catch (error) {
+            console.error('获取商品列表出错:', error);
+            throw error; // 不返回模拟数据，而是将错误抛出，让调用者处理
+        }
+    },
     // 获取仪表盘统计数据
     getDashboardStats: async () => {
         try {
@@ -33,28 +66,27 @@ const adminAPI = {
             });
             
             if (!response.ok) {
-                throw new Error('获取仪表盘统计数据失败');
+                const errorText = await response.text();
+                console.error('仪表盘API响应错误:', response.status, errorText);
+                throw new Error(`获取仪表盘统计数据失败，HTTP状态码: ${response.status}`);
             }
             
-            return await response.json();
+            const data = await response.json();
+            console.log('成功获取仪表盘数据:', data);
+            return data;
         } catch (error) {
             console.error('获取仪表盘统计数据出错:', error);
-            // 如果API尚未实现，返回模拟数据
-            return {
-                totalSales: 12580.00,
-                totalOrders: 156,
-                totalCustomers: 89,
-                totalProducts: 42,
-                pendingOrders: 8,
-                lowStockProducts: 5
-            };
+            throw error; // 不再返回模拟数据，而是将错误抛出，让调用者处理
         }
     },
     
     // 获取最近订单
     getRecentOrders: async (limit = 5) => {
         try {
-            const response = await fetch(`${ADMIN_API_BASE_URL}/api/admin/orders/recent?limit=${limit}`, {
+            const url = `${ADMIN_API_BASE_URL}/api/admin/orders/recent?limit=${limit}`;
+            console.log('发送最近订单请求，URL:', url);
+            
+            const response = await fetch(url, {
                 method: 'GET',
                 headers: {
                     ...adminAuth.getHeaders(),
@@ -63,20 +95,17 @@ const adminAPI = {
             });
             
             if (!response.ok) {
-                throw new Error('获取最近订单失败');
+                const errorText = await response.text();
+                console.error('最近订单API响应错误:', response.status, errorText);
+                throw new Error(`获取最近订单失败，HTTP状态码: ${response.status}`);
             }
             
-            return await response.json();
+            const data = await response.json();
+            console.log('成功获取最近订单数据:', data);
+            return data;
         } catch (error) {
             console.error('获取最近订单出错:', error);
-            // 返回模拟数据
-            return [
-                { id: 'ORD20230001', customer: '张三', date: '2023-05-15', total: 358.00, status: '已完成' },
-                { id: 'ORD20230002', customer: '李四', date: '2023-05-14', total: 128.00, status: '已发货' },
-                { id: 'ORD20230003', customer: '王五', date: '2023-05-13', total: 256.00, status: '待发货' },
-                { id: 'ORD20230004', customer: '赵六', date: '2023-05-12', total: 198.00, status: '已完成' },
-                { id: 'ORD20230005', customer: '钱七', date: '2023-05-11', total: 458.00, status: '已完成' }
-            ];
+            throw error; // 不再返回模拟数据，而是将错误抛出，让调用者处理
         }
     },
     
@@ -87,6 +116,8 @@ const adminAPI = {
             if (startDate) url += `&startDate=${startDate}`;
             if (endDate) url += `&endDate=${endDate}`;
             
+            console.log('发送热销商品请求，URL:', url);
+            
             const response = await fetch(url, {
                 method: 'GET',
                 headers: {
@@ -96,29 +127,28 @@ const adminAPI = {
             });
             
             if (!response.ok) {
-                throw new Error('获取热销商品失败');
+                const errorText = await response.text();
+                console.error('热销商品API响应错误:', response.status, errorText);
+                throw new Error(`获取热销商品失败，HTTP状态码: ${response.status}`);
             }
             
-            return await response.json();
+            const data = await response.json();
+            console.log('成功获取热销商品数据:', data);
+            return data;
         } catch (error) {
             console.error('获取热销商品出错:', error);
-            // 返回模拟数据
-            return [
-                { id: 1, name: '陈年六堡茶 - 特级', sales: 42, revenue: 4200.00 },
-                { id: 2, name: '六堡茶 - 一级', sales: 38, revenue: 3040.00 },
-                { id: 3, name: '六堡茶 - 二级', sales: 35, revenue: 2450.00 },
-                { id: 4, name: '六堡茶礼盒装', sales: 30, revenue: 4500.00 },
-                { id: 5, name: '六堡茶 - 三级', sales: 28, revenue: 1680.00 }
-            ];
+            throw error; // 不再返回模拟数据，而是将错误抛出，让调用者处理
         }
     },
     
     // 获取销售趋势数据
     getSalesTrend: async (period = 'month', startDate = '', endDate = '') => {
         try {
-            let url = `${ADMIN_API_BASE_URL}/api/admin/statistics/sales-trend?period=${period}`;
+            let url = `${ADMIN_API_BASE_URL}/api/admin/sales/trend?period=${period}`;
             if (startDate) url += `&startDate=${startDate}`;
             if (endDate) url += `&endDate=${endDate}`;
+            
+            console.log('发送销售趋势请求，URL:', url);
             
             const response = await fetch(url, {
                 method: 'GET',
@@ -129,24 +159,27 @@ const adminAPI = {
             });
             
             if (!response.ok) {
-                throw new Error('获取销售趋势数据失败');
+                const errorText = await response.text();
+                console.error('销售趋势API响应错误:', response.status, errorText);
+                throw new Error(`获取销售趋势数据失败，HTTP状态码: ${response.status}`);
             }
             
-            return await response.json();
+            const data = await response.json();
+            console.log('成功获取销售趋势数据:', data);
+            return data;
         } catch (error) {
             console.error('获取销售趋势数据出错:', error);
-            // 返回模拟数据
-            return {
-                labels: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
-                values: [1200, 1900, 2100, 1800, 2400, 2800, 3100, 3600, 3200, 3800, 4100, 4500]
-            };
+            throw error; // 不再返回模拟数据，而是将错误抛出，让调用者处理
         }
     },
     
     // 获取分类占比数据
     getCategoryDistribution: async () => {
         try {
-            const response = await fetch(`${ADMIN_API_BASE_URL}/api/admin/categories/distribution`, {
+            const url = `${ADMIN_API_BASE_URL}/api/admin/categories/distribution`;
+            console.log('发送分类占比请求，URL:', url);
+            
+            const response = await fetch(url, {
                 method: 'GET',
                 headers: {
                     ...adminAuth.getHeaders(),
@@ -155,20 +188,17 @@ const adminAPI = {
             });
             
             if (!response.ok) {
-                throw new Error('获取分类占比数据失败');
+                const errorText = await response.text();
+                console.error('分类占比API响应错误:', response.status, errorText);
+                throw new Error(`获取分类占比数据失败，HTTP状态码: ${response.status}`);
             }
             
-            return await response.json();
+            const data = await response.json();
+            console.log('成功获取分类占比数据:', data);
+            return data;
         } catch (error) {
             console.error('获取分类占比数据出错:', error);
-            // 返回模拟数据
-            return [
-                { name: '特级六堡茶', value: 35 },
-                { name: '一级六堡茶', value: 25 },
-                { name: '二级六堡茶', value: 20 },
-                { name: '三级六堡茶', value: 15 },
-                { name: '其他', value: 5 }
-            ];
+            throw error; // 不再返回模拟数据，而是将错误抛出，让调用者处理
         }
     },
     
@@ -179,6 +209,8 @@ const adminAPI = {
             if (status) url += `&status=${status}`;
             if (searchQuery) url += `&search=${encodeURIComponent(searchQuery)}`;
             
+            console.log('发送订单列表请求，URL:', url);
+            
             const response = await fetch(url, {
                 method: 'GET',
                 headers: {
@@ -188,24 +220,17 @@ const adminAPI = {
             });
             
             if (!response.ok) {
-                throw new Error('获取订单列表失败');
+                const errorText = await response.text();
+                console.error('订单列表API响应错误:', response.status, errorText);
+                throw new Error(`获取订单列表失败，HTTP状态码: ${response.status}`);
             }
             
-            return await response.json();
+            const data = await response.json();
+            console.log('成功获取订单列表数据:', data);
+            return data;
         } catch (error) {
             console.error('获取订单列表出错:', error);
-            // 返回模拟数据
-            return {
-                orders: [
-                    { id: 'ORD20230001', customer: '张三', date: '2023-05-15', total: 358.00, status: '已完成', paymentMethod: '微信支付' },
-                    { id: 'ORD20230002', customer: '李四', date: '2023-05-14', total: 128.00, status: '已发货', paymentMethod: '支付宝' },
-                    { id: 'ORD20230003', customer: '王五', date: '2023-05-13', total: 256.00, status: '待发货', paymentMethod: '微信支付' },
-                    { id: 'ORD20230004', customer: '赵六', date: '2023-05-12', total: 198.00, status: '已完成', paymentMethod: '支付宝' },
-                    { id: 'ORD20230005', customer: '钱七', date: '2023-05-11', total: 458.00, status: '已完成', paymentMethod: '微信支付' }
-                ],
-                totalPages: 3,
-                currentPage: 1
-            };
+            throw error; // 不再返回模拟数据，而是将错误抛出，让调用者处理
         }
     },
     
@@ -215,6 +240,8 @@ const adminAPI = {
             let url = `${ADMIN_API_BASE_URL}/api/admin/users?page=${page}&pageSize=${pageSize}`;
             if (searchQuery) url += `&search=${encodeURIComponent(searchQuery)}`;
             
+            console.log('发送用户列表请求，URL:', url);
+            
             const response = await fetch(url, {
                 method: 'GET',
                 headers: {
@@ -224,32 +251,27 @@ const adminAPI = {
             });
             
             if (!response.ok) {
-                throw new Error('获取用户列表失败');
+                const errorText = await response.text();
+                console.error('用户列表API响应错误:', response.status, errorText);
+                throw new Error(`获取用户列表失败，HTTP状态码: ${response.status}`);
             }
             
-            return await response.json();
+            const data = await response.json();
+            console.log('成功获取用户列表数据:', data);
+            return data;
         } catch (error) {
             console.error('获取用户列表出错:', error);
-            // 返回模拟数据
-            return {
-                users: [
-                    { id: 1, username: 'user1', name: '张三', email: 'zhangsan@example.com', registerDate: '2023-01-15', status: '正常' },
-                    { id: 2, username: 'user2', name: '李四', email: 'lisi@example.com', registerDate: '2023-02-20', status: '正常' },
-                    { id: 3, username: 'user3', name: '王五', email: 'wangwu@example.com', registerDate: '2023-03-10', status: '正常' },
-                    { id: 4, username: 'user4', name: '赵六', email: 'zhaoliu@example.com', registerDate: '2023-04-05', status: '已禁用' },
-                    { id: 5, username: 'user5', name: '钱七', email: 'qianqi@example.com', registerDate: '2023-05-01', status: '正常' }
-                ],
-                totalPages: 2,
-                currentPage: 1
-            };
+            throw error; // 不再返回模拟数据，而是将错误抛出，让调用者处理
         }
     },
     
     // 获取分类列表
     getCategories: async (page = 1, pageSize = 10, searchQuery = '') => {
         try {
-            let url = `${ADMIN_API_BASE_URL}/api/admin/categories?page=${page}&pageSize=${pageSize}`;
-            if (searchQuery) url += `&search=${encodeURIComponent(searchQuery)}`;
+            // 使用与前端商城相同的categories API
+            let url = `${API_BASE_URL}/api/categories`;
+            
+            console.log('发送分类请求，URL:', url);
             
             const response = await fetch(url, {
                 method: 'GET',
@@ -260,24 +282,25 @@ const adminAPI = {
             });
             
             if (!response.ok) {
-                throw new Error('获取分类列表失败');
+                const errorText = await response.text();
+                console.error('分类API响应错误:', response.status, errorText);
+                throw new Error(`获取分类列表失败，HTTP状态码: ${response.status}`);
             }
             
-            return await response.json();
-        } catch (error) {
-            console.error('获取分类列表出错:', error);
-            // 返回模拟数据
+            const data = await response.json();
+            console.log('成功获取分类数据:', data);
+            
+            // 处理不同的响应格式：/api/categories直接返回数组，而/api/admin/categories返回{categories:[...]}对象
+            const categories = Array.isArray(data) ? data : (data.categories || []);
+            
             return {
-                categories: [
-                    { id: 1, name: '特级六堡茶', description: '特级六堡茶描述', productCount: 8, status: '启用' },
-                    { id: 2, name: '一级六堡茶', description: '一级六堡茶描述', productCount: 12, status: '启用' },
-                    { id: 3, name: '二级六堡茶', description: '二级六堡茶描述', productCount: 10, status: '启用' },
-                    { id: 4, name: '三级六堡茶', description: '三级六堡茶描述', productCount: 7, status: '启用' },
-                    { id: 5, name: '礼盒装', description: '礼盒装描述', productCount: 5, status: '启用' }
-                ],
-                totalPages: 1,
+                categories: categories,
+                totalPages: 1, // 目前API不支持分页，所以固定为1页
                 currentPage: 1
             };
+        } catch (error) {
+            console.error('获取分类列表出错:', error);
+            throw error; // 不再返回模拟数据，而是将错误抛出，让调用者处理
         }
     },
     
@@ -289,6 +312,8 @@ const adminAPI = {
             if (rating) url += `&rating=${rating}`;
             if (searchQuery) url += `&search=${encodeURIComponent(searchQuery)}`;
             
+            console.log('发送评价列表请求，URL:', url);
+            
             const response = await fetch(url, {
                 method: 'GET',
                 headers: {
@@ -298,24 +323,17 @@ const adminAPI = {
             });
             
             if (!response.ok) {
-                throw new Error('获取评价列表失败');
+                const errorText = await response.text();
+                console.error('评价列表API响应错误:', response.status, errorText);
+                throw new Error(`获取评价列表失败，HTTP状态码: ${response.status}`);
             }
             
-            return await response.json();
+            const data = await response.json();
+            console.log('成功获取评价列表数据:', data);
+            return data;
         } catch (error) {
             console.error('获取评价列表出错:', error);
-            // 返回模拟数据
-            return {
-                reviews: [
-                    { id: 1, productName: '陈年六堡茶 - 特级', customer: '张三', rating: 5, content: '茶叶品质非常好，口感醇厚，回甘持久。', date: '2023-05-10', status: '已审核' },
-                    { id: 2, productName: '六堡茶 - 一级', customer: '李四', rating: 4, content: '茶叶不错，包装精美，适合送礼。', date: '2023-05-08', status: '已审核' },
-                    { id: 3, productName: '六堡茶 - 二级', customer: '王五', rating: 3, content: '茶叶质量一般，但价格合理。', date: '2023-05-05', status: '待审核' },
-                    { id: 4, productName: '六堡茶礼盒装', customer: '赵六', rating: 5, content: '礼盒很精美，送人很有面子，茶叶品质也很好。', date: '2023-05-03', status: '已审核' },
-                    { id: 5, productName: '六堡茶 - 三级', customer: '钱七', rating: 4, content: '性价比很高，日常饮用不错的选择。', date: '2023-05-01', status: '已审核' }
-                ],
-                totalPages: 2,
-                currentPage: 1
-            };
+            throw error; // 不再返回模拟数据，而是将错误抛出，让调用者处理
         }
     },
     
@@ -326,6 +344,8 @@ const adminAPI = {
             if (startDate) url += `&startDate=${startDate}`;
             if (endDate) url += `&endDate=${endDate}`;
             
+            console.log('发送用户增长趋势请求，URL:', url);
+            
             const response = await fetch(url, {
                 method: 'GET',
                 headers: {
@@ -335,17 +355,17 @@ const adminAPI = {
             });
             
             if (!response.ok) {
-                throw new Error('获取用户增长趋势数据失败');
+                const errorText = await response.text();
+                console.error('用户增长趋势API响应错误:', response.status, errorText);
+                throw new Error(`获取用户增长趋势数据失败，HTTP状态码: ${response.status}`);
             }
             
-            return await response.json();
+            const data = await response.json();
+            console.log('成功获取用户增长趋势数据:', data);
+            return data;
         } catch (error) {
             console.error('获取用户增长趋势数据出错:', error);
-            // 返回模拟数据
-            return {
-                labels: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
-                values: [5, 8, 12, 10, 15, 20, 18, 25, 30, 28, 35, 40]
-            };
+            throw error; // 不再返回模拟数据，而是将错误抛出，让调用者处理
         }
     },
     
@@ -356,6 +376,8 @@ const adminAPI = {
             if (startDate) url += `?startDate=${startDate}`;
             if (endDate) url += `${startDate ? '&' : '?'}endDate=${endDate}`;
             
+            console.log('发送订单状态分布请求，URL:', url);
+            
             const response = await fetch(url, {
                 method: 'GET',
                 headers: {
@@ -365,20 +387,17 @@ const adminAPI = {
             });
             
             if (!response.ok) {
-                throw new Error('获取订单状态分布数据失败');
+                const errorText = await response.text();
+                console.error('订单状态分布API响应错误:', response.status, errorText);
+                throw new Error(`获取订单状态分布数据失败，HTTP状态码: ${response.status}`);
             }
             
-            return await response.json();
+            const data = await response.json();
+            console.log('成功获取订单状态分布数据:', data);
+            return data;
         } catch (error) {
             console.error('获取订单状态分布数据出错:', error);
-            // 返回模拟数据
-            return [
-                { name: '待付款', value: 10 },
-                { name: '待发货', value: 15 },
-                { name: '已发货', value: 25 },
-                { name: '已完成', value: 45 },
-                { name: '已取消', value: 5 }
-            ];
+            throw error; // 不再返回模拟数据，而是将错误抛出，让调用者处理
         }
     },
     
@@ -389,6 +408,8 @@ const adminAPI = {
             if (startDate) url += `?startDate=${startDate}`;
             if (endDate) url += `${startDate ? '&' : '?'}endDate=${endDate}`;
             
+            console.log('发送商品销售占比请求，URL:', url);
+            
             const response = await fetch(url, {
                 method: 'GET',
                 headers: {
@@ -398,20 +419,17 @@ const adminAPI = {
             });
             
             if (!response.ok) {
-                throw new Error('获取商品销售占比数据失败');
+                const errorText = await response.text();
+                console.error('商品销售占比API响应错误:', response.status, errorText);
+                throw new Error(`获取商品销售占比数据失败，HTTP状态码: ${response.status}`);
             }
             
-            return await response.json();
+            const data = await response.json();
+            console.log('成功获取商品销售占比数据:', data);
+            return data;
         } catch (error) {
             console.error('获取商品销售占比数据出错:', error);
-            // 返回模拟数据
-            return [
-                { name: '陈年六堡茶 - 特级', value: 30 },
-                { name: '六堡茶 - 一级', value: 25 },
-                { name: '六堡茶 - 二级', value: 20 },
-                { name: '六堡茶礼盒装', value: 15 },
-                { name: '六堡茶 - 三级', value: 10 }
-            ];
+            throw error; // 不再返回模拟数据，而是将错误抛出，让调用者处理
         }
     },
     // 获取系统设置
