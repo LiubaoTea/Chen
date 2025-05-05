@@ -67,8 +67,8 @@ async function loadCategories() {
         
         console.log('发送分类请求，认证头:', headers);
         
-        // 修改API路径，使用与前端商城相同的categories API
-        const response = await fetch(`${ADMIN_API_BASE_URL}/api/categories`, {
+        // 使用与前端商城相同的categories API
+        const response = await fetch(`${API_BASE_URL}/api/categories`, {
             method: 'GET',
             headers: headers
         });
@@ -142,8 +142,8 @@ async function loadProducts(page, categoryId = '', searchQuery = '') {
             throw new Error('认证令牌无效，请重新登录');
         }
         
-        // 构建API URL
-        let url = `${ADMIN_API_BASE_URL}/api/admin/products?page=${page}&pageSize=${pageSize}`;
+        // 构建API URL - 使用与前端商城相同的products API
+        let url = `${API_BASE_URL}/api/products?page=${page}&pageSize=${pageSize}`;
         if (categoryId) url += `&category=${categoryId}`;
         if (searchQuery) url += `&search=${encodeURIComponent(searchQuery)}`;
         
@@ -431,7 +431,7 @@ async function showProductModal(productId = null) {
                     ...adminAuth.getHeaders() // 添加认证头信息
                 };
                 
-                const response = await fetch(`${ADMIN_API_BASE_URL}/api/admin/products/${productId}`, {
+                const response = await fetch(`${API_BASE_URL}/api/products/${productId}`, {
                     method: 'GET',
                     headers: headers
                 });
@@ -523,11 +523,11 @@ async function saveProduct() {
         let url, method;
         if (productId) {
             // 更新商品
-            url = `${ADMIN_API_BASE_URL}/api/admin/products/${productId}`;
+            url = `${API_BASE_URL}/api/products/${productId}`;
             method = 'PUT';
         } else {
             // 添加商品
-            url = `${ADMIN_API_BASE_URL}/api/admin/products`;
+            url = `${API_BASE_URL}/api/products`;
             method = 'POST';
         }
         
@@ -605,7 +605,7 @@ async function deleteProduct(productId) {
             ...adminAuth.getHeaders() // 添加认证头信息
         };
         
-        const response = await fetch(`${ADMIN_API_BASE_URL}/api/admin/products/${productId}`, {
+        const response = await fetch(`${API_BASE_URL}/api/products/${productId}`, {
             method: 'DELETE',
             headers: headers
         });
