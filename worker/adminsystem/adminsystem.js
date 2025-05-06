@@ -40,6 +40,11 @@ async function hashPassword(password) {
     // 导出密钥
     const keyBuffer = await crypto.subtle.exportKey('raw', key);
     
+    // 确保keyBuffer是ArrayBuffer类型
+    if (!(keyBuffer instanceof ArrayBuffer)) {
+      throw new Error('导出的密钥不是ArrayBuffer类型');
+    }
+    
     // 将盐值和密钥合并并转为Base64
     const result = new Uint8Array(salt.length + keyBuffer.byteLength);
     result.set(salt, 0);
@@ -99,6 +104,12 @@ async function hashCompare(password, hash) {
     
     // 导出密钥
     const keyBuffer = await crypto.subtle.exportKey('raw', key);
+    
+    // 确保keyBuffer是ArrayBuffer类型
+    if (!(keyBuffer instanceof ArrayBuffer)) {
+      throw new Error('导出的密钥不是ArrayBuffer类型');
+    }
+    
     console.log('生成的密钥长度:', keyBuffer.byteLength);
     
     // 将计算出的密钥与存储的密钥进行比较
