@@ -1,6 +1,7 @@
 D1数据库所有表
 carts、order_items、orders、product_categories、product_reviews、products	、shopping_sessions、user_addresses、user_settings、users、admins、admin_settings、admin_statistics
 D1数据表的路径为：D1 数据库/liubaotea/具体各数据表
+D1数据表的ID：440ba7f7-c29c-406c-95ba-ebb2b6aa98c
 
 每个表包含的属性如下：
 
