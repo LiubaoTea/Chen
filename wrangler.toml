@@ -1,6 +1,6 @@
 # Cloudflare Pages配置文件
 
-name = "liubaocha-admin"
+name = "adminsystem"
 main = "./worker/adminsystem/adminsystem.js"
 compatibility_date = "2023-10-30"
 
