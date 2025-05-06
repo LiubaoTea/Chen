@@ -5,8 +5,8 @@
 export const API_BASE_URL = "https://workers.liubaotea.online";
 
 // 管理后台API基础URL
-// 管理员API已部署在同一域名下的/api/admin路径
-export const ADMIN_API_BASE_URL = "https://workers.liubaotea.online";
+// 管理员API已部署在专用的adminsystem worker上
+export const ADMIN_API_BASE_URL = "https://adminsystemworkers.liubaotea.online";
 
 // 导出默认对象，确保模块兼容性
 const config = {

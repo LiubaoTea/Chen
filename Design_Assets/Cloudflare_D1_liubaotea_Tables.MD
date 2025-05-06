@@ -1,5 +1,7 @@
 D1数据库所有表
-carts、order_items、orders、product_categories、product_reviews、products	、shopping_sessions、user_addresses、user_settings、users
+carts、order_items、orders、product_categories、product_reviews、products	、shopping_sessions、user_addresses、user_settings、users、admins、admin_settings、admin_statistics
+D1数据表的路径为：D1 数据库/liubaotea/具体各数据表
+
 每个表包含的属性如下：
 
 1、users （用户信息表）
@@ -207,11 +209,43 @@ CREATE TABLE admins (
 CREATE INDEX idx_admins_role ON admins(role);       -- 按角色快速筛选
 CREATE INDEX idx_admins_username ON admins(username);  -- 登录优化
 
+12、admin_settings：（系统设置）
 
+-- 创建系统设置表（支持多模块配置）
+CREATE TABLE admin_settings (
+  setting_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  module TEXT NOT NULL CHECK(module IN ('site', 'payment', 'mail', 'security')),  -- 设置模块分类
+  config_key TEXT NOT NULL,          -- 配置键名（如 'enableWechatPay'）
+  config_value TEXT,                 -- 配置值（支持JSON/字符串）
+  data_type TEXT NOT NULL DEFAULT 'string' CHECK(data_type IN ('boolean', 'number', 'string', 'json')),
+  updated_at INTEGER DEFAULT (CAST(strftime('%s','now') AS INTEGER)),
+  
+  UNIQUE(module, config_key)         -- 防止重复配置项
+);
 
+-- 高频查询索引
+CREATE INDEX idx_settings_module ON admin_settings(module);
+CREATE INDEX idx_settings_key ON admin_settings(config_key);
 
+13、admin_statistics：（统计表）
 
+CREATE TABLE admin_statistics (
+  stat_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  stat_type TEXT NOT NULL CHECK(stat_type IN (
+    'sales_trend',    -- 销售趋势 
+    'product_dist',   -- 商品销售分布  
+    'user_growth',     -- 用户增长
+    'order_status',     -- 订单状态
+    'top_products'       -- 热销商品
+  )),
+  period TEXT NOT NULL CHECK(period IN ('daily', 'weekly', 'monthly', 'custom')),
+  start_date INTEGER NOT NULL,-- 统计开始时间（Unix时间戳）
+  end_date INTEGER NOT NULL,-- 统计结束时间（Unix时间戳）
+  stat_data TEXT NOT NULL,-- 统计结果数据（结构化存储）
+  generated_at INTEGER DEFAULT (CAST(strftime('%s','now') AS INTEGER)) 
+);
 
-
+-- 单独创建索引（不与 CREATE TABLE 语句合并）
+CREATE INDEX idx_stat_type_range ON admin_statistics(stat_type, start_date, end_date);
 
 
