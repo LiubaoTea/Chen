@@ -1,0 +1,4 @@
+# worker/adminsystem/wrangler.toml
+name = "adminsystem"
+main = "./adminsystem.js"
+compatibility_date = "2025-05-06"  # 按需设置日期
