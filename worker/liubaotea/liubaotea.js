@@ -42,6 +42,7 @@ async function hashPassword(password) {
     
     // 确保keyBuffer是ArrayBuffer类型
     if (!(keyBuffer instanceof ArrayBuffer)) {
+      console.error('导出的密钥不是ArrayBuffer类型');
       throw new Error('导出的密钥不是ArrayBuffer类型');
     }
     
@@ -104,6 +105,13 @@ async function hashCompare(password, hash) {
     
     // 导出密钥
     const keyBuffer = await crypto.subtle.exportKey('raw', key);
+    
+    // 确保keyBuffer是ArrayBuffer类型
+    if (!(keyBuffer instanceof ArrayBuffer)) {
+      console.error('导出的密钥不是ArrayBuffer类型');
+      return false;
+    }
+    
     console.log('生成的密钥长度:', keyBuffer.byteLength);
     
     // 将计算出的密钥与存储的密钥进行比较

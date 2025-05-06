@@ -1,0 +1,8 @@
+{
+  "name": "adminsystem-worker",
+  "version": "1.0.0",
+  "main": "adminsystem.js",
+  "dependencies": {
+    "@tsndr/cloudflare-worker-jwt": "^2.5.4"
+  }
+}

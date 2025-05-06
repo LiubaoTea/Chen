@@ -1,0 +1,9 @@
+{
+  "name": "liubaotea-worker",
+  "version": "1.0.0",
+  "main": "liubaotea.js",
+  "dependencies": {
+    "@tsndr/cloudflare-worker-jwt": "^2.5.4",
+    "bcryptjs": "^2.4.3"
+  }
+}
