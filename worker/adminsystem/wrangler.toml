@@ -1,6 +1,6 @@
 # worker/adminsystem/wrangler.toml
 name = "adminsystem"
-main = "./adminsystem.js"
+main = ""./worker/adminsystem/adminsystem.js""
 compatibility_date = "2025-05-06"
 
 # 配置D1数据库绑定
