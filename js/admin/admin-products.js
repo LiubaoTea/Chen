@@ -112,7 +112,29 @@ async function loadProducts(page, categoryId = '', searchQuery = '') {
         // 使用adminAPI获取商品数据
         const result = await adminAPI.getProducts(page, pageSize, categoryId, searchQuery);
         productsData = result.products || [];
-        totalPages = result.pagination ? result.pagination.totalPages || 1 : 1;
+        
+        // 正确处理分页信息
+        if (result.pagination) {
+            // 如果后端返回了pages字段，使用它
+            if (result.pagination.pages) {
+                totalPages = result.pagination.pages;
+            }
+            // 否则，如果有total字段，计算总页数
+            else if (result.pagination.total) {
+                totalPages = Math.ceil(result.pagination.total / pageSize);
+            }
+            // 如果都没有，默认为1页
+            else {
+                totalPages = 1;
+            }
+            console.log('分页信息:', {
+                currentPage: page,
+                totalPages: totalPages,
+                totalItems: result.pagination.total || 'unknown'
+            });
+        } else {
+            totalPages = 1;
+        }
         
         // 处理商品分类关系
         // 确保每个商品都有categories属性，用于兼容旧代码
@@ -200,6 +222,7 @@ function updateProductsList() {
         
         // 查找分类名称
         let categoryName = '未分类';
+        let categoryNames = [];
         
         // 确保categoriesData已加载
         if (!categoriesData || categoriesData.length === 0) {
@@ -207,30 +230,33 @@ function updateProductsList() {
         } else {
             // 优先使用新的数据结构：通过category_mappings获取分类信息
             if (product.category_mappings && product.category_mappings.length > 0) {
-                const categoryId = product.category_mappings[0].category_id;
-                const category = categoriesData.find(c => c.category_id == categoryId);
-                if (category) {
-                    categoryName = category.category_name;
-                }
+                // 获取所有分类名称
+                categoryNames = product.category_mappings.map(mapping => {
+                    const category = categoriesData.find(c => c.category_id == mapping.category_id);
+                    return category ? category.category_name : '未知分类';
+                }).filter(name => name !== '未知分类');
             } 
             // 兼容旧数据结构：通过categories数组获取分类信息
             else if (product.categories && product.categories.length > 0) {
-                const categoryId = product.categories[0];
-                const category = categoriesData.find(c => c.category_id == categoryId);
-                if (category) {
-                    categoryName = category.category_name;
-                }
+                // 获取所有分类名称
+                categoryNames = product.categories.map(categoryId => {
+                    const category = categoriesData.find(c => c.category_id == categoryId);
+                    return category ? category.category_name : '未知分类';
+                }).filter(name => name !== '未知分类');
             }
             // 最后尝试使用category_id字段
             else if (product.category_id) {
                 const category = categoriesData.find(c => c.category_id == product.category_id);
                 if (category) {
-                    categoryName = category.category_name;
+                    categoryNames.push(category.category_name);
                 }
             }
             
-            // 如果仍然没有找到分类名称，记录日志以便调试
-            if (categoryName === '未分类') {
+            // 如果找到了分类名称，则使用它们
+            if (categoryNames.length > 0) {
+                categoryName = categoryNames.join(', ');
+            } else {
+                // 如果仍然没有找到分类名称，记录日志以便调试
                 console.log('未找到商品分类信息:', {
                     productId: product.product_id,
                     categoryMappings: product.category_mappings,

@@ -30,6 +30,9 @@ const adminAPI = {
             if (categoryId) url += `&categoryId=${categoryId}`; // 修改为categoryId参数，与后端API匹配
             if (searchQuery) url += `&search=${encodeURIComponent(searchQuery)}`;
             
+            // 添加参数，确保返回商品分类映射关系
+            url += '&include_category_mappings=true';
+            
             console.log('发送商品请求，URL:', url);
             
             const response = await fetch(url, {
@@ -48,6 +51,45 @@ const adminAPI = {
             
             const data = await response.json();
             console.log('成功获取商品数据:', data);
+            
+            // 如果没有返回category_mappings，尝试获取并添加
+            if (data.products && Array.isArray(data.products)) {
+                // 检查是否已经包含category_mappings
+                const needsMappings = data.products.some(product => !product.category_mappings);
+                
+                if (needsMappings) {
+                    try {
+                        // 获取所有商品ID
+                        const productIds = data.products.map(p => p.product_id);
+                        
+                        // 获取这些商品的分类映射
+                        const mappingsUrl = `${ADMIN_API_BASE_URL}/api/admin/product-category-mappings?product_ids=${productIds.join(',')}`;
+                        const mappingsResponse = await fetch(mappingsUrl, {
+                            method: 'GET',
+                            headers: {
+                                ...adminAuth.getHeaders(),
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                        
+                        if (mappingsResponse.ok) {
+                            const mappingsData = await mappingsResponse.json();
+                            
+                            // 将映射数据添加到商品中
+                            if (mappingsData && Array.isArray(mappingsData)) {
+                                data.products.forEach(product => {
+                                    product.category_mappings = mappingsData.filter(
+                                        mapping => mapping.product_id === product.product_id
+                                    );
+                                });
+                            }
+                        }
+                    } catch (mappingError) {
+                        console.warn('获取商品分类映射失败:', mappingError);
+                        // 继续处理，不中断主流程
+                    }
+                }
+            }
             
             return data;
         } catch (error) {
@@ -330,6 +372,13 @@ const adminAPI = {
             
             const data = await response.json();
             console.log('成功获取分类详情:', data);
+            
+            // 如果返回的是数组（可能是API返回了多个结果），取第一个
+            if (Array.isArray(data) && data.length > 0) {
+                return data[0];
+            }
+            
+            // 如果返回的是对象，直接返回
             return data;
         } catch (error) {
             console.error('获取分类详情出错:', error);
