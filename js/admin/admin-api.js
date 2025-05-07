@@ -27,7 +27,7 @@ const adminAPI = {
         try {
             // 使用管理系统专用的API
             let url = `${ADMIN_API_BASE_URL}/api/admin/products?page=${page}&pageSize=${pageSize}`;
-            if (categoryId) url += `&category=${categoryId}`;
+            if (categoryId) url += `&categoryId=${categoryId}`; // 修改为categoryId参数，与后端API匹配
             if (searchQuery) url += `&search=${encodeURIComponent(searchQuery)}`;
             
             console.log('发送商品请求，URL:', url);
@@ -303,6 +303,37 @@ const adminAPI = {
         } catch (error) {
             console.error('获取分类列表出错:', error);
             throw error; // 不再返回模拟数据，而是将错误抛出，让调用者处理
+        }
+    },
+    
+    // 获取分类详情
+    getCategoryById: async (categoryId) => {
+        try {
+            // 使用管理系统的category API
+            const url = `${ADMIN_API_BASE_URL}/api/admin/categories/${categoryId}`;
+            
+            console.log('发送分类详情请求，URL:', url);
+            
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    ...adminAuth.getHeaders(),
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('分类详情API响应错误:', response.status, errorText);
+                throw new Error(`获取分类详情失败，HTTP状态码: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            console.log('成功获取分类详情:', data);
+            return data;
+        } catch (error) {
+            console.error('获取分类详情出错:', error);
+            throw error;
         }
     },
     

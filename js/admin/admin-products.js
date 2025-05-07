@@ -101,6 +101,7 @@ async function loadProducts(page, categoryId = '', searchQuery = '') {
         }
         
         console.log('正在从D1数据库加载商品数据...');
+        console.log('筛选条件 - 页码:', page, '分类ID:', categoryId, '搜索关键词:', searchQuery);
         
         // 确保管理员已登录
         if (!adminAuth.isLoggedIn()) {
@@ -111,7 +112,7 @@ async function loadProducts(page, categoryId = '', searchQuery = '') {
         // 使用adminAPI获取商品数据
         const result = await adminAPI.getProducts(page, pageSize, categoryId, searchQuery);
         productsData = result.products || [];
-        totalPages = result.totalPages || 1;
+        totalPages = result.pagination ? result.pagination.totalPages || 1 : 1;
         
         // 处理商品分类关系
         // 确保每个商品都有categories属性，用于兼容旧代码
@@ -199,17 +200,25 @@ function updateProductsList() {
         
         // 查找分类名称
         let categoryName = '未分类';
-        if (product.categories && product.categories.length > 0 && categoriesData && categoriesData.length > 0) {
-            // 获取第一个分类的名称（如果有多个分类）
+        // 优先使用新的数据结构：通过category_mappings获取分类信息
+        if (product.category_mappings && product.category_mappings.length > 0 && categoriesData && categoriesData.length > 0) {
+            const categoryId = product.category_mappings[0].category_id;
+            const category = categoriesData.find(c => c.category_id == categoryId);
+            if (category) {
+                categoryName = category.category_name;
+            }
+        } 
+        // 兼容旧数据结构：通过categories数组获取分类信息
+        else if (product.categories && product.categories.length > 0 && categoriesData && categoriesData.length > 0) {
             const categoryId = product.categories[0];
             const category = categoriesData.find(c => c.category_id == categoryId);
             if (category) {
                 categoryName = category.category_name;
             }
-        } else if (product.category_mappings && product.category_mappings.length > 0 && categoriesData && categoriesData.length > 0) {
-            // 新的数据结构：通过category_mappings获取分类信息
-            const categoryId = product.category_mappings[0].category_id;
-            const category = categoriesData.find(c => c.category_id == categoryId);
+        }
+        // 最后尝试使用category_id字段
+        else if (product.category_id && categoriesData && categoriesData.length > 0) {
+            const category = categoriesData.find(c => c.category_id == product.category_id);
             if (category) {
                 categoryName = category.category_name;
             }
@@ -439,15 +448,17 @@ function fillProductForm(product) {
     document.getElementById('productId').value = product.product_id;
     document.getElementById('productName').value = product.name;
     
-    // 处理分类 - 支持新的分类关系结构
-    if (product.categories && product.categories.length > 0) {
-        // 使用第一个分类作为主分类（如果有多个分类）
-        document.getElementById('productCategory').value = product.categories[0];
-    } else if (product.category_mappings && product.category_mappings.length > 0) {
-        // 新的数据结构：通过category_mappings获取分类信息
+    // 处理分类 - 优先使用新的分类关系结构
+    // 优先使用新的数据结构：通过category_mappings获取分类信息
+    if (product.category_mappings && product.category_mappings.length > 0) {
         document.getElementById('productCategory').value = product.category_mappings[0].category_id;
-    } else {
-        // 兼容旧数据结构
+    }
+    // 其次使用categories数组
+    else if (product.categories && product.categories.length > 0) {
+        document.getElementById('productCategory').value = product.categories[0];
+    }
+    // 最后尝试使用category_id字段
+    else {
         document.getElementById('productCategory').value = product.category_id || '';
     }
     
@@ -457,10 +468,19 @@ function fillProductForm(product) {
     document.getElementById('productDescription').value = product.description || '';
     document.getElementById('productStatus').value = product.status || 'active';
     
+    // 填充规格和陈化年份（如果有这些字段）
+    if (document.getElementById('productSpecifications')) {
+        document.getElementById('productSpecifications').value = product.specifications || '';
+    }
+    if (document.getElementById('productAgingYears')) {
+        document.getElementById('productAgingYears').value = product.aging_years || 0;
+    }
+    
     // 显示商品图片
     const imageUrl = `${API_BASE_URL}/image/Goods/Goods_${product.product_id}.png`;
     document.getElementById('productImagePreview').src = imageUrl;
     document.getElementById('productImagePreview').classList.remove('d-none');
+
 }
 
 // 保存商品（添加或更新）

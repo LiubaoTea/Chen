@@ -74,7 +74,12 @@ function updateCategoriesList() {
         return;
     }
     
-    categoriesData.forEach(category => {
+    // 对分类数据按照category_id进行排序
+    const sortedCategories = [...categoriesData].sort((a, b) => {
+        return parseInt(a.category_id) - parseInt(b.category_id);
+    });
+    
+    sortedCategories.forEach(category => {
         const row = document.createElement('tr');
         
         // 格式化日期
