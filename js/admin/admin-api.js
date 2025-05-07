@@ -268,8 +268,9 @@ const adminAPI = {
     // 获取分类列表
     getCategories: async (page = 1, pageSize = 10, searchQuery = '') => {
         try {
-            // 使用与前端商城相同的categories API
-            let url = `${API_BASE_URL}/api/categories`;
+            // 使用管理系统的categories API
+            let url = `${ADMIN_API_BASE_URL}/api/admin/categories?page=${page}&pageSize=${pageSize}`;
+            if (searchQuery) url += `&search=${encodeURIComponent(searchQuery)}`;
             
             console.log('发送分类请求，URL:', url);
             
