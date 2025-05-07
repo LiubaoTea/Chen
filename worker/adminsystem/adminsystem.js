@@ -470,7 +470,7 @@ const handleAdminAPI = async (request, env) => {
             const params = [];
             
             if (category) {
-                whereClause += ' WHERE category_id = ?';
+                whereClause += ' WHERE EXISTS (SELECT 1 FROM product_category_mapping pcm WHERE pcm.product_id = p.product_id AND pcm.category_id = ?)';
                 params.push(category);
             }
             
@@ -481,7 +481,13 @@ const handleAdminAPI = async (request, env) => {
             }
             
             // 获取商品总数
-            const countQuery = `SELECT COUNT(*) as total FROM products${whereClause}`;
+            const countQuery = `
+                SELECT COUNT(DISTINCT p.product_id) as total 
+                FROM products p
+                LEFT JOIN product_category_mapping pcm ON p.product_id = pcm.product_id
+                LEFT JOIN product_categories c ON pcm.category_id = c.category_id
+                ${whereClause}
+            `;
             const totalResult = await env.DB.prepare(countQuery).bind(...params).first();
             const total = totalResult?.total || 0;
             
@@ -489,7 +495,8 @@ const handleAdminAPI = async (request, env) => {
             const productsQuery = `
                 SELECT p.*, c.category_name 
                 FROM products p
-                LEFT JOIN product_categories c ON p.product_id = c.product_id -- 使用正确的连接条件
+                LEFT JOIN product_category_mapping pcm ON p.product_id = pcm.product_id
+                LEFT JOIN product_categories c ON pcm.category_id = c.category_id
                 ${whereClause}
                 ORDER BY p.created_at DESC
                 LIMIT ? OFFSET ?
@@ -2130,7 +2137,8 @@ const handleAdminAPI = async (request, env) => {
                 FROM order_items oi
                 JOIN orders o ON oi.order_id = o.order_id
                 JOIN products p ON oi.product_id = p.product_id
-                LEFT JOIN product_categories c ON p.product_id = c.product_id -- 使用正确的连接条件
+                LEFT JOIN product_category_mapping pcm ON p.product_id = pcm.product_id
+                LEFT JOIN product_categories c ON pcm.category_id = c.category_id
                 WHERE o.status != 'cancelled' ${dateCondition}
                 GROUP BY p.product_id
                 ORDER BY total_sales DESC
