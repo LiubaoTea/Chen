@@ -25,8 +25,8 @@ const adminAPI = {
     // 获取商品列表
     getProducts: async (page = 1, pageSize = 10, categoryId = '', searchQuery = '') => {
         try {
-            // 使用与前端商城相同的products API
-            let url = `${API_BASE_URL}/api/products?page=${page}&pageSize=${pageSize}`;
+            // 使用管理系统专用的API
+            let url = `${ADMIN_API_BASE_URL}/api/admin/products?page=${page}&pageSize=${pageSize}`;
             if (categoryId) url += `&category=${categoryId}`;
             if (searchQuery) url += `&search=${encodeURIComponent(searchQuery)}`;
             
