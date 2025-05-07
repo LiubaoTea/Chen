@@ -4,14 +4,15 @@
  */
 
 // 导入API基础URL配置
-import config from '../config.js';
+import { API_BASE_URL } from '../config.js';
+import { ADMIN_API_BASE_URL } from './admin-config.js';
 // 导入认证模块
 import { adminAuth } from './admin-auth.js';
 
-// 解构导入的配置
-const { API_BASE_URL, ADMIN_API_BASE_URL } = config;
-
-console.log('admin-api.js中的配置:', config);
+console.log('admin-api.js中的配置:', {
+    API_BASE_URL,
+    ADMIN_API_BASE_URL
+});
 
 // 确保全局可访问API配置
 if (typeof window !== 'undefined') {

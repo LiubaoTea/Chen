@@ -80,9 +80,8 @@
     <script src="https://cdn.bootcdn.net/ajax/libs/chart.js/3.9.1/chart.min.js"></script>
     <!-- 配置文件 -->
     <script type="module">
-        import config from './js/config.js';
-        // 解构导入的配置
-        const { API_BASE_URL, ADMIN_API_BASE_URL } = config;
+        import { API_BASE_URL } from './js/config.js';
+        import { ADMIN_API_BASE_URL } from './js/admin/admin-config.js';
         window.API_BASE_URL = API_BASE_URL;
         window.ADMIN_API_BASE_URL = ADMIN_API_BASE_URL;
     </script>

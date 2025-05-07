@@ -489,7 +489,7 @@ const handleAdminAPI = async (request, env) => {
             const productsQuery = `
                 SELECT p.*, c.category_name 
                 FROM products p
-                LEFT JOIN categories c ON p.category_id = c.category_id
+                LEFT JOIN product_categories c ON p.category_id = c.category_id
                 ${whereClause}
                 ORDER BY p.created_at DESC
                 LIMIT ? OFFSET ?
@@ -528,7 +528,7 @@ const handleAdminAPI = async (request, env) => {
             const product = await env.DB.prepare(`
                 SELECT p.*, c.category_name 
                 FROM products p
-                LEFT JOIN categories c ON p.category_id = c.category_id
+                LEFT JOIN product_categories c ON p.category_id = c.category_id
                 WHERE p.product_id = ?
             `).bind(productId).first();
             
@@ -582,7 +582,7 @@ const handleAdminAPI = async (request, env) => {
             }
             
             // 检查分类是否存在
-            const category = await env.DB.prepare('SELECT category_id FROM categories WHERE category_id = ?')
+            const category = await env.DB.prepare('SELECT category_id FROM product_categories WHERE category_id = ?')
                 .bind(category_id)
                 .first();
                 
@@ -617,7 +617,7 @@ const handleAdminAPI = async (request, env) => {
             const newProduct = await env.DB.prepare(`
                 SELECT p.*, c.category_name 
                 FROM products p
-                LEFT JOIN categories c ON p.category_id = c.category_id
+                LEFT JOIN product_categories c ON p.category_id = c.category_id
                 WHERE p.product_id = ?
             `).bind(newProductId).first();
             
@@ -682,7 +682,7 @@ const handleAdminAPI = async (request, env) => {
             
             // 检查分类是否存在
             if (category_id) {
-                const category = await env.DB.prepare('SELECT category_id FROM categories WHERE category_id = ?')
+                const category = await env.DB.prepare('SELECT category_id FROM product_categories WHERE category_id = ?')
                     .bind(category_id)
                     .first();
                     
@@ -723,7 +723,7 @@ const handleAdminAPI = async (request, env) => {
             const updatedProduct = await env.DB.prepare(`
                 SELECT p.*, c.category_name 
                 FROM products p
-                LEFT JOIN categories c ON p.category_id = c.category_id
+                LEFT JOIN product_categories c ON p.category_id = c.category_id
                 WHERE p.product_id = ?
             `).bind(productId).first();
             
@@ -816,7 +816,7 @@ const handleAdminAPI = async (request, env) => {
             const { results: categories } = await env.DB.prepare(`
                 SELECT c.*, 
                        (SELECT COUNT(*) FROM products p WHERE p.category_id = c.category_id) as product_count
-                FROM categories c
+                FROM product_categories c
                 ORDER BY c.category_name ASC
             `).all();
             
@@ -841,7 +841,7 @@ const handleAdminAPI = async (request, env) => {
             const category = await env.DB.prepare(`
                 SELECT c.*, 
                        (SELECT COUNT(*) FROM products p WHERE p.category_id = c.category_id) as product_count
-                FROM categories c
+                FROM product_categories c
                 WHERE c.category_id = ?
             `).bind(categoryId).first();
             
@@ -886,7 +886,7 @@ const handleAdminAPI = async (request, env) => {
             }
             
             // 检查分类名称是否已存在
-            const existingCategory = await env.DB.prepare('SELECT category_id FROM categories WHERE category_name = ?')
+            const existingCategory = await env.DB.prepare('SELECT category_id FROM product_categories WHERE category_name = ?')
                 .bind(category_name)
                 .first();
                 
@@ -899,7 +899,7 @@ const handleAdminAPI = async (request, env) => {
             
             // 插入分类数据
             const result = await env.DB.prepare(`
-                INSERT INTO categories (category_name, description, image_url, created_at, updated_at)
+                INSERT INTO product_categories (category_name, description, image_url, created_at, updated_at)
                 VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
             `).bind(
                 category_name,
@@ -913,7 +913,7 @@ const handleAdminAPI = async (request, env) => {
             // 获取新插入的分类详情
             const newCategory = await env.DB.prepare(`
                 SELECT c.*, 0 as product_count
-                FROM categories c
+                FROM product_categories c
                 WHERE c.category_id = ?
             `).bind(newCategoryId).first();
             
@@ -946,7 +946,7 @@ const handleAdminAPI = async (request, env) => {
             const categoryId = path.split('/').pop();
             
             // 检查分类是否存在
-            const existingCategory = await env.DB.prepare('SELECT category_id FROM categories WHERE category_id = ?')
+            const existingCategory = await env.DB.prepare('SELECT category_id FROM product_categories WHERE category_id = ?')
                 .bind(categoryId)
                 .first();
                 
@@ -969,7 +969,7 @@ const handleAdminAPI = async (request, env) => {
             
             // 检查分类名称是否已被其他分类使用
             const duplicateCategory = await env.DB.prepare(
-                'SELECT category_id FROM categories WHERE category_name = ? AND category_id != ?'
+                'SELECT category_id FROM product_categories WHERE category_name = ? AND category_id != ?'
             ).bind(category_name, categoryId).first();
                 
             if (duplicateCategory) {
@@ -981,7 +981,7 @@ const handleAdminAPI = async (request, env) => {
             
             // 更新分类数据
             await env.DB.prepare(`
-                UPDATE categories SET
+                UPDATE product_categories SET
                     category_name = ?,
                     description = ?,
                     image_url = ?,
@@ -998,7 +998,7 @@ const handleAdminAPI = async (request, env) => {
             const updatedCategory = await env.DB.prepare(`
                 SELECT c.*, 
                        (SELECT COUNT(*) FROM products p WHERE p.category_id = c.category_id) as product_count
-                FROM categories c
+                FROM product_categories c
                 WHERE c.category_id = ?
             `).bind(categoryId).first();
             
@@ -1031,7 +1031,7 @@ const handleAdminAPI = async (request, env) => {
             const categoryId = path.split('/').pop();
             
             // 检查分类是否存在
-            const existingCategory = await env.DB.prepare('SELECT category_id FROM categories WHERE category_id = ?')
+            const existingCategory = await env.DB.prepare('SELECT category_id FROM product_categories WHERE category_id = ?')
                 .bind(categoryId)
                 .first();
                 
@@ -1058,7 +1058,7 @@ const handleAdminAPI = async (request, env) => {
             }
             
             // 删除分类
-            await env.DB.prepare('DELETE FROM categories WHERE category_id = ?')
+            await env.DB.prepare('DELETE FROM product_categories WHERE category_id = ?')
                 .bind(categoryId)
                 .run();
             
@@ -2133,7 +2133,7 @@ const handleAdminAPI = async (request, env) => {
                 FROM order_items oi
                 JOIN orders o ON oi.order_id = o.order_id
                 JOIN products p ON oi.product_id = p.product_id
-                JOIN categories c ON p.category_id = c.category_id
+                JOIN product_categories c ON p.category_id = c.category_id
                 WHERE o.status != 'cancelled' ${dateCondition}
                 GROUP BY c.category_id
                 ORDER BY total_sales DESC
