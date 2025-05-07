@@ -489,7 +489,7 @@ const handleAdminAPI = async (request, env) => {
             const productsQuery = `
                 SELECT p.*, c.category_name 
                 FROM products p
-                LEFT JOIN product_categories c ON p.category_id = c.category_id
+                LEFT JOIN product_categories c ON p.product_id = c.product_id -- 使用正确的连接条件
                 ${whereClause}
                 ORDER BY p.created_at DESC
                 LIMIT ? OFFSET ?
