@@ -489,7 +489,7 @@ const handleAdminAPI = async (request, env) => {
             const productsQuery = `
                 SELECT p.*, c.category_name 
                 FROM products p
-                LEFT JOIN product_categories c ON p.category_id = c.category_id
+                LEFT JOIN product_categories c ON p.product_id = c.product_id -- 使用正确的连接条件
                 ${whereClause}
                 ORDER BY p.created_at DESC
                 LIMIT ? OFFSET ?
@@ -526,9 +526,8 @@ const handleAdminAPI = async (request, env) => {
             
             // 获取商品详情
             const product = await env.DB.prepare(`
-                SELECT p.*, c.category_name 
+                SELECT p.*, NULL as category_name 
                 FROM products p
-                LEFT JOIN product_categories c ON p.category_id = c.category_id
                 WHERE p.product_id = ?
             `).bind(productId).first();
             
@@ -615,9 +614,8 @@ const handleAdminAPI = async (request, env) => {
             
             // 获取新插入的商品详情
             const newProduct = await env.DB.prepare(`
-                SELECT p.*, c.category_name 
+                SELECT p.*, NULL as category_name 
                 FROM products p
-                LEFT JOIN product_categories c ON p.category_id = c.category_id
                 WHERE p.product_id = ?
             `).bind(newProductId).first();
             
@@ -721,9 +719,8 @@ const handleAdminAPI = async (request, env) => {
             
             // 获取更新后的商品详情
             const updatedProduct = await env.DB.prepare(`
-                SELECT p.*, c.category_name 
+                SELECT p.*, NULL as category_name 
                 FROM products p
-                LEFT JOIN product_categories c ON p.category_id = c.category_id
                 WHERE p.product_id = ?
             `).bind(productId).first();
             
@@ -814,8 +811,8 @@ const handleAdminAPI = async (request, env) => {
         try {
             // 获取所有分类
             const { results: categories } = await env.DB.prepare(`
-                SELECT c.*, 
-                       (SELECT COUNT(*) FROM products p WHERE p.category_id = c.category_id) as product_count
+                SELECT c.*,
+                       0 as product_count
                 FROM product_categories c
                 ORDER BY c.category_name ASC
             `).all();
@@ -840,7 +837,7 @@ const handleAdminAPI = async (request, env) => {
             // 获取分类详情
             const category = await env.DB.prepare(`
                 SELECT c.*, 
-                       (SELECT COUNT(*) FROM products p WHERE p.category_id = c.category_id) as product_count
+                       0 as product_count
                 FROM product_categories c
                 WHERE c.category_id = ?
             `).bind(categoryId).first();
@@ -997,7 +994,7 @@ const handleAdminAPI = async (request, env) => {
             // 获取更新后的分类详情
             const updatedCategory = await env.DB.prepare(`
                 SELECT c.*, 
-                       (SELECT COUNT(*) FROM products p WHERE p.category_id = c.category_id) as product_count
+                       0 as product_count
                 FROM product_categories c
                 WHERE c.category_id = ?
             `).bind(categoryId).first();
@@ -2133,9 +2130,9 @@ const handleAdminAPI = async (request, env) => {
                 FROM order_items oi
                 JOIN orders o ON oi.order_id = o.order_id
                 JOIN products p ON oi.product_id = p.product_id
-                JOIN product_categories c ON p.category_id = c.category_id
+                LEFT JOIN product_categories c ON p.product_id = c.product_id -- 使用正确的连接条件
                 WHERE o.status != 'cancelled' ${dateCondition}
-                GROUP BY c.category_id
+                GROUP BY p.product_id
                 ORDER BY total_sales DESC
             `).all();
             
