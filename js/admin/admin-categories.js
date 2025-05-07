@@ -81,11 +81,11 @@ function updateCategoriesList() {
         const createdDate = new Date(category.created_at * 1000).toLocaleDateString('zh-CN');
         
         row.innerHTML = `
-            <td>${category.id}</td>
+            <td>${category.category_id}</td>
             <td>
                 <div class="d-flex align-items-center">
-                    ${category.icon ? `<img src="${category.icon}" class="product-thumbnail me-2" alt="${category.name}">` : ''}
-                    <div>${category.name}</div>
+                    ${category.icon ? `<img src="${category.icon}" class="product-thumbnail me-2" alt="${category.category_name}">` : ''}
+                    <div>${category.category_name}</div>
                 </div>
             </td>
             <td>${category.product_count || 0}</td>
@@ -93,10 +93,10 @@ function updateCategoriesList() {
             <td>${createdDate}</td>
             <td>
                 <div class="action-buttons">
-                    <button type="button" class="btn btn-sm btn-outline-primary edit-category" data-category-id="${category.id}">
+                    <button type="button" class="btn btn-sm btn-outline-primary edit-category" data-category-id="${category.category_id}">
                         <i class="bi bi-pencil"></i>
                     </button>
-                    <button type="button" class="btn btn-sm btn-outline-danger delete-category" data-category-id="${category.id}" data-category-name="${category.name}">
+                    <button type="button" class="btn btn-sm btn-outline-danger delete-category" data-category-id="${category.category_id}" data-category-name="${category.category_name}">
                         <i class="bi bi-trash"></i>
                     </button>
                 </div>
@@ -235,8 +235,8 @@ async function handleEditCategory(e) {
         const category = await adminAPI.getCategoryById(categoryId);
         
         // 填充表单
-        document.getElementById('categoryId').value = category.id;
-        document.getElementById('categoryName').value = category.name;
+        document.getElementById('categoryId').value = category.category_id;
+        document.getElementById('categoryName').value = category.category_name;
         document.getElementById('categoryDescription').value = category.description || '';
         document.getElementById('categorySort').value = category.sort_order || 0;
         
@@ -297,7 +297,7 @@ async function confirmDeleteCategory(e) {
         deleteModal.hide();
         
         // 重新加载分类列表
-        await loadCategories(currentPage);
+        await loadCategories(categoriesCurrentPage);
         
         // 显示成功提示
         showSuccessToast('分类删除成功');
@@ -357,10 +357,15 @@ async function handleSaveCategory() {
         categoryModal.hide();
         
         // 重新加载分类列表
-        await loadCategories(currentPage);
+        await loadCategories(categoriesCurrentPage);
         
         // 显示成功提示
         showSuccessToast(`分类${isEdit ? '更新' : '创建'}成功`);
+        
+        // 如果商品管理页面已加载，刷新商品分类数据
+        if (window.adminProducts && typeof window.adminProducts.refreshCategories === 'function') {
+            window.adminProducts.refreshCategories();
+        }
     } catch (error) {
         console.error(`${isEdit ? '更新' : '创建'}分类失败:`, error);
         showErrorToast(`${isEdit ? '更新' : '创建'}分类失败: ` + (error.message || '请稍后重试'));

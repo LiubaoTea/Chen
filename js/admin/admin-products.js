@@ -113,6 +113,23 @@ async function loadProducts(page, categoryId = '', searchQuery = '') {
         productsData = result.products || [];
         totalPages = result.totalPages || 1;
         
+        // 处理商品分类关系
+        // 确保每个商品都有categories属性，用于兼容旧代码
+        productsData.forEach(product => {
+            if (!product.categories) {
+                product.categories = [];
+                
+                // 如果有category_mappings，从中提取分类ID
+                if (product.category_mappings && product.category_mappings.length > 0) {
+                    product.categories = product.category_mappings.map(mapping => mapping.category_id);
+                } 
+                // 兼容旧数据结构
+                else if (product.category_id) {
+                    product.categories.push(product.category_id);
+                }
+            }
+        });
+        
         console.log('成功加载商品数据:', productsData);
         
         // 更新商品列表
@@ -182,8 +199,17 @@ function updateProductsList() {
         
         // 查找分类名称
         let categoryName = '未分类';
-        if (product.category_id && categoriesData && categoriesData.length > 0) {
-            const category = categoriesData.find(c => c.category_id == product.category_id);
+        if (product.categories && product.categories.length > 0 && categoriesData && categoriesData.length > 0) {
+            // 获取第一个分类的名称（如果有多个分类）
+            const categoryId = product.categories[0];
+            const category = categoriesData.find(c => c.category_id == categoryId);
+            if (category) {
+                categoryName = category.category_name;
+            }
+        } else if (product.category_mappings && product.category_mappings.length > 0 && categoriesData && categoriesData.length > 0) {
+            // 新的数据结构：通过category_mappings获取分类信息
+            const categoryId = product.category_mappings[0].category_id;
+            const category = categoriesData.find(c => c.category_id == categoryId);
             if (category) {
                 categoryName = category.category_name;
             }
@@ -412,7 +438,19 @@ function fillProductForm(product) {
     // 填充表单
     document.getElementById('productId').value = product.product_id;
     document.getElementById('productName').value = product.name;
-    document.getElementById('productCategory').value = product.category_id || '';
+    
+    // 处理分类 - 支持新的分类关系结构
+    if (product.categories && product.categories.length > 0) {
+        // 使用第一个分类作为主分类（如果有多个分类）
+        document.getElementById('productCategory').value = product.categories[0];
+    } else if (product.category_mappings && product.category_mappings.length > 0) {
+        // 新的数据结构：通过category_mappings获取分类信息
+        document.getElementById('productCategory').value = product.category_mappings[0].category_id;
+    } else {
+        // 兼容旧数据结构
+        document.getElementById('productCategory').value = product.category_id || '';
+    }
+    
     document.getElementById('productPrice').value = product.price;
     document.getElementById('productOriginalPrice').value = product.original_price || '';
     document.getElementById('productStock').value = product.stock;
@@ -436,9 +474,12 @@ async function saveProduct() {
     
     // 获取表单数据
     const productId = document.getElementById('productId').value;
+    const categoryId = document.getElementById('productCategory').value;
+    
     const productData = {
         name: document.getElementById('productName').value,
-        category_id: document.getElementById('productCategory').value,
+        // 使用category_mappings数组替代categories数组，适配新的数据库结构
+        category_mappings: categoryId ? [{ category_id: categoryId }] : [],
         price: parseFloat(document.getElementById('productPrice').value),
         original_price: document.getElementById('productOriginalPrice').value ? 
             parseFloat(document.getElementById('productOriginalPrice').value) : null,
@@ -565,5 +606,24 @@ async function deleteProduct(productId) {
     }
 }
 
+// 刷新分类数据
+async function refreshCategories() {
+    try {
+        // 重新加载分类数据
+        await loadCategories();
+        console.log('商品分类数据已刷新');
+        
+        // 如果当前有商品数据，更新商品列表以反映新的分类信息
+        if (productsData && productsData.length > 0) {
+            updateProductsList();
+        }
+    } catch (error) {
+        console.error('刷新分类数据失败:', error);
+    }
+}
+
 // 设置全局对象，供admin-main.js调用
-window.adminProducts = { init: initProductsPage };
+window.adminProducts = { 
+    init: initProductsPage,
+    refreshCategories: refreshCategories
+};
