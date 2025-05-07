@@ -200,27 +200,43 @@ function updateProductsList() {
         
         // 查找分类名称
         let categoryName = '未分类';
-        // 优先使用新的数据结构：通过category_mappings获取分类信息
-        if (product.category_mappings && product.category_mappings.length > 0 && categoriesData && categoriesData.length > 0) {
-            const categoryId = product.category_mappings[0].category_id;
-            const category = categoriesData.find(c => c.category_id == categoryId);
-            if (category) {
-                categoryName = category.category_name;
+        
+        // 确保categoriesData已加载
+        if (!categoriesData || categoriesData.length === 0) {
+            console.warn('分类数据未加载，无法显示商品分类名称');
+        } else {
+            // 优先使用新的数据结构：通过category_mappings获取分类信息
+            if (product.category_mappings && product.category_mappings.length > 0) {
+                const categoryId = product.category_mappings[0].category_id;
+                const category = categoriesData.find(c => c.category_id == categoryId);
+                if (category) {
+                    categoryName = category.category_name;
+                }
+            } 
+            // 兼容旧数据结构：通过categories数组获取分类信息
+            else if (product.categories && product.categories.length > 0) {
+                const categoryId = product.categories[0];
+                const category = categoriesData.find(c => c.category_id == categoryId);
+                if (category) {
+                    categoryName = category.category_name;
+                }
             }
-        } 
-        // 兼容旧数据结构：通过categories数组获取分类信息
-        else if (product.categories && product.categories.length > 0 && categoriesData && categoriesData.length > 0) {
-            const categoryId = product.categories[0];
-            const category = categoriesData.find(c => c.category_id == categoryId);
-            if (category) {
-                categoryName = category.category_name;
+            // 最后尝试使用category_id字段
+            else if (product.category_id) {
+                const category = categoriesData.find(c => c.category_id == product.category_id);
+                if (category) {
+                    categoryName = category.category_name;
+                }
             }
-        }
-        // 最后尝试使用category_id字段
-        else if (product.category_id && categoriesData && categoriesData.length > 0) {
-            const category = categoriesData.find(c => c.category_id == product.category_id);
-            if (category) {
-                categoryName = category.category_name;
+            
+            // 如果仍然没有找到分类名称，记录日志以便调试
+            if (categoryName === '未分类') {
+                console.log('未找到商品分类信息:', {
+                    productId: product.product_id,
+                    categoryMappings: product.category_mappings,
+                    categories: product.categories,
+                    categoryId: product.category_id
+                });
             }
         }
         
@@ -313,8 +329,16 @@ function updateProductsPagination() {
     nextLi.innerHTML = `<a class="page-link" href="#" data-page="${currentPage + 1}">下一页</a>`;
     pagination.appendChild(nextLi);
     
+    // 添加总页数信息
+    const infoLi = document.createElement('li');
+    infoLi.className = 'page-item disabled ms-2';
+    infoLi.innerHTML = `<span class="page-link">共 ${totalPages} 页</span>`;
+    pagination.appendChild(infoLi);
+    
     // 添加分页事件监听器
     document.querySelectorAll('#productsPagination .page-link').forEach(link => {
+        if (!link.hasAttribute('data-page')) return; // 跳过信息项
+        
         link.addEventListener('click', (e) => {
             e.preventDefault();
             const page = parseInt(e.target.getAttribute('data-page'));

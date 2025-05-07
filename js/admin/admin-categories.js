@@ -236,6 +236,12 @@ async function handleEditCategory(e) {
         e.currentTarget.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
         e.currentTarget.disabled = true;
         
+        // 检查adminAPI是否包含getCategoryById函数
+        if (typeof adminAPI.getCategoryById !== 'function') {
+            console.error('adminAPI.getCategoryById函数未定义');
+            throw new Error('系统错误：getCategoryById函数未定义');
+        }
+        
         // 获取分类详情
         const category = await adminAPI.getCategoryById(categoryId);
         
