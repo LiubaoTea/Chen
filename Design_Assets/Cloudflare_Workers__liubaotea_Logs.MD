@@ -1,18 +1,49 @@
-商品管理日志：
-初始化商品管理页面...
+config.js加载完成，API配置: {API_BASE_URL: 'https://workers.liubaotea.online', API_BASE_URL_TYPE: 'string'}
+admin-auth.js:13 加载admin-auth.js，配置: {API_BASE_URL: 'https://workers.liubaotea.online'}
+admin-auth.js:22 API URL清理过程: {原始API_BASE_URL: 'https://workers.liubaotea.online', 原始ADMIN_API_BASE_URL: undefined, 清理后API_BASE_URL: 'https://workers.liubaotea.online', 清理后ADMIN_API_BASE_URL: '', 最终ADMIN_API_URL: 'https://workers.liubaotea.online'}
+admin-auth.js:37 admin-auth.js中的配置: {API_BASE_URL: 'https://workers.liubaotea.online', ADMIN_API_BASE_URL: undefined, ADMIN_API_URL: 'https://workers.liubaotea.online'}
+admin-users.js:438 Uncaught SyntaxError: Identifier 'showSuccessToast' has already been declared (at admin-users.js:438:1)Understand this error
+admin-config.js:13 admin-config.js加载完成，管理后台API配置: {ADMIN_API_BASE_URL: 'https://adminsystemworkers.liubaotea.online', ADMIN_API_BASE_URL_TYPE: 'string'}
+admin-api.js:12 admin-api.js中的配置: {API_BASE_URL: 'https://workers.liubaotea.online', ADMIN_API_BASE_URL: 'https://adminsystemworkers.liubaotea.online'}
+admin-users.js:438 Uncaught SyntaxError: Identifier 'showSuccessToast' has already been declared (at admin-users.js:438:1)Understand this error
+admin-api.js:884 
+            
+            
+           GET https://adminsystemworkers.liubaotea.online/api/admin/categories/distribution 404 (Not Found)
+getCategoryDistribution @ admin-api.js:884
+loadDashboardData @ admin-dashboard.js:29
+await in loadDashboardData
+(anonymous) @ admin-main.js:21Understand this error
+admin-api.js:898 获取分类占比数据出错: Error: 获取分类占比数据失败
+    at Object.getCategoryDistribution (admin-api.js:893:23)
+    at async loadDashboardData (admin-dashboard.js:29:38)
+getCategoryDistribution @ admin-api.js:898
+await in getCategoryDistribution
+loadDashboardData @ admin-dashboard.js:29
+await in loadDashboardData
+(anonymous) @ admin-main.js:21Understand this error
+admin-dashboard.js:32 加载仪表盘数据失败: Error: 获取分类占比数据失败
+    at Object.getCategoryDistribution (admin-api.js:893:23)
+    at async loadDashboardData (admin-dashboard.js:29:38)
+loadDashboardData @ admin-dashboard.js:32
+await in loadDashboardData
+(anonymous) @ admin-main.js:21Understand this error
+admin-products.js:24 初始化商品管理页面...
 admin-products.js:47 正在从D1数据库加载商品分类...
-admin-api.js:318 发送分类请求，URL: https://adminsystemworkers.liubaotea.online/api/admin/categories?page=1&pageSize=10
-admin-api.js:335 成功获取分类数据: (18) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]0: {category_id: 6, category_name: '一年陈化茶', rule_type: 'aging_year', rule_value: '=1', parent_category_id: 1, …}1: {category_id: 12, category_name: '七年陈化茶', rule_type: 'aging_year', rule_value: '=7', parent_category_id: 1, …}2: {category_id: 8, category_name: '三年陈化茶', rule_type: 'aging_year', rule_value: '=3', parent_category_id: 1, …}3: {category_id: 14, category_name: '九年陈化茶', rule_type: 'aging_year', rule_value: '=9', parent_category_id: 1, …}4: {category_id: 7, category_name: '二年陈化茶', rule_type: 'aging_year', rule_value: '=2', parent_category_id: 1, …}5: {category_id: 10, category_name: '五年陈化茶', rule_type: 'aging_year', rule_value: '=5', parent_category_id: 1, …}6: {category_id: 2, category_name: '传统系列', rule_type: 'name_keyword', rule_value: '["传统"]', parent_category_id: 1, …}7: {category_id: 1, category_name: '全部产品', rule_type: 'none', rule_value: null, parent_category_id: null, …}8: {category_id: 13, category_name: '八年陈化茶', rule_type: 'aging_year', rule_value: '=8', parent_category_id: 1, …}9: {category_id: 11, category_name: '六年陈化茶', rule_type: 'aging_year', rule_value: '=6', parent_category_id: 1, …}10: {category_id: 16, category_name: '十年以上陈化茶', rule_type: 'aging_year', rule_value: '>10', parent_category_id: 1, …}11: {category_id: 15, category_name: '十年陈化茶', rule_type: 'aging_year', rule_value: '=10', parent_category_id: 1, …}12: {category_id: 9, category_name: '四年陈化茶', rule_type: 'aging_year', rule_value: '=4', parent_category_id: 1, …}13: {category_id: 3, category_name: '季节特供', rule_type: 'name_keyword', rule_value: '["春茶", "秋茶", "夏茶", "冬茶"]', parent_category_id: 1, …}14: {category_id: 18, category_name: '清明茶', rule_type: 'name_keyword', rule_value: '["清明"]', parent_category_id: 1, …}15: {category_id: 5, category_name: '礼盒装', rule_type: 'name_keyword', rule_value: '["礼盒"]', parent_category_id: 1, …}16: {category_id: 17, category_name: '社茶', rule_type: 'name_keyword', rule_value: '["社"]', parent_category_id: 1, …}17: {category_id: 4, category_name: '限量版', rule_type: 'name_keyword', rule_value: '["特惠", "促销"]', parent_category_id: 1, …}length: 18[[Prototype]]: Array(0)
-admin-products.js:59 成功加载分类数据: (18) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]0: {category_id: 6, category_name: '一年陈化茶', rule_type: 'aging_year', rule_value: '=1', parent_category_id: 1, …}1: {category_id: 12, category_name: '七年陈化茶', rule_type: 'aging_year', rule_value: '=7', parent_category_id: 1, …}2: {category_id: 8, category_name: '三年陈化茶', rule_type: 'aging_year', rule_value: '=3', parent_category_id: 1, …}3: {category_id: 14, category_name: '九年陈化茶', rule_type: 'aging_year', rule_value: '=9', parent_category_id: 1, …}4: {category_id: 7, category_name: '二年陈化茶', rule_type: 'aging_year', rule_value: '=2', parent_category_id: 1, …}5: {category_id: 10, category_name: '五年陈化茶', rule_type: 'aging_year', rule_value: '=5', parent_category_id: 1, …}6: {category_id: 2, category_name: '传统系列', rule_type: 'name_keyword', rule_value: '["传统"]', parent_category_id: 1, …}7: {category_id: 1, category_name: '全部产品', rule_type: 'none', rule_value: null, parent_category_id: null, …}8: {category_id: 13, category_name: '八年陈化茶', rule_type: 'aging_year', rule_value: '=8', parent_category_id: 1, …}9: {category_id: 11, category_name: '六年陈化茶', rule_type: 'aging_year', rule_value: '=6', parent_category_id: 1, …}10: {category_id: 16, category_name: '十年以上陈化茶', rule_type: 'aging_year', rule_value: '>10', parent_category_id: 1, …}11: {category_id: 15, category_name: '十年陈化茶', rule_type: 'aging_year', rule_value: '=10', parent_category_id: 1, …}12: {category_id: 9, category_name: '四年陈化茶', rule_type: 'aging_year', rule_value: '=4', parent_category_id: 1, …}13: {category_id: 3, category_name: '季节特供', rule_type: 'name_keyword', rule_value: '["春茶", "秋茶", "夏茶", "冬茶"]', parent_category_id: 1, …}14: {category_id: 18, category_name: '清明茶', rule_type: 'name_keyword', rule_value: '["清明"]', parent_category_id: 1, …}15: {category_id: 5, category_name: '礼盒装', rule_type: 'name_keyword', rule_value: '["礼盒"]', parent_category_id: 1, …}16: {category_id: 17, category_name: '社茶', rule_type: 'name_keyword', rule_value: '["社"]', parent_category_id: 1, …}17: {category_id: 4, category_name: '限量版', rule_type: 'name_keyword', rule_value: '["特惠", "促销"]', parent_category_id: 1, …}length: 18[[Prototype]]: Array(0)
+admin-api.js:338 发送分类请求，URL: https://adminsystemworkers.liubaotea.online/api/admin/categories?page=1&pageSize=10
+admin-api.js:355 成功获取分类数据: (18) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+admin-products.js:59 成功加载分类数据: (18) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
 admin-products.js:103 正在从D1数据库加载商品数据...
 admin-products.js:104 筛选条件 - 页码: 1 分类ID:  搜索关键词: 
 admin-api.js:36 发送商品请求，URL: https://adminsystemworkers.liubaotea.online/api/admin/products?page=1&pageSize=10&include_category_mappings=true
-admin-api.js:53 成功获取商品数据: {products: Array(10), pagination: {…}}pagination: {total: 34, page: 1, limit: 10, pages: 4}products: (10) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]0: {product_id: 19, name: '特惠散装六堡茶（500g装）', description: '特级茶叶，散装便于冲泡，醇香回甘，茶气十足', specifications: '{"规格":"500g/包"}', aging_years: 3, …}1: {product_id: 19, name: '特惠散装六堡茶（500g装）', description: '特级茶叶，散装便于冲泡，醇香回甘，茶气十足', specifications: '{"规格":"500g/包"}', aging_years: 3, …}2: {product_id: 19, name: '特惠散装六堡茶（500g装）', description: '特级茶叶，散装便于冲泡，醇香回甘，茶气十足', specifications: '{"规格":"500g/包"}', aging_years: 3, …}3: {product_id: 20, name: '特惠散装六堡茶（250g装）', description: '特级茶叶，散装便于冲泡，醇香回甘，茶气十足', specifications: '{"规格":"250g/包"}', aging_years: 3, …}4: {product_id: 20, name: '特惠散装六堡茶（250g装）', description: '特级茶叶，散装便于冲泡，醇香回甘，茶气十足', specifications: '{"规格":"250g/包"}', aging_years: 3, …}5: {product_id: 20, name: '特惠散装六堡茶（250g装）', description: '特级茶叶，散装便于冲泡，醇香回甘，茶气十足', specifications: '{"规格":"250g/包"}', aging_years: 3, …}6: {product_id: 21, name: '特惠散装六堡茶（500g装）', description: '特级茶叶，散装便于冲泡，醇香回甘，茶气十足', specifications: '{"规格":"500g/包"}', aging_years: 4, …}7: {product_id: 21, name: '特惠散装六堡茶（500g装）', description: '特级茶叶，散装便于冲泡，醇香回甘，茶气十足', specifications: '{"规格":"500g/包"}', aging_years: 4, …}8: {product_id: 21, name: '特惠散装六堡茶（500g装）', description: '特级茶叶，散装便于冲泡，醇香回甘，茶气十足', specifications: '{"规格":"500g/包"}', aging_years: 4, …}9: {product_id: 22, name: '特惠散装六堡茶（250g装）', description: '特级茶叶，散装便于冲泡，醇香回甘，茶气十足', specifications: '{"规格":"250g/包"}', aging_years: 4, …}length: 10[[Prototype]]: Array(0)[[Prototype]]: Object
-admin-api.js:67 
+admin-api.js:53 成功获取商品数据: {products: Array(10), pagination: {…}}
+admin-api.js:95 发送商品分类映射请求，URL: https://adminsystemworkers.liubaotea.online/api/admin/product-category-mappings?product_ids=19,19,19,20,20,20,21,21,21,22
+admin-api.js:97 
             
             
            GET https://adminsystemworkers.liubaotea.online/api/admin/product-category-mappings?product_ids=19,19,19,20,20,20,21,21,21,22 404 (Not Found)
-getProducts @ admin-api.js:67
+getProductCategoryMappings @ admin-api.js:97
+getProducts @ admin-api.js:63
 await in getProducts
 loadProducts @ admin-products.js:113
 initProductsPage @ admin-products.js:30
@@ -20,15 +51,58 @@ await in initProductsPage
 loadProductsPage @ admin-main.js:230
 navigateToPage @ admin-main.js:153
 (anonymous) @ admin-main.js:42Understand this error
-admin-products.js:130 分页信息: {currentPage: 1, totalPages: 4, totalItems: 34}currentPage: 1totalItems: 34totalPages: 4[[Prototype]]: Object
-admin-products.js:156 成功加载商品数据: (10) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]0: {product_id: 19, name: '特惠散装六堡茶（500g装）', description: '特级茶叶，散装便于冲泡，醇香回甘，茶气十足', specifications: '{"规格":"500g/包"}', aging_years: 3, …}1: {product_id: 19, name: '特惠散装六堡茶（500g装）', description: '特级茶叶，散装便于冲泡，醇香回甘，茶气十足', specifications: '{"规格":"500g/包"}', aging_years: 3, …}2: {product_id: 19, name: '特惠散装六堡茶（500g装）', description: '特级茶叶，散装便于冲泡，醇香回甘，茶气十足', specifications: '{"规格":"500g/包"}', aging_years: 3, …}3: {product_id: 20, name: '特惠散装六堡茶（250g装）', description: '特级茶叶，散装便于冲泡，醇香回甘，茶气十足', specifications: '{"规格":"250g/包"}', aging_years: 3, …}4: {product_id: 20, name: '特惠散装六堡茶（250g装）', description: '特级茶叶，散装便于冲泡，醇香回甘，茶气十足', specifications: '{"规格":"250g/包"}', aging_years: 3, …}5: {product_id: 20, name: '特惠散装六堡茶（250g装）', description: '特级茶叶，散装便于冲泡，醇香回甘，茶气十足', specifications: '{"规格":"250g/包"}', aging_years: 3, …}6: {product_id: 21, name: '特惠散装六堡茶（500g装）', description: '特级茶叶，散装便于冲泡，醇香回甘，茶气十足', specifications: '{"规格":"500g/包"}', aging_years: 4, …}7: {product_id: 21, name: '特惠散装六堡茶（500g装）', description: '特级茶叶，散装便于冲泡，醇香回甘，茶气十足', specifications: '{"规格":"500g/包"}', aging_years: 4, …}8: {product_id: 21, name: '特惠散装六堡茶（500g装）', description: '特级茶叶，散装便于冲泡，醇香回甘，茶气十足', specifications: '{"规格":"500g/包"}', aging_years: 4, …}9: {product_id: 22, name: '特惠散装六堡茶（250g装）', description: '特级茶叶，散装便于冲泡，醇香回甘，茶气十足', specifications: '{"规格":"250g/包"}', aging_years: 4, …}length: 10[[Prototype]]: Array(0)
-admin-products.js:260 未找到商品分类信息: {productId: 19, categoryMappings: undefined, categories: Array(0), categoryId: undefined}categories: []categoryId: undefinedcategoryMappings: undefinedproductId: 19[[Prototype]]: Object
-admin-products.js:260 未找到商品分类信息: {productId: 19, categoryMappings: undefined, categories: Array(0), categoryId: undefined}categories: []categoryId: undefinedcategoryMappings: undefinedproductId: 19[[Prototype]]: Object
-admin-products.js:260 未找到商品分类信息: {productId: 19, categoryMappings: undefined, categories: Array(0), categoryId: undefined}categories: []categoryId: undefinedcategoryMappings: undefinedproductId: 19[[Prototype]]: Object
-admin-products.js:260 未找到商品分类信息: {productId: 20, categoryMappings: undefined, categories: Array(0), categoryId: undefined}categories: []categoryId: undefinedcategoryMappings: undefinedproductId: 20[[Prototype]]: Object
-admin-products.js:260 未找到商品分类信息: {productId: 20, categoryMappings: undefined, categories: Array(0), categoryId: undefined}categories: []categoryId: undefinedcategoryMappings: undefinedproductId: 20[[Prototype]]: Object
-admin-products.js:260 未找到商品分类信息: {productId: 20, categoryMappings: undefined, categories: Array(0), categoryId: undefined}categories: []categoryId: undefinedcategoryMappings: undefinedproductId: 20[[Prototype]]: Object
-admin-products.js:260 未找到商品分类信息: {productId: 21, categoryMappings: undefined, categories: Array(0), categoryId: undefined}categories: []categoryId: undefinedcategoryMappings: undefinedproductId: 21[[Prototype]]: Object
-admin-products.js:260 未找到商品分类信息: {productId: 21, categoryMappings: undefined, categories: Array(0), categoryId: undefined}categories: []categoryId: undefinedcategoryMappings: undefinedproductId: 21[[Prototype]]: Object
-admin-products.js:260 未找到商品分类信息: {productId: 21, categoryMappings: undefined, categories: Array(0), categoryId: undefined}categories: []categoryId: undefinedcategoryMappings: undefinedproductId: 21[[Prototype]]: Object
-admin-products.js:260 未找到商品分类信息: {productId: 22, categoryMappings: undefined, categories: Array(0), categoryId: undefined}categories: []categoryId: undefinedcategoryMappings: undefinedproductId: 22[[Prototype]]: Object
+admin-api.js:107 商品分类映射API响应错误: 404 {"error":"未找到请求的API"}
+getProductCategoryMappings @ admin-api.js:107
+await in getProductCategoryMappings
+getProducts @ admin-api.js:63
+await in getProducts
+loadProducts @ admin-products.js:113
+initProductsPage @ admin-products.js:30
+await in initProductsPage
+loadProductsPage @ admin-main.js:230
+navigateToPage @ admin-main.js:153
+(anonymous) @ admin-main.js:42Understand this error
+admin-api.js:115 获取商品分类映射出错: Error: 获取商品分类映射失败，HTTP状态码: 404
+    at Object.getProductCategoryMappings (admin-api.js:108:23)
+    at async Object.getProducts (admin-api.js:63:42)
+    at async loadProducts (admin-products.js:113:24)
+    at async Object.initProductsPage [as init] (admin-products.js:30:9)
+getProductCategoryMappings @ admin-api.js:115
+await in getProductCategoryMappings
+getProducts @ admin-api.js:63
+await in getProducts
+loadProducts @ admin-products.js:113
+initProductsPage @ admin-products.js:30
+await in initProductsPage
+loadProductsPage @ admin-main.js:230
+navigateToPage @ admin-main.js:153
+(anonymous) @ admin-main.js:42Understand this error
+admin-products.js:130 分页信息: {currentPage: 1, totalPages: 4, totalItems: 34}
+admin-products.js:173 获取商品分类映射失败: TypeError: adminAPI.getProductCategoryMappings is not a function
+    at loadProducts (admin-products.js:146:49)
+    at async Object.initProductsPage [as init] (admin-products.js:30:9)
+loadProducts @ admin-products.js:173
+await in loadProducts
+initProductsPage @ admin-products.js:30
+await in initProductsPage
+loadProductsPage @ admin-main.js:230
+navigateToPage @ admin-main.js:153
+(anonymous) @ admin-main.js:42Understand this warning
+admin-products.js:194 成功加载商品数据: (10) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+admin-products.js:298 未找到商品分类信息: {productId: 19, categoryMappings: Array(0), categories: Array(0), categoryId: undefined}
+admin-products.js:298 未找到商品分类信息: {productId: 19, categoryMappings: Array(0), categories: Array(0), categoryId: undefined}
+admin-products.js:298 未找到商品分类信息: {productId: 19, categoryMappings: Array(0), categories: Array(0), categoryId: undefined}
+admin-products.js:298 未找到商品分类信息: {productId: 20, categoryMappings: Array(0), categories: Array(0), categoryId: undefined}
+admin-products.js:298 未找到商品分类信息: {productId: 20, categoryMappings: Array(0), categories: Array(0), categoryId: undefined}
+admin-products.js:298 未找到商品分类信息: {productId: 20, categoryMappings: Array(0), categories: Array(0), categoryId: undefined}
+admin-products.js:298 未找到商品分类信息: {productId: 21, categoryMappings: Array(0), categories: Array(0), categoryId: undefined}
+admin-products.js:298 未找到商品分类信息: {productId: 21, categoryMappings: Array(0), categories: Array(0), categoryId: undefined}
+admin-products.js:298 未找到商品分类信息: {productId: 21, categoryMappings: Array(0), categories: Array(0), categoryId: undefined}
+admin-products.js:298 未找到商品分类信息: {productId: 22, categoryMappings: Array(0), categories: Array(0), categoryId: undefined}
+admin-api.js:338 发送分类请求，URL: https://adminsystemworkers.liubaotea.online/api/admin/categories?page=1&pageSize=10
+admin-api.js:355 成功获取分类数据: (18) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+admin-categories.js:241 adminAPI.getCategoryById函数未定义
+handleEditCategory @ admin-categories.js:241Understand this error
+admin-categories.js:321 获取分类详情失败: TypeError: Cannot set properties of null (setting 'value')
+    at HTMLButtonElement.handleEditCategory (admin-categories.js:253:63)
+handleEditCategory @ admin-categories.js:321Understand this error

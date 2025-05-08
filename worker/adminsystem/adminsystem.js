@@ -406,6 +406,51 @@ const handleAdminAPI = async (request, env) => {
         }
     }
     
+    // 获取商品分类映射关系
+    if (path === '/api/admin/product-category-mappings' && request.method === 'GET') {
+        try {
+            // 获取请求参数中的商品ID列表
+            const productIdsParam = url.searchParams.get('product_ids');
+            
+            if (!productIdsParam) {
+                return new Response(JSON.stringify({ error: '缺少必要参数：product_ids' }), {
+                    status: 400,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                });
+            }
+            
+            // 解析商品ID列表
+            const productIds = productIdsParam.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+            
+            if (productIds.length === 0) {
+                return new Response(JSON.stringify([]), {
+                    status: 200,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                });
+            }
+            
+            // 构建查询参数占位符
+            const placeholders = productIds.map(() => '?').join(',');
+            
+            // 查询指定商品ID的分类映射关系
+            const { results: mappings } = await env.DB.prepare(
+                `SELECT * 
+                FROM product_category_mapping pcm
+                WHERE pcm.product_id IN (${placeholders})`
+            ).bind(...productIds).all();
+            
+            return new Response(JSON.stringify(mappings), {
+                status: 200,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '获取商品分类映射失败', details: error.message }), {
+                status: 500,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        }
+    }
+    
     // 获取销售趋势数据
     if (path === '/api/admin/sales/trend' && request.method === 'GET') {
         try {
@@ -2066,6 +2111,50 @@ const handleAdminAPI = async (request, env) => {
             });
         } catch (error) {
             return new Response(JSON.stringify({ error: '获取用户增长数据失败', details: error.message }), {
+                status: 500,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        }
+    }
+    
+    // 获取商品分类映射关系
+    if (path === '/api/admin/product-category-mappings' && request.method === 'GET') {
+        try {
+            // 获取请求参数中的商品ID列表
+            const productIdsParam = url.searchParams.get('product_ids');
+            if (!productIdsParam) {
+                return new Response(JSON.stringify({ error: '缺少必要的product_ids参数' }), {
+                    status: 400,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                });
+            }
+            
+            // 解析商品ID列表，去重
+            const productIds = [...new Set(productIdsParam.split(',').map(id => parseInt(id)).filter(id => !isNaN(id)))];
+            
+            if (productIds.length === 0) {
+                return new Response(JSON.stringify([]), {
+                    status: 200,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                });
+            }
+            
+            // 构建IN查询的参数占位符
+            const placeholders = productIds.map(() => '?').join(',');
+            
+            // 查询商品分类映射关系
+            const { results: mappings } = await env.DB.prepare(`
+                SELECT pcm.product_id, pcm.category_id, pcm.name, pcm.category_name
+                FROM product_category_mapping pcm
+                WHERE pcm.product_id IN (${placeholders})
+            `).bind(...productIds).all();
+            
+            return new Response(JSON.stringify(mappings), {
+                status: 200,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '获取商品分类映射失败', details: error.message }), {
                 status: 500,
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             });
