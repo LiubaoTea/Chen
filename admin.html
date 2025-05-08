@@ -92,17 +92,27 @@
     <!-- 等待API模块加载完成 -->
     <script>
         // 确保adminAPI模块已加载完成
-        window.addEventListener('DOMContentLoaded', function() {
-            // 检查adminAPI是否已加载
+        function checkAdminAPI() {
             if (!window.adminAPI) {
-                console.error('adminAPI未正确加载，请刷新页面重试');
+                console.log('等待adminAPI加载...');
+                setTimeout(checkAdminAPI, 100);
             } else {
                 console.log('adminAPI已成功加载，可以使用所有API方法');
+                // 加载依赖adminAPI的其他模块
+                loadAdminScripts();
             }
-        });
+        }
+        
+        function loadAdminScripts() {
+            // 动态加载管理后台主模块
+            const mainScript = document.createElement('script');
+            mainScript.src = './js/admin/admin-main.js';
+            document.body.appendChild(mainScript);
+        }
+        
+        // 页面加载完成后检查adminAPI
+        window.addEventListener('DOMContentLoaded', checkAdminAPI);
     </script>
-    <!-- 管理后台主模块 -->
-    <script src="./js/admin/admin-main.js"></script>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {

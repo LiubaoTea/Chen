@@ -409,12 +409,6 @@ function getOrderStatusBadge(status) {
     return `<span class="badge ${badgeClass}">${statusText}</span>`;
 }
 
-// 显示成功提示
-function showSuccessToast(message) {
-    // 实现提示功能，可以使用Bootstrap的Toast组件
-    alert(message);
-}
-
 // 显示错误提示
 function showErrorToast(message) {
     // 实现提示功能，可以使用Bootstrap的Toast组件
@@ -432,12 +426,6 @@ function addUsersPaginationEventListeners() {
             }
         });
     });
-}
-
-// 显示成功提示
-function showSuccessToast(message) {
-    // 实现提示功能，可以使用Bootstrap的Toast组件
-    alert(message);
 }
 
 // 显示错误提示

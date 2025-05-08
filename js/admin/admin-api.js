@@ -18,10 +18,6 @@ console.log('admin-api.js中的配置:', {
 });
 
 // 管理后台API
-// 创建全局可访问的adminAPI对象
-// 先声明全局变量，确保其他模块可以访问
-window.adminAPI = {};
-
 // 定义adminAPI对象
 const adminAPI = {
     // 获取商品列表
