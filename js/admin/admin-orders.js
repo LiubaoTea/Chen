@@ -6,6 +6,7 @@
 // 导入adminAuth模块
 import { adminAuth } from './admin-auth.js';
 import { API_BASE_URL } from '../config.js';
+import './admin-api.js';
 
 // 订单列表数据
 let ordersData = [];

@@ -37,18 +37,22 @@
         });
     </script>
     <!-- 引入管理后台API模块（必须在其他模块之前加载） -->
-    <script type="module" src="../js/admin/admin-api.js"></script>
+    <script src="../js/admin/admin-api.js"></script>
+    <!-- 确保API模块已加载完成 -->
+    <script>
+        console.log('检查adminAPI是否已加载:', window.adminAPI);
+    </script>
     <!-- 引入管理后台功能模块 -->
-    <script type="module" src="../js/admin/admin-dashboard.js"></script>
-    <script type="module" src="../js/admin/admin-products.js"></script>
-    <script type="module" src="../js/admin/admin-orders.js"></script>
-    <script type="module" src="../js/admin/admin-users.js"></script>
-    <script type="module" src="../js/admin/admin-categories.js"></script>
-    <script type="module" src="../js/admin/admin-reviews.js"></script>
-    <script type="module" src="../js/admin/admin-statistics.js"></script>
-    <script type="module" src="../js/admin/admin-settings.js"></script>
+    <script src="../js/admin/admin-dashboard.js"></script>
+    <script src="../js/admin/admin-products.js"></script>
+    <script src="../js/admin/admin-orders.js"></script>
+    <script src="../js/admin/admin-users.js"></script>
+    <script src="../js/admin/admin-categories.js"></script>
+    <script src="../js/admin/admin-reviews.js"></script>
+    <script src="../js/admin/admin-statistics.js"></script>
+    <script src="../js/admin/admin-settings.js"></script>
     <!-- 引入主控制模块 -->
-    <script type="module" src="../js/admin/admin-main.js"></script>
+    <script src="../js/admin/admin-main.js"></script>
 </head>
 <body>
     <div class="container-fluid">

@@ -6,6 +6,7 @@
 // 导入adminAuth模块
 import { adminAuth } from './admin-auth.js';
 import { API_BASE_URL } from '../config.js';
+import './admin-api.js';
 
 // 用户列表数据
 let usersData = [];
@@ -409,11 +410,7 @@ function getOrderStatusBadge(status) {
     return `<span class="badge ${badgeClass}">${statusText}</span>`;
 }
 
-// 显示错误提示
-function showErrorToast(message) {
-    // 实现提示功能，可以使用Bootstrap的Toast组件
-    alert(message);
-}
+// 注意：showErrorToast函数已在admin-utils.js中定义，此处不需要重复定义
 
 // 添加用户分页事件监听器
 function addUsersPaginationEventListeners() {
@@ -428,11 +425,7 @@ function addUsersPaginationEventListeners() {
     });
 }
 
-// 显示错误提示
-function showErrorToast(message) {
-    // 实现提示功能，可以使用Bootstrap的Toast组件
-    alert(message);
-}
+// 注意：showErrorToast函数已在admin-utils.js中定义，此处不需要重复定义
 
 // 导出模块
 window.adminUsers = {

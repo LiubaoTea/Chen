@@ -6,6 +6,7 @@
 // 导入adminAuth模块
 import { adminAuth } from './admin-auth.js';
 import config from '../config.js';
+import './admin-api.js';
 
 // 解构导入的配置
 const { ADMIN_API_BASE_URL } = config;
