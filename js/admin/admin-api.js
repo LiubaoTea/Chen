@@ -9,12 +9,16 @@ import { ADMIN_API_BASE_URL } from './admin-config.js';
 // 导入认证模块
 import { adminAuth } from './admin-auth.js';
 
+// 确保在控制台可以看到导入的配置
+console.log('admin-api.js已加载，确保adminAPI全局可用');
+
 console.log('admin-api.js中的配置:', {
     API_BASE_URL,
     ADMIN_API_BASE_URL
 });
 
 // 管理后台API
+// 创建全局可访问的adminAPI对象
 const adminAPI = {
     // 获取商品列表
     getProducts: async (page = 1, pageSize = 10, categoryId = '', searchQuery = '') => {
@@ -507,4 +511,7 @@ if (typeof window !== 'undefined') {
 }
 
 // 导出adminAPI对象
+// 将adminAPI暴露到全局window对象，确保其他模块可以直接访问
+window.adminAPI = adminAPI;
+
 export default adminAPI;
