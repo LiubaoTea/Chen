@@ -54,35 +54,21 @@ const adminAPI = {
             
             // 如果没有返回category_mappings，尝试获取并添加
             if (data.products && Array.isArray(data.products)) {
-                // 检查是否已经包含category_mappings
-                const needsMappings = data.products.some(product => !product.category_mappings);
+                // 获取所有商品ID
+                const productIds = data.products.map(p => p.product_id);
                 
-                if (needsMappings) {
+                if (productIds.length > 0) {
                     try {
-                        // 获取所有商品ID
-                        const productIds = data.products.map(p => p.product_id);
-                        
                         // 获取这些商品的分类映射
-                        const mappingsUrl = `${ADMIN_API_BASE_URL}/api/admin/product-category-mappings?product_ids=${productIds.join(',')}`;
-                        const mappingsResponse = await fetch(mappingsUrl, {
-                            method: 'GET',
-                            headers: {
-                                ...adminAuth.getHeaders(),
-                                'Content-Type': 'application/json'
-                            }
-                        });
+                        const mappings = await adminAPI.getProductCategoryMappings(productIds);
                         
-                        if (mappingsResponse.ok) {
-                            const mappingsData = await mappingsResponse.json();
-                            
-                            // 将映射数据添加到商品中
-                            if (mappingsData && Array.isArray(mappingsData)) {
-                                data.products.forEach(product => {
-                                    product.category_mappings = mappingsData.filter(
-                                        mapping => mapping.product_id === product.product_id
-                                    );
-                                });
-                            }
+                        // 将映射数据添加到商品中
+                        if (mappings && Array.isArray(mappings)) {
+                            data.products.forEach(product => {
+                                product.category_mappings = mappings.filter(
+                                    mapping => mapping.product_id === product.product_id
+                                );
+                            });
                         }
                     } catch (mappingError) {
                         console.warn('获取商品分类映射失败:', mappingError);
@@ -95,6 +81,40 @@ const adminAPI = {
         } catch (error) {
             console.error('获取商品列表出错:', error);
             throw error; // 不返回模拟数据，而是将错误抛出，让调用者处理
+        }
+    },
+    
+    // 获取商品分类映射
+    getProductCategoryMappings: async (productIds) => {
+        try {
+            if (!productIds || !productIds.length) {
+                return [];
+            }
+            
+            const url = `${ADMIN_API_BASE_URL}/api/admin/product-category-mappings?product_ids=${productIds.join(',')}`;
+            console.log('发送商品分类映射请求，URL:', url);
+            
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    ...adminAuth.getHeaders(),
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('商品分类映射API响应错误:', response.status, errorText);
+                throw new Error(`获取商品分类映射失败，HTTP状态码: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            console.log('成功获取商品分类映射数据:', data);
+            return data;
+        } catch (error) {
+            console.error('获取商品分类映射出错:', error);
+            // 如果API尚未实现，返回空数组
+            return [];
         }
     },
     // 获取仪表盘统计数据

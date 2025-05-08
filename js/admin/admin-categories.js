@@ -236,10 +236,44 @@ async function handleEditCategory(e) {
         e.currentTarget.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
         e.currentTarget.disabled = true;
         
-        // 检查adminAPI是否包含getCategoryById函数
-        if (typeof adminAPI.getCategoryById !== 'function') {
+        // 确保adminAPI已定义并包含getCategoryById函数
+        if (!adminAPI || typeof adminAPI.getCategoryById !== 'function') {
             console.error('adminAPI.getCategoryById函数未定义');
-            throw new Error('系统错误：getCategoryById函数未定义');
+            // 尝试从categoriesData中获取分类信息
+            const category = categoriesData.find(c => c.category_id == categoryId);
+            if (!category) {
+                throw new Error('无法获取分类详情：getCategoryById函数未定义且本地数据中未找到该分类');
+            }
+            
+            // 使用本地数据填充表单
+            document.getElementById('categoryId').value = category.category_id;
+            document.getElementById('categoryName').value = category.category_name;
+            document.getElementById('categoryDescription').value = category.description || '';
+            document.getElementById('categorySort').value = category.sort_order || 0;
+            document.getElementById('categoryRuleType').value = category.rule_type || 'none';
+            document.getElementById('categoryRuleValue').value = category.rule_value || '';
+            
+            if (category.parent_category_id) {
+                document.getElementById('categoryParent').value = category.parent_category_id;
+            } else {
+                document.getElementById('categoryParent').value = '';
+            }
+            
+            // 显示图标预览
+            if (category.icon) {
+                document.getElementById('categoryIconPreview').src = category.icon;
+                document.getElementById('categoryIconPreviewContainer').style.display = 'block';
+            } else {
+                document.getElementById('categoryIconPreviewContainer').style.display = 'none';
+            }
+            
+            // 更新模态框标题
+            document.getElementById('categoryModalLabel').textContent = '编辑分类';
+            
+            // 显示模态框
+            const categoryModal = new bootstrap.Modal(document.getElementById('categoryModal'));
+            categoryModal.show();
+            return;
         }
         
         // 获取分类详情
@@ -250,6 +284,24 @@ async function handleEditCategory(e) {
         document.getElementById('categoryName').value = category.category_name;
         document.getElementById('categoryDescription').value = category.description || '';
         document.getElementById('categorySort').value = category.sort_order || 0;
+        
+        // 如果表单中有规则类型和规则值字段，也填充它们
+        if (document.getElementById('categoryRuleType')) {
+            document.getElementById('categoryRuleType').value = category.rule_type || 'none';
+        }
+        
+        if (document.getElementById('categoryRuleValue')) {
+            document.getElementById('categoryRuleValue').value = category.rule_value || '';
+        }
+        
+        // 如果表单中有父分类字段，也填充它
+        if (document.getElementById('categoryParent')) {
+            if (category.parent_category_id) {
+                document.getElementById('categoryParent').value = category.parent_category_id;
+            } else {
+                document.getElementById('categoryParent').value = '';
+            }
+        }
         
         // 显示图标预览
         if (category.icon) {

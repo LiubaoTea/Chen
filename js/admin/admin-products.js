@@ -136,22 +136,60 @@ async function loadProducts(page, categoryId = '', searchQuery = '') {
             totalPages = 1;
         }
         
-        // 处理商品分类关系
-        // 确保每个商品都有categories属性，用于兼容旧代码
-        productsData.forEach(product => {
-            if (!product.categories) {
-                product.categories = [];
+        // 如果没有商品数据，尝试获取商品分类映射
+        if (productsData.length > 0) {
+            // 获取所有商品ID
+            const productIds = productsData.map(p => p.product_id);
+            
+            try {
+                // 获取商品分类映射
+                const mappings = await adminAPI.getProductCategoryMappings(productIds);
+                console.log('获取到的商品分类映射:', mappings);
                 
-                // 如果有category_mappings，从中提取分类ID
-                if (product.category_mappings && product.category_mappings.length > 0) {
-                    product.categories = product.category_mappings.map(mapping => mapping.category_id);
-                } 
-                // 兼容旧数据结构
-                else if (product.category_id) {
-                    product.categories.push(product.category_id);
+                // 将映射数据添加到商品中
+                if (mappings && Array.isArray(mappings)) {
+                    productsData.forEach(product => {
+                        // 为每个商品添加分类映射
+                        product.category_mappings = mappings.filter(
+                            mapping => mapping.product_id === product.product_id
+                        );
+                        
+                        // 确保每个商品都有categories属性，用于兼容旧代码
+                        if (!product.categories) {
+                            product.categories = [];
+                        }
+                        
+                        // 如果有category_mappings，从中提取分类ID
+                        if (product.category_mappings && product.category_mappings.length > 0) {
+                            product.categories = product.category_mappings.map(mapping => mapping.category_id);
+                        } 
+                        // 兼容旧数据结构
+                        else if (product.category_id) {
+                            product.categories.push(product.category_id);
+                        }
+                    });
                 }
+            } catch (mappingError) {
+                console.warn('获取商品分类映射失败:', mappingError);
+                // 继续处理，不中断主流程
+                
+                // 确保每个商品都有categories属性，用于兼容旧代码
+                productsData.forEach(product => {
+                    if (!product.categories) {
+                        product.categories = [];
+                        
+                        // 如果有category_mappings，从中提取分类ID
+                        if (product.category_mappings && product.category_mappings.length > 0) {
+                            product.categories = product.category_mappings.map(mapping => mapping.category_id);
+                        } 
+                        // 兼容旧数据结构
+                        else if (product.category_id) {
+                            product.categories.push(product.category_id);
+                        }
+                    }
+                });
             }
-        });
+        }
         
         console.log('成功加载商品数据:', productsData);
         
@@ -377,16 +415,20 @@ function updateProductsPagination() {
 
 // 设置商品管理页面的事件监听器
 function setupProductsEventListeners() {
-    // 分类筛选
+    // 分类筛选器
     document.getElementById('productCategoryFilter').addEventListener('change', (e) => {
-        loadProducts(1, e.target.value, document.getElementById('productSearchInput').value);
+        const categoryId = e.target.value;
+        console.log('分类筛选变更，选择的分类ID:', categoryId);
+        loadProducts(1, categoryId, document.getElementById('productSearchInput').value.trim());
     });
     
-    // 搜索商品
+    // 搜索表单
     document.getElementById('productSearchForm').addEventListener('submit', (e) => {
         e.preventDefault();
-        const searchQuery = document.getElementById('productSearchInput').value;
-        loadProducts(1, selectedCategoryId, searchQuery);
+        const searchQuery = document.getElementById('productSearchInput').value.trim();
+        const categoryId = document.getElementById('productCategoryFilter').value;
+        console.log('搜索提交，关键词:', searchQuery, '分类ID:', categoryId);
+        loadProducts(1, categoryId, searchQuery);
     });
     
     // 添加商品按钮

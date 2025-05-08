@@ -253,14 +253,14 @@ CREATE INDEX idx_stat_type_range ON admin_statistics(stat_type, start_date, end_
 -- 创建商品-分类映射表
 CREATE TABLE product_category_mapping (
   product_id INTEGER NOT NULL,
+  name TEXT NOT NULL,
   category_id INTEGER NOT NULL,
+  category_name TEXT NOT NULL,
   created_at INTEGER DEFAULT (CAST(strftime('%s','now') AS INTEGER)),
 
   PRIMARY KEY (product_id, category_id),
   FOREIGN KEY (product_id) REFERENCES products(product_id) ON DELETE CASCADE,
   FOREIGN KEY (category_id) REFERENCES product_categories(category_id) ON DELETE CASCADE
 );
-
--- 创建双向索引优化查询
 CREATE INDEX idx_mapping_product ON product_category_mapping(product_id);
-CREATE INDEX idx_mapping_category ON product_category_mapping(category_id);
+CREATE INDEX idx_mapping_category ON product_category_mapping(category_id);  
