@@ -52,6 +52,46 @@ async function loadCategories(page, searchQuery = '') {
         categoriesData = result.categories;
         categoriesTotalPages = result.totalPages;
         
+        // 获取所有商品的分类映射，用于计算每个分类的商品数量
+        try {
+            // 获取所有商品
+            const productsResult = await adminAPI.getProducts(1, 1000); // 获取足够多的商品
+            const products = productsResult.products || [];
+            
+            // 获取所有商品ID
+            const productIds = products.map(p => p.product_id);
+            
+            if (productIds.length > 0) {
+                // 获取商品分类映射
+                const mappings = await adminAPI.getProductCategoryMappings(productIds);
+                console.log('获取到的商品分类映射:', mappings);
+                
+                // 创建分类ID到商品数量的映射
+                const categoryProductCounts = {};
+                
+                // 统计每个分类的商品数量
+                if (mappings && Array.isArray(mappings)) {
+                    mappings.forEach(mapping => {
+                        const categoryId = mapping.category_id;
+                        if (!categoryProductCounts[categoryId]) {
+                            categoryProductCounts[categoryId] = 0;
+                        }
+                        categoryProductCounts[categoryId]++;
+                    });
+                }
+                
+                // 更新分类数据中的商品数量
+                categoriesData.forEach(category => {
+                    category.product_count = categoryProductCounts[category.category_id] || 0;
+                });
+                
+                console.log('更新后的分类数据(含商品数量):', categoriesData);
+            }
+        } catch (countError) {
+            console.warn('获取分类商品数量失败:', countError);
+            // 继续处理，不中断主流程
+        }
+        
         // 更新分类列表
         updateCategoriesList();
         

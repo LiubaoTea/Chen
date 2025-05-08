@@ -18,6 +18,8 @@ console.log('admin-api.js中的配置:', {
 if (typeof window !== 'undefined') {
     window.API_BASE_URL = API_BASE_URL;
     window.ADMIN_API_BASE_URL = ADMIN_API_BASE_URL;
+    // 确保adminAPI对象在全局可访问
+    window.adminAPI = adminAPI;
 }
 
 // 管理后台API
