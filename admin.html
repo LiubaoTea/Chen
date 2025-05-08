@@ -89,6 +89,18 @@
     <script src="./js/admin/admin-auth.js"></script>
     <!-- 管理后台API模块 -->
     <script type="module" src="./js/admin/admin-api.js"></script>
+    <!-- 等待API模块加载完成 -->
+    <script>
+        // 确保adminAPI模块已加载完成
+        window.addEventListener('DOMContentLoaded', function() {
+            // 检查adminAPI是否已加载
+            if (!window.adminAPI) {
+                console.error('adminAPI未正确加载，请刷新页面重试');
+            } else {
+                console.log('adminAPI已成功加载，可以使用所有API方法');
+            }
+        });
+    </script>
     <!-- 管理后台主模块 -->
     <script src="./js/admin/admin-main.js"></script>
 
