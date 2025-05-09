@@ -3,15 +3,13 @@
  * 处理商品的展示、添加、编辑和删除
  */
 
-// 导入API基础URL配置
+// 导入API基础URL配置和adminAPI
 import config from '../config.js';
 import { adminAuth } from './admin-auth.js';
-// 确保adminAPI已经被初始化
-import './admin-api.js';
+import adminAPI, { API_BASE_URL, ADMIN_API_BASE_URL } from './admin-api.js';
 
-// 确保adminAPI已经被正确加载
-const adminAPI = window.adminAPI;
-const { API_BASE_URL, ADMIN_API_BASE_URL } = config;
+// 确保API配置可用
+console.log('admin-products.js中的API配置:', { API_BASE_URL, ADMIN_API_BASE_URL });
 
 // 商品列表数据
 let productsData = [];

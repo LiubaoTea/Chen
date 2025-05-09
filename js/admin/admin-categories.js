@@ -3,17 +3,12 @@
  * 处理分类的展示、添加、编辑和删除
  */
 
-// 导入adminAuth模块
+// 导入adminAuth模块和adminAPI
 import { adminAuth } from './admin-auth.js';
-import config from '../config.js';
-// 确保adminAPI已经被初始化
-import './admin-api.js';
+import adminAPI, { API_BASE_URL, ADMIN_API_BASE_URL } from './admin-api.js';
 
-// 确保adminAPI已经被正确加载
-const adminAPI = window.adminAPI;
-
-// 解构导入的配置
-const { ADMIN_API_BASE_URL } = config;
+// 确保API配置可用
+console.log('admin-categories.js中的API配置:', { API_BASE_URL, ADMIN_API_BASE_URL });
 
 // 分类列表数据
 let categoriesData = [];

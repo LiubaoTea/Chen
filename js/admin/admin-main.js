@@ -3,9 +3,14 @@
  * 处理页面导航和初始化
  */
 
-// 导入adminAuth模块
+// 导入adminAuth模块和API配置
 import { adminAuth } from './admin-auth.js';
 import { API_BASE_URL } from '../config.js';
+import { ADMIN_API_BASE_URL } from './admin-config.js';
+import adminAPI from './admin-api.js';
+
+// 确保API配置可用
+console.log('admin-main.js中的API配置:', { API_BASE_URL, ADMIN_API_BASE_URL });
 
 // 页面加载完成后执行
 document.addEventListener('DOMContentLoaded', () => {
@@ -18,7 +23,13 @@ document.addEventListener('DOMContentLoaded', () => {
         loginModal.show();
     } else {
         // 已登录，加载仪表盘数据
-        loadDashboardData();
+        // 检查window.loadDashboardData是否可用，如果不可用则使用本地函数
+        if (typeof window.loadDashboardData === 'function') {
+            window.loadDashboardData();
+        } else {
+            console.warn('全局loadDashboardData函数未找到，尝试使用本地函数');
+            loadDashboardData();
+        }
     }
     
     // 设置事件监听器
@@ -60,7 +71,12 @@ function setupEventListeners() {
             loginModal.hide();
             
             // 加载仪表盘数据
-            loadDashboardData();
+            if (typeof window.loadDashboardData === 'function') {
+                window.loadDashboardData();
+            } else {
+                console.warn('全局loadDashboardData函数未找到，尝试使用本地函数');
+                loadDashboardData();
+            }
         } catch (error) {
             loginError.textContent = error.message || '登录失败，请检查用户名和密码';
             loginError.classList.remove('d-none');
@@ -363,5 +379,35 @@ function loadProfilePage() {
         if (typeof refreshProfileData === 'function') {
             refreshProfileData();
         }
+    }
+}
+
+// 本地实现的仪表盘数据加载函数
+// 当admin-dashboard.js中的全局函数未加载时使用
+async function loadDashboardData() {
+    // 检查是否已登录
+    if (!adminAuth.check()) return;
+    
+    try {
+        console.log('使用admin-main.js中的本地loadDashboardData函数');
+        
+        // 检查adminAPI是否可用
+        if (!adminAPI) {
+            console.error('adminAPI未定义，无法加载仪表盘数据');
+            return;
+        }
+        
+        // 获取仪表盘统计数据
+        const statsData = await adminAPI.getDashboardStats();
+        console.log('仪表盘统计数据:', statsData);
+        
+        // 更新仪表盘UI
+        // 这里简单实现，完整实现应该在admin-dashboard.js中
+        const dashboardEl = document.getElementById('dashboard');
+        if (dashboardEl) {
+            dashboardEl.innerHTML = '<div class="alert alert-info">仪表盘数据已加载</div>';
+        }
+    } catch (error) {
+        console.error('加载仪表盘数据失败:', error);
     }
 }

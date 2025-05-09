@@ -3,14 +3,12 @@
  * 处理用户的展示、详情查看和状态管理
  */
 
-// 导入adminAuth模块
+// 导入adminAuth模块和adminAPI
 import { adminAuth } from './admin-auth.js';
-import { API_BASE_URL } from '../config.js';
-// 确保adminAPI已经被初始化
-import './admin-api.js';
+import adminAPI, { API_BASE_URL, ADMIN_API_BASE_URL } from './admin-api.js';
 
-// 使用全局的adminAPI对象
-const adminAPI = window.adminAPI || {};
+// 确保API配置可用
+console.log('admin-users.js中的API配置:', { API_BASE_URL, ADMIN_API_BASE_URL });
 
 // 导入通用工具函数
 import './admin-utils.js';

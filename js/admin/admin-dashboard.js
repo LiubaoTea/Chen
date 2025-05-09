@@ -3,13 +3,12 @@
  * 处理仪表盘数据加载和图表显示
  */
 
-// 导入adminAuth模块
+// 导入adminAuth模块和adminAPI
 import { adminAuth } from './admin-auth.js';
-// 确保adminAPI已经被初始化
-import './admin-api.js';
+import adminAPI, { API_BASE_URL, ADMIN_API_BASE_URL } from './admin-api.js';
 
-// 确保adminAPI已经被正确加载
-const adminAPI = window.adminAPI;
+// 确保API配置可用
+console.log('admin-dashboard.js中的API配置:', { API_BASE_URL, ADMIN_API_BASE_URL });
 
 // 加载仪表盘数据
 async function loadDashboardData() {

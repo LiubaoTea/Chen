@@ -84,7 +84,7 @@
         import config, { API_BASE_URL } from './js/config.js';
         import adminConfig, { ADMIN_API_BASE_URL } from './js/admin/admin-config.js';
         import { adminAuth } from './js/admin/admin-auth.js';
-        import './js/admin/admin-api.js';
+        import adminAPI from './js/admin/admin-api.js';
         import './js/admin/admin-utils.js';
         import './js/admin/admin-dashboard.js';
         import './js/admin/admin-products.js';
@@ -96,9 +96,10 @@
         import './js/admin/admin-settings.js';
         import './js/admin/admin-main.js';
         
-        // 确保全局可访问的配置
+        // 确保全局可访问的配置和API
         window.API_BASE_URL = API_BASE_URL;
         window.ADMIN_API_BASE_URL = ADMIN_API_BASE_URL;
+        window.adminAPI = adminAPI;
         
         // 页面加载完成后初始化
         window.addEventListener('DOMContentLoaded', function() {
@@ -162,64 +163,6 @@
         });
     </script>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // 初始化登录表单
-            const loginForm = document.getElementById('loginForm');
-            const loginPage = document.getElementById('loginPage');
-            const adminDashboard = document.getElementById('adminDashboard');
-
-            // 检查是否已登录
-            if (adminAuth.check()) {
-                // 已登录，显示管理后台
-                loginPage.style.display = 'none';
-                adminDashboard.style.display = 'block';
-                
-                // 加载管理后台内容
-                loadAdminDashboard();
-            }
-
-            // 登录表单提交
-            loginForm.addEventListener('submit', async function(e) {
-                e.preventDefault();
-                
-                const username = document.getElementById('username').value;
-                const password = document.getElementById('password').value;
-                
-                try {
-                    // 调用登录API
-                    await adminAuth.login(username, password);
-                    
-                    // 登录成功，显示管理后台
-                    loginPage.style.display = 'none';
-                    adminDashboard.style.display = 'block';
-                    
-                    // 加载管理后台内容
-                    loadAdminDashboard();
-                } catch (error) {
-                    alert('登录失败: ' + error.message);
-                }
-            });
-
-            // 加载管理后台内容
-            function loadAdminDashboard() {
-                // 动态加载管理后台HTML
-                fetch('admin-dashboard.html')
-                    .then(response => response.text())
-                    .then(html => {
-                        adminDashboard.innerHTML = html;
-                        
-                        // 初始化管理后台
-                        if (typeof initAdminDashboard === 'function') {
-                            initAdminDashboard();
-                        }
-                    })
-                    .catch(error => {
-                        console.error('加载管理后台内容失败:', error);
-                        adminDashboard.innerHTML = '<div class="alert alert-danger m-5">加载管理后台内容失败</div>';
-                    });
-            }
-        });
-    </script>
+    <!-- 所有JS逻辑已移至type="module"脚本中 -->
 </body>
 </html>
