@@ -498,12 +498,8 @@ const adminAPI = {
             console.error('获取订单状态分布数据出错:', error);
             throw error;
         }
-    }
-};
+    },
 
-// 导出API基础URL和adminAPI对象
-export default adminAPI;
-    
     // 获取系统设置
     getSystemSettings: async () => {
         try {
@@ -553,7 +549,7 @@ export default adminAPI;
                 }
             };
         }
-    };
+    },
     
     // 更新系统设置
     updateSystemSettings: async (settings) => {
