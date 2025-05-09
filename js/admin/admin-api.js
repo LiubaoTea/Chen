@@ -9,7 +9,7 @@ import adminConfig, { ADMIN_API_BASE_URL } from './admin-config.js';
 import { adminAuth } from './admin-auth.js';
 
 // 导出API基础URL，确保其他模块可以使用
-export { API_BASE_URL, ADMIN_API_BASE_URL };
+export { API_BASE_URL };
 export default adminAPI;
 
 
