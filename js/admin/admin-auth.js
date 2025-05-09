@@ -12,7 +12,7 @@ import adminConfig, { ADMIN_API_BASE_URL } from './admin-config.js';
 const { API_BASE_URL } = config;
 
 console.log('加载admin-auth.js，配置:', {
-    ...config,
+    API_BASE_URL,
     ADMIN_API_BASE_URL
 });
 
