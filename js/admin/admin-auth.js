@@ -10,9 +10,11 @@ import adminConfig, { ADMIN_API_BASE_URL } from './admin-config.js';
 
 // 解构导入的配置
 const { API_BASE_URL } = config;
-const { ADMIN_API_BASE_URL } = adminConfig;
-console.log('加载admin-auth.js，配置:', config);
-console.log('加载admin-config.js中的配置:', adminConfig);
+
+console.log('加载admin-auth.js，配置:', {
+    ...config,
+    ADMIN_API_BASE_URL
+});
 
 // 清理API URL，移除所有可能的特殊字符和多余空格
 let cleanApiBaseUrl = API_BASE_URL ? API_BASE_URL.toString().replace(/[`\s]/g, '') : '';
