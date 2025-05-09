@@ -17,7 +17,7 @@ console.log('admin-api.js中的配置:', {
 });
 
 // 定义adminAPI对象
-export default {
+const adminAPIObject = {
     // 获取商品列表
     getProducts: async (page = 1, pageSize = 10, categoryId = '', searchQuery = '') => {
         try {
@@ -581,7 +581,10 @@ export default {
     }
 };
 
-// 导出API配置，确保其他模块可以访问
+// 创建adminAPI对象的实例
+const adminAPI = adminAPIObject;
+
+// 导出API配置和adminAPI对象
 export { API_BASE_URL, ADMIN_API_BASE_URL, adminAPI };
 
 // 在定义完adminAPI对象后，将其暴露到全局
@@ -592,6 +595,5 @@ if (typeof window !== 'undefined') {
     window.adminAPI = adminAPI;
     // 输出确认信息
     console.log('adminAPI已成功挂载到全局window对象，所有API方法现在可用');
-
 }
 
