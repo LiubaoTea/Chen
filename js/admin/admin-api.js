@@ -3,24 +3,21 @@
  * 处理与后端的数据交互
  */
 
-// 由于改为非模块方式加载，使用全局变量
-// 确保API_BASE_URL和ADMIN_API_BASE_URL已在全局作用域中定义
-// adminAuth对象也应该已在全局作用域中定义
+// 导入配置和认证模块
+import config, { API_BASE_URL } from '../config.js';
+import adminConfig, { ADMIN_API_BASE_URL } from './admin-config.js';
+import { adminAuth } from './admin-auth.js';
 
 // 确保在控制台可以看到导入的配置
-console.log('admin-api.js已加载，确保adminAPI全局可用');
+console.log('admin-api.js已加载，使用ES6模块方式');
 
 console.log('admin-api.js中的配置:', {
     API_BASE_URL,
     ADMIN_API_BASE_URL
 });
 
-// 管理后台API
-// 首先在全局作用域中初始化adminAPI对象
-window.adminAPI = {};
-
 // 定义adminAPI对象
-const adminAPI = window.adminAPI = {
+const adminAPI = {
     // 获取商品列表
     getProducts: async (page = 1, pageSize = 10, categoryId = '', searchQuery = '') => {
         try {
