@@ -598,6 +598,3 @@ if (typeof window !== 'undefined') {
     console.log('adminAPI已成功挂载到全局window对象，所有API方法现在可用');
 }
 
-// 导出adminAPI对象，确保其他模块可以通过import导入
-export default adminAPI;
-export { adminAPI };
