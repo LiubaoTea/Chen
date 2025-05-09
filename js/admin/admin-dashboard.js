@@ -17,6 +17,16 @@ async function loadDashboardData() {
     if (!adminAuth.check()) return;
     
     try {
+        // 清理旧图表实例
+        if (window.salesChart instanceof Chart) {
+            window.salesChart.destroy();
+            window.salesChart = null;
+        }
+        if (window.categoryChart instanceof Chart) {
+            window.categoryChart.destroy();
+            window.categoryChart = null;
+        }
+        
         // 获取仪表盘统计数据
         const statsData = await adminAPI.getDashboardStats();
         updateDashboardStats(statsData);
@@ -31,11 +41,29 @@ async function loadDashboardData() {
         
         // 获取销售趋势数据
         const salesTrend = await adminAPI.getSalesTrend('month');
-        renderSalesChart(salesTrend);
+        if (salesTrend && Array.isArray(salesTrend)) {
+            const formattedData = {
+                labels: salesTrend.map(item => item.date),
+                sales: salesTrend.map(item => item.sales),
+                orders: salesTrend.map(item => item.orders)
+            };
+            renderSalesChart(formattedData);
+        }
         
         // 获取分类占比数据
-        const categoryDistribution = await adminAPI.getCategoryDistribution();
-        renderCategoryChart(categoryDistribution);
+        try {
+            const categoryDistribution = await adminAPI.getCategoryDistribution();
+            if (categoryDistribution && Array.isArray(categoryDistribution)) {
+                const formattedData = {
+                    labels: categoryDistribution.map(item => item.category_name),
+                    values: categoryDistribution.map(item => item.count)
+                };
+                renderCategoryChart(formattedData);
+            }
+        } catch (categoryError) {
+            console.warn('获取分类占比数据失败:', categoryError);
+            // 不中断整个仪表盘的加载
+        }
     } catch (error) {
         console.error('加载仪表盘数据失败:', error);
         // 显示错误提示
