@@ -8,12 +8,9 @@ import config, { API_BASE_URL } from '../config.js';
 import adminConfig, { ADMIN_API_BASE_URL } from './admin-config.js';
 import { adminAuth } from './admin-auth.js';
 
-// 导出API基础URL和adminAPI对象
-export default adminAPI;
-
-
 // 确保在控制台可以看到导入的配置
 console.log('admin-api.js已加载，使用ES6模块方式');
+
 
 console.log('admin-api.js中的配置:', {
     API_BASE_URL,
@@ -499,9 +496,13 @@ const adminAPI = {
             return data;
         } catch (error) {
             console.error('获取订单状态分布数据出错:', error);
-            throw error; // 不再返回模拟数据，而是将错误抛出，让调用者处理
+            throw error;
         }
-    },
+    }
+};
+
+// 导出API基础URL和adminAPI对象
+export default adminAPI;
     
     // 获取系统设置
     getSystemSettings: async () => {
@@ -552,7 +553,7 @@ const adminAPI = {
                 }
             };
         }
-    },
+    };
     
     // 更新系统设置
     updateSystemSettings: async (settings) => {
@@ -586,7 +587,7 @@ const adminAPI = {
 };
 
 // 导出API配置，确保其他模块可以访问
-export { API_BASE_URL, ADMIN_API_BASE_URL };
+export { API_BASE_URL, ADMIN_API_BASE_URL, adminAPI };
 
 // 在定义完adminAPI对象后，将其暴露到全局
 if (typeof window !== 'undefined') {

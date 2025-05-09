@@ -14,17 +14,7 @@
     <script type="module">
         // 导入配置和认证模块
         import config from '../js/config.js';
-
-        // 解构导入的配置
-        const { API_BASE_URL, ADMIN_API_BASE_URL } = config;
         import { adminAuth } from '../js/admin/admin-auth.js';
-        
-        // 确保全局可访问API配置
-        window.API_BASE_URL = API_BASE_URL;
-        window.ADMIN_API_BASE_URL = ADMIN_API_BASE_URL;
-        
-        // 确保全局可访问adminAuth
-        window.adminAuth = adminAuth;
         
         document.addEventListener('DOMContentLoaded', function() {
             // 初始化认证状态并检查是否已登录
