@@ -9,8 +9,9 @@ import adminConfig, { ADMIN_API_BASE_URL } from './admin-config.js';
 import { adminAuth } from './admin-auth.js';
 
 // 导出API基础URL，确保其他模块可以使用
-export { API_BASE_URL };
+export { API_BASE_URL, ADMIN_API_BASE_URL };
 export default adminAPI;
+
 
 // 确保在控制台可以看到导入的配置
 console.log('admin-api.js已加载，使用ES6模块方式');
