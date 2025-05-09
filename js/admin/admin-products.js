@@ -114,13 +114,10 @@ async function loadProducts(page, categoryId = '', searchQuery = '') {
         }
         
         // 使用adminAPI获取商品数据
-        // 确保将categoryId作为参数传递给API，以便后端可以根据分类ID筛选商品
         const result = await adminAPI.getProducts(page, pageSize, categoryId, searchQuery);
         
-        // 创建一个Map来存储唯一的商品数据
+        // 在初始加载时就进行去重处理
         const uniqueProducts = new Map();
-        
-        // 首先将所有商品添加到uniqueProducts中
         if (result.products && Array.isArray(result.products)) {
             result.products.forEach(product => {
                 if (!uniqueProducts.has(product.product_id)) {
@@ -134,18 +131,9 @@ async function loadProducts(page, categoryId = '', searchQuery = '') {
         
         // 正确处理分页信息
         if (result.pagination) {
-            // 如果后端返回了pages字段，使用它
-            if (result.pagination.pages) {
-                totalPages = result.pagination.pages;
-            }
-            // 否则，如果有total字段，计算总页数
-            else if (result.pagination.total) {
-                totalPages = Math.ceil(result.pagination.total / pageSize);
-            }
-            // 如果都没有，默认为1页
-            else {
-                totalPages = 1;
-            }
+            totalPages = result.pagination.pages || 
+                        (result.pagination.total ? Math.ceil(result.pagination.total / pageSize) : 1);
+            
             console.log('分页信息:', {
                 currentPage: page,
                 totalPages: totalPages,
@@ -155,105 +143,47 @@ async function loadProducts(page, categoryId = '', searchQuery = '') {
             totalPages = 1;
         }
         
-        // 如果有商品数据，获取商品分类映射
+        // 如果有商品数据，获取并处理分类映射
         if (productsData.length > 0) {
-            // 获取所有商品ID
-            const productIds = productsData.map(p => p.product_id);
-            
             try {
+                // 获取去重后的商品ID列表
+                const productIds = [...uniqueProducts.keys()];
+                
                 // 获取商品分类映射
                 const mappings = await adminAPI.getProductCategoryMappings(productIds);
                 console.log('获取到的商品分类映射:', mappings);
                 
                 // 将映射数据添加到商品中
                 if (mappings && Array.isArray(mappings)) {
-                    // 处理每个商品的分类映射
                     productsData.forEach(product => {
                         // 为每个商品添加分类映射
                         product.category_mappings = mappings.filter(
                             mapping => mapping.product_id === product.product_id
                         );
                         
-                        // 确保每个商品都有categories属性，用于兼容旧代码
-                        if (!product.categories) {
-                            product.categories = [];
-                        }
-                        
-                        // 如果有category_mappings，从中提取分类ID
-                        if (product.category_mappings && product.category_mappings.length > 0) {
-                            product.categories = product.category_mappings.map(mapping => mapping.category_id);
-                        } 
-                        // 兼容旧数据结构
-                        else if (product.category_id) {
-                            product.categories.push(product.category_id);
-                        }
+                        // 确保每个商品都有categories属性
+                        product.categories = product.category_mappings?.map(mapping => mapping.category_id) || 
+                                           (product.category_id ? [product.category_id] : []);
                     });
                     
-                    // 如果指定了分类ID，在前端进行额外筛选
+                    // 如果指定了分类ID，在前端进行筛选
                     if (categoryId) {
                         console.log(`根据分类ID ${categoryId} 在前端筛选商品数据`);
-                        
-                        // 筛选出包含指定分类的商品
-                        productsData = productsData.filter(product => {
-                            // 检查商品的category_mappings是否包含所选分类
-                            if (product.category_mappings && product.category_mappings.length > 0) {
-                                return product.category_mappings.some(mapping => mapping.category_id == categoryId);
-                            }
-                            // 兼容旧数据结构，检查categories数组
-                            else if (product.categories && product.categories.length > 0) {
-                                return product.categories.includes(parseInt(categoryId)) || product.categories.includes(categoryId);
-                            }
-                            // 最后检查单一category_id字段
-                            else if (product.category_id) {
-                                return product.category_id == categoryId;
-                            }
-                            return false;
-                        });
-                        
+                        productsData = productsData.filter(product => 
+                            product.category_mappings?.some(mapping => mapping.category_id == categoryId) || 
+                            product.categories?.includes(parseInt(categoryId)) || 
+                            product.categories?.includes(categoryId) || 
+                            product.category_id == categoryId
+                        );
                         console.log(`筛选后的商品数量: ${productsData.length}`);
                     }
                 }
             } catch (mappingError) {
                 console.warn('获取商品分类映射失败:', mappingError);
-                // 继续处理，不中断主流程
-                
-                // 确保每个商品都有categories属性，用于兼容旧代码
+                // 确保每个商品都有基本的分类信息
                 productsData.forEach(product => {
-                    if (!product.categories) {
-                        product.categories = [];
-                        
-                        // 如果有category_mappings，从中提取分类ID
-                        if (product.category_mappings && product.category_mappings.length > 0) {
-                            product.categories = product.category_mappings.map(mapping => mapping.category_id);
-                        } 
-                        // 兼容旧数据结构
-                        else if (product.category_id) {
-                            product.categories.push(product.category_id);
-                        }
-                    }
+                    product.categories = product.category_id ? [product.category_id] : [];
                 });
-                
-                // 如果指定了分类ID，在前端进行额外筛选
-                if (categoryId) {
-                    console.log(`根据分类ID ${categoryId} 在前端筛选商品数据`);
-                    // 筛选出包含指定分类的商品
-                    productsData = productsData.filter(product => {
-                        // 检查商品的category_mappings是否包含所选分类
-                        if (product.category_mappings && product.category_mappings.length > 0) {
-                            return product.category_mappings.some(mapping => mapping.category_id == categoryId);
-                        }
-                        // 兼容旧数据结构，检查categories数组
-                        else if (product.categories && product.categories.length > 0) {
-                            return product.categories.includes(parseInt(categoryId)) || product.categories.includes(categoryId);
-                        }
-                        // 最后检查单一category_id字段
-                        else if (product.category_id) {
-                            return product.category_id == categoryId;
-                        }
-                        return false;
-                    });
-                    console.log(`筛选后的商品数量: ${productsData.length}`);
-                }
             }
         }
         
