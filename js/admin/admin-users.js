@@ -6,7 +6,15 @@
 // 导入adminAuth模块
 import { adminAuth } from './admin-auth.js';
 import { API_BASE_URL } from '../config.js';
+// 确保adminAPI已经被初始化
 import './admin-api.js';
+
+// 使用全局的adminAPI对象
+const adminAPI = window.adminAPI || {};
+
+// 导入通用工具函数
+import './admin-utils.js';
+// 使用全局的showSuccessToast和showErrorToast函数
 
 // 用户列表数据
 let usersData = [];
@@ -30,7 +38,7 @@ async function initUsersPage() {
         setupUsersEventListeners();
     } catch (error) {
         console.error('初始化用户管理页面失败:', error);
-        showErrorToast('初始化用户管理页面失败，请稍后重试');
+        window.showErrorToast('初始化用户管理页面失败，请稍后重试');
     }
 }
 
@@ -336,6 +344,7 @@ async function viewUserDetails(userId) {
                 加载用户详情失败: ${error.message || '请稍后重试'}
             </div>
         `;
+        window.showErrorToast('加载用户详情失败: ' + (error.message || '请稍后重试'));
     }
 }
 
@@ -354,13 +363,13 @@ async function toggleUserStatus(userId, currentStatus) {
         await adminAPI.updateUserStatus(userId, newStatus);
         
         // 显示成功提示
-        showSuccessToast(`用户已${actionText}`);
+        window.showSuccessToast(`用户已${actionText}`);
         
         // 重新加载用户列表
-        await loadUsers(currentPage, document.getElementById('userSearchInput').value);
+        await loadUsers(usersCurrentPage, document.getElementById('userSearchInput').value);
     } catch (error) {
         console.error('更新用户状态失败:', error);
-        showErrorToast('更新用户状态失败: ' + error.message);
+        window.showErrorToast('更新用户状态失败: ' + error.message);
     }
 }
 
@@ -410,8 +419,6 @@ function getOrderStatusBadge(status) {
     return `<span class="badge ${badgeClass}">${statusText}</span>`;
 }
 
-// 注意：showErrorToast函数已在admin-utils.js中定义，此处不需要重复定义
-
 // 添加用户分页事件监听器
 function addUsersPaginationEventListeners() {
     document.querySelectorAll('#usersPagination .page-link').forEach(link => {
@@ -424,8 +431,6 @@ function addUsersPaginationEventListeners() {
         });
     });
 }
-
-// 注意：showErrorToast函数已在admin-utils.js中定义，此处不需要重复定义
 
 // 导出模块
 window.adminUsers = {

@@ -6,8 +6,11 @@
 // 导入API基础URL配置
 import config from '../config.js';
 import { adminAuth } from './admin-auth.js';
+// 确保adminAPI已经被初始化
 import './admin-api.js';
 
+// 确保adminAPI已经被正确加载
+const adminAPI = window.adminAPI;
 const { API_BASE_URL, ADMIN_API_BASE_URL } = config;
 
 // 商品列表数据
