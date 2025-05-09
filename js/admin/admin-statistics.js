@@ -3,8 +3,12 @@
  * 处理统计数据的加载和图表展示
  */
 
-// 导入adminAuth模块
+// 导入adminAuth模块和API配置
 import { adminAuth } from './admin-auth.js';
+import { API_BASE_URL, ADMIN_API_BASE_URL } from './admin-api.js';
+
+// 使用全局adminAPI对象
+const adminAPI = window.adminAPI;
 
 // 初始化统计页面
 async function initStatisticsPage() {

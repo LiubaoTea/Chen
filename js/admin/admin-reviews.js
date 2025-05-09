@@ -3,9 +3,12 @@
  * 处理评价的展示、审核和回复
  */
 
-// 导入adminAuth模块
+// 导入adminAuth模块和API配置
 import { adminAuth } from './admin-auth.js';
-import { API_BASE_URL } from '../config.js';
+import { API_BASE_URL, ADMIN_API_BASE_URL } from './admin-api.js';
+
+// 使用全局adminAPI对象
+const adminAPI = window.adminAPI;
 
 // 评价列表数据
 let reviewsData = [];

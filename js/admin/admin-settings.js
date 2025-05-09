@@ -3,6 +3,13 @@
  * 处理系统设置的加载和保存
  */
 
+// 导入adminAuth模块和API配置
+import { adminAuth } from './admin-auth.js';
+import { API_BASE_URL, ADMIN_API_BASE_URL } from './admin-api.js';
+
+// 使用全局adminAPI对象
+const adminAPI = window.adminAPI;
+
 // 初始化设置页面
 async function initSettingsPage() {
     // 检查是否已登录

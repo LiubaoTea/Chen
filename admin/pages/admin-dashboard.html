@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>陳記六堡茶 - 管理后台</title>
+</head>
+<body>
+    <!-- 管理后台主界面 -->
+    <div class="container-fluid">
+        <div class="row">
+            <!-- 侧边栏导航 -->
+            <nav id="sidebar" class="col-md-3 col-lg-2 d-md-block bg-light sidebar">
+                <div class="position-sticky pt-3">
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link active" href="#dashboard">
+                                <i class="fas fa-tachometer-alt me-2"></i>仪表盘
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#products">
+                                <i class="fas fa-box me-2"></i>商品管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#orders">
+                                <i class="fas fa-shopping-cart me-2"></i>订单管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#users">
+                                <i class="fas fa-users me-2"></i>用户管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#categories">
+                                <i class="fas fa-tags me-2"></i>分类管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#reviews">
+                                <i class="fas fa-star me-2"></i>评价管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#statistics">
+                                <i class="fas fa-chart-bar me-2"></i>数据统计
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#settings">
+                                <i class="fas fa-cog me-2"></i>系统设置
+                            </a>
+                        </li>
+                    </ul>
+                    <hr>
+                    <div class="d-grid gap-2 px-3">
+                        <button id="logoutBtn" class="btn btn-outline-danger">
+                            <i class="fas fa-sign-out-alt me-2"></i>退出登录
+                        </button>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- 主内容区域 -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                <!-- 顶部导航栏 -->
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2" id="pageTitle">仪表盘</h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <div class="btn-group me-2">
+                            <button type="button" class="btn btn-sm btn-outline-secondary">导出</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary">打印</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 页面内容区域 -->
+                <div id="pageContent">
+                    <!-- 仪表盘页面 -->
+                    <div id="dashboardPage" class="page-content active">
+                        <div class="row mb-4">
+                            <div class="col-md-3 mb-4">
+                                <div class="card border-left-primary shadow h-100 py-2">
+                                    <div class="card-body">
+                                        <div class="row no-gutters align-items-center">
+                                            <div class="col mr-2">
+                                                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">总订单数</div>
+                                                <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalOrders">0</div>
+                                            </div>
+                                            <div class="col-auto">
+                                                <i class="fas fa-calendar fa-2x text-gray-300"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 mb-4">
+                                <div class="card border-left-success shadow h-100 py-2">
+                                    <div class="card-body">
+                                        <div class="row no-gutters align-items-center">
+                                            <div class="col mr-2">
+                                                <div class="text-xs font-weight-bold text-success text-uppercase mb-1">总销售额</div>
+                                                <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalSales">¥0.00</div>
+                                            </div>
+                                            <div class="col-auto">
+                                                <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 mb-4">
+                                <div class="card border-left-info shadow h-100 py-2">
+                                    <div class="card-body">
+                                        <div class="row no-gutters align-items-center">
+                                            <div class="col mr-2">
+                                                <div class="text-xs font-weight-bold text-info text-uppercase mb-1">用户总数</div>
+                                                <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalUsers">0</div>
+                                            </div>
+                                            <div class="col-auto">
+                                                <i class="fas fa-users fa-2x text-gray-300"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 mb-4">
+                                <div class="card border-left-warning shadow h-100 py-2">
+                                    <div class="card-body">
+                                        <div class="row no-gutters align-items-center">
+                                            <div class="col mr-2">
+                                                <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">商品总数</div>
+                                                <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalProducts">0</div>
+                                            </div>
+                                            <div class="col-auto">
+                                                <i class="fas fa-box fa-2x text-gray-300"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-lg-8 mb-4">
+                                <div class="card shadow mb-4">
+                                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                                        <h6 class="m-0 font-weight-bold text-primary">销售趋势</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="chart-area">
+                                            <canvas id="salesChart"></canvas>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-4 mb-4">
+                                <div class="card shadow mb-4">
+                                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                                        <h6 class="m-0 font-weight-bold text-primary">分类占比</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="chart-pie">
+                                            <canvas id="categoryChart"></canvas>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-lg-6 mb-4">
+                                <div class="card shadow mb-4">
+                                    <div class="card-header py-3">
+                                        <h6 class="m-0 font-weight-bold text-primary">最近订单</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="table-responsive">
+                                            <table class="table table-bordered" width="100%" cellspacing="0">
+                                                <thead>
+                                                    <tr>
+                                                        <th>订单号</th>
+                                                        <th>客户</th>
+                                                        <th>金额</th>
+                                                        <th>状态</th>
+                                                        <th>日期</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="recentOrdersList">
+                                                    <tr>
+                                                        <td colspan="5" class="text-center">加载中...</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-6 mb-4">
+                                <div class="card shadow mb-4">
+                                    <div class="card-header py-3">
+                                        <h6 class="m-0 font-weight-bold text-primary">热销商品</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="table-responsive">
+                                            <table class="table table-bordered" width="100%" cellspacing="0">
+                                                <thead>
+                                                    <tr>
+                                                        <th>商品名称</th>
+                                                        <th>价格</th>
+                                                        <th>销量</th>
+                                                        <th>库存</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="topProductsList">
+                                                    <tr>
+                                                        <td colspan="4" class="text-center">加载中...</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 其他页面内容将通过JavaScript动态加载 -->
+                    <div id="productsPage" class="page-content"></div>
+                    <div id="ordersPage" class="page-content"></div>
+                    <div id="usersPage" class="page-content"></div>
+                    <div id="categoriesPage" class="page-content"></div>
+                    <div id="reviewsPage" class="page-content"></div>
+                    <div id="statisticsPage" class="page-content"></div>
+                    <div id="settingsPage" class="page-content"></div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- 初始化仪表盘 -->
+    <script>
+        // 当页面加载完成后，初始化仪表盘
+        document.addEventListener('DOMContentLoaded', function() {
+            // 如果存在初始化函数，则调用它
+            if (typeof window.loadDashboardData === 'function') {
+                window.loadDashboardData();
+            }
+            
+            // 设置导航事件
+            document.querySelectorAll('#sidebar .nav-link').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // 移除所有活动状态
+                    document.querySelectorAll('#sidebar .nav-link').forEach(l => {
+                        l.classList.remove('active');
+                    });
+                    
+                    // 添加当前活动状态
+                    this.classList.add('active');
+                    
+                    // 获取目标页面ID
+                    const target = this.getAttribute('href').substring(1);
+                    
+                    // 更新页面标题
+                    const pageTitle = document.getElementById('pageTitle');
+                    pageTitle.textContent = this.textContent.trim();
+                    
+                    // 隐藏所有页面内容
+                    document.querySelectorAll('.page-content').forEach(page => {
+                        page.classList.remove('active');
+                    });
+                    
+                    // 显示目标页面内容
+                    const targetPage = document.getElementById(target + 'Page');
+                    if (targetPage) {
+                        targetPage.classList.add('active');
+                    }
+                    
+                    // 触发页面加载事件
+                    const event = new CustomEvent('pageload', { detail: { page: target } });
+                    document.dispatchEvent(event);
+                });
+            });
+            
+            // 退出登录按钮
+            document.getElementById('logoutBtn').addEventListener('click', function() {
+                if (confirm('确定要退出登录吗？')) {
+                    // 如果存在退出登录函数，则调用它
+                    if (typeof window.adminAuth !== 'undefined' && typeof window.adminAuth.logout === 'function') {
+                        window.adminAuth.logout();
+                        window.location.reload();
+                    }
+                }
+            });
+        });
+    </script>
+
+    <!-- 添加一些基本样式 -->
+    <style>
+        .page-content {
+            display: none;
+        }
+        .page-content.active {
+            display: block;
+        }
+        .border-left-primary {
+            border-left: 0.25rem solid #4e73df !important;
+        }
+        .border-left-success {
+            border-left: 0.25rem solid #1cc88a !important;
+        }
+        .border-left-info {
+            border-left: 0.25rem solid #36b9cc !important;
+        }
+        .border-left-warning {
+            border-left: 0.25rem solid #f6c23e !important;
+        }
+        .chart-area, .chart-pie {
+            position: relative;
+            height: 20rem;
+        }
+        .status-badge {
+            padding: 0.25em 0.6em;
+            font-size: 75%;
+            font-weight: 700;
+            border-radius: 0.25rem;
+        }
+        .status-pending {
+            background-color: #f6c23e;
+            color: white;
+        }
+        .status-paid {
+            background-color: #36b9cc;
+            color: white;
+        }
+        .status-shipped {
+            background-color: #4e73df;
+            color: white;
+        }
+        .status-delivered {
+            background-color: #1cc88a;
+            color: white;
+        }
+        .status-cancelled {
+            background-color: #e74a3b;
+            color: white;
+        }
+    </style>
+</body>
+</html>

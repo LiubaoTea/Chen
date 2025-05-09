@@ -3,9 +3,12 @@
  * 处理订单的展示、详情查看和状态更新
  */
 
-// 导入adminAuth模块和adminAPI
+// 导入adminAuth模块和API配置
 import { adminAuth } from './admin-auth.js';
-import adminAPI, { API_BASE_URL, ADMIN_API_BASE_URL } from './admin-api.js';
+import { API_BASE_URL, ADMIN_API_BASE_URL } from './admin-api.js';
+
+// 使用全局adminAPI对象
+const adminAPI = window.adminAPI;
 
 // 确保API配置可用
 console.log('admin-orders.js中的API配置:', { API_BASE_URL, ADMIN_API_BASE_URL });
