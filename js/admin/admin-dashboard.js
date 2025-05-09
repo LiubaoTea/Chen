@@ -5,13 +5,11 @@
 
 // 导入adminAuth模块和API配置
 import { adminAuth } from './admin-auth.js';
-import { API_BASE_URL, ADMIN_API_BASE_URL } from './admin-api.js';
-
-// 使用全局adminAPI对象
-const adminAPI = window.adminAPI;
+import adminAPI, { API_BASE_URL, ADMIN_API_BASE_URL } from './admin-api.js';
 
 // 确保API配置可用
 console.log('admin-dashboard.js中的API配置:', { API_BASE_URL, ADMIN_API_BASE_URL });
+console.log('admin-dashboard.js中的adminAPI:', adminAPI);
 
 // 加载仪表盘数据
 async function loadDashboardData() {

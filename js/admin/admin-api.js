@@ -8,8 +8,9 @@ import config, { API_BASE_URL } from '../config.js';
 import adminConfig, { ADMIN_API_BASE_URL } from './admin-config.js';
 import { adminAuth } from './admin-auth.js';
 
-// 导出API基础URL，确保其他模块可以使用
+// 导出API基础URL和adminAPI对象，确保其他模块可以使用
 export { API_BASE_URL, ADMIN_API_BASE_URL };
+export default adminAPI;
 
 // 确保在控制台可以看到导入的配置
 console.log('admin-api.js已加载，使用ES6模块方式');
@@ -499,6 +500,87 @@ const adminAPI = {
         } catch (error) {
             console.error('获取订单状态分布数据出错:', error);
             throw error; // 不再返回模拟数据，而是将错误抛出，让调用者处理
+        }
+    },
+    
+    // 获取系统设置
+    getSystemSettings: async () => {
+        try {
+            const url = `${ADMIN_API_BASE_URL}/api/admin/settings`;
+            console.log('发送系统设置请求，URL:', url);
+            
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    ...adminAuth.getHeaders(),
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('系统设置API响应错误:', response.status, errorText);
+                throw new Error(`获取系统设置失败，HTTP状态码: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            console.log('成功获取系统设置:', data);
+            return data;
+        } catch (error) {
+            console.error('获取系统设置出错:', error);
+            // 返回默认设置
+            return {
+                site: {
+                    siteName: '陳記六堡茶',
+                    siteDescription: '传承百年工艺，匠心制茶',
+                    contactEmail: 'contact@liubaotea.com',
+                    contactPhone: '123-456-7890',
+                    address: '广西梧州'
+                },
+                payment: {
+                    enableWechatPay: true,
+                    enableAliPay: true
+                },
+                mail: {
+                    smtpServer: 'smtp.example.com',
+                    smtpPort: 587,
+                    smtpUsername: 'notification@liubaotea.com'
+                },
+                security: {
+                    enableTwoFactor: false,
+                    sessionTimeout: 30
+                }
+            };
+        }
+    },
+    
+    // 更新系统设置
+    updateSystemSettings: async (settings) => {
+        try {
+            const url = `${ADMIN_API_BASE_URL}/api/admin/settings`;
+            console.log('发送更新系统设置请求，URL:', url);
+            
+            const response = await fetch(url, {
+                method: 'PUT',
+                headers: {
+                    ...adminAuth.getHeaders(),
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(settings)
+            });
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('更新系统设置API响应错误:', response.status, errorText);
+                throw new Error(`更新系统设置失败，HTTP状态码: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            console.log('成功更新系统设置:', data);
+            return data;
+        } catch (error) {
+            console.error('更新系统设置出错:', error);
+            throw error;
         }
     }
 };

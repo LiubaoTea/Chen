@@ -9,6 +9,11 @@ import { API_BASE_URL } from '../config.js';
 import { ADMIN_API_BASE_URL } from './admin-config.js';
 import adminAPI from './admin-api.js';
 
+// 确保全局可访问的配置和API
+window.API_BASE_URL = API_BASE_URL;
+window.ADMIN_API_BASE_URL = ADMIN_API_BASE_URL;
+window.adminAPI = adminAPI;
+
 // 确保API配置可用
 console.log('admin-main.js中的API配置:', { API_BASE_URL, ADMIN_API_BASE_URL });
 
