@@ -92,7 +92,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             // 检查是否已登录，如果已登录则跳转到管理后台首页
             if (adminAuth.isLoggedIn()) {
-                window.location.href = 'admin-dashboard.html';
+                window.location.href = 'admin-index.html';
                 return;
             }
             
@@ -128,7 +128,7 @@
                     if (success) {
                         // 登录成功，跳转到管理后台首页
                         console.log('登录成功，准备跳转到首页');
-                        window.location.href = 'admin-dashboard.html';
+                        window.location.href = 'admin-index.html';
                     } else {
                         // 登录失败但没有抛出错误
                         throw new Error('登录失败，请检查用户名和密码');

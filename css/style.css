@@ -148,7 +148,7 @@ img {
     color: var(--accent-color);
 }
 
-.main-nav .nav-list a[href="admin/admin-dashboard.html"] {
+.main-nav .nav-list a[href="admin/admin-index.html"] {
     font-weight: bold;
     color: var(--accent-color);
 }
