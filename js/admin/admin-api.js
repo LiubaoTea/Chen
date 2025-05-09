@@ -11,14 +11,13 @@ import { adminAuth } from './admin-auth.js';
 // 确保在控制台可以看到导入的配置
 console.log('admin-api.js已加载，使用ES6模块方式');
 
-
 console.log('admin-api.js中的配置:', {
     API_BASE_URL,
     ADMIN_API_BASE_URL
 });
 
 // 定义adminAPI对象
-const adminAPI = {
+export default {
     // 获取商品列表
     getProducts: async (page = 1, pageSize = 10, categoryId = '', searchQuery = '') => {
         try {
@@ -593,5 +592,6 @@ if (typeof window !== 'undefined') {
     window.adminAPI = adminAPI;
     // 输出确认信息
     console.log('adminAPI已成功挂载到全局window对象，所有API方法现在可用');
+
 }
 
