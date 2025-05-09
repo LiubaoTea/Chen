@@ -6,9 +6,10 @@
 
 // 导入API基础URL配置
 import config from '../config.js';
+import adminConfig, { ADMIN_API_BASE_URL } from './admin-config.js';
 
 // 解构导入的配置
-const { API_BASE_URL, ADMIN_API_BASE_URL } = config;
+const { API_BASE_URL } = config;
 
 console.log('加载admin-auth.js，配置:', config);
 
