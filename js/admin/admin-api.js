@@ -90,7 +90,10 @@ const adminAPIObject = {
                 return [];
             }
             
-            const url = `${ADMIN_API_BASE_URL}/api/admin/product-category-mappings?product_ids=${productIds.join(',')}`;
+            // 确保商品ID不重复
+            const uniqueProductIds = [...new Set(productIds)];
+            
+            const url = `${ADMIN_API_BASE_URL}/api/admin/product-category-mappings?product_ids=${uniqueProductIds.join(',')}`;
             console.log('发送商品分类映射请求，URL:', url);
             
             const response = await fetch(url, {

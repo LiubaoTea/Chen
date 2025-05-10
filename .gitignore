@@ -56,3 +56,6 @@ pids
 # Excel files and design assets
 products.xls
 Design_Assets/
+
+# Database files
+src/D1-Database/

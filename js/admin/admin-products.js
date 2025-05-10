@@ -146,8 +146,8 @@ async function loadProducts(page, categoryId = '', searchQuery = '') {
         
         // 如果有商品数据，获取商品分类映射
         if (productsData.length > 0) {
-            // 获取所有商品ID
-            const productIds = productsData.map(p => p.product_id);
+            // 获取所有商品ID - 确保每个ID只出现一次
+            const productIds = [...new Set(productsData.map(p => p.product_id))];
             
             try {
                 // 获取商品分类映射
@@ -156,7 +156,7 @@ async function loadProducts(page, categoryId = '', searchQuery = '') {
                 
                 // 将映射数据添加到商品中
                 if (mappings && Array.isArray(mappings)) {
-                    // 直接处理每个商品的分类映射，不使用Map去重
+                    // 为每个商品添加分类映射，不会导致商品重复
                     productsData.forEach(product => {
                         // 为每个商品添加分类映射
                         product.category_mappings = mappings.filter(
@@ -182,7 +182,7 @@ async function loadProducts(page, categoryId = '', searchQuery = '') {
                     if (categoryId) {
                         console.log(`根据分类ID ${categoryId} 在前端筛选商品数据`);
                         
-                        // 直接筛选商品数组，不使用Map
+                        // 筛选商品数组，确保不会有重复
                         productsData = productsData.filter(product => {
                             // 检查商品的category_mappings是否包含所选分类
                             if (product.category_mappings && product.category_mappings.length > 0) {
@@ -206,7 +206,7 @@ async function loadProducts(page, categoryId = '', searchQuery = '') {
                 console.warn('获取商品分类映射失败:', mappingError);
                 // 继续处理，不中断主流程
                 
-                // 直接处理每个商品，不使用Map去重
+                // 处理每个商品
                 productsData.forEach(product => {
                     // 确保每个商品都有categories属性，用于兼容旧代码
                     if (!product.categories) {
@@ -229,7 +229,7 @@ async function loadProducts(page, categoryId = '', searchQuery = '') {
                 if (categoryId && productsData.length > 0) {
                     console.log(`根据分类ID ${categoryId} 在前端筛选商品数据`);
                     
-                    // 直接筛选商品数组，不使用Map
+                    // 筛选商品数组
                     productsData = productsData.filter(product => {
                         // 检查商品的category_mappings是否包含所选分类
                         if (product.category_mappings && product.category_mappings.length > 0) {
@@ -296,8 +296,20 @@ function updateProductsList() {
     
     console.log(`准备显示商品数量: ${productsData.length}`);
     
-    // 直接使用productsData创建表格行，不进行去重
+    // 确保商品数据不重复，使用Map按商品ID去重
+    const uniqueProductsMap = new Map();
     productsData.forEach(product => {
+        if (!uniqueProductsMap.has(product.product_id)) {
+            uniqueProductsMap.set(product.product_id, product);
+        }
+    });
+    
+    // 使用去重后的商品数据
+    const uniqueProducts = Array.from(uniqueProductsMap.values());
+    console.log(`去重后显示商品数量: ${uniqueProducts.length}`);
+    
+    // 使用去重后的商品数据创建表格行
+    uniqueProducts.forEach(product => {
         const row = document.createElement('tr');
         
         // 格式化日期
