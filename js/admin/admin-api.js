@@ -31,6 +31,8 @@ const adminAPIObject = {
             
             // 添加参数，确保返回商品分类映射关系
             url += '&include_category_mappings=true';
+            // 添加参数，确保返回所有商品（包括ID 1-18的商品）
+            url += '&include_all=true';
             
             console.log('发送商品请求，URL:', url);
             
@@ -51,8 +53,18 @@ const adminAPIObject = {
             const data = await response.json();
             console.log('成功获取商品数据:', data);
             
-            // 如果没有返回category_mappings，尝试获取并添加
+            // 确保返回的商品数据不重复
             if (data.products && Array.isArray(data.products)) {
+                // 使用Map按商品ID去重
+                const uniqueProductsMap = new Map();
+                data.products.forEach(product => {
+                    if (!uniqueProductsMap.has(product.product_id)) {
+                        uniqueProductsMap.set(product.product_id, product);
+                    }
+                });
+                // 更新为去重后的商品数组
+                data.products = Array.from(uniqueProductsMap.values());
+                
                 // 获取所有商品ID
                 const productIds = data.products.map(p => p.product_id);
                 
@@ -93,7 +105,8 @@ const adminAPIObject = {
             // 确保商品ID不重复
             const uniqueProductIds = [...new Set(productIds)];
             
-            const url = `${ADMIN_API_BASE_URL}/api/admin/product-category-mappings?product_ids=${uniqueProductIds.join(',')}`;
+            // 添加参数，确保返回所有商品的分类映射
+            const url = `${ADMIN_API_BASE_URL}/api/admin/product-category-mappings?product_ids=${uniqueProductIds.join(',')}&include_all=true`;
             console.log('发送商品分类映射请求，URL:', url);
             
             const response = await fetch(url, {

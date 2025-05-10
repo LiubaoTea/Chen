@@ -115,7 +115,10 @@ async function loadProducts(page, categoryId = '', searchQuery = '') {
         
         // 使用adminAPI获取商品数据
         // 确保将categoryId作为参数传递给API，以便后端可以根据分类ID筛选商品
+        // 添加参数，确保返回所有商品（包括ID 1-18的商品）
         const result = await adminAPI.getProducts(page, pageSize, categoryId, searchQuery);
+        
+        // 确保productsData是一个新数组，避免与之前的数据混合
         productsData = result.products || [];
         
         // 记录原始商品数量
@@ -140,8 +143,17 @@ async function loadProducts(page, categoryId = '', searchQuery = '') {
                 totalPages: totalPages,
                 totalItems: result.pagination.total || 'unknown'
             });
+            
+            // 保存分页信息到productsData，以便在updateProductsPagination中使用
+            productsData.pagination = result.pagination;
         } else {
             totalPages = 1;
+            // 如果没有分页信息，创建一个默认的
+            productsData.pagination = {
+                total: productsData.length,
+                currentPage: page,
+                pages: totalPages
+            };
         }
         
         // 如果有商品数据，获取商品分类映射
@@ -150,7 +162,7 @@ async function loadProducts(page, categoryId = '', searchQuery = '') {
             const productIds = [...new Set(productsData.map(p => p.product_id))];
             
             try {
-                // 获取商品分类映射
+                // 获取商品分类映射 - 只需要获取一次，避免重复请求
                 const mappings = await adminAPI.getProductCategoryMappings(productIds);
                 console.log('获取到的商品分类映射:', mappings);
                 
@@ -297,6 +309,7 @@ function updateProductsList() {
     console.log(`准备显示商品数量: ${productsData.length}`);
     
     // 确保商品数据不重复，使用Map按商品ID去重
+    // 这一步很重要，因为API可能返回重复的商品数据
     const uniqueProductsMap = new Map();
     productsData.forEach(product => {
         if (!uniqueProductsMap.has(product.product_id)) {
@@ -442,7 +455,9 @@ function updateProductsPagination() {
     // 更新商品总数显示
     const productCount = document.querySelector('.product-count');
     if (productCount) {
-        const totalItems = productsData.length;
+        // 使用API返回的总商品数，而不是当前页面的商品数
+        // 如果没有totalItems，则使用当前页面的商品数量
+        const totalItems = (productsData.pagination && productsData.pagination.total) || productsData.length;
         productCount.textContent = `共 ${totalItems} 个商品，当前显示第 ${currentPage} 页，共 ${totalPages} 页`;
     }
     

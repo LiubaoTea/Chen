@@ -19,12 +19,12 @@ CREATE TABLE users (
   username TEXT NOT NULL UNIQUE,
   password_hash TEXT NOT NULL,
   email TEXT NOT NULL UNIQUE,
-  
+
   -- 联系方式
-  phone_number VARCHAR(15) 
+  phone_number VARCHAR(15)
     CHECK (phone_number GLOB '+[0-9][0-9]*')
     UNIQUE,
-  
+
   -- 时间戳管理
   created_at INTEGER DEFAULT (CAST(strftime('%s','now') AS INTEGER)),
   last_login TIMESTAMP
@@ -33,7 +33,6 @@ CREATE TABLE users (
 -- 高频查询索引
 CREATE INDEX idx_users_phone ON users(phone_number);
 CREATE INDEX idx_users_email ON users(email);
-
 
 2、products：（商品数据表）
 
@@ -53,6 +52,11 @@ CREATE INDEX idx_product_name ON products ("name");
 
 -- 创建年份索引（可选，优化按年份筛选）
 CREATE INDEX idx_aging_years ON products ("aging_years");
+
+-- 添加状态列（默认值 'active' 表示上架，'inactive' 表示下架）
+ALTER TABLE products
+ADD COLUMN "status" TEXT NOT NULL DEFAULT 'active'
+CHECK ("status" IN ('active', 'inactive'));
 
 3、orders：（订单）
 -- 创建订单主表
@@ -118,7 +122,7 @@ CREATE TABLE user_addresses (
   postal_code TEXT,                                                    --  邮编（可选）
   is_default INTEGER DEFAULT 0 CHECK(is_default IN (0, 1)),            --  是否默认地址（0否，1是）
   created_at INTEGER DEFAULT (CAST(strftime('%s','now') AS INTEGER)),  -- 创建时间（Unix时间戳）
-  
+
   FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
 
@@ -134,7 +138,7 @@ CREATE TABLE user_settings (
   privacy_settings TEXT DEFAULT '{"show_email":0, "show_phone":0}',      --隐私设置（JSON格式）
   created_at INTEGER DEFAULT (CAST(strftime('%s','now') AS INTEGER)),    --创建时间
   updated_at INTEGER,                                                    --最后更新时间
-  
+
   FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
 
@@ -166,7 +170,7 @@ CREATE TABLE product_reviews (
   review_content TEXT,评价内容（可选）
   status TEXT DEFAULT 'pending' CHECK(status IN ('pending','approved','rejected')), --审核状态
   created_at INTEGER DEFAULT (CAST(strftime('%s','now') AS INTEGER)),               --评价时间
-  
+
   FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
   FOREIGN KEY (product_id) REFERENCES products(product_id) ON DELETE CASCADE
 );
@@ -182,14 +186,12 @@ CREATE TABLE shopping_sessions (
   status TEXT DEFAULT 'active' CHECK(status IN ('active','expired')),                --会话状态
   expires_at INTEGER DEFAULT (CAST(strftime('%s','now','+7 days') AS INTEGER)),      --过期时间（默认7天）
   created_at INTEGER DEFAULT (CAST(strftime('%s','now') AS INTEGER)),                --创建时间
-  
+
   FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
 
 CREATE INDEX idx_sessions_user ON shopping_sessions(user_id);
 CREATE INDEX idx_sessions_expiry ON shopping_sessions(expires_at);
-
-
 
 -- 删除旧表（操作前请备份数据）
 DROP TABLE IF EXISTS admins;
@@ -220,7 +222,7 @@ CREATE TABLE admin_settings (
   config_value TEXT,                 -- 配置值（支持JSON/字符串）
   data_type TEXT NOT NULL DEFAULT 'string' CHECK(data_type IN ('boolean', 'number', 'string', 'json')),
   updated_at INTEGER DEFAULT (CAST(strftime('%s','now') AS INTEGER)),
-  
+
   UNIQUE(module, config_key)         -- 防止重复配置项
 );
 
@@ -233,8 +235,8 @@ CREATE INDEX idx_settings_key ON admin_settings(config_key);
 CREATE TABLE admin_statistics (
   stat_id INTEGER PRIMARY KEY AUTOINCREMENT,
   stat_type TEXT NOT NULL CHECK(stat_type IN (
-    'sales_trend',    -- 销售趋势 
-    'product_dist',   -- 商品销售分布  
+    'sales_trend',    -- 销售趋势
+    'product_dist',   -- 商品销售分布
     'user_growth',     -- 用户增长
     'order_status',     -- 订单状态
     'top_products'       -- 热销商品
@@ -243,7 +245,7 @@ CREATE TABLE admin_statistics (
   start_date INTEGER NOT NULL,-- 统计开始时间（Unix时间戳）
   end_date INTEGER NOT NULL,-- 统计结束时间（Unix时间戳）
   stat_data TEXT NOT NULL,-- 统计结果数据（结构化存储）
-  generated_at INTEGER DEFAULT (CAST(strftime('%s','now') AS INTEGER)) 
+  generated_at INTEGER DEFAULT (CAST(strftime('%s','now') AS INTEGER))
 );
 
 -- 单独创建索引（不与 CREATE TABLE 语句合并）
@@ -263,4 +265,4 @@ CREATE TABLE product_category_mapping (
   FOREIGN KEY (category_id) REFERENCES product_categories(category_id) ON DELETE CASCADE
 );
 CREATE INDEX idx_mapping_product ON product_category_mapping(product_id);
-CREATE INDEX idx_mapping_category ON product_category_mapping(category_id);  
+CREATE INDEX idx_mapping_category ON product_category_mapping(category_id);
