@@ -81,8 +81,42 @@ function updateUsersList() {
         const row = document.createElement('tr');
         
         // 格式化日期
-        const registerDate = new Date(user.created_at * 1000).toLocaleDateString('zh-CN');
-        const lastLoginDate = user.last_login_at ? new Date(user.last_login_at * 1000).toLocaleDateString('zh-CN') : '从未登录';
+        let registerDate = '未知';
+        let lastLoginDate = '从未登录';
+        
+        try {
+            // 检查created_at是否存在且为有效值
+            if (user.created_at) {
+                // 尝试将时间戳转换为日期
+                const date = new Date(user.created_at * 1000);
+                if (!isNaN(date.getTime())) {
+                    registerDate = date.toLocaleDateString('zh-CN');
+                } else {
+                    // 如果不是时间戳，尝试直接解析日期字符串
+                    const directDate = new Date(user.created_at);
+                    if (!isNaN(directDate.getTime())) {
+                        registerDate = directDate.toLocaleDateString('zh-CN');
+                    }
+                }
+            }
+            
+            // 检查last_login_at是否存在且为有效值
+            if (user.last_login_at) {
+                // 尝试将时间戳转换为日期
+                const date = new Date(user.last_login_at * 1000);
+                if (!isNaN(date.getTime())) {
+                    lastLoginDate = date.toLocaleDateString('zh-CN');
+                } else {
+                    // 如果不是时间戳，尝试直接解析日期字符串
+                    const directDate = new Date(user.last_login_at);
+                    if (!isNaN(directDate.getTime())) {
+                        lastLoginDate = directDate.toLocaleDateString('zh-CN');
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('日期格式化错误:', error);
+        }
         
         // 用户状态
         const statusBadge = user.status === 'active' ? 

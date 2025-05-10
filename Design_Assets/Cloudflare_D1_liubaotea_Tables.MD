@@ -5,34 +5,34 @@ D1数据表的ID：440ba7f7-c29c-406c-95ba-ebb2b6aa98c
 
 每个表包含的属性如下：
 
+---
+
 1、users （用户信息表）
 
+-- 用户核心信息表
 CREATE TABLE users (
-  -- 核心用户信息
-  user_id INTEGER PRIMARY KEY
+  ----------------------------------------------------------------------------
+  "user_id" INTEGER PRIMARY KEY                                              -- 用户ID（6位数字主键，排除数字4）
     CHECK (
-      -- 强制 6 位数字
-      user_id BETWEEN 100000 AND 999999
-      -- 所有数字不包含 4，且首位非 0
-      AND CAST(user_id AS TEXT) GLOB '[1-35-9][0-35-9][0-35-9][0-35-9][0-35-9][0-35-9]'
+      user_id BETWEEN 100000 AND 999999                                      -- 范围约束：100000~999999
+      AND CAST(user_id AS TEXT) GLOB '[1-35-9][0-35-9][0-35-9][0-35-9][0-35-9][0-35-9]'  -- 正则约束：首位非0且不含4
     ),
-  username TEXT NOT NULL UNIQUE,
-  password_hash TEXT NOT NULL,
-  email TEXT NOT NULL UNIQUE,
-
-  -- 联系方式
-  phone_number VARCHAR(15)
-    CHECK (phone_number GLOB '+[0-9][0-9]*')
-    UNIQUE,
-
-  -- 时间戳管理
-  created_at INTEGER DEFAULT (CAST(strftime('%s','now') AS INTEGER)),
-  last_login TIMESTAMP
+  "username" TEXT NOT NULL UNIQUE,                                           -- 用户名（唯一且必填）
+  "password_hash" TEXT NOT NULL,                                             -- 密码哈希值（必填，加密存储）
+  "email" TEXT NOT NULL UNIQUE,                                              -- 电子邮箱（唯一且必填）
+  "phone_number" VARCHAR(15)                                                 -- 国际电话号码（格式：+国家码+号码）
+    CHECK (phone_number GLOB '+[0-9][0-9]*')                                 -- 格式约束：以+开头且至少两位国家码
+    UNIQUE,                                                                  -- 唯一性约束
+  "created_at" INTEGER DEFAULT (CAST(strftime('%s','now') AS INTEGER)),      -- 创建时间（Unix时间戳，默认当前时间）
+  "last_login" TIMESTAMP                                                     -- 最后登录时间（标准时间格式）
 );
 
--- 高频查询索引
-CREATE INDEX idx_users_phone ON users(phone_number);
-CREATE INDEX idx_users_email ON users(email);
+------------------------------------------
+-- 高频查询字段索引
+------------------------------------------
+CREATE INDEX "idx_users_phone" ON users ("phone_number");      -- 电话号码索引（优化查询性能）
+CREATE INDEX "idx_users_email" ON users ("email");             -- 邮箱索引（优化唯一性校验）
+CREATE INDEX "idx_last_login" ON users ("last_login");         -- 最后登录时间索引（新增优化）
 
 2、products：（商品数据表）
 
@@ -264,89 +264,88 @@ CREATE TABLE product_category_mapping (
 CREATE INDEX idx_mapping_product ON product_category_mapping(product_id);
 CREATE INDEX idx_mapping_category ON product_category_mapping(category_id);
 
-
 -- 插入根分类（全部产品）
 INSERT INTO product_category_mapping (product_id, name, category_id, category_name)
-SELECT 
-    p.product_id, 
+SELECT
+    p.product_id,
     p.name AS product_name,  -- 从 products 表获取产品名称
-    1 AS category_id, 
+    1 AS category_id,
     c.category_name          -- 从 product_categories 表获取分类名称
 FROM products p
-CROSS JOIN product_categories c 
+CROSS JOIN product_categories c
 WHERE c.category_id = 1;     -- 根分类（全部产品）的 category_id=1
 -- 步骤1：插入传统系列分类
 INSERT INTO product_category_mapping (product_id, name, category_id, category_name)
-SELECT 
-    p.product_id, 
-    p.name, 
-    2 AS category_id, 
+SELECT
+    p.product_id,
+    p.name,
+    2 AS category_id,
     (SELECT category_name FROM product_categories WHERE category_id=2) AS category_name
 FROM products p
 WHERE p.name LIKE '%传统%';
 
 -- 步骤2：插入季节特供分类
 INSERT INTO product_category_mapping (product_id, name, category_id, category_name)
-SELECT 
-    p.product_id, 
-    p.name, 
-    3 AS category_id, 
+SELECT
+    p.product_id,
+    p.name,
+    3 AS category_id,
     (SELECT category_name FROM product_categories WHERE category_id=3) AS category_name
 FROM products p
-WHERE 
-    p.name LIKE '%春茶%' OR 
-    p.name LIKE '%秋茶%' OR 
-    p.name LIKE '%夏茶%' OR 
+WHERE
+    p.name LIKE '%春茶%' OR
+    p.name LIKE '%秋茶%' OR
+    p.name LIKE '%夏茶%' OR
     p.name LIKE '%冬茶%';
 
 -- 步骤3：插入限量版分类
 -- 限量版分类（特惠/促销）
 INSERT INTO product_category_mapping (product_id, name, category_id, category_name)
-SELECT 
-    p.product_id, 
-    p.name, 
-    4 AS category_id, 
+SELECT
+    p.product_id,
+    p.name,
+    4 AS category_id,
     (SELECT category_name FROM product_categories WHERE category_id=4) AS category_name
 FROM products p
-WHERE 
-    p.name LIKE '%特惠%' OR 
+WHERE
+    p.name LIKE '%特惠%' OR
     p.name LIKE '%促销%';
 
 -- 步骤4：插入礼盒装分类
 INSERT INTO product_category_mapping (product_id, name, category_id, category_name)
-SELECT 
-    p.product_id, 
-    p.name, 
-    5 AS category_id, 
+SELECT
+    p.product_id,
+    p.name,
+    5 AS category_id,
     (SELECT category_name FROM product_categories WHERE category_id=5) AS category_name
 FROM products p
 WHERE p.name LIKE '%礼盒%';
 
 -- 步骤5：插入社茶分类
 INSERT INTO product_category_mapping (product_id, name, category_id, category_name)
-SELECT 
-    p.product_id, 
-    p.name, 
-    17 AS category_id, 
+SELECT
+    p.product_id,
+    p.name,
+    17 AS category_id,
     (SELECT category_name FROM product_categories WHERE category_id=17) AS category_name
 FROM products p
 WHERE p.name LIKE '%社%';
 
 -- 步骤6：插入清明茶分类
 INSERT INTO product_category_mapping (product_id, name, category_id, category_name)
-SELECT 
-    p.product_id, 
-    p.name, 
-    18 AS category_id, 
+SELECT
+    p.product_id,
+    p.name,
+    18 AS category_id,
     (SELECT category_name FROM product_categories WHERE category_id=18) AS category_name
 FROM products p
 WHERE p.name LIKE '%清明%';
 
 -- 步骤7：插入陈化年份分类
 INSERT INTO product_category_mapping (product_id, name, category_id, category_name)
-SELECT 
-    p.product_id, 
-    p.name, 
+SELECT
+    p.product_id,
+    p.name,
     CASE
         WHEN aging_years = 1 THEN 6
         WHEN aging_years = 2 THEN 7
@@ -376,5 +375,3 @@ JOIN product_categories c ON c.category_id = CASE
     WHEN aging_years > 10 THEN 16
 END
 WHERE p.aging_years > 0;
-
-

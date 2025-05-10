@@ -88,7 +88,7 @@ function updateOrdersList() {
             <td>${order.order_id}</td>
             <td>${order.username}</td>
             <td>¥${order.total_amount.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-            <td>${order.items_count} 件商品</td>
+            <td>${order.items_count || order.item_count || 0} 件商品</td>
             <td>${statusBadge}</td>
             <td>${orderDate}</td>
             <td>

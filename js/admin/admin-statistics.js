@@ -144,8 +144,18 @@ function renderProductSalesChart(data) {
     const ctx = document.getElementById('productSalesChart').getContext('2d');
     
     // 如果图表已存在，销毁它
-    if (window.productSalesChart) {
-        window.productSalesChart.destroy();
+    try {
+        if (window.productSalesChart) {
+            if (typeof window.productSalesChart.destroy === 'function') {
+                window.productSalesChart.destroy();
+            } else {
+                // 如果destroy不是函数，则重置为null
+                window.productSalesChart = null;
+            }
+        }
+    } catch (error) {
+        console.error('销毁商品销售占比图表时出错:', error);
+        window.productSalesChart = null;
     }
     
     // 创建新图表
@@ -206,8 +216,18 @@ function renderUserGrowthChart(data) {
     const ctx = document.getElementById('userGrowthChart').getContext('2d');
     
     // 如果图表已存在，销毁它
-    if (window.userGrowthChart) {
-        window.userGrowthChart.destroy();
+    try {
+        if (window.userGrowthChart) {
+            if (typeof window.userGrowthChart.destroy === 'function') {
+                window.userGrowthChart.destroy();
+            } else {
+                // 如果destroy不是函数，则重置为null
+                window.userGrowthChart = null;
+            }
+        }
+    } catch (error) {
+        console.error('销毁用户增长趋势图表时出错:', error);
+        window.userGrowthChart = null;
     }
     
     // 创建新图表
@@ -243,8 +263,18 @@ function renderOrderStatusChart(data) {
     const ctx = document.getElementById('orderStatusChart').getContext('2d');
     
     // 如果图表已存在，销毁它
-    if (window.orderStatusChart) {
-        window.orderStatusChart.destroy();
+    try {
+        if (window.orderStatusChart) {
+            if (typeof window.orderStatusChart.destroy === 'function') {
+                window.orderStatusChart.destroy();
+            } else {
+                // 如果destroy不是函数，则重置为null
+                window.orderStatusChart = null;
+            }
+        }
+    } catch (error) {
+        console.error('销毁订单状态分布图表时出错:', error);
+        window.orderStatusChart = null;
     }
     
     // 创建新图表

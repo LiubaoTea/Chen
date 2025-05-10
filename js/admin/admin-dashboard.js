@@ -106,11 +106,15 @@ function updateTopProducts(products) {
     
     products.forEach(product => {
         const row = document.createElement('tr');
+        // 确保sales_count和stock属性存在，如果不存在则使用默认值
+        const salesCount = product.sales_count || product.sold_count || 0;
+        const stockCount = product.stock || product.inventory || 0;
+        
         row.innerHTML = `
             <td>${product.name}</td>
             <td>¥${product.price.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-            <td>${product.sales_count}</td>
-            <td>${product.stock}</td>
+            <td>${salesCount}</td>
+            <td>${stockCount}</td>
         `;
         
         topProductsList.appendChild(row);
@@ -164,6 +168,14 @@ function renderSalesChart(data) {
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            layout: {
+                padding: {
+                    left: 10,
+                    right: 25,
+                    top: 25,
+                    bottom: 25
+                }
+            },
             scales: {
                 x: {
                     grid: {
@@ -247,6 +259,15 @@ function renderCategoryChart(data) {
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            cutout: '70%',
+            layout: {
+                padding: {
+                    left: 10,
+                    right: 25,
+                    top: 25,
+                    bottom: 25
+                }
+            },
             plugins: {
                 legend: {
                     position: 'bottom',

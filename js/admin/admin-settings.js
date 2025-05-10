@@ -128,7 +128,7 @@ async function saveAllSettings() {
         };
         
         // 保存设置到服务器
-        await adminAPI.saveSystemSettings(settings);
+        await adminAPI.updateSystemSettings(settings);
         
         showSuccessToast('系统设置保存成功');
     } catch (error) {

@@ -647,6 +647,95 @@ const adminAPIObject = {
             console.error('更新系统设置出错:', error);
             throw error;
         }
+    },
+    
+    // 获取用户详情
+    getUserDetails: async (userId) => {
+        try {
+            const url = `${ADMIN_API_BASE_URL}/api/admin/users/${userId}`;
+            console.log('发送用户详情请求，URL:', url);
+            
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    ...adminAuth.getHeaders(),
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('用户详情API响应错误:', response.status, errorText);
+                throw new Error(`获取用户详情失败，HTTP状态码: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            console.log('成功获取用户详情:', data);
+            return data;
+        } catch (error) {
+            console.error('获取用户详情出错:', error);
+            throw error;
+        }
+    },
+    
+    // 更新用户状态
+    updateUserStatus: async (userId, status) => {
+        try {
+            const url = `${ADMIN_API_BASE_URL}/api/admin/users/${userId}/status`;
+            console.log('发送更新用户状态请求，URL:', url);
+            
+            const response = await fetch(url, {
+                method: 'PUT',
+                headers: {
+                    ...adminAuth.getHeaders(),
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ status })
+            });
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('更新用户状态API响应错误:', response.status, errorText);
+                throw new Error(`更新用户状态失败，HTTP状态码: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            console.log('成功更新用户状态:', data);
+            return data;
+        } catch (error) {
+            console.error('更新用户状态出错:', error);
+            throw error;
+        }
+    },
+    
+    // 保存系统设置
+    saveSystemSettings: async (settings) => {
+        try {
+            const url = `${ADMIN_API_BASE_URL}/api/admin/settings`;
+            console.log('发送保存系统设置请求，URL:', url);
+            
+            const response = await fetch(url, {
+                method: 'PUT',
+                headers: {
+                    ...adminAuth.getHeaders(),
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(settings)
+            });
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('保存系统设置API响应错误:', response.status, errorText);
+                throw new Error(`保存系统设置失败，HTTP状态码: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            console.log('成功保存系统设置:', data);
+            return data;
+        } catch (error) {
+            console.error('保存系统设置出错:', error);
+            throw error;
+        }
     }
 };
 
