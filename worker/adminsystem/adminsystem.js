@@ -494,6 +494,47 @@ const handleAdminAPI = async (request, env) => {
         }
     }
     
+    // 获取分类占比数据
+    if (path === '/api/admin/categories/distribution' && request.method === 'GET') {
+        try {
+            // 获取商品分类分布数据
+            const { results: categoryData } = await env.DB.prepare(
+                `SELECT 
+                    pc.category_id,
+                    pc.category_name,
+                    COUNT(pcm.product_id) as product_count
+                FROM product_categories pc
+                LEFT JOIN product_category_mapping pcm ON pc.category_id = pcm.category_id
+                GROUP BY pc.category_id
+                ORDER BY product_count DESC`
+            ).all();
+            
+            // 计算总商品数（用于计算百分比）
+            const totalProducts = await env.DB.prepare(
+                'SELECT COUNT(DISTINCT product_id) as count FROM product_category_mapping'
+            ).first();
+            
+            // 格式化响应数据
+            const formattedData = categoryData.map(category => ({
+                id: category.category_id,
+                name: category.category_name,
+                count: category.product_count,
+                percentage: totalProducts.count > 0 ? 
+                    Math.round((category.product_count / totalProducts.count) * 100) : 0
+            }));
+            
+            return new Response(JSON.stringify(formattedData), {
+                status: 200,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '获取分类占比数据失败', details: error.message }), {
+                status: 500,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        }
+    }
+    
     //==========================================================================
     //                       商品管理API
     //==========================================================================
@@ -503,20 +544,20 @@ const handleAdminAPI = async (request, env) => {
         try {
             // 获取分页参数
             const page = parseInt(url.searchParams.get('page') || '1');
-            const limit = parseInt(url.searchParams.get('limit') || '10');
-            const offset = (page - 1) * limit;
+            const pageSize = parseInt(url.searchParams.get('pageSize') || url.searchParams.get('limit') || '10');
+            const offset = (page - 1) * pageSize;
             
             // 获取筛选参数
-            const category = url.searchParams.get('category');
+            const categoryId = url.searchParams.get('categoryId') || url.searchParams.get('category');
             const search = url.searchParams.get('search');
             
             // 构建查询条件
             let whereClause = '';
             const params = [];
             
-            if (category) {
+            if (categoryId) {
                 whereClause += ' WHERE EXISTS (SELECT 1 FROM product_category_mapping pcm WHERE pcm.product_id = p.product_id AND pcm.category_id = ?)';
-                params.push(category);
+                params.push(categoryId);
             }
             
             if (search) {
@@ -525,30 +566,28 @@ const handleAdminAPI = async (request, env) => {
                 params.push(`%${search}%`, `%${search}%`);
             }
             
-            // 获取商品总数
+            // 简化商品总数查询，直接从products表计数，避免JOIN操作带来的重复
             const countQuery = `
-                SELECT COUNT(DISTINCT p.product_id) as total 
+                SELECT COUNT(*) as total 
                 FROM products p
-                LEFT JOIN product_category_mapping pcm ON p.product_id = pcm.product_id
-                LEFT JOIN product_categories c ON pcm.category_id = c.category_id
                 ${whereClause}
             `;
             const totalResult = await env.DB.prepare(countQuery).bind(...params).first();
             const total = totalResult?.total || 0;
             
-            // 获取商品列表
+            // 获取商品列表，使用DISTINCT确保每个商品只出现一次
             const productsQuery = `
-                SELECT p.*, c.category_name 
+                SELECT DISTINCT p.* 
                 FROM products p
                 LEFT JOIN product_category_mapping pcm ON p.product_id = pcm.product_id
                 LEFT JOIN product_categories c ON pcm.category_id = c.category_id
                 ${whereClause}
-                ORDER BY p.created_at DESC
+                ORDER BY p.product_id ASC
                 LIMIT ? OFFSET ?
             `;
             
             const { results: products } = await env.DB.prepare(productsQuery)
-                .bind(...params, limit, offset)
+                .bind(...params, pageSize, offset)
                 .all();
             
             return new Response(JSON.stringify({
@@ -556,8 +595,8 @@ const handleAdminAPI = async (request, env) => {
                 pagination: {
                     total,
                     page,
-                    limit,
-                    pages: Math.ceil(total / limit)
+                    pageSize,
+                    pages: Math.ceil(total / pageSize)
                 }
             }), {
                 status: 200,
@@ -1400,7 +1439,7 @@ const handleAdminAPI = async (request, env) => {
             const params = [];
             
             if (search) {
-                whereClause = ' WHERE username LIKE ? OR email LIKE ? OR phone LIKE ?';
+                whereClause = ' WHERE username LIKE ? OR email LIKE ? OR phone_number LIKE ?';
                 params.push(`%${search}%`, `%${search}%`, `%${search}%`);
             }
             
@@ -1411,7 +1450,7 @@ const handleAdminAPI = async (request, env) => {
             
             // 获取用户列表（不返回密码哈希）
             const usersQuery = `
-                SELECT user_id, username, email, phone, address, created_at, last_login, status 
+                SELECT user_id, username, email, phone_number, created_at, last_login 
                 FROM users
                 ${whereClause}
                 ORDER BY ${actualSortBy} ${actualSortOrder}
@@ -1466,7 +1505,7 @@ const handleAdminAPI = async (request, env) => {
             
             // 获取用户基本信息（不返回密码哈希）
             const user = await env.DB.prepare(`
-                SELECT user_id, username, email, phone, address, created_at, last_login, status 
+                SELECT user_id, username, email, phone_number, created_at, last_login 
                 FROM users
                 WHERE user_id = ?
             `).bind(userId).first();
@@ -1827,14 +1866,14 @@ const handleAdminAPI = async (request, env) => {
             }
             
             // 获取评价总数
-            const countQuery = `SELECT COUNT(*) as total FROM reviews r${whereClause}`;
+            const countQuery = `SELECT COUNT(*) as total FROM product_reviews r${whereClause}`;
             const totalResult = await env.DB.prepare(countQuery).bind(...params).first();
             const total = totalResult?.total || 0;
             
             // 获取评价列表
             const reviewsQuery = `
-                SELECT r.*, p.product_name, u.username
-                FROM reviews r
+                SELECT r.*, p.name as product_name, u.username
+                FROM product_reviews r
                 LEFT JOIN products p ON r.product_id = p.product_id
                 LEFT JOIN users u ON r.user_id = u.user_id
                 ${whereClause}
@@ -1873,8 +1912,8 @@ const handleAdminAPI = async (request, env) => {
             
             // 获取评价详情
             const review = await env.DB.prepare(`
-                SELECT r.*, p.product_name, u.username, u.email
-                FROM reviews r
+                SELECT r.*, p.name as product_name, u.username, u.email
+                FROM product_reviews r
                 LEFT JOIN products p ON r.product_id = p.product_id
                 LEFT JOIN users u ON r.user_id = u.user_id
                 WHERE r.review_id = ?
@@ -2262,7 +2301,7 @@ const handleAdminAPI = async (request, env) => {
             
             // 获取所有系统配置
             const { results: settings } = await env.DB.prepare(
-                'SELECT setting_key, setting_value, description FROM system_settings'
+                'SELECT config_key as setting_key, config_value as setting_value, data_type FROM admin_settings'
             ).all();
             
             // 将设置转换为键值对对象
@@ -2317,19 +2356,19 @@ const handleAdminAPI = async (request, env) => {
                 
                 // 检查设置是否存在
                 const existingSetting = await env.DB.prepare(
-                    'SELECT setting_key FROM system_settings WHERE setting_key = ?'
+                    'SELECT config_key FROM admin_settings WHERE config_key = ?'
                 ).bind(key).first();
                 
                 if (existingSetting) {
                     // 更新现有设置
                     return env.DB.prepare(
-                        'UPDATE system_settings SET setting_value = ?, updated_at = CURRENT_TIMESTAMP WHERE setting_key = ?'
+                        'UPDATE admin_settings SET config_value = ?, updated_at = CURRENT_TIMESTAMP WHERE config_key = ?'
                     ).bind(valueStr, key).run();
                 } else {
                     // 创建新设置
                     return env.DB.prepare(
-                        'INSERT INTO system_settings (setting_key, setting_value, description) VALUES (?, ?, ?)'
-                    ).bind(key, valueStr, '').run();
+                        'INSERT INTO admin_settings (module, config_key, config_value, data_type) VALUES (?, ?, ?, ?)'
+                    ).bind('site', key, valueStr, typeof value === 'object' ? 'json' : typeof value).run();
                 }
             });
             

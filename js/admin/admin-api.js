@@ -280,6 +280,56 @@ const adminAPIObject = {
         }
     },
     
+    // 获取商品销售分布数据（使用分类占比数据作为替代）
+    getProductSalesDistribution: async (startDate, endDate) => {
+        try {
+            // 构建API URL，添加日期参数
+            let url = `${ADMIN_API_BASE_URL}/api/admin/products/sales-distribution`;
+            if (startDate) url += `?startDate=${startDate}`;
+            if (endDate) url += `${startDate ? '&' : '?'}endDate=${endDate}`;
+            
+            console.log('发送商品销售分布请求，URL:', url);
+            
+            try {
+                // 尝试调用专门的销售分布API
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        ...adminAuth.getHeaders(),
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('成功获取商品销售分布数据:', data);
+                    return data;
+                }
+                
+                // 如果API返回错误，使用分类占比数据作为替代
+                console.warn('商品销售分布API不可用，使用分类占比数据作为替代');
+            } catch (apiError) {
+                console.warn('商品销售分布API调用失败，使用分类占比数据作为替代:', apiError);
+            }
+            
+            // 使用分类占比数据作为替代
+            const categoryData = await adminAPI.getCategoryDistribution();
+            
+            // 转换数据格式以适应销售分布图表
+            const salesDistributionData = categoryData.map(category => ({
+                name: category.category_name || category.name || '未分类',
+                value: category.product_count || category.count || 0,
+                percentage: category.percentage || 0
+            }));
+            
+            console.log('成功获取商品销售分布数据(使用分类占比替代):', salesDistributionData);
+            return salesDistributionData;
+        } catch (error) {
+            console.error('获取商品销售分布数据出错:', error);
+            throw error;
+        }
+    },
+    
     // 获取订单列表
     getOrders: async (page = 1, pageSize = 10, status = '', searchQuery = '') => {
         try {

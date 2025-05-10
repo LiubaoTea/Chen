@@ -407,12 +407,282 @@ async function loadDashboardData() {
         console.log('仪表盘统计数据:', statsData);
         
         // 更新仪表盘UI
-        // 这里简单实现，完整实现应该在admin-dashboard.js中
-        const dashboardEl = document.getElementById('dashboard');
-        if (dashboardEl) {
-            dashboardEl.innerHTML = '<div class="alert alert-info">仪表盘数据已加载</div>';
+        updateDashboardStats(statsData);
+        
+        // 获取最近订单
+        try {
+            const recentOrders = await adminAPI.getRecentOrders(5);
+            updateRecentOrders(recentOrders);
+        } catch (orderError) {
+            console.error('获取最近订单失败:', orderError);
+        }
+        
+        // 获取热销商品
+        try {
+            const topProducts = await adminAPI.getTopProducts(5);
+            updateTopProducts(topProducts);
+        } catch (productError) {
+            console.error('获取热销商品失败:', productError);
+        }
+        
+        // 获取销售趋势数据
+        try {
+            const salesTrend = await adminAPI.getSalesTrend('month');
+            renderSalesChart(salesTrend);
+        } catch (trendError) {
+            console.error('获取销售趋势数据失败:', trendError);
+        }
+        
+        // 获取分类占比数据
+        try {
+            const categoryDistribution = await adminAPI.getCategoryDistribution();
+            renderCategoryChart(categoryDistribution);
+        } catch (categoryError) {
+            console.error('获取分类占比数据失败:', categoryError);
         }
     } catch (error) {
         console.error('加载仪表盘数据失败:', error);
     }
+}
+
+// 更新仪表盘统计数据
+function updateDashboardStats(data) {
+    // 更新总订单数
+    const totalOrdersEl = document.getElementById('totalOrders');
+    if (totalOrdersEl) totalOrdersEl.textContent = data.totalOrders.toLocaleString();
+    
+    // 更新总销售额
+    const totalSalesEl = document.getElementById('totalSales');
+    if (totalSalesEl) totalSalesEl.textContent = `¥${data.totalSales.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    
+    // 更新用户总数
+    const totalUsersEl = document.getElementById('totalUsers');
+    if (totalUsersEl) totalUsersEl.textContent = data.totalUsers.toLocaleString();
+    
+    // 更新商品总数
+    const totalProductsEl = document.getElementById('totalProducts');
+    if (totalProductsEl) totalProductsEl.textContent = data.totalProducts.toLocaleString();
+}
+
+// 更新最近订单列表
+function updateRecentOrders(orders) {
+    const recentOrdersList = document.getElementById('recentOrdersList');
+    if (!recentOrdersList) return;
+    
+    recentOrdersList.innerHTML = '';
+    
+    if (orders.length === 0) {
+        recentOrdersList.innerHTML = '<tr><td colspan="5" class="text-center">暂无订单数据</td></tr>';
+        return;
+    }
+    
+    orders.forEach(order => {
+        // 格式化日期
+        const orderDate = new Date(order.created_at * 1000).toLocaleDateString('zh-CN');
+        
+        // 创建状态标签
+        const statusClass = getOrderStatusClass(order.status);
+        const statusText = getOrderStatusText(order.status);
+        
+        // 创建行
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${order.order_id.substring(0, 8)}...</td>
+            <td>${order.username || '未知用户'}</td>
+            <td>¥${order.total_amount.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+            <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+            <td>${orderDate}</td>
+        `;
+        
+        recentOrdersList.appendChild(row);
+    });
+}
+
+// 获取订单状态样式类
+function getOrderStatusClass(status) {
+    switch (status) {
+        case 'pending': return 'status-pending';
+        case 'paid': return 'status-paid';
+        case 'shipped': return 'status-shipped';
+        case 'delivered': return 'status-delivered';
+        case 'cancelled': return 'status-cancelled';
+        default: return 'status-pending';
+    }
+}
+
+// 获取订单状态文本
+function getOrderStatusText(status) {
+    switch (status) {
+        case 'pending': return '待付款';
+        case 'paid': return '已付款';
+        case 'shipped': return '已发货';
+        case 'delivered': return '已送达';
+        case 'cancelled': return '已取消';
+        default: return '待处理';
+    }
+}
+
+// 更新热销商品列表
+function updateTopProducts(products) {
+    const topProductsList = document.getElementById('topProductsList');
+    if (!topProductsList) return;
+    
+    topProductsList.innerHTML = '';
+    
+    if (products.length === 0) {
+        topProductsList.innerHTML = '<tr><td colspan="3" class="text-center">暂无商品数据</td></tr>';
+        return;
+    }
+    
+    products.forEach(product => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>
+                <div class="product-info">
+                    <div class="product-name">${product.name}</div>
+                    <div class="product-id">ID: ${product.product_id}</div>
+                </div>
+            </td>
+            <td>¥${product.price.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+            <td>${product.sales_count || 0}</td>
+        `;
+        
+        topProductsList.appendChild(row);
+    });
+}
+
+// 渲染销售趋势图表
+function renderSalesChart(data) {
+    const salesChartCanvas = document.getElementById('salesChart');
+    if (!salesChartCanvas) return;
+    
+    // 检查是否已存在Chart实例
+    if (window.salesChart) {
+        window.salesChart.destroy();
+    }
+    
+    // 准备图表数据
+    const labels = data.map(item => item.time_period);
+    const salesData = data.map(item => item.sales_amount);
+    const ordersData = data.map(item => item.orders_count);
+    
+    // 创建图表
+    window.salesChart = new Chart(salesChartCanvas, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: '销售额',
+                    data: salesData,
+                    borderColor: '#4e73df',
+                    backgroundColor: 'rgba(78, 115, 223, 0.05)',
+                    pointRadius: 3,
+                    pointBackgroundColor: '#4e73df',
+                    pointBorderColor: '#4e73df',
+                    pointHoverRadius: 5,
+                    pointHoverBackgroundColor: '#4e73df',
+                    pointHoverBorderColor: '#4e73df',
+                    pointHitRadius: 10,
+                    pointBorderWidth: 2,
+                    fill: true
+                },
+                {
+                    label: '订单数',
+                    data: ordersData,
+                    borderColor: '#1cc88a',
+                    backgroundColor: 'rgba(28, 200, 138, 0.05)',
+                    pointRadius: 3,
+                    pointBackgroundColor: '#1cc88a',
+                    pointBorderColor: '#1cc88a',
+                    pointHoverRadius: 5,
+                    pointHoverBackgroundColor: '#1cc88a',
+                    pointHoverBorderColor: '#1cc88a',
+                    pointHitRadius: 10,
+                    pointBorderWidth: 2,
+                    fill: true
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    grid: {
+                        display: false
+                    }
+                },
+                y: {
+                    ticks: {
+                        callback: function(value) {
+                            return '¥' + value.toLocaleString();
+                        }
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top'
+                }
+            }
+        }
+    });
+}
+
+// 渲染分类占比图表
+function renderCategoryChart(data) {
+    const categoryChartCanvas = document.getElementById('categoryChart');
+    if (!categoryChartCanvas) return;
+    
+    // 检查是否已存在Chart实例
+    if (window.categoryChart) {
+        window.categoryChart.destroy();
+    }
+    
+    // 准备图表数据
+    const labels = data.map(item => item.name);
+    const values = data.map(item => item.count);
+    const backgroundColors = [
+        '#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b',
+        '#5a5c69', '#858796', '#6610f2', '#fd7e14', '#20c9a6'
+    ];
+    
+    // 创建图表
+    window.categoryChart = new Chart(categoryChartCanvas, {
+        type: 'doughnut',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: values,
+                backgroundColor: backgroundColors.slice(0, data.length),
+                hoverBackgroundColor: backgroundColors.slice(0, data.length),
+                hoverBorderColor: 'rgba(234, 236, 244, 1)'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'right'
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.raw || 0;
+                            const dataset = context.dataset;
+                            const total = dataset.data.reduce((acc, data) => acc + data, 0);
+                            const percentage = Math.round((value / total) * 100);
+                            return `${label}: ${value} (${percentage}%)`;
+                        }
+                    }
+                }
+            },
+            cutout: '70%'
+        }
+    });
 }
