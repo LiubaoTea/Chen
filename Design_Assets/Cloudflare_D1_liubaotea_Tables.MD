@@ -36,6 +36,7 @@ CREATE INDEX idx_users_email ON users(email);
 
 2、products：（商品数据表）
 
+-- 创建新表（整合状态字段）
 CREATE TABLE products (
   "product_id" INTEGER PRIMARY KEY AUTOINCREMENT,                       -- 商品ID（自增主键）
   "name" TEXT NOT NULL,                                                 -- 商品名称（必填）
@@ -44,19 +45,15 @@ CREATE TABLE products (
   "aging_years" INTEGER NOT NULL DEFAULT 0,                             -- 陈化年份（默认0年）
   "price" REAL NOT NULL,                                                -- 商品价格（必须含小数点）
   "stock" INTEGER NOT NULL DEFAULT 0,                                   -- 库存数量（默认0）
-  "created_at" INTEGER DEFAULT (CAST(strftime('%s','now') AS INTEGER) ) -- 创建时间（Unix时间戳）
-);
+  "status" TEXT NOT NULL DEFAULT 'active'                               -- 商品状态（active=上架，inactive=下架）
+    CHECK (status IN ('active', 'inactive')),                           -- 状态约束
+  "created_at" INTEGER DEFAULT (CAST(strftime('%s','now') AS INTEGER)   -- 创建时间（Unix时间戳）
+));
 
--- 创建商品名称索引（加速搜索）
-CREATE INDEX idx_product_name ON products ("name");
-
--- 创建年份索引（可选，优化按年份筛选）
-CREATE INDEX idx_aging_years ON products ("aging_years");
-
--- 添加状态列（默认值 'active' 表示上架，'inactive' 表示下架）
-ALTER TABLE products
-ADD COLUMN "status" TEXT NOT NULL DEFAULT 'active'
-CHECK ("status" IN ('active', 'inactive'));
+-- 重建索引
+CREATE INDEX idx_product_name ON products ("name");         -- 商品名称索引
+CREATE INDEX idx_aging_years ON products ("aging_years");   -- 陈化年份索引
+CREATE INDEX idx_product_status ON products ("status");     -- 状态索引（新增优化）
 
 3、orders：（订单）
 -- 创建订单主表
@@ -266,3 +263,118 @@ CREATE TABLE product_category_mapping (
 );
 CREATE INDEX idx_mapping_product ON product_category_mapping(product_id);
 CREATE INDEX idx_mapping_category ON product_category_mapping(category_id);
+
+
+-- 插入根分类（全部产品）
+INSERT INTO product_category_mapping (product_id, name, category_id, category_name)
+SELECT 
+    p.product_id, 
+    p.name AS product_name,  -- 从 products 表获取产品名称
+    1 AS category_id, 
+    c.category_name          -- 从 product_categories 表获取分类名称
+FROM products p
+CROSS JOIN product_categories c 
+WHERE c.category_id = 1;     -- 根分类（全部产品）的 category_id=1
+-- 步骤1：插入传统系列分类
+INSERT INTO product_category_mapping (product_id, name, category_id, category_name)
+SELECT 
+    p.product_id, 
+    p.name, 
+    2 AS category_id, 
+    (SELECT category_name FROM product_categories WHERE category_id=2) AS category_name
+FROM products p
+WHERE p.name LIKE '%传统%';
+
+-- 步骤2：插入季节特供分类
+INSERT INTO product_category_mapping (product_id, name, category_id, category_name)
+SELECT 
+    p.product_id, 
+    p.name, 
+    3 AS category_id, 
+    (SELECT category_name FROM product_categories WHERE category_id=3) AS category_name
+FROM products p
+WHERE 
+    p.name LIKE '%春茶%' OR 
+    p.name LIKE '%秋茶%' OR 
+    p.name LIKE '%夏茶%' OR 
+    p.name LIKE '%冬茶%';
+
+-- 步骤3：插入限量版分类
+-- 限量版分类（特惠/促销）
+INSERT INTO product_category_mapping (product_id, name, category_id, category_name)
+SELECT 
+    p.product_id, 
+    p.name, 
+    4 AS category_id, 
+    (SELECT category_name FROM product_categories WHERE category_id=4) AS category_name
+FROM products p
+WHERE 
+    p.name LIKE '%特惠%' OR 
+    p.name LIKE '%促销%';
+
+-- 步骤4：插入礼盒装分类
+INSERT INTO product_category_mapping (product_id, name, category_id, category_name)
+SELECT 
+    p.product_id, 
+    p.name, 
+    5 AS category_id, 
+    (SELECT category_name FROM product_categories WHERE category_id=5) AS category_name
+FROM products p
+WHERE p.name LIKE '%礼盒%';
+
+-- 步骤5：插入社茶分类
+INSERT INTO product_category_mapping (product_id, name, category_id, category_name)
+SELECT 
+    p.product_id, 
+    p.name, 
+    17 AS category_id, 
+    (SELECT category_name FROM product_categories WHERE category_id=17) AS category_name
+FROM products p
+WHERE p.name LIKE '%社%';
+
+-- 步骤6：插入清明茶分类
+INSERT INTO product_category_mapping (product_id, name, category_id, category_name)
+SELECT 
+    p.product_id, 
+    p.name, 
+    18 AS category_id, 
+    (SELECT category_name FROM product_categories WHERE category_id=18) AS category_name
+FROM products p
+WHERE p.name LIKE '%清明%';
+
+-- 步骤7：插入陈化年份分类
+INSERT INTO product_category_mapping (product_id, name, category_id, category_name)
+SELECT 
+    p.product_id, 
+    p.name, 
+    CASE
+        WHEN aging_years = 1 THEN 6
+        WHEN aging_years = 2 THEN 7
+        WHEN aging_years = 3 THEN 8
+        WHEN aging_years = 4 THEN 9
+        WHEN aging_years = 5 THEN 10
+        WHEN aging_years = 6 THEN 11
+        WHEN aging_years = 7 THEN 12
+        WHEN aging_years = 8 THEN 13
+        WHEN aging_years = 9 THEN 14
+        WHEN aging_years = 10 THEN 15
+        WHEN aging_years > 10 THEN 16
+    END AS category_id,
+    c.category_name
+FROM products p
+JOIN product_categories c ON c.category_id = CASE
+    WHEN aging_years = 1 THEN 6
+    WHEN aging_years = 2 THEN 7
+    WHEN aging_years = 3 THEN 8
+    WHEN aging_years = 4 THEN 9
+    WHEN aging_years = 5 THEN 10
+    WHEN aging_years = 6 THEN 11
+    WHEN aging_years = 7 THEN 12
+    WHEN aging_years = 8 THEN 13
+    WHEN aging_years = 9 THEN 14
+    WHEN aging_years = 10 THEN 15
+    WHEN aging_years > 10 THEN 16
+END
+WHERE p.aging_years > 0;
+
+
