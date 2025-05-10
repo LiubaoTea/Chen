@@ -113,10 +113,9 @@ async function loadProducts(page, categoryId = '', searchQuery = '') {
             throw new Error('请先登录');
         }
         
-        // 重置pageSize为10
-        pageSize = 10;
-        
         // 使用adminAPI获取商品数据
+        // 确保将categoryId作为参数传递给API，以便后端可以根据分类ID筛选商品
+        // 添加参数，确保返回所有商品（包括ID 1-18的商品）
         const result = await adminAPI.getProducts(page, pageSize, categoryId, searchQuery);
         
         // 确保productsData是一个新数组，避免与之前的数据混合
@@ -127,28 +126,33 @@ async function loadProducts(page, categoryId = '', searchQuery = '') {
         
         // 正确处理分页信息
         if (result.pagination) {
-            // 使用后端返回的分页信息
-            totalPages = result.pagination.totalPages || Math.ceil(result.pagination.totalItems / pageSize);
-            currentPage = result.pagination.currentPage || page;
-            
+            // 如果后端返回了pages字段，使用它
+            if (result.pagination.pages) {
+                totalPages = result.pagination.pages;
+            }
+            // 否则，如果有total字段，计算总页数
+            else if (result.pagination.total) {
+                totalPages = Math.ceil(result.pagination.total / pageSize);
+            }
+            // 如果都没有，默认为1页
+            else {
+                totalPages = 1;
+            }
             console.log('分页信息:', {
-                currentPage: currentPage,
-                totalPages: totalPages,
-                totalItems: result.pagination.totalItems || productsData.length
-            });
-            
-            // 保存分页信息到productsData
-            productsData.pagination = {
-                currentPage: currentPage,
-                totalPages: totalPages,
-                totalItems: result.pagination.totalItems || productsData.length
-            };
-        } else {
-            totalPages = Math.ceil(productsData.length / pageSize);
-            productsData.pagination = {
                 currentPage: page,
                 totalPages: totalPages,
-                totalItems: productsData.length
+                totalItems: result.pagination.total || 'unknown'
+            });
+            
+            // 保存分页信息到productsData，以便在updateProductsPagination中使用
+            productsData.pagination = result.pagination;
+        } else {
+            totalPages = 1;
+            // 如果没有分页信息，创建一个默认的
+            productsData.pagination = {
+                total: productsData.length,
+                currentPage: page,
+                pages: totalPages
             };
         }
         
@@ -304,12 +308,21 @@ function updateProductsList() {
     
     console.log(`准备显示商品数量: ${productsData.length}`);
     
-    // 直接使用API返回的商品数据，因为已经在loadProducts中处理了去重
-    const products = productsData;
-    console.log(`显示商品数量: ${products.length}`);
+    // 确保商品数据不重复，使用Map按商品ID去重
+    // 这一步很重要，因为API可能返回重复的商品数据
+    const uniqueProductsMap = new Map();
+    productsData.forEach(product => {
+        if (!uniqueProductsMap.has(product.product_id)) {
+            uniqueProductsMap.set(product.product_id, product);
+        }
+    });
     
-    // 使用商品数据创建表格行
-    products.forEach(product => {
+    // 使用去重后的商品数据
+    const uniqueProducts = Array.from(uniqueProductsMap.values());
+    console.log(`去重后显示商品数量: ${uniqueProducts.length}`);
+    
+    // 使用去重后的商品数据创建表格行
+    uniqueProducts.forEach(product => {
         const row = document.createElement('tr');
         
         // 格式化日期
