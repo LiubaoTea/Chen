@@ -91,13 +91,18 @@ function setupStatisticsEventListeners() {
 
 // 渲染销售趋势图表
 function renderSalesTrendChart(data) {
-    const ctx = document.getElementById('salesTrendChart').getContext('2d');
+    const canvas = document.getElementById('salesTrendChart');
     
     // 检查图表元素是否存在
-    if (!ctx) {
+    if (!canvas) {
         console.error('销售趋势图表元素不存在');
         return;
     }
+    
+    // 设置图表容器高度，确保图表能够完全显示
+    canvas.parentNode.style.height = '400px';
+    
+    const ctx = canvas.getContext('2d');
     
     // 检查数据格式是否正确
     if (!data || !data.labels || !Array.isArray(data.labels)) {
@@ -194,13 +199,18 @@ function renderSalesTrendChart(data) {
 
 // 渲染商品销售占比图表
 function renderProductSalesChart(data) {
-    const ctx = document.getElementById('productSalesChart').getContext('2d');
+    const canvas = document.getElementById('productSalesChart');
     
     // 检查图表元素是否存在
-    if (!ctx) {
+    if (!canvas) {
         console.error('商品销售占比图表元素不存在');
         return;
     }
+    
+    // 设置图表容器高度，确保图表能够完全显示
+    canvas.parentNode.style.height = '400px';
+    
+    const ctx = canvas.getContext('2d');
     
     // 检查数据格式是否正确
     if (!data || !Array.isArray(data)) {
@@ -289,7 +299,18 @@ function renderProductSalesChart(data) {
 
 // 渲染用户增长趋势图表
 function renderUserGrowthChart(data) {
-    const ctx = document.getElementById('userGrowthChart').getContext('2d');
+    const canvas = document.getElementById('userGrowthChart');
+    
+    // 检查图表元素是否存在
+    if (!canvas) {
+        console.error('用户增长趋势图表元素不存在');
+        return;
+    }
+    
+    // 设置图表容器高度，确保图表能够完全显示
+    canvas.parentNode.style.height = '400px';
+    
+    const ctx = canvas.getContext('2d');
     
     // 如果图表已存在，销毁它
     try {
@@ -341,7 +362,18 @@ function renderUserGrowthChart(data) {
 
 // 渲染订单状态分布图表
 function renderOrderStatusChart(data) {
-    const ctx = document.getElementById('orderStatusChart').getContext('2d');
+    const canvas = document.getElementById('orderStatusChart');
+    
+    // 检查图表元素是否存在
+    if (!canvas) {
+        console.error('订单状态分布图表元素不存在');
+        return;
+    }
+    
+    // 设置图表容器高度，确保图表能够完全显示
+    canvas.parentNode.style.height = '400px';
+    
+    const ctx = canvas.getContext('2d');
     
     // 如果图表已存在，销毁它
     try {
