@@ -707,7 +707,7 @@ async function saveProduct() {
         if (!saveBtn.hasAttribute('data-original-text')) {
             saveBtn.setAttribute('data-original-text', saveBtn.textContent);
         }
-        const originalText = saveBtn.getAttribute('data-original-text');
+        const originalText = saveBtn.getAttribute('data-original-text') || '保存';
         saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 保存中...';
         saveBtn.disabled = true;
         

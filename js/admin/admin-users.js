@@ -270,10 +270,10 @@ async function viewUserDetails(userId) {
                 addressesHtml += `
                     <div class="list-group-item">
                         <div class="d-flex justify-content-between align-items-center">
-                            <h6 class="mb-1">${address.recipient_name} ${address.recipient_phone} ${isDefault}</h6>
+                            <h6 class="mb-1">${address.recipient_name || ''} ${address.contact_phone || address.recipient_phone || ''} ${isDefault}</h6>
                         </div>
-                        <p class="mb-1">${address.province}${address.city}${address.district}</p>
-                        <small>${address.address_detail}</small>
+                        <p class="mb-1">${address.region || (address.province || '')+(address.city || '')+(address.district || '')}</p>
+                        <small>${address.full_address || address.address_detail || ''}</small>
                     </div>
                 `;
             });

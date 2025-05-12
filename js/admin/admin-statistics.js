@@ -99,6 +99,12 @@ function renderSalesTrendChart(data) {
         return;
     }
     
+    // 检查Chart对象是否可用
+    if (typeof Chart === 'undefined') {
+        console.error('Chart对象未定义，请确保Chart.js已正确加载');
+        return;
+    }
+    
     // 检查数据格式是否正确
     if (!data || !data.labels || !Array.isArray(data.labels)) {
         console.error('销售趋势数据格式不正确:', data);

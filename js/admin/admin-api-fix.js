@@ -71,14 +71,17 @@ adminAPI.updateOrderStatus = async (orderId, status) => {
 const originalUpdateUserStatus = adminAPI.updateUserStatus;
 adminAPI.updateUserStatus = async (userId, status) => {
     try {
-        // 将active/inactive转换为中文状态值，以符合数据库约束
-        let dbStatus = status;
-        if (status === 'active') dbStatus = '正常';
-        if (status === 'inactive') dbStatus = '禁用';
+        // 将中文状态值转换为API需要的状态值，以符合API约束
+        let apiStatus = status;
+        if (status === '正常') apiStatus = 'active';
+        if (status === '禁用') apiStatus = 'inactive';
+        // 将API状态值转换为中文状态值
+        if (status === 'active') apiStatus = 'active';
+        if (status === 'inactive') apiStatus = 'inactive';
         
-        console.log(`转换用户状态值: ${status} -> ${dbStatus}`);
+        console.log(`转换用户状态值: ${status} -> ${apiStatus}`);
         
-        return await originalUpdateUserStatus(userId, dbStatus);
+        return await originalUpdateUserStatus(userId, apiStatus);
     } catch (error) {
         console.error('更新用户状态出错:', error);
         throw error;

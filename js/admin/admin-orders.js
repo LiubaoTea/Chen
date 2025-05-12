@@ -280,15 +280,15 @@ async function viewOrderDetails(orderId) {
             orderItemsHtml += `
                 <div class="d-flex justify-content-between align-items-center mb-2 p-2 border-bottom">
                     <div class="d-flex align-items-center">
-                        <img src="${item.image_url}" alt="${item.name}" class="order-item-image me-3" style="width: 50px; height: 50px; object-fit: cover;">
+                        <img src="${item.image_url || '../image/placeholder.png'}" alt="${item.name}" class="order-item-image me-3" style="width: 50px; height: 50px; object-fit: cover;">
                         <div>
                             <h6 class="mb-0">${item.name}</h6>
-                            <small class="text-muted">单价: ¥${item.price.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</small>
+                            <small class="text-muted">单价: ¥${(item.price || item.unit_price || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</small>
                         </div>
                     </div>
                     <div class="text-end">
                         <div>数量: ${item.quantity}</div>
-                        <div>小计: ¥${(item.price * item.quantity).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                        <div>小计: ¥${((item.price || item.unit_price || 0) * item.quantity).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                     </div>
                 </div>
             `;

@@ -125,6 +125,12 @@ function updateTopProducts(products) {
 function renderSalesChart(data) {
     const ctx = document.getElementById('salesChart').getContext('2d');
     
+    // 检查Chart对象是否可用
+    if (typeof Chart === 'undefined') {
+        console.error('Chart对象未定义，请确保Chart.js已正确加载');
+        return;
+    }
+    
     // 销毁现有图表（如果存在）
     if (window.salesChart instanceof Chart) {
         window.salesChart.destroy();
