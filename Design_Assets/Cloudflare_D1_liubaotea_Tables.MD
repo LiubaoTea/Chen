@@ -34,6 +34,20 @@ CREATE INDEX "idx_users_phone" ON users ("phone_number");      -- 电话号码�
 CREATE INDEX "idx_users_email" ON users ("email");             -- 邮箱索引（优化唯一性校验）
 CREATE INDEX "idx_last_login" ON users ("last_login");         -- 最后登录时间索引（新增优化）
 
+-- 添加用户状态列（正常/禁用/删除）
+ALTER TABLE users ADD COLUMN "status" TEXT NOT NULL DEFAULT '正常'
+  CHECK ("status" IN ('正常', '禁用', '删除'));  -- 强制三选一
+
+-- 添加删除状态列（是/否）
+ALTER TABLE users ADD COLUMN "is_deleted" TEXT NOT NULL DEFAULT '否'
+  CHECK ("is_deleted" IN ('是', '否'));         -- 强制二选一
+
+-- 可选：添加复合约束（如果 status='删除'，则 is_deleted 必须为 '是'）
+-- ALTER TABLE users ADD CHECK (
+--   (status = '删除' AND is_deleted = '是') OR 
+--   (status != '删除')
+-- );
+
 2、products：（商品数据表）
 
 -- 创建新表（整合状态字段）

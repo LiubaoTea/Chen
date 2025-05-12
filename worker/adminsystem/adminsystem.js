@@ -384,11 +384,12 @@ const handleAdminAPI = async (request, env) => {
         try {
             const limit = parseInt(url.searchParams.get('limit') || '5');
             
-            // 获取销量最高的商品
+            // 获取销量最高的商品，修正销量计算方式，并包含库存信息
             const { results: products } = await env.DB.prepare(
                 `SELECT p.*, 
-                (SELECT COUNT(*) FROM order_items oi JOIN orders o ON oi.order_id = o.order_id 
-                WHERE oi.product_id = p.product_id AND o.status != 'cancelled') as sales_count 
+                (SELECT SUM(oi.quantity) FROM order_items oi JOIN orders o ON oi.order_id = o.order_id 
+                WHERE oi.product_id = p.product_id AND o.status != 'cancelled') as sales_count,
+                p.stock as inventory
                 FROM products p 
                 ORDER BY sales_count DESC 
                 LIMIT ?`
@@ -455,7 +456,10 @@ const handleAdminAPI = async (request, env) => {
     if (path === '/api/admin/sales/trend' && request.method === 'GET') {
         try {
             const period = url.searchParams.get('period') || 'month';
-            let timeFormat, limit;
+            const startDate = url.searchParams.get('startDate');
+            const endDate = url.searchParams.get('endDate');
+            let timeFormat, limit, dateCondition;
+            const params = [];
             
             // 根据时间周期设置SQL日期格式和数据点数量
             if (period === 'week') {
@@ -469,20 +473,55 @@ const handleAdminAPI = async (request, env) => {
                 limit = 30;
             }
             
+            // 构建日期条件
+            if (startDate && endDate) {
+                dateCondition = 'AND created_at BETWEEN ? AND ?';
+                params.push(startDate, endDate);
+            } else if (startDate) {
+                dateCondition = 'AND created_at >= ?';
+                params.push(startDate);
+            } else if (endDate) {
+                dateCondition = 'AND created_at <= ?';
+                params.push(endDate);
+            } else {
+                dateCondition = '';
+            }
+            
             // 获取销售趋势数据
+            params.push(limit);
             const { results: salesData } = await env.DB.prepare(
                 `SELECT 
                     strftime('${timeFormat}', created_at) as time_period,
                     SUM(total_amount) as sales_amount,
                     COUNT(*) as orders_count
                 FROM orders
-                WHERE status != 'cancelled'
+                WHERE status != 'cancelled' ${dateCondition}
                 GROUP BY time_period
-                ORDER BY time_period DESC
+                ORDER BY time_period ASC
                 LIMIT ?`
-            ).bind(limit).all();
+            ).bind(...params).all();
             
-            return new Response(JSON.stringify(salesData.reverse()), { // 反转以按时间升序排列
+            // 确保返回足够的数据点以便图表完整展示
+            if (salesData.length === 0) {
+                // 如果没有数据，返回一个空数据点以便前端能正确渲染图表
+                return new Response(JSON.stringify({
+                    labels: [new Date().toISOString().split('T')[0]],
+                    sales: [0],
+                    orders: [0]
+                }), {
+                    status: 200,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                });
+            }
+            
+            // 转换数据格式以适应前端图表
+            const formattedData = {
+                labels: salesData.map(item => item.time_period),
+                sales: salesData.map(item => item.sales_amount),
+                orders: salesData.map(item => item.orders_count)
+            };
+            
+            return new Response(JSON.stringify(formattedData), {
                 status: 200,
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             });
@@ -523,12 +562,107 @@ const handleAdminAPI = async (request, env) => {
                     Math.round((category.product_count / totalProducts.count) * 100) : 0
             }));
             
+            // 确保返回足够的数据点以便图表完整展示
+            if (formattedData.length === 0) {
+                // 如果没有数据，返回一个空数据点以便前端能正确渲染图表
+                return new Response(JSON.stringify([{
+                    id: 0,
+                    name: '无数据',
+                    count: 0,
+                    percentage: 100
+                }]), {
+                    status: 200,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                });
+            }
+            
             return new Response(JSON.stringify(formattedData), {
                 status: 200,
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             });
         } catch (error) {
             return new Response(JSON.stringify({ error: '获取分类占比数据失败', details: error.message }), {
+                status: 500,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        }
+    }
+    
+    // 获取商品销售分布数据
+    if (path === '/api/admin/products/sales-distribution' && request.method === 'GET') {
+        try {
+            // 获取日期参数
+            const startDate = url.searchParams.get('startDate');
+            const endDate = url.searchParams.get('endDate');
+            
+            // 构建日期条件
+            let dateCondition = '';
+            const params = [];
+            
+            if (startDate && endDate) {
+                dateCondition = 'AND o.created_at BETWEEN ? AND ?';
+                params.push(startDate, endDate);
+            } else if (startDate) {
+                dateCondition = 'AND o.created_at >= ?';
+                params.push(startDate);
+            } else if (endDate) {
+                dateCondition = 'AND o.created_at <= ?';
+                params.push(endDate);
+            }
+            
+            // 获取商品销售分布数据
+            const { results: salesData } = await env.DB.prepare(
+                `SELECT 
+                    p.product_id,
+                    p.product_name,
+                    SUM(oi.quantity) as sold_count,
+                    SUM(oi.price * oi.quantity) as sales_amount
+                FROM order_items oi
+                JOIN orders o ON oi.order_id = o.order_id
+                JOIN products p ON oi.product_id = p.product_id
+                WHERE o.status != 'cancelled' ${dateCondition}
+                GROUP BY p.product_id
+                ORDER BY sold_count DESC
+                LIMIT 10`
+            ).bind(...params).all();
+            
+            // 计算总销售额（用于计算百分比）
+            const totalSales = await env.DB.prepare(
+                `SELECT SUM(oi.price * oi.quantity) as total
+                FROM order_items oi
+                JOIN orders o ON oi.order_id = o.order_id
+                WHERE o.status != 'cancelled' ${dateCondition}`
+            ).bind(...params).first();
+            
+            // 格式化响应数据
+            const formattedData = salesData.map(item => ({
+                name: item.product_name,
+                value: item.sold_count,
+                amount: item.sales_amount,
+                percentage: totalSales.total > 0 ? 
+                    Math.round((item.sales_amount / totalSales.total) * 100) : 0
+            }));
+            
+            // 确保返回足够的数据点以便图表完整展示
+            if (formattedData.length === 0) {
+                // 如果没有数据，返回一个空数据点以便前端能正确渲染图表
+                return new Response(JSON.stringify([{
+                    name: '无销售数据',
+                    value: 0,
+                    amount: 0,
+                    percentage: 100
+                }]), {
+                    status: 200,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                });
+            }
+            
+            return new Response(JSON.stringify(formattedData), {
+                status: 200,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '获取商品销售分布数据失败', details: error.message }), {
                 status: 500,
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             });
@@ -635,6 +769,174 @@ const handleAdminAPI = async (request, env) => {
             });
         } catch (error) {
             return new Response(JSON.stringify({ error: '获取商品详情失败', details: error.message }), {
+                status: 500,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        }
+    }
+    
+    // 获取用户详情
+    if (path.match(/^\/api\/admin\/users\/\d+$/) && request.method === 'GET') {
+        try {
+            const userId = path.split('/').pop();
+            
+            // 获取用户基本信息
+            const user = await env.DB.prepare(`
+                SELECT u.*, 
+                    (SELECT COUNT(*) FROM orders WHERE user_id = u.user_id) as orders_count,
+                    (SELECT SUM(total_amount) FROM orders WHERE user_id = u.user_id AND status != 'cancelled') as total_spent
+                FROM users u
+                WHERE u.user_id = ?
+            `).bind(userId).first();
+            
+            if (!user) {
+                return new Response(JSON.stringify({ error: '用户不存在' }), {
+                    status: 404,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                });
+            }
+            
+            // 获取用户最近订单
+            const { results: recentOrders } = await env.DB.prepare(`
+                SELECT order_id, total_amount, status, created_at
+                FROM orders
+                WHERE user_id = ?
+                ORDER BY created_at DESC
+                LIMIT 5
+            `).bind(userId).all();
+            
+            // 获取用户地址信息
+            const { results: addresses } = await env.DB.prepare(`
+                SELECT *
+                FROM user_addresses
+                WHERE user_id = ?
+            `).bind(userId).all();
+            
+            // 组合用户完整信息
+            const userDetails = {
+                ...user,
+                recentOrders,
+                addresses
+            };
+            
+            return new Response(JSON.stringify(userDetails), {
+                status: 200,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '获取用户详情失败', details: error.message }), {
+                status: 500,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        }
+    }
+    
+    // 更新用户状态
+    if (path.match(/^\/api\/admin\/users\/\d+\/status$/) && request.method === 'PUT') {
+        try {
+            const userId = path.split('/')[4]; // 从路径中提取用户ID
+            const { status } = await request.json();
+            
+            // 验证状态值
+            if (!['active', 'disabled'].includes(status)) {
+                return new Response(JSON.stringify({ error: '无效的状态值，只能是 active 或 disabled' }), {
+                    status: 400,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                });
+            }
+            
+            // 更新用户状态
+            const result = await env.DB.prepare(`
+                UPDATE users
+                SET status = ?
+                WHERE user_id = ?
+            `).bind(status, userId).run();
+            
+            if (!result || result.changes === 0) {
+                return new Response(JSON.stringify({ error: '用户不存在或状态未更改' }), {
+                    status: 404,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                });
+            }
+            
+            return new Response(JSON.stringify({ success: true, message: '用户状态已更新', status }), {
+                status: 200,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '更新用户状态失败', details: error.message }), {
+                status: 500,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        }
+    }
+    
+    // 获取用户增长趋势数据
+    if (path === '/api/admin/statistics/user-growth' && request.method === 'GET') {
+        try {
+            const period = url.searchParams.get('period') || 'month';
+            const startDate = url.searchParams.get('startDate');
+            const endDate = url.searchParams.get('endDate');
+            let timeFormat, limit, dateCondition;
+            const params = [];
+            
+            // 根据时间周期设置SQL日期格式和数据点数量
+            if (period === 'week') {
+                timeFormat = '%Y-%m-%d'; // 按天
+                limit = 7;
+            } else if (period === 'year') {
+                timeFormat = '%Y-%m'; // 按月
+                limit = 12;
+            } else { // month
+                timeFormat = '%Y-%m-%d'; // 按天
+                limit = 30;
+            }
+            
+            // 构建日期条件
+            if (startDate && endDate) {
+                dateCondition = 'AND created_at BETWEEN ? AND ?';
+                params.push(startDate, endDate);
+            } else if (startDate) {
+                dateCondition = 'AND created_at >= ?';
+                params.push(startDate);
+            } else if (endDate) {
+                dateCondition = 'AND created_at <= ?';
+                params.push(endDate);
+            } else {
+                dateCondition = '';
+            }
+            
+            // 获取用户增长趋势数据
+            params.push(limit);
+            const { results: userData } = await env.DB.prepare(
+                `SELECT 
+                    strftime('${timeFormat}', created_at) as time_period,
+                    COUNT(*) as new_users
+                FROM users
+                WHERE 1=1 ${dateCondition}
+                GROUP BY time_period
+                ORDER BY time_period ASC
+                LIMIT ?`
+            ).bind(...params).all();
+            
+            // 确保返回足够的数据点以便图表完整展示
+            if (userData.length === 0) {
+                // 如果没有数据，返回一个空数据点以便前端能正确渲染图表
+                return new Response(JSON.stringify([{
+                    time_period: new Date().toISOString().split('T')[0],
+                    new_users: 0
+                }]), {
+                    status: 200,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                });
+            }
+            
+            return new Response(JSON.stringify(userData), {
+                status: 200,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '获取用户增长趋势数据失败', details: error.message }), {
                 status: 500,
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             });
@@ -1174,14 +1476,15 @@ const handleAdminAPI = async (request, env) => {
         try {
             // 获取分页参数
             const page = parseInt(url.searchParams.get('page') || '1');
-            const limit = parseInt(url.searchParams.get('limit') || '10');
+            const pageSize = parseInt(url.searchParams.get('pageSize') || '10');
+            const limit = parseInt(String(url.searchParams.get('limit') || pageSize));
             const offset = (page - 1) * limit;
             
             // 获取筛选参数
             const status = url.searchParams.get('status');
             const search = url.searchParams.get('search');
-            const startDate = url.searchParams.get('start_date');
-            const endDate = url.searchParams.get('end_date');
+            const startDate = url.searchParams.get('start_date') || url.searchParams.get('startDate');
+            const endDate = url.searchParams.get('end_date') || url.searchParams.get('endDate');
             
             // 构建查询条件
             let whereClause = '';
@@ -1222,7 +1525,7 @@ const handleAdminAPI = async (request, env) => {
             
             // 获取订单列表
             const ordersQuery = `
-                SELECT o.*, u.username, u.email 
+                SELECT o.*, u.username, u.email, u.user_id 
                 FROM orders o
                 LEFT JOIN users u ON o.user_id = u.user_id
                 ${whereClause}
@@ -1233,13 +1536,47 @@ const handleAdminAPI = async (request, env) => {
             const { results: orders } = await env.DB.prepare(ordersQuery)
                 .bind(...params, limit, offset)
                 .all();
+                
+            // 获取订单项
+            const orderIds = orders.map(order => order.order_id);
+            
+            if (orderIds.length > 0) {
+                const placeholders = orderIds.map(() => '?').join(',');
+                const { results: orderItems } = await env.DB.prepare(`
+                    SELECT oi.*, p.name as product_name, oi.quantity
+                    FROM order_items oi
+                    LEFT JOIN products p ON oi.product_id = p.product_id
+                    WHERE oi.order_id IN (${placeholders})
+                `).bind(...orderIds).all();
+                
+                // 将订单项关联到对应的订单
+                const orderItemsMap = {};
+                orderItems.forEach(item => {
+                    if (!orderItemsMap[item.order_id]) {
+                        orderItemsMap[item.order_id] = [];
+                    }
+                    orderItemsMap[item.order_id].push(item);
+                });
+                
+                orders.forEach(order => {
+                    order.items = orderItemsMap[order.order_id] || [];
+                    // 计算订单中的商品总数
+                    order.items_count = order.items.reduce((sum, item) => sum + (parseInt(item.quantity) || 0), 0);
+                });
+            } else {
+                // 确保每个订单都有items属性
+                orders.forEach(order => {
+                    order.items = [];
+                    order.items_count = 0;
+                });
+            }
             
             return new Response(JSON.stringify({
                 orders,
                 pagination: {
                     total,
                     page,
-                    limit,
+                    pageSize: limit,
                     pages: Math.ceil(total / limit)
                 }
             }), {
@@ -1276,11 +1613,14 @@ const handleAdminAPI = async (request, env) => {
             
             // 获取订单商品明细
             const { results: orderItems } = await env.DB.prepare(`
-                SELECT oi.*, p.product_name, p.image_url 
+                SELECT oi.*, p.product_name as name, p.image_url, oi.quantity, oi.price 
                 FROM order_items oi
                 LEFT JOIN products p ON oi.product_id = p.product_id
                 WHERE oi.order_id = ?
             `).bind(orderId).all();
+            
+            // 计算订单商品总额
+            const items_total = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
             
             // 获取订单地址信息
             const address = await env.DB.prepare(`
@@ -1300,6 +1640,9 @@ const handleAdminAPI = async (request, env) => {
             const orderDetails = {
                 ...order,
                 items: orderItems,
+                items_total: items_total,
+                shipping_fee: order.shipping_fee || 0,
+                total_amount: order.total_amount,
                 shipping_address: address || null,
                 payment: payment || null
             };
@@ -1450,7 +1793,7 @@ const handleAdminAPI = async (request, env) => {
             
             // 获取用户列表（不返回密码哈希）
             const usersQuery = `
-                SELECT user_id, username, email, phone_number, created_at, last_login 
+                SELECT user_id, username, email, phone_number, created_at, last_login, status 
                 FROM users
                 ${whereClause}
                 ORDER BY ${actualSortBy} ${actualSortOrder}
@@ -1499,13 +1842,21 @@ const handleAdminAPI = async (request, env) => {
     }
     
     // 获取用户详情
-    if (path.match(/^\/api\/admin\/users\/\d+$/) && request.method === 'GET') {
+    if ((path.match(/^\/api\/admin\/users\/\d+$/) || path === '/api/admin/users/undefined') && request.method === 'GET') {
         try {
             const userId = path.split('/').pop();
             
+            // 如果userId是undefined或无效，返回适当的错误信息
+            if (userId === 'undefined' || !userId) {
+                return new Response(JSON.stringify({ error: '无效的用户ID', message: '请提供有效的用户ID' }), {
+                    status: 400,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                });
+            }
+            
             // 获取用户基本信息（不返回密码哈希）
             const user = await env.DB.prepare(`
-                SELECT user_id, username, email, phone_number, created_at, last_login 
+                SELECT user_id, username, email, phone_number, created_at, last_login, status 
                 FROM users
                 WHERE user_id = ?
             `).bind(userId).first();
@@ -2419,6 +2770,168 @@ const handleAdminAPI = async (request, env) => {
             });
         } catch (error) {
             return new Response(JSON.stringify({ error: '获取系统配置失败', details: error.message }), {
+                status: 500,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        }
+    }
+    
+    // 更新用户状态（启用/禁用）
+    if ((path.match(/^\/api\/admin\/users\/\d+\/status$/) || path === '/api/admin/users/undefined/status') && request.method === 'PUT') {
+        try {
+            const userId = path.split('/')[4];
+            
+            // 如果userId是undefined或无效，返回适当的错误信息
+            if (userId === 'undefined' || !userId) {
+                return new Response(JSON.stringify({ error: '无效的用户ID', message: '请提供有效的用户ID' }), {
+                    status: 400,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                });
+            }
+            
+            const { status } = await request.json();
+            
+            // 验证状态值
+            if (!['active', 'inactive'].includes(status)) {
+                return new Response(JSON.stringify({ error: '无效的状态值' }), {
+                    status: 400,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                });
+            }
+            
+            // 检查用户是否存在
+            const existingUser = await env.DB.prepare('SELECT user_id FROM users WHERE user_id = ?')
+                .bind(userId)
+                .first();
+                
+            if (!existingUser) {
+                return new Response(JSON.stringify({ error: '用户不存在' }), {
+                    status: 404,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                });
+            }
+            
+            // 更新用户状态
+            await env.DB.prepare('UPDATE users SET status = ? WHERE user_id = ?')
+                .bind(status, userId)
+                .run();
+            
+            return new Response(JSON.stringify({
+                message: '用户状态更新成功',
+                userId,
+                status
+            }), {
+                status: 200,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '更新用户状态失败', details: error.message }), {
+                status: 500,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        }
+    }
+    
+    // 获取商品销售分布数据
+    if (path === '/api/admin/products/sales-distribution' && request.method === 'GET') {
+        try {
+            const startDate = url.searchParams.get('startDate');
+            const endDate = url.searchParams.get('endDate');
+            
+            let dateCondition = '';
+            const params = [];
+            
+            if (startDate && endDate) {
+                dateCondition = 'AND o.created_at BETWEEN ? AND ?';
+                params.push(startDate, endDate);
+            } else if (startDate) {
+                dateCondition = 'AND o.created_at >= ?';
+                params.push(startDate);
+            } else if (endDate) {
+                dateCondition = 'AND o.created_at <= ?';
+                params.push(endDate);
+            }
+            
+            // 获取商品销售分布数据
+            const { results: salesDistribution } = await env.DB.prepare(`
+                SELECT 
+                    p.product_id,
+                    p.name as product_name,
+                    SUM(oi.quantity) as quantity_sold,
+                    SUM(oi.quantity * oi.price) as total_sales,
+                    COUNT(DISTINCT o.order_id) as orders_count
+                FROM order_items oi
+                JOIN orders o ON oi.order_id = o.order_id
+                JOIN products p ON oi.product_id = p.product_id
+                WHERE o.status != 'cancelled' ${dateCondition}
+                GROUP BY p.product_id
+                ORDER BY quantity_sold DESC
+                LIMIT 20
+            `).bind(...params).all();
+            
+            return new Response(JSON.stringify(salesDistribution), {
+                status: 200,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '获取商品销售分布数据失败', details: error.message }), {
+                status: 500,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        }
+    }
+    
+    // 获取用户增长趋势数据
+    if (path === '/api/admin/statistics/user-growth' && request.method === 'GET') {
+        try {
+            const period = url.searchParams.get('period') || 'month';
+            const startDate = url.searchParams.get('startDate');
+            const endDate = url.searchParams.get('endDate');
+            
+            let timeFormat, dateCondition;
+            const params = [];
+            
+            // 根据时间周期设置SQL日期格式
+            if (period === 'week') {
+                timeFormat = '%Y-%m-%d'; // 按天
+            } else if (period === 'year') {
+                timeFormat = '%Y-%m'; // 按月
+            } else { // month
+                timeFormat = '%Y-%m-%d'; // 按天
+            }
+            
+            // 构建日期条件
+            if (startDate && endDate) {
+                dateCondition = 'WHERE created_at BETWEEN ? AND ?';
+                params.push(startDate, endDate);
+            } else if (startDate) {
+                dateCondition = 'WHERE created_at >= ?';
+                params.push(startDate);
+            } else if (endDate) {
+                dateCondition = 'WHERE created_at <= ?';
+                params.push(endDate);
+            } else {
+                // 默认查询最近30天
+                dateCondition = 'WHERE created_at >= date("now", "-30 days")';
+            }
+            
+            // 获取用户增长趋势数据
+            const { results: userGrowthData } = await env.DB.prepare(`
+                SELECT 
+                    strftime('${timeFormat}', created_at) as time_period,
+                    COUNT(*) as new_users
+                FROM users
+                ${dateCondition}
+                GROUP BY time_period
+                ORDER BY time_period ASC
+            `).bind(...params).all();
+            
+            return new Response(JSON.stringify(userGrowthData), {
+                status: 200,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '获取用户增长趋势数据失败', details: error.message }), {
                 status: 500,
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             });

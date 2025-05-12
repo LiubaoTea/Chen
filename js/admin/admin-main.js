@@ -530,12 +530,16 @@ function updateTopProducts(products) {
     topProductsList.innerHTML = '';
     
     if (products.length === 0) {
-        topProductsList.innerHTML = '<tr><td colspan="3" class="text-center">暂无商品数据</td></tr>';
+        topProductsList.innerHTML = '<tr><td colspan="4" class="text-center">暂无商品数据</td></tr>';
         return;
     }
     
     products.forEach(product => {
         const row = document.createElement('tr');
+        // 确保sales_count和stock/inventory属性存在
+        const salesCount = product.sales_count || 0;
+        const stockCount = product.stock || product.inventory || 0;
+        
         row.innerHTML = `
             <td>
                 <div class="product-info">
@@ -544,7 +548,8 @@ function updateTopProducts(products) {
                 </div>
             </td>
             <td>¥${product.price.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-            <td>${product.sales_count || 0}</td>
+            <td>${salesCount}</td>
+            <td>${stockCount}</td>
         `;
         
         topProductsList.appendChild(row);
@@ -561,10 +566,23 @@ function renderSalesChart(data) {
         window.salesChart.destroy();
     }
     
-    // 准备图表数据
-    const labels = data.map(item => item.time_period);
-    const salesData = data.map(item => item.sales_amount);
-    const ordersData = data.map(item => item.orders_count);
+    // 检查数据格式，兼容两种格式：数组格式和{labels,sales,orders}格式
+    let labels, salesData, ordersData;
+    
+    if (Array.isArray(data)) {
+        // 数组格式
+        labels = data.map(item => item.time_period);
+        salesData = data.map(item => item.sales_amount);
+        ordersData = data.map(item => item.orders_count);
+    } else if (data && data.labels && data.sales && data.orders) {
+        // 对象格式
+        labels = data.labels;
+        salesData = data.sales;
+        ordersData = data.orders;
+    } else {
+        console.error('销售趋势数据格式不正确:', data);
+        return;
+    }
     
     // 创建图表
     window.salesChart = new Chart(salesChartCanvas, {
@@ -641,9 +659,15 @@ function renderCategoryChart(data) {
         window.categoryChart.destroy();
     }
     
+    // 检查数据格式，确保数据是数组
+    if (!Array.isArray(data)) {
+        console.error('分类占比数据格式不正确:', data);
+        return;
+    }
+    
     // 准备图表数据
-    const labels = data.map(item => item.name);
-    const values = data.map(item => item.count);
+    const labels = data.map(item => item.category_name || item.name);
+    const values = data.map(item => item.product_count || item.count);
     const backgroundColors = [
         '#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b',
         '#5a5c69', '#858796', '#6610f2', '#fd7e14', '#20c9a6'

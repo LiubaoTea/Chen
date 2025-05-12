@@ -99,6 +99,22 @@ function renderSalesTrendChart(data) {
         return;
     }
     
+    // 检查数据格式是否正确
+    if (!data || !data.labels || !data.values) {
+        console.error('销售趋势数据格式不正确:', data);
+        // 创建默认数据
+        data = {
+            labels: ['无数据'],
+            values: [0]
+        };
+    }
+    
+    // 确保数据是数组
+    const labels = Array.isArray(data.labels) ? data.labels : [];
+    const values = Array.isArray(data.values) ? data.values : [];
+    
+    console.log('销售趋势图表数据:', { labels, values });
+    
     // 如果图表已存在，先尝试销毁它
     try {
         if (window.salesTrendChart) {
@@ -119,10 +135,10 @@ function renderSalesTrendChart(data) {
         window.salesTrendChart = new Chart(ctx, {
             type: 'line',
             data: {
-                labels: data.labels,
+                labels: labels,
                 datasets: [{
                     label: '销售额',
-                    data: data.values,
+                    data: values,
                     backgroundColor: 'rgba(54, 162, 235, 0.2)',
                     borderColor: 'rgba(54, 162, 235, 1)',
                     borderWidth: 2,
@@ -143,6 +159,25 @@ function renderSalesTrendChart(data) {
 function renderProductSalesChart(data) {
     const ctx = document.getElementById('productSalesChart').getContext('2d');
     
+    // 检查图表元素是否存在
+    if (!ctx) {
+        console.error('商品销售占比图表元素不存在');
+        return;
+    }
+    
+    // 检查数据格式是否正确
+    if (!data || !Array.isArray(data)) {
+        console.error('商品销售占比数据格式不正确:', data);
+        // 创建默认数据
+        data = [{ name: '无数据', value: 1 }];
+    }
+    
+    // 提取标签和值
+    const labels = data.map(item => item.name || item.category_name || '未分类');
+    const values = data.map(item => item.value || item.product_count || 0);
+    
+    console.log('商品销售占比图表数据:', { labels, values });
+    
     // 如果图表已存在，销毁它
     try {
         if (window.productSalesChart) {
@@ -159,56 +194,60 @@ function renderProductSalesChart(data) {
     }
     
     // 创建新图表
-    window.productSalesChart = new Chart(ctx, {
-        type: 'pie',
-        data: {
-            labels: data.labels,
-            datasets: [{
-                data: data.values,
-                backgroundColor: [
-                    'rgba(255, 99, 132, 0.7)',
-                    'rgba(54, 162, 235, 0.7)',
-                    'rgba(255, 206, 86, 0.7)',
-                    'rgba(75, 192, 192, 0.7)',
-                    'rgba(153, 102, 255, 0.7)',
-                    'rgba(255, 159, 64, 0.7)',
-                    'rgba(199, 199, 199, 0.7)',
-                    'rgba(83, 102, 255, 0.7)',
-                    'rgba(40, 159, 64, 0.7)',
-                    'rgba(210, 199, 199, 0.7)'
-                ],
-                borderColor: [
-                    'rgba(255, 99, 132, 1)',
-                    'rgba(54, 162, 235, 1)',
-                    'rgba(255, 206, 86, 1)',
-                    'rgba(75, 192, 192, 1)',
-                    'rgba(153, 102, 255, 1)',
-                    'rgba(255, 159, 64, 1)',
-                    'rgba(199, 199, 199, 1)',
-                    'rgba(83, 102, 255, 1)',
-                    'rgba(40, 159, 64, 1)',
-                    'rgba(210, 199, 199, 1)'
-                ],
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                tooltip: {
-                    callbacks: {
+    try {
+        window.productSalesChart = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: values,
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.7)',
+                        'rgba(54, 162, 235, 0.7)',
+                        'rgba(255, 206, 86, 0.7)',
+                        'rgba(75, 192, 192, 0.7)',
+                        'rgba(153, 102, 255, 0.7)',
+                        'rgba(255, 159, 64, 0.7)',
+                        'rgba(199, 199, 199, 0.7)',
+                        'rgba(83, 102, 255, 0.7)',
+                        'rgba(40, 159, 64, 0.7)',
+                        'rgba(210, 199, 199, 0.7)'
+                    ],
+                    borderColor: [
+                        'rgba(255, 99, 132, 1)',
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 206, 86, 1)',
+                        'rgba(75, 192, 192, 1)',
+                        'rgba(153, 102, 255, 1)',
+                        'rgba(255, 159, 64, 1)',
+                        'rgba(199, 199, 199, 1)',
+                        'rgba(83, 102, 255, 1)',
+                        'rgba(40, 159, 64, 1)',
+                        'rgba(210, 199, 199, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    tooltip: {
+                        callbacks: {
                         label: function(context) {
                             const label = context.label || '';
                             const value = context.raw;
                             const percentage = context.parsed;
                             return label + ': ¥' + value.toLocaleString('zh-CN') + ' (' + percentage.toFixed(2) + '%)';
-                        }
+                        }}
                     }
                 }
             }
-        }
-    });
+        });
+    } catch (error) {
+        console.error('创建商品销售占比图表时出错:', error);
+        window.productSalesChart = null;
+    }
 }
 
 // 渲染用户增长趋势图表
@@ -231,7 +270,8 @@ function renderUserGrowthChart(data) {
     }
     
     // 创建新图表
-    window.userGrowthChart = new Chart(ctx, {
+    try {
+        window.userGrowthChart = new Chart(ctx, {
         type: 'bar',
         data: {
             labels: data.labels,
@@ -256,6 +296,10 @@ function renderUserGrowthChart(data) {
             }
         }
     });
+    } catch (error) {
+        console.error('创建用户增长趋势图表时出错:', error);
+        window.userGrowthChart = null;
+    }
 }
 
 // 渲染订单状态分布图表
@@ -311,14 +355,33 @@ function renderOrderStatusChart(data) {
 // 渲染热销商品排行列表
 function renderTopProductsList(products) {
     const topProductsList = document.getElementById('topProductsList');
+    
+    // 检查数据格式是否正确
+    if (!products || !Array.isArray(products)) {
+        console.error('热销商品数据格式不正确:', products);
+        topProductsList.innerHTML = '<tr><td colspan="5" class="text-center">暂无热销商品数据</td></tr>';
+        return;
+    }
+    
+    // 清空表格内容
     topProductsList.innerHTML = '';
     
+    // 如果没有数据，显示提示信息
+    if (products.length === 0) {
+        topProductsList.innerHTML = '<tr><td colspan="5" class="text-center">暂无热销商品数据</td></tr>';
+        return;
+    }
+    
+    console.log('渲染热销商品列表:', products);
+    
     // 计算总销售额
-    const totalSales = products.reduce((sum, product) => sum + product.totalSales, 0);
+    const totalSales = products.reduce((sum, product) => sum + (product.totalSales || 0), 0);
     
     // 添加商品行
     products.forEach((product, index) => {
-        const percentage = (product.totalSales / totalSales * 100).toFixed(2);
+        // 确保totalSales是数字
+        const productSales = typeof product.totalSales === 'number' ? product.totalSales : 0;
+        const percentage = totalSales > 0 ? (productSales / totalSales * 100).toFixed(2) : '0.00';
         
         const row = document.createElement('tr');
         row.innerHTML = `
@@ -328,17 +391,18 @@ function renderTopProductsList(products) {
                     <img src="${product.image || '../image/Goods/Goods_1.png'}" alt="${product.name}" class="me-2" style="width: 40px; height: 40px; object-fit: cover;">
                     <div>
                         <div class="fw-bold">${product.name}</div>
-                        <small class="text-muted">ID: ${product.id}</small>
+                        <small class="text-muted">ID: ${product.id || product.product_id || '未知'}</small>
                     </div>
                 </div>
             </td>
-            <td>${product.quantity}</td>
-            <td>¥${product.totalSales.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+            <td>${product.quantity || 0}</td>
+            <td>¥${productSales.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
             <td>${percentage}%</td>
         `;
         
         topProductsList.appendChild(row);
     });
+
 }
 
 // 导出统计报表

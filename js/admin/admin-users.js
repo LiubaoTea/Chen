@@ -142,10 +142,10 @@ function updateUsersList() {
             <td>${statusBadge}</td>
             <td>
                 <div class="btn-group">
-                    <button type="button" class="btn btn-sm btn-outline-primary view-user" data-user-id="${user.id}">
+                    <button type="button" class="btn btn-sm btn-outline-primary view-user" data-user-id="${user.user_id}">
                         <i class="bi bi-eye"></i>
                     </button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary toggle-user-status" data-user-id="${user.id}" data-current-status="${user.status}">
+                    <button type="button" class="btn btn-sm btn-outline-secondary toggle-user-status" data-user-id="${user.user_id}" data-current-status="${user.status}">
                         ${user.status === 'active' ? '<i class="bi bi-lock"></i>' : '<i class="bi bi-unlock"></i>'}
                     </button>
                 </div>
@@ -240,6 +240,8 @@ async function viewUserDetails(userId) {
         const userDetailModal = new bootstrap.Modal(document.getElementById('userDetailModal'));
         userDetailModal.show();
         
+        console.log('查看用户详情，用户ID:', userId);
+        
         // 获取用户详情
         const userDetails = await adminAPI.getUserDetails(userId);
         
@@ -308,7 +310,7 @@ async function viewUserDetails(userId) {
                     <table class="table table-sm">
                         <tr>
                             <th>用户ID:</th>
-                            <td>${userDetails.id}</td>
+                            <td>${userDetails.user_id}</td>
                         </tr>
                         <tr>
                             <th>用户名:</th>
@@ -391,6 +393,8 @@ async function toggleUserStatus(userId, currentStatus) {
         if (!confirm(`确定要${actionText}该用户吗？`)) {
             return;
         }
+        
+        console.log('切换用户状态，用户ID:', userId, '当前状态:', currentStatus, '新状态:', newStatus);
         
         // 更新状态
         await adminAPI.updateUserStatus(userId, newStatus);
