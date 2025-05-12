@@ -703,18 +703,20 @@ async function saveProduct() {
     try {
         // 显示加载状态
         const saveBtn = document.getElementById('saveProductBtn');
-        const originalText = saveBtn.textContent;
+        // 保存原始文本，避免引用错误
+        saveBtn.setAttribute('data-original-text', saveBtn.textContent);
+        const originalText = saveBtn.getAttribute('data-original-text');
         saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 保存中...';
         saveBtn.disabled = true;
         
         let url, method;
         if (productId) {
             // 更新商品
-            url = `${API_BASE_URL}/api/products/${productId}`;
+            url = `${ADMIN_API_BASE_URL}/api/admin/products/${productId}`;
             method = 'PUT';
         } else {
             // 添加商品
-            url = `${API_BASE_URL}/api/products`;
+            url = `${ADMIN_API_BASE_URL}/api/admin/products`;
             method = 'POST';
         }
         

@@ -9,6 +9,11 @@
     <link rel="stylesheet" href="../css/admin/admin.css">
     <!-- 引入Chart.js用于图表展示 -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <!-- 确保Chart全局可用 -->
+    <script>
+        window.Chart = Chart;
+        console.log('Chart.js已加载，Chart全局对象:', window.Chart);
+    </script>
     <!-- 引入工具函数 -->
     <script type="module" src="../js/admin/admin-utils.js"></script>
     <script type="module">
@@ -28,6 +33,8 @@
     </script>
     <!-- 引入管理后台API模块（必须在其他模块之前加载） -->
     <script type="module" src="../js/admin/admin-api.js"></script>
+    <!-- 引入API修复模块 -->
+    <script type="module" src="../js/admin/admin-api-fix.js"></script>
     <!-- 引入管理后台功能模块 -->
     <script type="module" src="../js/admin/admin-dashboard.js"></script>
     <script type="module" src="../js/admin/admin-products.js"></script>
