@@ -704,7 +704,9 @@ async function saveProduct() {
         // 显示加载状态
         const saveBtn = document.getElementById('saveProductBtn');
         // 保存原始文本，避免引用错误
-        saveBtn.setAttribute('data-original-text', saveBtn.textContent);
+        if (!saveBtn.hasAttribute('data-original-text')) {
+            saveBtn.setAttribute('data-original-text', saveBtn.textContent);
+        }
         const originalText = saveBtn.getAttribute('data-original-text');
         saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 保存中...';
         saveBtn.disabled = true;

@@ -588,6 +588,251 @@ const handleAdminAPI = async (request, env) => {
         }
     }
     
+    // 获取订单详情
+    if (path.match(/\/api\/admin\/orders\/[\w-]+$/) && request.method === 'GET') {
+        try {
+            // 从路径中提取订单ID
+            const orderId = path.split('/').pop();
+            
+            // 获取订单基本信息
+            const order = await env.DB.prepare(
+                `SELECT o.*, u.username, u.email, u.phone_number
+                FROM orders o
+                JOIN users u ON o.user_id = u.user_id
+                WHERE o.order_id = ?`
+            ).bind(orderId).first();
+            
+            if (!order) {
+                return new Response(JSON.stringify({ error: '订单不存在' }), {
+                    status: 404,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                });
+            }
+            
+            // 获取订单项
+            const { results: orderItems } = await env.DB.prepare(
+                `SELECT oi.*, p.name as product_name, p.price as current_price
+                FROM order_items oi
+                JOIN products p ON oi.product_id = p.product_id
+                WHERE oi.order_id = ?`
+            ).bind(orderId).all();
+            
+            // 获取用户地址
+            const address = await env.DB.prepare(
+                `SELECT *
+                FROM user_addresses
+                WHERE user_id = ? AND is_default = 1`
+            ).bind(order.user_id).first();
+            
+            // 组合完整的订单详情
+            const orderDetails = {
+                ...order,
+                items: orderItems,
+                address: address || null
+            };
+            
+            return new Response(JSON.stringify(orderDetails), {
+                status: 200,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '获取订单详情失败', details: error.message }), {
+                status: 500,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        }
+    }
+    
+    // 更新订单状态
+    if (path.match(/\/api\/admin\/orders\/[\w-]+\/status$/) && request.method === 'PUT') {
+        try {
+            // 从路径中提取订单ID
+            const orderId = path.split('/').slice(-2)[0];
+            
+            // 获取请求体中的状态
+            const { status } = await request.json();
+            
+            // 验证状态值
+            const validStatuses = ['pending', 'paid', 'shipped', 'delivered', 'cancelled'];
+            if (!validStatuses.includes(status)) {
+                return new Response(JSON.stringify({ error: '无效的状态值' }), {
+                    status: 400,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                });
+            }
+            
+            // 更新订单状态
+            const result = await env.DB.prepare(
+                `UPDATE orders
+                SET status = ?, updated_at = CAST(strftime('%s','now') AS INTEGER)
+                WHERE order_id = ?`
+            ).bind(status, orderId).run();
+            
+            if (result.changes === 0) {
+                return new Response(JSON.stringify({ error: '订单不存在或状态未更改' }), {
+                    status: 404,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                });
+            }
+            
+            return new Response(JSON.stringify({ success: true, message: '订单状态已更新' }), {
+                status: 200,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '更新订单状态失败', details: error.message }), {
+                status: 500,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        }
+    }
+    
+    // 获取订单状态分布数据
+    if (path === '/api/admin/statistics/order-status' && request.method === 'GET') {
+        try {
+            // 获取日期参数
+            const startDate = url.searchParams.get('startDate');
+            const endDate = url.searchParams.get('endDate');
+            
+            // 构建日期条件
+            let dateCondition = '';
+            const params = [];
+            
+            if (startDate && endDate) {
+                dateCondition = 'AND created_at BETWEEN ? AND ?';
+                params.push(startDate, endDate);
+            } else if (startDate) {
+                dateCondition = 'AND created_at >= ?';
+                params.push(startDate);
+            } else if (endDate) {
+                dateCondition = 'AND created_at <= ?';
+                params.push(endDate);
+            }
+            
+            // 获取订单状态分布数据
+            const { results: statusData } = await env.DB.prepare(
+                `SELECT 
+                    status,
+                    COUNT(*) as count
+                FROM orders
+                WHERE 1=1 ${dateCondition}
+                GROUP BY status
+                ORDER BY count DESC`
+            ).bind(...params).all();
+            
+            // 确保返回足够的数据点以便图表完整展示
+            if (statusData.length === 0) {
+                // 如果没有数据，返回一个空数据点以便前端能正确渲染图表
+                return new Response(JSON.stringify([{
+                    status: '无数据',
+                    count: 0,
+                    percentage: 100
+                }]), {
+                    status: 200,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                });
+            }
+            
+            // 计算总订单数（用于计算百分比）
+            const totalOrders = statusData.reduce((sum, item) => sum + item.count, 0);
+            
+            // 格式化响应数据
+            const formattedData = statusData.map(item => ({
+                status: item.status,
+                count: item.count,
+                percentage: totalOrders > 0 ? Math.round((item.count / totalOrders) * 100) : 0
+            }));
+            
+            return new Response(JSON.stringify(formattedData), {
+                status: 200,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '获取订单状态分布数据失败', details: error.message }), {
+                status: 500,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        }
+    }
+    
+    // 获取用户增长趋势数据
+    if (path === '/api/admin/statistics/user-growth' && request.method === 'GET') {
+        try {
+            const period = url.searchParams.get('period') || 'month';
+            const startDate = url.searchParams.get('startDate');
+            const endDate = url.searchParams.get('endDate');
+            let timeFormat, limit, dateCondition;
+            const params = [];
+            
+            // 根据时间周期设置SQL日期格式和数据点数量
+            if (period === 'week') {
+                timeFormat = '%Y-%m-%d'; // 按天
+                limit = 7;
+            } else if (period === 'year') {
+                timeFormat = '%Y-%m'; // 按月
+                limit = 12;
+            } else { // month
+                timeFormat = '%Y-%m-%d'; // 按天
+                limit = 30;
+            }
+            
+            // 构建日期条件
+            if (startDate && endDate) {
+                dateCondition = 'AND created_at BETWEEN ? AND ?';
+                params.push(startDate, endDate);
+            } else if (startDate) {
+                dateCondition = 'AND created_at >= ?';
+                params.push(startDate);
+            } else if (endDate) {
+                dateCondition = 'AND created_at <= ?';
+                params.push(endDate);
+            } else {
+                dateCondition = '';
+            }
+            
+            // 获取用户增长数据
+            params.push(limit);
+            const { results: userData } = await env.DB.prepare(
+                `SELECT 
+                    strftime('${timeFormat}', created_at) as time_period,
+                    COUNT(*) as user_count
+                FROM users
+                WHERE 1=1 ${dateCondition}
+                GROUP BY time_period
+                ORDER BY time_period ASC
+                LIMIT ?`
+            ).bind(...params).all();
+            
+            // 确保返回足够的数据点以便图表完整展示
+            if (userData.length === 0) {
+                // 如果没有数据，返回一个空数据点以便前端能正确渲染图表
+                return new Response(JSON.stringify({
+                    labels: [new Date().toISOString().split('T')[0]],
+                    values: [0]
+                }), {
+                    status: 200,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                });
+            }
+            
+            // 转换数据格式以适应前端图表
+            const formattedData = {
+                labels: userData.map(item => item.time_period),
+                values: userData.map(item => item.user_count)
+            };
+            
+            return new Response(JSON.stringify(formattedData), {
+                status: 200,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '获取用户增长趋势数据失败', details: error.message }), {
+                status: 500,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        }
+    }
+    
     // 获取商品销售分布数据
     if (path === '/api/admin/products/sales-distribution' && request.method === 'GET') {
         try {
@@ -1401,6 +1646,54 @@ const handleAdminAPI = async (request, env) => {
             });
         } catch (error) {
             return new Response(JSON.stringify({ error: '更新分类失败', details: error.message }), {
+                status: 500,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        }
+    }
+    
+    // 更新用户状态
+    if (path.match(/^\/api\/admin\/users\/\d+\/status$/) && request.method === 'PUT') {
+        try {
+            // 从路径中提取用户ID
+            const userId = path.split('/').slice(-2)[0];
+            
+            // 获取请求体中的状态
+            const { status } = await request.json();
+            
+            // 验证状态值并转换为数据库中使用的状态值
+            let dbStatus;
+            if (status === 'active') {
+                dbStatus = '正常';
+            } else if (status === 'disabled') {
+                dbStatus = '禁用';
+            } else {
+                return new Response(JSON.stringify({ error: '无效的状态值，只能是 active 或 disabled' }), {
+                    status: 400,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                });
+            }
+            
+            // 更新用户状态
+            const result = await env.DB.prepare(
+                `UPDATE users
+                SET status = ?
+                WHERE user_id = ?`
+            ).bind(dbStatus, userId).run();
+            
+            if (result.changes === 0) {
+                return new Response(JSON.stringify({ error: '用户不存在或状态未更改' }), {
+                    status: 404,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                });
+            }
+            
+            return new Response(JSON.stringify({ success: true, message: '用户状态已更新' }), {
+                status: 200,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '更新用户状态失败', details: error.message }), {
                 status: 500,
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             });

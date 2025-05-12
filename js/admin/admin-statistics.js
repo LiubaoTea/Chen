@@ -100,18 +100,20 @@ function renderSalesTrendChart(data) {
     }
     
     // 检查数据格式是否正确
-    if (!data || !data.labels || !data.values) {
+    if (!data || !data.labels || !Array.isArray(data.labels)) {
         console.error('销售趋势数据格式不正确:', data);
         // 创建默认数据
         data = {
             labels: ['无数据'],
-            values: [0]
+            sales: [0],
+            orders: [0]
         };
     }
     
-    // 确保数据是数组
+    // 确保数据格式一致，支持新的API返回格式
     const labels = Array.isArray(data.labels) ? data.labels : [];
-    const values = Array.isArray(data.values) ? data.values : [];
+    const values = data.sales || data.values || [];
+    const ordersData = data.orders || [];
     
     console.log('销售趋势图表数据:', { labels, values });
     
@@ -136,18 +138,53 @@ function renderSalesTrendChart(data) {
             type: 'line',
             data: {
                 labels: labels,
-                datasets: [{
-                    label: '销售额',
-                    data: values,
-                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                    borderColor: 'rgba(54, 162, 235, 1)',
-                    borderWidth: 2,
-                    tension: 0.1
-                }]
+                datasets: [
+                    {
+                        label: '销售额',
+                        data: values,
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 2,
+                        tension: 0.1,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: '订单数',
+                        data: ordersData,
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        borderWidth: 2,
+                        tension: 0.1,
+                        yAxisID: 'y1'
+                    }
+                ]
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: false
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        title: {
+                            display: true,
+                            text: '销售额'
+                        }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        title: {
+                            display: true,
+                            text: '订单数'
+                        },
+                        grid: {
+                            drawOnChartArea: false
+                        }
+                    }
+                }
             }
         });
     } catch (error) {
