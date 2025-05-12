@@ -755,61 +755,6 @@ const handleAdminAPI = async (request, env) => {
         }
     }
     
-    // 获取热销商品数据
-    if (path === '/api/admin/products/top-selling' && request.method === 'GET') {
-        try {
-            const limit = parseInt(url.searchParams.get('limit') || '10');
-            const startDate = url.searchParams.get('startDate');
-            const endDate = url.searchParams.get('endDate');
-            
-            let dateCondition = '';
-            const params = [];
-            
-            if (startDate && endDate) {
-                dateCondition = 'AND o.created_at BETWEEN ? AND ?';
-                params.push(startDate, endDate);
-            } else if (startDate) {
-                dateCondition = 'AND o.created_at >= ?';
-                params.push(startDate);
-            } else if (endDate) {
-                dateCondition = 'AND o.created_at <= ?';
-                params.push(endDate);
-            }
-            
-            // 添加limit参数
-            params.push(limit);
-            
-            // 获取热销商品数据
-            const { results: topProducts } = await env.DB.prepare(`
-                SELECT 
-                    p.product_id,
-                    p.name,
-                    p.image_url,
-                    p.price,
-                    p.stock,
-                    SUM(oi.quantity) as total_sold,
-                    SUM(oi.quantity * oi.unit_price) as total_revenue
-                FROM products p
-                JOIN order_items oi ON p.product_id = oi.product_id
-                JOIN orders o ON oi.order_id = o.order_id
-                WHERE o.status != 'cancelled' ${dateCondition}
-                GROUP BY p.product_id
-                ORDER BY total_sold DESC
-                LIMIT ?
-            `).bind(...params).all();
-            
-            return new Response(JSON.stringify(topProducts), {
-                status: 200,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
-        } catch (error) {
-            return new Response(JSON.stringify({ error: '获取热销商品数据失败', details: error.message }), {
-                status: 500,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
-        }
-    }
-    
     // 获取用户增长趋势数据
     if (path === '/api/admin/statistics/user-growth' && request.method === 'GET') {
         try {
@@ -882,148 +827,6 @@ const handleAdminAPI = async (request, env) => {
             });
         } catch (error) {
             return new Response(JSON.stringify({ error: '获取用户增长趋势数据失败', details: error.message }), {
-                status: 500,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
-        }
-    }
-    
-    // 获取订单详情
-    if (path.match(/^\/api\/admin\/orders\/[\w-]+$/) && request.method === 'GET') {
-        try {
-            const orderId = path.split('/').pop();
-            
-            // 获取订单基本信息
-            const order = await env.DB.prepare(`
-                SELECT o.*, u.username 
-                FROM orders o
-                JOIN users u ON o.user_id = u.user_id
-                WHERE o.order_id = ?
-            `).bind(orderId).first();
-            
-            if (!order) {
-                return new Response(JSON.stringify({ error: '订单不存在' }), {
-                    status: 404,
-                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-                });
-            }
-            
-            // 获取订单项
-            const { results: items } = await env.DB.prepare(`
-                SELECT oi.*, p.name, p.image_url
-                FROM order_items oi
-                JOIN products p ON oi.product_id = p.product_id
-                WHERE oi.order_id = ?
-            `).bind(orderId).all();
-            
-            // 获取收货地址
-            const address = await env.DB.prepare(`
-                SELECT ua.*
-                FROM user_addresses ua
-                JOIN orders o ON ua.address_id = o.address_id
-                WHERE o.order_id = ?
-            `).bind(orderId).first() || {};
-            
-            // 组合完整订单信息
-            const orderDetails = {
-                ...order,
-                items,
-                shipping_address: address
-            };
-            
-            return new Response(JSON.stringify(orderDetails), {
-                status: 200,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
-        } catch (error) {
-            return new Response(JSON.stringify({ error: '获取订单详情失败', details: error.message }), {
-                status: 500,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
-        }
-    }
-    
-    // 更新订单状态
-    if (path.match(/^\/api\/admin\/orders\/[\w-]+\/status$/) && request.method === 'PUT') {
-        try {
-            const orderId = path.split('/')[4]; // 从路径中提取订单ID
-            const { status } = await request.json();
-            
-            // 验证状态值
-            if (!['pending', 'paid', 'shipped', 'delivered', 'cancelled'].includes(status)) {
-                return new Response(JSON.stringify({ error: '无效的订单状态值' }), {
-                    status: 400,
-                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-                });
-            }
-            
-            // 更新订单状态
-            const result = await env.DB.prepare(`
-                UPDATE orders
-                SET status = ?, updated_at = CURRENT_TIMESTAMP
-                WHERE order_id = ?
-            `).bind(status, orderId).run();
-            
-            if (!result || result.changes === 0) {
-                return new Response(JSON.stringify({ error: '订单不存在或状态未更改' }), {
-                    status: 404,
-                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-                });
-            }
-            
-            return new Response(JSON.stringify({
-                message: '订单状态更新成功',
-                orderId,
-                status
-            }), {
-                status: 200,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
-        } catch (error) {
-            return new Response(JSON.stringify({ error: '更新订单状态失败', details: error.message }), {
-                status: 500,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
-        }
-    }
-    
-    // 获取订单状态分布数据
-    if (path === '/api/admin/orders/status-distribution' && request.method === 'GET') {
-        try {
-            const startDate = url.searchParams.get('startDate');
-            const endDate = url.searchParams.get('endDate');
-            
-            let dateCondition = '';
-            const params = [];
-            
-            if (startDate && endDate) {
-                dateCondition = 'WHERE created_at BETWEEN ? AND ?';
-                params.push(startDate, endDate);
-            } else if (startDate) {
-                dateCondition = 'WHERE created_at >= ?';
-                params.push(startDate);
-            } else if (endDate) {
-                dateCondition = 'WHERE created_at <= ?';
-                params.push(endDate);
-            }
-            
-            // 获取订单状态分布数据
-            const { results: statusDistribution } = await env.DB.prepare(`
-                SELECT 
-                    status,
-                    COUNT(*) as count
-                FROM orders
-                ${dateCondition}
-                GROUP BY status
-                ORDER BY count DESC
-            `).bind(...params).all();
-            
-            return new Response(JSON.stringify(statusDistribution), {
-                status: 200,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
-        } catch (error) {
-            return new Response(JSON.stringify({ error: '获取订单状态分布数据失败', details: error.message }), {
                 status: 500,
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             });
@@ -1280,22 +1083,19 @@ const handleAdminAPI = async (request, env) => {
             const { status } = await request.json();
             
             // 验证状态值
-            if (!['active', 'inactive'].includes(status)) {
-                return new Response(JSON.stringify({ error: '无效的状态值，只能是 active 或 inactive' }), {
+            if (!['active', 'disabled'].includes(status)) {
+                return new Response(JSON.stringify({ error: '无效的状态值，只能是 active 或 disabled' }), {
                     status: 400,
                     headers: { ...corsHeaders, 'Content-Type': 'application/json' }
                 });
             }
-            
-            // 将API状态值转换为数据库状态值
-            const dbStatus = status === 'active' ? '正常' : '禁用';
             
             // 更新用户状态
             const result = await env.DB.prepare(`
                 UPDATE users
                 SET status = ?
                 WHERE user_id = ?
-            `).bind(dbStatus, userId).run();
+            `).bind(status, userId).run();
             
             if (!result || result.changes === 0) {
                 return new Response(JSON.stringify({ error: '用户不存在或状态未更改' }), {
@@ -1310,61 +1110,6 @@ const handleAdminAPI = async (request, env) => {
             });
         } catch (error) {
             return new Response(JSON.stringify({ error: '更新用户状态失败', details: error.message }), {
-                status: 500,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
-        }
-    }
-    
-    // 获取热销商品数据
-    if (path === '/api/admin/products/top-selling' && request.method === 'GET') {
-        try {
-            const limit = parseInt(url.searchParams.get('limit') || '10');
-            const startDate = url.searchParams.get('startDate');
-            const endDate = url.searchParams.get('endDate');
-            
-            let dateCondition = '';
-            const params = [];
-            
-            if (startDate && endDate) {
-                dateCondition = 'AND o.created_at BETWEEN ? AND ?';
-                params.push(startDate, endDate);
-            } else if (startDate) {
-                dateCondition = 'AND o.created_at >= ?';
-                params.push(startDate);
-            } else if (endDate) {
-                dateCondition = 'AND o.created_at <= ?';
-                params.push(endDate);
-            }
-            
-            // 添加limit参数
-            params.push(limit);
-            
-            // 获取热销商品数据
-            const { results: topProducts } = await env.DB.prepare(`
-                SELECT 
-                    p.product_id,
-                    p.name,
-                    p.image_url,
-                    p.price,
-                    p.stock,
-                    SUM(oi.quantity) as total_sold,
-                    SUM(oi.quantity * oi.unit_price) as total_revenue
-                FROM products p
-                JOIN order_items oi ON p.product_id = oi.product_id
-                JOIN orders o ON oi.order_id = o.order_id
-                WHERE o.status != 'cancelled' ${dateCondition}
-                GROUP BY p.product_id
-                ORDER BY total_sold DESC
-                LIMIT ?
-            `).bind(...params).all();
-            
-            return new Response(JSON.stringify(topProducts), {
-                status: 200,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
-        } catch (error) {
-            return new Response(JSON.stringify({ error: '获取热销商品数据失败', details: error.message }), {
                 status: 500,
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             });
@@ -3341,14 +3086,11 @@ const handleAdminAPI = async (request, env) => {
             
             // 验证状态值
             if (!['active', 'inactive'].includes(status)) {
-                return new Response(JSON.stringify({ error: '无效的状态值，只能是 active 或 inactive' }), {
+                return new Response(JSON.stringify({ error: '无效的状态值' }), {
                     status: 400,
                     headers: { ...corsHeaders, 'Content-Type': 'application/json' }
                 });
             }
-            
-            // 将API状态值转换为数据库状态值
-            const dbStatus = status === 'active' ? '正常' : '禁用';
             
             // 检查用户是否存在
             const existingUser = await env.DB.prepare('SELECT user_id FROM users WHERE user_id = ?')
@@ -3364,7 +3106,7 @@ const handleAdminAPI = async (request, env) => {
             
             // 更新用户状态
             await env.DB.prepare('UPDATE users SET status = ? WHERE user_id = ?')
-                .bind(dbStatus, userId)
+                .bind(status, userId)
                 .run();
             
             return new Response(JSON.stringify({
@@ -3377,148 +3119,6 @@ const handleAdminAPI = async (request, env) => {
             });
         } catch (error) {
             return new Response(JSON.stringify({ error: '更新用户状态失败', details: error.message }), {
-                status: 500,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
-        }
-    }
-    
-    // 获取订单详情
-    if (path.match(/^\/api\/admin\/orders\/[\w-]+$/) && request.method === 'GET') {
-        try {
-            const orderId = path.split('/').pop();
-            
-            // 获取订单基本信息
-            const order = await env.DB.prepare(`
-                SELECT o.*, u.username 
-                FROM orders o
-                JOIN users u ON o.user_id = u.user_id
-                WHERE o.order_id = ?
-            `).bind(orderId).first();
-            
-            if (!order) {
-                return new Response(JSON.stringify({ error: '订单不存在' }), {
-                    status: 404,
-                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-                });
-            }
-            
-            // 获取订单项
-            const { results: items } = await env.DB.prepare(`
-                SELECT oi.*, p.name, p.image_url
-                FROM order_items oi
-                JOIN products p ON oi.product_id = p.product_id
-                WHERE oi.order_id = ?
-            `).bind(orderId).all();
-            
-            // 获取收货地址
-            const address = await env.DB.prepare(`
-                SELECT ua.*
-                FROM user_addresses ua
-                JOIN orders o ON ua.address_id = o.address_id
-                WHERE o.order_id = ?
-            `).bind(orderId).first() || {};
-            
-            // 组合完整订单信息
-            const orderDetails = {
-                ...order,
-                items,
-                shipping_address: address
-            };
-            
-            return new Response(JSON.stringify(orderDetails), {
-                status: 200,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
-        } catch (error) {
-            return new Response(JSON.stringify({ error: '获取订单详情失败', details: error.message }), {
-                status: 500,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
-        }
-    }
-    
-    // 更新订单状态
-    if (path.match(/^\/api\/admin\/orders\/[\w-]+\/status$/) && request.method === 'PUT') {
-        try {
-            const orderId = path.split('/')[4]; // 从路径中提取订单ID
-            const { status } = await request.json();
-            
-            // 验证状态值
-            if (!['pending', 'paid', 'shipped', 'delivered', 'cancelled'].includes(status)) {
-                return new Response(JSON.stringify({ error: '无效的订单状态值' }), {
-                    status: 400,
-                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-                });
-            }
-            
-            // 更新订单状态
-            const result = await env.DB.prepare(`
-                UPDATE orders
-                SET status = ?, updated_at = CURRENT_TIMESTAMP
-                WHERE order_id = ?
-            `).bind(status, orderId).run();
-            
-            if (!result || result.changes === 0) {
-                return new Response(JSON.stringify({ error: '订单不存在或状态未更改' }), {
-                    status: 404,
-                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-                });
-            }
-            
-            return new Response(JSON.stringify({
-                message: '订单状态更新成功',
-                orderId,
-                status
-            }), {
-                status: 200,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
-        } catch (error) {
-            return new Response(JSON.stringify({ error: '更新订单状态失败', details: error.message }), {
-                status: 500,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
-        }
-    }
-    
-    // 获取订单状态分布数据
-    if (path === '/api/admin/orders/status-distribution' && request.method === 'GET') {
-        try {
-            const startDate = url.searchParams.get('startDate');
-            const endDate = url.searchParams.get('endDate');
-            
-            let dateCondition = '';
-            const params = [];
-            
-            if (startDate && endDate) {
-                dateCondition = 'WHERE created_at BETWEEN ? AND ?';
-                params.push(startDate, endDate);
-            } else if (startDate) {
-                dateCondition = 'WHERE created_at >= ?';
-                params.push(startDate);
-            } else if (endDate) {
-                dateCondition = 'WHERE created_at <= ?';
-                params.push(endDate);
-            }
-            
-            // 获取订单状态分布数据
-            const { results: statusDistribution } = await env.DB.prepare(`
-                SELECT 
-                    status,
-                    COUNT(*) as count
-                FROM orders
-                ${dateCondition}
-                GROUP BY status
-                ORDER BY count DESC
-            `).bind(...params).all();
-            
-            return new Response(JSON.stringify(statusDistribution), {
-                status: 200,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
-        } catch (error) {
-            return new Response(JSON.stringify({ error: '获取订单状态分布数据失败', details: error.message }), {
                 status: 500,
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             });
@@ -3568,61 +3168,6 @@ const handleAdminAPI = async (request, env) => {
             });
         } catch (error) {
             return new Response(JSON.stringify({ error: '获取商品销售分布数据失败', details: error.message }), {
-                status: 500,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
-        }
-    }
-    
-    // 获取热销商品数据
-    if (path === '/api/admin/products/top-selling' && request.method === 'GET') {
-        try {
-            const limit = parseInt(url.searchParams.get('limit') || '10');
-            const startDate = url.searchParams.get('startDate');
-            const endDate = url.searchParams.get('endDate');
-            
-            let dateCondition = '';
-            const params = [];
-            
-            if (startDate && endDate) {
-                dateCondition = 'AND o.created_at BETWEEN ? AND ?';
-                params.push(startDate, endDate);
-            } else if (startDate) {
-                dateCondition = 'AND o.created_at >= ?';
-                params.push(startDate);
-            } else if (endDate) {
-                dateCondition = 'AND o.created_at <= ?';
-                params.push(endDate);
-            }
-            
-            // 添加limit参数
-            params.push(limit);
-            
-            // 获取热销商品数据
-            const { results: topProducts } = await env.DB.prepare(`
-                SELECT 
-                    p.product_id,
-                    p.name,
-                    p.image_url,
-                    p.price,
-                    p.stock,
-                    SUM(oi.quantity) as total_sold,
-                    SUM(oi.quantity * oi.unit_price) as total_revenue
-                FROM products p
-                JOIN order_items oi ON p.product_id = oi.product_id
-                JOIN orders o ON oi.order_id = o.order_id
-                WHERE o.status != 'cancelled' ${dateCondition}
-                GROUP BY p.product_id
-                ORDER BY total_sold DESC
-                LIMIT ?
-            `).bind(...params).all();
-            
-            return new Response(JSON.stringify(topProducts), {
-                status: 200,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
-        } catch (error) {
-            return new Response(JSON.stringify({ error: '获取热销商品数据失败', details: error.message }), {
                 status: 500,
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             });
@@ -3680,69 +3225,6 @@ const handleAdminAPI = async (request, env) => {
             });
         } catch (error) {
             return new Response(JSON.stringify({ error: '获取用户增长趋势数据失败', details: error.message }), {
-                status: 500,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
-        }
-    }
-    
-    // 更新商品信息
-    if (path.match(/^\/api\/admin\/products\/\d+$/) && request.method === 'PUT') {
-        try {
-            const productId = parseInt(path.split('/').pop());
-            
-            // 检查商品是否存在
-            const existingProduct = await env.DB.prepare('SELECT product_id FROM products WHERE product_id = ?')
-                .bind(productId)
-                .first();
-                
-            if (!existingProduct) {
-                return new Response(JSON.stringify({ error: '商品不存在' }), {
-                    status: 404,
-                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-                });
-            }
-            
-            // 解析请求数据
-            const formData = await request.formData();
-            const name = formData.get('name');
-            const description = formData.get('description') || '';
-            const price = parseFloat(formData.get('price'));
-            const stock = parseInt(formData.get('stock'));
-            const status = formData.get('status');
-            const agingYears = parseInt(formData.get('aging_years') || '0');
-            const specifications = formData.get('specifications') || '{}';
-            
-            // 验证必填字段
-            if (!name || isNaN(price) || isNaN(stock)) {
-                return new Response(JSON.stringify({ error: '缺少必要字段或字段格式不正确' }), {
-                    status: 400,
-                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-                });
-            }
-            
-            // 更新商品信息
-            await env.DB.prepare(`
-                UPDATE products
-                SET name = ?, description = ?, price = ?, stock = ?, status = ?, aging_years = ?, specifications = ?
-                WHERE product_id = ?
-            `).bind(name, description, price, stock, status, agingYears, specifications, productId).run();
-            
-            // 返回更新后的商品信息
-            const updatedProduct = await env.DB.prepare(`
-                SELECT * FROM products WHERE product_id = ?
-            `).bind(productId).first();
-            
-            return new Response(JSON.stringify({
-                message: '商品更新成功',
-                product: updatedProduct
-            }), {
-                status: 200,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
-        } catch (error) {
-            console.error('更新商品失败:', error);
-            return new Response(JSON.stringify({ error: '更新商品失败', details: error.message }), {
                 status: 500,
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             });

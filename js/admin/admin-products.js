@@ -700,20 +700,14 @@ async function saveProduct() {
     // 获取图片文件
     const imageFile = document.getElementById('productImage').files[0];
     
-    // 获取保存按钮并保存原始文本，在函数开始时就定义，确保finally块中可以访问
-    const saveBtn = document.getElementById('saveProductBtn');
-    let originalText = '保存';
-    
-    // 保存原始文本，避免引用错误
-    if (!saveBtn.hasAttribute('data-original-text')) {
-        saveBtn.setAttribute('data-original-text', saveBtn.textContent);
-        originalText = saveBtn.textContent;
-    } else {
-        originalText = saveBtn.getAttribute('data-original-text');
-    }
-    
     try {
         // 显示加载状态
+        const saveBtn = document.getElementById('saveProductBtn');
+        // 保存原始文本，避免引用错误
+        if (!saveBtn.hasAttribute('data-original-text')) {
+            saveBtn.setAttribute('data-original-text', saveBtn.textContent);
+        }
+        const originalText = saveBtn.getAttribute('data-original-text');
         saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 保存中...';
         saveBtn.disabled = true;
         

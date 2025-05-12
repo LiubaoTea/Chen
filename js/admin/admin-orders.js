@@ -276,45 +276,30 @@ async function viewOrderDetails(orderId) {
         
         // 构建订单项列表
         let orderItemsHtml = '';
-        // 检查items是否存在且是数组
-        if (orderDetails.items && Array.isArray(orderDetails.items)) {
-            orderDetails.items.forEach(item => {
-                // 确保价格是数字类型
-                const price = typeof item.price === 'number' ? item.price : parseFloat(item.price || 0);
-                const quantity = typeof item.quantity === 'number' ? item.quantity : parseInt(item.quantity || 1);
-                const subtotal = price * quantity;
-                
-                // 安全地格式化价格
-                const formatPrice = (value) => {
-                    return value.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                };
-                
-                orderItemsHtml += `
-                    <div class="d-flex justify-content-between align-items-center mb-2 p-2 border-bottom">
-                        <div class="d-flex align-items-center">
-                            <img src="${item.image_url || '../image/Goods/Goods_1.png'}" alt="${item.name || '商品'}" class="order-item-image me-3" style="width: 50px; height: 50px; object-fit: cover;">
-                            <div>
-                                <h6 class="mb-0">${item.name || '未命名商品'}</h6>
-                                <small class="text-muted">单价: ¥${formatPrice(price)}</small>
-                            </div>
-                        </div>
-                        <div class="text-end">
-                            <div>数量: ${quantity}</div>
-                            <div>小计: ¥${formatPrice(subtotal)}</div>
+        orderDetails.items.forEach(item => {
+            orderItemsHtml += `
+                <div class="d-flex justify-content-between align-items-center mb-2 p-2 border-bottom">
+                    <div class="d-flex align-items-center">
+                        <img src="${item.image_url}" alt="${item.name}" class="order-item-image me-3" style="width: 50px; height: 50px; object-fit: cover;">
+                        <div>
+                            <h6 class="mb-0">${item.name}</h6>
+                            <small class="text-muted">单价: ¥${item.price.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</small>
                         </div>
                     </div>
-                `;
-            });
-        } else {
-            orderItemsHtml = '<div class="alert alert-warning">无商品信息</div>';
-        }
+                    <div class="text-end">
+                        <div>数量: ${item.quantity}</div>
+                        <div>小计: ¥${(item.price * item.quantity).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                    </div>
+                </div>
+            `;
+        });
         
         // 构建收货地址信息
-        const address = orderDetails.shipping_address || {};
+        const address = orderDetails.shipping_address;
         const addressHtml = `
-            <p class="mb-1">${address.recipient_name || ''} ${address.recipient_phone || address.contact_phone || ''}</p>
-            <p class="mb-1">${address.province || ''} ${address.city || ''} ${address.district || ''} ${address.region || ''}</p>
-            <p class="mb-0">${address.detail_address || address.full_address || '未提供详细地址'}</p>
+            <p class="mb-1">${address.recipient_name} ${address.recipient_phone}</p>
+            <p class="mb-1">${address.province}${address.city}${address.district}</p>
+            <p class="mb-0">${address.address_detail}</p>
         `;
         
         // 更新模态框内容
@@ -376,9 +361,9 @@ async function viewOrderDetails(orderId) {
                         ${orderItemsHtml}
                         <div class="d-flex justify-content-end mt-3">
                             <div class="text-end">
-                                <div>商品总额: ¥${(orderDetails.items_total || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-                                <div>运费: ¥${(orderDetails.shipping_fee || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-                                <div class="fs-5 fw-bold">订单总额: ¥${(orderDetails.total_amount || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                                <div>商品总额: ¥${orderDetails.items_total.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                                <div>运费: ¥${orderDetails.shipping_fee.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                                <div class="fs-5 fw-bold">订单总额: ¥${orderDetails.total_amount.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                             </div>
                         </div>
                     </div>
@@ -444,67 +429,14 @@ function getStatusText(status) {
 
 // 显示成功提示
 function showSuccessToast(message) {
-    const toastContainer = document.getElementById('toastContainer') || createToastContainer();
-    const toast = document.createElement('div');
-    toast.className = 'toast align-items-center text-white bg-success border-0';
-    toast.setAttribute('role', 'alert');
-    toast.setAttribute('aria-live', 'assertive');
-    toast.setAttribute('aria-atomic', 'true');
-    
-    toast.innerHTML = `
-        <div class="d-flex">
-            <div class="toast-body">
-                <i class="bi bi-check-circle me-2"></i>${message}
-            </div>
-            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-        </div>
-    `;
-    
-    toastContainer.appendChild(toast);
-    const bsToast = new bootstrap.Toast(toast);
-    bsToast.show();
-    
-    // 自动移除
-    toast.addEventListener('hidden.bs.toast', () => {
-        toast.remove();
-    });
+    // 实现提示功能，可以使用Bootstrap的Toast组件
+    alert(message);
 }
 
 // 显示错误提示
 function showErrorToast(message) {
-    const toastContainer = document.getElementById('toastContainer') || createToastContainer();
-    const toast = document.createElement('div');
-    toast.className = 'toast align-items-center text-white bg-danger border-0';
-    toast.setAttribute('role', 'alert');
-    toast.setAttribute('aria-live', 'assertive');
-    toast.setAttribute('aria-atomic', 'true');
-    
-    toast.innerHTML = `
-        <div class="d-flex">
-            <div class="toast-body">
-                <i class="bi bi-exclamation-triangle me-2"></i>${message}
-            </div>
-            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-        </div>
-    `;
-    
-    toastContainer.appendChild(toast);
-    const bsToast = new bootstrap.Toast(toast);
-    bsToast.show();
-    
-    // 自动移除
-    toast.addEventListener('hidden.bs.toast', () => {
-        toast.remove();
-    });
-}
-
-// 创建Toast容器
-function createToastContainer() {
-    const container = document.createElement('div');
-    container.id = 'toastContainer';
-    container.className = 'toast-container position-fixed bottom-0 end-0 p-3';
-    document.body.appendChild(container);
-    return container;
+    // 实现提示功能，可以使用Bootstrap的Toast组件
+    alert(message);
 }
 
 // 导出模块

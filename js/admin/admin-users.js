@@ -261,7 +261,7 @@ async function viewUserDetails(userId) {
         
         // 构建收货地址列表
         let addressesHtml = '<p class="text-muted">暂无收货地址</p>';
-        if (userDetails.addresses && Array.isArray(userDetails.addresses) && userDetails.addresses.length > 0) {
+        if (userDetails.addresses && userDetails.addresses.length > 0) {
             addressesHtml = '<div class="list-group">';
             userDetails.addresses.forEach(address => {
                 const isDefault = address.is_default ? 
@@ -270,10 +270,10 @@ async function viewUserDetails(userId) {
                 addressesHtml += `
                     <div class="list-group-item">
                         <div class="d-flex justify-content-between align-items-center">
-                            <h6 class="mb-1">${address.recipient_name || '收件人'} ${address.recipient_phone || ''} ${isDefault}</h6>
+                            <h6 class="mb-1">${address.recipient_name} ${address.recipient_phone} ${isDefault}</h6>
                         </div>
-                        <p class="mb-1">${address.province || ''}${address.city || ''}${address.district || ''}</p>
-                        <small>${address.address_detail || address.detail_address || ''}</small>
+                        <p class="mb-1">${address.province}${address.city}${address.district}</p>
+                        <small>${address.address_detail}</small>
                     </div>
                 `;
             });
@@ -282,28 +282,18 @@ async function viewUserDetails(userId) {
         
         // 构建订单历史
         let ordersHtml = '<p class="text-muted">暂无订单记录</p>';
-        if (userDetails.recent_orders && Array.isArray(userDetails.recent_orders) && userDetails.recent_orders.length > 0) {
+        if (userDetails.recent_orders && userDetails.recent_orders.length > 0) {
             ordersHtml = '<div class="table-responsive"><table class="table table-sm"><thead><tr><th>订单号</th><th>日期</th><th>金额</th><th>状态</th></tr></thead><tbody>';
             
             userDetails.recent_orders.forEach(order => {
-                // 安全地格式化日期
-                let orderDate = '未知';
-                try {
-                    if (order.created_at) {
-                        orderDate = new Date(order.created_at * 1000).toLocaleDateString('zh-CN');
-                    }
-                } catch (error) {
-                    console.error('日期格式化错误:', error);
-                }
-                
-                const statusBadge = getOrderStatusBadge(order.status || 'unknown');
-                const totalAmount = typeof order.total_amount === 'number' ? order.total_amount : 0;
+                const orderDate = new Date(order.created_at * 1000).toLocaleDateString('zh-CN');
+                const statusBadge = getOrderStatusBadge(order.status);
                 
                 ordersHtml += `
                     <tr>
-                        <td>${order.order_id || '未知'}</td>
+                        <td>${order.order_id}</td>
                         <td>${orderDate}</td>
-                        <td>¥${totalAmount.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        <td>¥${order.total_amount.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                         <td>${statusBadge}</td>
                     </tr>
                 `;
@@ -409,10 +399,10 @@ async function toggleUserStatus(userId, currentStatus) {
         // 更新状态
         await adminAPI.updateUserStatus(userId, newStatus);
         
-        // 显示成功消息
+        // 显示成功提示
         window.showSuccessToast(`用户已${actionText}`);
         
-        // 刷新用户列表
+        // 重新加载用户列表
         await loadUsers(usersCurrentPage, document.getElementById('userSearchInput').value);
     } catch (error) {
         console.error('更新用户状态失败:', error);
