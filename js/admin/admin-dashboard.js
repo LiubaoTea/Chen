@@ -123,12 +123,45 @@ function updateTopProducts(products) {
 
 // 渲染销售趋势图表
 function renderSalesChart(data) {
-    const ctx = document.getElementById('salesChart').getContext('2d');
+    const salesChartContainer = document.getElementById('salesChart');
+    
+    // 确保图表容器存在并设置明确的高度
+    if (salesChartContainer) {
+        salesChartContainer.style.height = '300px';
+        salesChartContainer.style.width = '100%';
+    } else {
+        console.error('销售趋势图表容器不存在');
+        return;
+    }
+    
+    const ctx = salesChartContainer.getContext('2d');
     
     // 检查Chart对象是否可用
     if (typeof Chart === 'undefined') {
         console.error('Chart对象未定义，请确保Chart.js已正确加载');
         return;
+    }
+    
+    // 检查数据格式是否正确
+    if (!data || !data.labels || !Array.isArray(data.labels)) {
+        console.error('销售趋势数据格式不正确:', data);
+        // 创建默认数据
+        data = {
+            labels: ['无数据'],
+            sales: [0],
+            orders: [0]
+        };
+    }
+    
+    // 确保sales和orders数据存在
+    if (!data.sales || !Array.isArray(data.sales)) {
+        console.warn('销售额数据不存在或格式不正确，使用默认值');
+        data.sales = new Array(data.labels.length).fill(0);
+    }
+    
+    if (!data.orders || !Array.isArray(data.orders)) {
+        console.warn('订单数据不存在或格式不正确，使用默认值');
+        data.orders = new Array(data.labels.length).fill(0);
     }
     
     // 销毁现有图表（如果存在）
@@ -237,7 +270,28 @@ function renderSalesChart(data) {
 
 // 渲染分类占比图表
 function renderCategoryChart(data) {
-    const ctx = document.getElementById('categoryChart').getContext('2d');
+    const categoryChartContainer = document.getElementById('categoryChart');
+    
+    // 确保图表容器存在并设置明确的高度
+    if (categoryChartContainer) {
+        categoryChartContainer.style.height = '300px';
+        categoryChartContainer.style.width = '100%';
+    } else {
+        console.error('分类占比图表容器不存在');
+        return;
+    }
+    
+    const ctx = categoryChartContainer.getContext('2d');
+    
+    // 检查数据格式是否正确
+    if (!data || !data.labels || !Array.isArray(data.labels) || !data.values || !Array.isArray(data.values)) {
+        console.error('分类占比数据格式不正确:', data);
+        // 创建默认数据
+        data = {
+            labels: ['无数据'],
+            values: [100]
+        };
+    }
     
     // 销毁现有图表（如果存在）
     if (window.categoryChart instanceof Chart) {
@@ -298,11 +352,11 @@ function renderCategoryChart(data) {
                         }
                     }
                 }
-            },
-            cutout: '70%'
+            }
         }
     });
 }
+
 
 // 获取订单状态对应的CSS类
 function getOrderStatusClass(status) {

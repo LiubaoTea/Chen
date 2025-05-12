@@ -295,12 +295,12 @@ async function viewOrderDetails(orderId) {
         });
         
         // 构建收货地址信息
-        const address = orderDetails.shipping_address;
-        const addressHtml = `
-            <p class="mb-1">${address.recipient_name} ${address.recipient_phone}</p>
-            <p class="mb-1">${address.province}${address.city}${address.district}</p>
-            <p class="mb-0">${address.address_detail}</p>
-        `;
+        const address = orderDetails.shipping_address || {};
+        const addressHtml = address.recipient_name ? `
+            <p class="mb-1">${address.recipient_name || ''} ${address.recipient_phone || ''}</p>
+            <p class="mb-1">${address.province || ''}${address.city || ''}${address.district || ''}</p>
+            <p class="mb-0">${address.address_detail || ''}</p>
+        ` : '<p class="mb-0">无收货地址信息</p>';
         
         // 更新模态框内容
         document.getElementById('orderDetailContent').innerHTML = `
@@ -339,7 +339,7 @@ async function viewOrderDetails(orderId) {
                         </tr>
                         <tr>
                             <th>联系电话:</th>
-                            <td>${address.recipient_phone}</td>
+                            <td>${address.recipient_phone || '未提供'}</td>
                         </tr>
                     </table>
                 </div>
