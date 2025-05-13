@@ -562,7 +562,7 @@ function renderSalesChart(data) {
     if (!salesChartCanvas) return;
     
     // 检查Chart对象是否可用
-    if (typeof Chart === 'undefined') {
+    if (typeof window.Chart === 'undefined') {
         console.error('Chart对象未定义，请确保Chart.js已正确加载');
         return;
     }
