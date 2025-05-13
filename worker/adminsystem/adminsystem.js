@@ -1200,47 +1200,61 @@ const handleAdminAPI = async (request, env) => {
             }
             
             const { 
-                name, 
+                product_name, 
                 description, 
                 price, 
-                stock, 
-                aging_years, 
-                specifications, 
-                status 
+                stock_quantity, 
+                category_id, 
+                image_url, 
+                is_featured, 
+                is_active 
             } = await request.json();
             
             // 验证必填字段
-            if (!name || price === undefined) {
-                return new Response(JSON.stringify({ error: '商品名称和价格为必填项' }), {
+            if (!product_name || !price || !category_id) {
+                return new Response(JSON.stringify({ error: '商品名称、价格和分类为必填项' }), {
                     status: 400,
                     headers: { ...corsHeaders, 'Content-Type': 'application/json' }
                 });
             }
             
-            // 插入商品数据 - 使用正确的表结构字段
+            // 检查分类是否存在
+            const category = await env.DB.prepare('SELECT category_id FROM product_categories WHERE category_id = ?')
+                .bind(category_id)
+                .first();
+                
+            if (!category) {
+                return new Response(JSON.stringify({ error: '所选分类不存在' }), {
+                    status: 400,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                });
+            }
+            
+            // 插入商品数据
             const result = await env.DB.prepare(`
                 INSERT INTO products (
-                    name, description, price, stock, 
-                    aging_years, specifications, status, created_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, CAST(strftime('%s','now') AS INTEGER))
+                    product_name, description, price, stock_quantity, 
+                    category_id, image_url, is_featured, is_active, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
             `).bind(
-                name,
+                product_name,
                 description || '',
                 price,
-                stock || 0,
-                aging_years || 0,
-                specifications || '{}',
-                status || 'active'
+                stock_quantity || 0,
+                category_id,
+                image_url || '',
+                is_featured ? 1 : 0,
+                is_active !== undefined ? (is_active ? 1 : 0) : 1,
             ).run();
-            
-            console.log('商品添加结果:', result);
             
             // 获取新插入的商品ID
             const newProductId = result.meta?.last_row_id;
             
             // 获取新插入的商品详情
             const newProduct = await env.DB.prepare(`
-                SELECT * FROM products WHERE product_id = ?
+                SELECT p.*, NULL as category_name 
+                FROM products p
+                WHERE p.product_id = ?
             `).bind(newProductId).first();
             
             return new Response(JSON.stringify({
@@ -1799,11 +1813,9 @@ const handleAdminAPI = async (request, env) => {
             
             // 获取订单列表
             const ordersQuery = `
-                SELECT o.*, u.username, u.email, u.user_id,
-                    a.province, a.city, a.district, a.address, a.recipient_name, a.phone
+                SELECT o.*, u.username, u.email, u.user_id 
                 FROM orders o
                 LEFT JOIN users u ON o.user_id = u.user_id
-                LEFT JOIN addresses a ON o.address_id = a.address_id
                 ${whereClause}
                 ORDER BY o.created_at DESC
                 LIMIT ? OFFSET ?
@@ -1819,8 +1831,7 @@ const handleAdminAPI = async (request, env) => {
             if (orderIds.length > 0) {
                 const placeholders = orderIds.map(() => '?').join(',');
                 const { results: orderItems } = await env.DB.prepare(`
-                    SELECT oi.*, p.name as product_name, p.image_url, oi.quantity, 
-                    (oi.price * oi.quantity) as item_total
+                    SELECT oi.*, p.name as product_name, oi.quantity
                     FROM order_items oi
                     LEFT JOIN products p ON oi.product_id = p.product_id
                     WHERE oi.order_id IN (${placeholders})
@@ -2157,30 +2168,12 @@ const handleAdminAPI = async (request, env) => {
             
             // 获取用户最近的订单
             const { results: recentOrders } = await env.DB.prepare(`
-                SELECT o.order_id, o.status, o.total_amount, o.created_at,
-                COUNT(oi.order_item_id) as items_count
-                FROM orders o
-                LEFT JOIN order_items oi ON o.order_id = oi.order_id
-                WHERE o.user_id = ?
-                GROUP BY o.order_id
-                ORDER BY o.created_at DESC
+                SELECT order_id, status, total_amount, created_at 
+                FROM orders
+                WHERE user_id = ?
+                ORDER BY created_at DESC
                 LIMIT 5
             `).bind(userId).all();
-            
-            // 确保订单日期格式正确
-            recentOrders.forEach(order => {
-                if (order.created_at) {
-                    order.created_at = new Date(order.created_at).toISOString();
-                }
-            });
-            
-            // 确保日期格式正确
-            if (user.created_at) {
-                user.created_at = new Date(user.created_at).toISOString();
-            }
-            if (user.last_login) {
-                user.last_login = new Date(user.last_login).toISOString();
-            }
             
             // 组合完整的用户信息
             const userDetails = {
@@ -3086,19 +3079,13 @@ const handleAdminAPI = async (request, env) => {
             
             const { status } = await request.json();
             
-            // 验证状态值 - 修复：确保状态值为active或inactive
-            if (typeof status !== 'string' || !['active', 'inactive'].includes(status.toLowerCase())) {
-                return new Response(JSON.stringify({ 
-                    error: '无效的状态值', 
-                    message: '状态值必须为 "active" 或 "inactive"' 
-                }), {
+            // 验证状态值
+            if (!['active', 'inactive'].includes(status)) {
+                return new Response(JSON.stringify({ error: '无效的状态值' }), {
                     status: 400,
                     headers: { ...corsHeaders, 'Content-Type': 'application/json' }
                 });
             }
-            
-            // 标准化状态值为小写
-            const normalizedStatus = status.toLowerCase();
             
             // 检查用户是否存在
             const existingUser = await env.DB.prepare('SELECT user_id FROM users WHERE user_id = ?')
@@ -3114,13 +3101,13 @@ const handleAdminAPI = async (request, env) => {
             
             // 更新用户状态
             await env.DB.prepare('UPDATE users SET status = ? WHERE user_id = ?')
-                .bind(normalizedStatus, userId)
+                .bind(status, userId)
                 .run();
             
             return new Response(JSON.stringify({
                 message: '用户状态更新成功',
                 userId,
-                status: normalizedStatus
+                status
             }), {
                 status: 200,
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -3170,32 +3157,7 @@ const handleAdminAPI = async (request, env) => {
                 LIMIT 20
             `).bind(...params).all();
             
-            // 计算总销售额（用于计算百分比）
-            const totalSalesResult = await env.DB.prepare(`
-                SELECT SUM(oi.quantity * oi.price) as total_amount
-                FROM order_items oi
-                JOIN orders o ON oi.order_id = o.order_id
-                WHERE o.status != 'cancelled' ${dateCondition}
-            `).bind(...params).first();
-            
-            // 格式化响应数据，添加百分比信息
-            const totalAmount = totalSalesResult?.total_amount || 0;
-            const formattedData = salesDistribution.map(item => ({
-                id: item.product_id,
-                name: item.product_name,
-                value: item.quantity_sold,
-                amount: item.total_sales,
-                percentage: totalAmount > 0 ? Math.round((item.total_sales / totalAmount) * 100) : 0,
-                orders: item.orders_count
-            }));
-            
-            return new Response(JSON.stringify({
-                items: formattedData,
-                total: {
-                    amount: totalAmount,
-                    count: formattedData.reduce((sum, item) => sum + parseInt(item.value || 0), 0)
-                }
-            }), {
+            return new Response(JSON.stringify(salesDistribution), {
                 status: 200,
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             });
