@@ -708,6 +708,8 @@ async function saveProduct() {
             saveBtn.setAttribute('data-original-text', saveBtn.textContent);
         }
         const originalText = saveBtn.getAttribute('data-original-text') || '保存';
+        // 保存为全局变量，避免在finally中引用错误
+        window.originalBtnText = originalText;
         saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 保存中...';
         saveBtn.disabled = true;
         
@@ -764,7 +766,7 @@ async function saveProduct() {
     } finally {
         // 恢复按钮状态
         const saveBtn = document.getElementById('saveProductBtn');
-        saveBtn.textContent = originalText;
+        saveBtn.textContent = window.originalBtnText || '保存';
         saveBtn.disabled = false;
     }
 }

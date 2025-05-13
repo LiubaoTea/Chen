@@ -561,9 +561,24 @@ function renderSalesChart(data) {
     const salesChartCanvas = document.getElementById('salesChart');
     if (!salesChartCanvas) return;
     
-    // 检查是否已存在Chart实例
-    if (window.salesChart) {
-        window.salesChart.destroy();
+    // 检查Chart对象是否可用
+    if (typeof Chart === 'undefined') {
+        console.error('Chart对象未定义，请确保Chart.js已正确加载');
+        return;
+    }
+    
+    // 检查是否已存在Chart实例并正确销毁
+    try {
+        if (window.salesChart) {
+            if (typeof window.salesChart.destroy === 'function') {
+                window.salesChart.destroy();
+            } else {
+                window.salesChart = null;
+            }
+        }
+    } catch (error) {
+        console.error('销毁旧图表时出错:', error);
+        window.salesChart = null;
     }
     
     // 检查数据格式，兼容两种格式：数组格式和{labels,sales,orders}格式

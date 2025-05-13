@@ -1661,25 +1661,20 @@ const handleAdminAPI = async (request, env) => {
             // 获取请求体中的状态
             const { status } = await request.json();
             
-            // 验证状态值并转换为数据库中使用的状态值
-            let dbStatus;
-            if (status === 'active') {
-                dbStatus = '正常';
-            } else if (status === 'disabled') {
-                dbStatus = '禁用';
-            } else {
+            // 验证状态值
+            if (status !== 'active' && status !== 'disabled') {
                 return new Response(JSON.stringify({ error: '无效的状态值，只能是 active 或 disabled' }), {
                     status: 400,
                     headers: { ...corsHeaders, 'Content-Type': 'application/json' }
                 });
             }
             
-            // 更新用户状态
+            // 更新用户状态 - 直接使用英文状态值，避免数据库约束问题
             const result = await env.DB.prepare(
                 `UPDATE users
                 SET status = ?
                 WHERE user_id = ?`
-            ).bind(dbStatus, userId).run();
+            ).bind(status, userId).run();
             
             if (result.changes === 0) {
                 return new Response(JSON.stringify({ error: '用户不存在或状态未更改' }), {

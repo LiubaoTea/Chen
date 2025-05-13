@@ -361,9 +361,9 @@ async function viewOrderDetails(orderId) {
                         ${orderItemsHtml}
                         <div class="d-flex justify-content-end mt-3">
                             <div class="text-end">
-                                <div>商品总额: ¥${orderDetails.items_total.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-                                <div>运费: ¥${orderDetails.shipping_fee.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-                                <div class="fs-5 fw-bold">订单总额: ¥${orderDetails.total_amount.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                                <div>商品总额: ¥${(orderDetails.items_total || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                                <div>运费: ¥${(orderDetails.shipping_fee || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                                <div class="fs-5 fw-bold">订单总额: ¥${(orderDetails.total_amount || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                             </div>
                         </div>
                     </div>

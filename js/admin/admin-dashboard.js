@@ -283,15 +283,27 @@ function renderCategoryChart(data) {
     
     const ctx = categoryChartContainer.getContext('2d');
     
-    // 检查数据格式是否正确
-    if (!data || !data.labels || !Array.isArray(data.labels) || !data.values || !Array.isArray(data.values)) {
+    // 检查Chart对象是否可用
+    if (typeof Chart === 'undefined') {
+        console.error('Chart对象未定义，请确保Chart.js已正确加载');
+        return;
+    }
+    
+    // 检查数据格式是否正确，支持API返回的数组格式
+    if (!data || !Array.isArray(data)) {
         console.error('分类占比数据格式不正确:', data);
         // 创建默认数据
-        data = {
-            labels: ['无数据'],
-            values: [100]
-        };
+        data = [{ category_name: '无数据', product_count: 100 }];
     }
+    
+    // 从数组格式转换为图表所需的格式
+    const labels = data.map(item => item.category_name);
+    const values = data.map(item => item.product_count);
+    
+    const chartData = {
+        labels: labels,
+        values: values
+    };
     
     // 销毁现有图表（如果存在）
     if (window.categoryChart instanceof Chart) {
@@ -302,9 +314,9 @@ function renderCategoryChart(data) {
     window.categoryChart = new Chart(ctx, {
         type: 'doughnut',
         data: {
-            labels: data.labels,
+            labels: chartData.labels,
             datasets: [{
-                data: data.values,
+                data: chartData.values,
                 backgroundColor: [
                     '#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b',
                     '#5a5c69', '#6f42c1', '#fd7e14', '#20c9a6', '#858796'
