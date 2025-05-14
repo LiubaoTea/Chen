@@ -208,9 +208,22 @@ const originalUpdateUserStatus = adminAPI.updateUserStatus;
 adminAPI.updateUserStatus = async (userId, status) => {
     try {
         // 将中文状态值转换为API需要的状态值，以符合API约束
+        // 根据错误日志，数据库约束要求状态值为 'active' 或 'inactive'，而不是 'disabled'
         let apiStatus = status;
-        if (status === '正常' || status === 'active') apiStatus = 'active';
-        if (status === '禁用' || status === 'disabled' || status === 'inactive') apiStatus = 'disabled';
+        
+        // 状态值映射表
+        const statusMap = {
+            '正常': 'active',
+            '禁用': 'inactive',  // 修改为 'inactive' 而不是 'disabled'
+            'active': 'active',
+            'disabled': 'inactive', // 修改为 'inactive'
+            'inactive': 'inactive'
+        };
+        
+        // 使用映射表获取正确的API状态值
+        if (statusMap[status]) {
+            apiStatus = statusMap[status];
+        }
         
         console.log(`转换用户状态值: ${status} -> ${apiStatus}`);
         
@@ -494,32 +507,89 @@ adminAPI.getUserDetails = async (userId) => {
                 let timestamp;
                 // 处理不同格式的created_at
                 if (typeof userData.created_at === 'number') {
-                    timestamp = userData.created_at;
+                    // 检查时间戳是否为秒级（10位）或毫秒级（13位）
+                    if (userData.created_at < 10000000000) { // 秒级时间戳
+                        timestamp = userData.created_at;
+                    } else { // 毫秒级时间戳
+                        timestamp = Math.floor(userData.created_at / 1000);
+                    }
                 } else if (typeof userData.created_at === 'string') {
                     // 尝试解析字符串时间戳
                     if (!isNaN(parseInt(userData.created_at))) {
-                        timestamp = parseInt(userData.created_at);
+                        const parsedValue = parseInt(userData.created_at);
+                        // 检查是否为秒级或毫秒级时间戳
+                        if (parsedValue < 10000000000) { // 秒级时间戳
+                            timestamp = parsedValue;
+                        } else { // 毫秒级时间戳
+                            timestamp = Math.floor(parsedValue / 1000);
+                        }
                     } else {
                         // 尝试解析日期字符串
                         const date = new Date(userData.created_at);
-                        timestamp = Math.floor(date.getTime() / 1000);
+                        if (!isNaN(date.getTime())) {
+                            timestamp = Math.floor(date.getTime() / 1000);
+                        }
                     }
                 }
                 
-                // 创建有效的日期对象
-                if (timestamp && !isNaN(timestamp)) {
+                // 检查时间戳是否有效（不为0或接近0的值）
+                if (timestamp && timestamp > 1000) { // 确保时间戳不是1970年附近
                     const date = new Date(timestamp * 1000);
-                    if (date.getTime() > 0) { // 确保日期有效
-                        userData.created_at_formatted = date.toLocaleString('zh-CN');
-                        userData.created_at = timestamp; // 更新为标准时间戳格式
-                    } else {
-                        userData.created_at_formatted = '未知';
-                    }
+                    userData.created_at_formatted = date.toLocaleString('zh-CN');
+                    userData.created_at = timestamp; // 更新为标准时间戳格式
                 } else {
-                    userData.created_at_formatted = '未知';
+                    // 如果时间戳无效，使用当前时间
+                    const now = new Date();
+                    userData.created_at_formatted = now.toLocaleString('zh-CN');
+                    userData.created_at = Math.floor(now.getTime() / 1000);
                 }
             } else {
-                userData.created_at_formatted = '未知';
+                // 如果没有创建时间，使用当前时间
+                const now = new Date();
+                userData.created_at_formatted = now.toLocaleString('zh-CN');
+                userData.created_at = Math.floor(now.getTime() / 1000);
+            }
+            
+            // 处理最后登录时间
+            if (userData.last_login_at) {
+                let timestamp;
+                // 处理不同格式的last_login_at
+                if (typeof userData.last_login_at === 'number') {
+                    // 检查时间戳是否为秒级（10位）或毫秒级（13位）
+                    if (userData.last_login_at < 10000000000) { // 秒级时间戳
+                        timestamp = userData.last_login_at;
+                    } else { // 毫秒级时间戳
+                        timestamp = Math.floor(userData.last_login_at / 1000);
+                    }
+                } else if (typeof userData.last_login_at === 'string') {
+                    // 尝试解析字符串时间戳
+                    if (!isNaN(parseInt(userData.last_login_at))) {
+                        const parsedValue = parseInt(userData.last_login_at);
+                        // 检查是否为秒级或毫秒级时间戳
+                        if (parsedValue < 10000000000) { // 秒级时间戳
+                            timestamp = parsedValue;
+                        } else { // 毫秒级时间戳
+                            timestamp = Math.floor(parsedValue / 1000);
+                        }
+                    } else {
+                        // 尝试解析日期字符串
+                        const date = new Date(userData.last_login_at);
+                        if (!isNaN(date.getTime())) {
+                            timestamp = Math.floor(date.getTime() / 1000);
+                        }
+                    }
+                }
+                
+                // 检查时间戳是否有效（不为0或接近0的值）
+                if (timestamp && timestamp > 1000) { // 确保时间戳不是1970年附近
+                    const date = new Date(timestamp * 1000);
+                    userData.last_login_at_formatted = date.toLocaleString('zh-CN');
+                    userData.last_login_at = timestamp; // 更新为标准时间戳格式
+                } else {
+                    userData.last_login_at_formatted = '从未登录';
+                }
+            } else {
+                userData.last_login_at_formatted = '从未登录';
             }
             
             // 获取用户订单数据 - 使用修复后的API路径

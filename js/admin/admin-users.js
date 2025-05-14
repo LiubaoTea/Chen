@@ -80,92 +80,73 @@ function updateUsersList() {
     usersData.forEach(user => {
         const row = document.createElement('tr');
         
-        // 格式化日期
+        // 获取格式化日期
         let registerDate = '未知';
         let lastLoginDate = '从未登录';
         
         try {
-            // 检查created_at是否存在且为有效值
-            if (user.created_at) {
-                // 尝试将时间戳转换为日期
-                let date;
-                // 检查是否为数字类型的时间戳
+            // 使用API返回的格式化日期
+            if (user.created_at_formatted) {
+                registerDate = user.created_at_formatted.split(' ')[0]; // 只显示日期部分
+            } else if (user.created_at) {
+                // 处理时间戳
+                let timestamp;
                 if (typeof user.created_at === 'number') {
-                    // 确保时间戳是毫秒级的，如果是秒级的需要转换
-                    // 检查时间戳是否为0或接近0的值，这通常表示数据库中的默认值
-                    if (user.created_at < 10) {
-                        // 使用当前时间作为备用
-                        date = new Date();
-                    } else {
-                        const timestamp = user.created_at > 10000000000 ? user.created_at : user.created_at * 1000;
-                        date = new Date(timestamp);
+                    // 检查时间戳是否为秒级（10位）或毫秒级（13位）
+                    if (user.created_at < 10000000000) { // 秒级时间戳
+                        timestamp = user.created_at;
+                    } else { // 毫秒级时间戳
+                        timestamp = Math.floor(user.created_at / 1000);
                     }
                 } else if (typeof user.created_at === 'string') {
-                    // 尝试将字符串转换为数字时间戳
+                    // 尝试解析字符串时间戳
                     if (!isNaN(parseInt(user.created_at))) {
                         const parsedValue = parseInt(user.created_at);
-                        // 检查时间戳是否为0或接近0的值
-                        if (parsedValue < 10) {
-                            // 使用当前时间作为备用
-                            date = new Date();
-                        } else {
-                            const timestamp = parsedValue > 10000000000 ? parsedValue : parsedValue * 1000;
-                            date = new Date(timestamp);
-                        }
-                    } else {
-                        // 尝试直接解析日期字符串
-                        date = new Date(user.created_at);
-                        // 检查日期是否有效
-                        if (isNaN(date.getTime()) || date.getFullYear() <= 1970) {
-                            // 使用当前时间作为备用
-                            date = new Date();
+                        // 检查是否为秒级或毫秒级时间戳
+                        if (parsedValue < 10000000000) { // 秒级时间戳
+                            timestamp = parsedValue;
+                        } else { // 毫秒级时间戳
+                            timestamp = Math.floor(parsedValue / 1000);
                         }
                     }
                 }
                 
-                if (date && !isNaN(date.getTime())) {
+                // 检查时间戳是否有效（不为0或接近0的值）
+                if (timestamp && timestamp > 1000) { // 确保时间戳不是1970年附近
+                    const date = new Date(timestamp * 1000);
                     registerDate = date.toLocaleDateString('zh-CN');
                 }
             }
             
-            // 检查last_login_at是否存在且为有效值
-            if (user.last_login_at) {
-                // 尝试将时间戳转换为日期
-                let date;
+            // 使用API返回的格式化最后登录时间
+            if (user.last_login_at_formatted) {
+                lastLoginDate = user.last_login_at_formatted.split(' ')[0]; // 只显示日期部分
+            } else if (user.last_login_at) {
+                // 处理时间戳
+                let timestamp;
                 if (typeof user.last_login_at === 'number') {
-                    // 确保时间戳是毫秒级的，如果是秒级的需要转换
-                    // 检查时间戳是否为0或接近0的值，这通常表示数据库中的默认值
-                    if (user.last_login_at < 10) {
-                        // 保持为从未登录
-                        date = null;
-                    } else {
-                        const timestamp = user.last_login_at > 10000000000 ? user.last_login_at : user.last_login_at * 1000;
-                        date = new Date(timestamp);
+                    // 检查时间戳是否为秒级（10位）或毫秒级（13位）
+                    if (user.last_login_at < 10000000000) { // 秒级时间戳
+                        timestamp = user.last_login_at;
+                    } else { // 毫秒级时间戳
+                        timestamp = Math.floor(user.last_login_at / 1000);
                     }
                 } else if (typeof user.last_login_at === 'string') {
-                    // 尝试将字符串转换为数字时间戳
+                    // 尝试解析字符串时间戳
                     if (!isNaN(parseInt(user.last_login_at))) {
                         const parsedValue = parseInt(user.last_login_at);
-                        // 检查时间戳是否为0或接近0的值
-                        if (parsedValue < 10) {
-                            // 保持为从未登录
-                            date = null;
-                        } else {
-                            const timestamp = parsedValue > 10000000000 ? parsedValue : parsedValue * 1000;
-                            date = new Date(timestamp);
-                        }
-                    } else {
-                        // 尝试直接解析日期字符串
-                        date = new Date(user.last_login_at);
-                        // 检查日期是否有效
-                        if (isNaN(date.getTime()) || date.getFullYear() <= 1970) {
-                            // 保持为从未登录
-                            date = null;
+                        // 检查是否为秒级或毫秒级时间戳
+                        if (parsedValue < 10000000000) { // 秒级时间戳
+                            timestamp = parsedValue;
+                        } else { // 毫秒级时间戳
+                            timestamp = Math.floor(parsedValue / 1000);
                         }
                     }
                 }
                 
-                if (date && !isNaN(date.getTime())) {
+                // 检查时间戳是否有效（不为0或接近0的值）
+                if (timestamp && timestamp > 1000) { // 确保时间戳不是1970年附近
+                    const date = new Date(timestamp * 1000);
                     lastLoginDate = date.toLocaleDateString('zh-CN');
                 }
             }
@@ -303,7 +284,7 @@ async function viewUserDetails(userId) {
         // 更新模态框标题
         document.getElementById('userDetailModalLabel').textContent = `用户详情 - ${userDetails.username}`;
         
-        // 格式化日期
+        // 获取格式化日期
         let registerDate = '未知';
         let lastLoginDate = '从未登录';
         
@@ -311,84 +292,11 @@ async function viewUserDetails(userId) {
             // 使用修复后的API返回的格式化日期
             if (userDetails.created_at_formatted) {
                 registerDate = userDetails.created_at_formatted;
-            } else if (userDetails.created_at) {
-                // 兼容处理，如果没有格式化日期，则自行处理
-                let date;
-                if (typeof userDetails.created_at === 'number') {
-                    // 确保时间戳是毫秒级的，如果是秒级的需要转换
-                    // 检查时间戳是否为0或接近0的值，这通常表示数据库中的默认值
-                    if (userDetails.created_at < 10) {
-                        // 使用当前时间作为备用
-                        date = new Date();
-                    } else {
-                        const timestamp = userDetails.created_at > 10000000000 ? userDetails.created_at : userDetails.created_at * 1000;
-                        date = new Date(timestamp);
-                    }
-                } else if (typeof userDetails.created_at === 'string') {
-                    if (!isNaN(parseInt(userDetails.created_at))) {
-                        const parsedValue = parseInt(userDetails.created_at);
-                        // 检查时间戳是否为0或接近0的值
-                        if (parsedValue < 10) {
-                            // 使用当前时间作为备用
-                            date = new Date();
-                        } else {
-                            const timestamp = parsedValue > 10000000000 ? parsedValue : parsedValue * 1000;
-                            date = new Date(timestamp);
-                        }
-                    } else {
-                        // 尝试直接解析日期字符串
-                        date = new Date(userDetails.created_at);
-                        // 检查日期是否有效
-                        if (isNaN(date.getTime()) || date.getFullYear() <= 1970) {
-                            // 使用当前时间作为备用
-                            date = new Date();
-                        }
-                    }
-                }
-                
-                if (date && !isNaN(date.getTime())) {
-                    registerDate = date.toLocaleString('zh-CN');
-                }
             }
             
-            // 处理最后登录时间
-            if (userDetails.last_login_at) {
-                let date;
-                if (typeof userDetails.last_login_at === 'number') {
-                    // 确保时间戳是毫秒级的，如果是秒级的需要转换
-                    // 检查时间戳是否为0或接近0的值，这通常表示数据库中的默认值
-                    if (userDetails.last_login_at < 10) {
-                        // 保持为从未登录
-                        date = null;
-                    } else {
-                        const timestamp = userDetails.last_login_at > 10000000000 ? userDetails.last_login_at : userDetails.last_login_at * 1000;
-                        date = new Date(timestamp);
-                    }
-                } else if (typeof userDetails.last_login_at === 'string') {
-                    if (!isNaN(parseInt(userDetails.last_login_at))) {
-                        const parsedValue = parseInt(userDetails.last_login_at);
-                        // 检查时间戳是否为0或接近0的值
-                        if (parsedValue < 10) {
-                            // 保持为从未登录
-                            date = null;
-                        } else {
-                            const timestamp = parsedValue > 10000000000 ? parsedValue : parsedValue * 1000;
-                            date = new Date(timestamp);
-                        }
-                    } else {
-                        // 尝试直接解析日期字符串
-                        date = new Date(userDetails.last_login_at);
-                        // 检查日期是否有效
-                        if (isNaN(date.getTime()) || date.getFullYear() <= 1970) {
-                            // 保持为从未登录
-                            date = null;
-                        }
-                    }
-                }
-                
-                if (date && !isNaN(date.getTime())) {
-                    lastLoginDate = date.toLocaleString('zh-CN');
-                }
+            // 使用修复后的API返回的格式化最后登录时间
+            if (userDetails.last_login_at_formatted) {
+                lastLoginDate = userDetails.last_login_at_formatted;
             }
         } catch (dateError) {
             console.error('日期格式化错误:', dateError);
