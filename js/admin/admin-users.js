@@ -266,8 +266,11 @@ async function viewUserDetails(userId) {
         let lastLoginDate = '从未登录';
         
         try {
-            // 处理注册时间
-            if (userDetails.created_at) {
+            // 使用修复后的API返回的格式化日期
+            if (userDetails.created_at_formatted) {
+                registerDate = userDetails.created_at_formatted;
+            } else if (userDetails.created_at) {
+                // 兼容处理，如果没有格式化日期，则自行处理
                 let date;
                 if (typeof userDetails.created_at === 'number') {
                     date = new Date(userDetails.created_at * 1000);
@@ -333,8 +336,10 @@ async function viewUserDetails(userId) {
         
         // 构建订单历史
         let ordersHtml = '<p class="text-muted">暂无订单记录</p>';
+        const orderCount = userDetails.order_count || userDetails.orders_count || 0;
+        
         if (userDetails.recent_orders && userDetails.recent_orders.length > 0) {
-            ordersHtml = '<div class="table-responsive"><table class="table table-sm"><thead><tr><th>订单号</th><th>日期</th><th>金额</th><th>状态</th></tr></thead><tbody>';
+            ordersHtml = '<div class="table-responsive"><table class="table table-sm"><thead><tr><th>订单号</th><th>日期</th><th>金额</th><th>状态</th><th>操作</th></tr></thead><tbody>';
             
             userDetails.recent_orders.forEach(order => {
                 // 格式化订单日期
@@ -369,11 +374,27 @@ async function viewUserDetails(userId) {
                         <td>${orderDate}</td>
                         <td>¥${totalAmount.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                         <td>${statusBadge}</td>
+                        <td>
+                            <button type="button" class="btn btn-sm btn-outline-primary view-order-btn" data-order-id="${order.order_id}">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </td>
                     </tr>
                 `;
             });
             
             ordersHtml += '</tbody></table></div>';
+            
+            // 如果有更多订单，显示查看全部按钮
+            if (orderCount > userDetails.recent_orders.length) {
+                ordersHtml += `
+                    <div class="text-center mt-2">
+                        <a href="#" class="btn btn-sm btn-outline-primary view-all-orders" data-user-id="${userDetails.user_id}">
+                            查看全部 ${orderCount} 个订单
+                        </a>
+                    </div>
+                `;
+            }
         }
         
         // 更新模态框内容
@@ -455,6 +476,44 @@ async function viewUserDetails(userId) {
         `;
         window.showErrorToast('加载用户详情失败: ' + (error.message || '请稍后重试'));
     }
+    
+    // 添加订单查看按钮事件监听器
+    setTimeout(() => {
+        // 为订单查看按钮添加事件监听
+        document.querySelectorAll('.view-order-btn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const orderId = e.currentTarget.getAttribute('data-order-id');
+                // 关闭用户详情模态框
+                const userDetailModal = bootstrap.Modal.getInstance(document.getElementById('userDetailModal'));
+                userDetailModal.hide();
+                
+                // 延迟一下再打开订单详情，避免模态框冲突
+                setTimeout(() => {
+                    // 调用订单详情查看函数（如果在全局范围内可用）
+                    if (typeof viewOrderDetails === 'function') {
+                        viewOrderDetails(orderId);
+                    } else {
+                        // 如果函数不可用，则跳转到订单管理页面
+                        window.location.href = 'admin-orders.html?order_id=' + orderId;
+                    }
+                }, 300);
+            });
+        });
+        
+        // 为查看全部订单按钮添加事件监听
+        document.querySelectorAll('.view-all-orders').forEach(button => {
+            button.addEventListener('click', (e) => {
+                e.preventDefault();
+                const userId = e.currentTarget.getAttribute('data-user-id');
+                // 关闭用户详情模态框
+                const userDetailModal = bootstrap.Modal.getInstance(document.getElementById('userDetailModal'));
+                userDetailModal.hide();
+                
+                // 跳转到订单管理页面并传递用户ID参数
+                window.location.href = 'admin-orders.html?user_id=' + userId;
+            });
+        });
+    }, 100); // 短暂延迟确保DOM已更新
 }
 
 // 切换用户状态（启用/禁用）

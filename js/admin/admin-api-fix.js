@@ -91,9 +91,29 @@ adminAPI.getOrderDetails = async (orderId) => {
 // 添加缺失的用户订单获取函数
 adminAPI.getUserOrders = async (userId, page = 1, pageSize = 5) => {
     try {
-        // 修改API路径以匹配后端实现
-        const url = `${ADMIN_API_BASE_URL}/api/admin/users/${userId}/orders?page=${page}&pageSize=${pageSize}`;
-        console.log('发送用户订单请求，URL:', url);
+        console.log(`获取用户 ${userId} 的订单数据，页码: ${page}, 每页数量: ${pageSize}`);
+        
+        // 直接使用备用方法获取用户订单，避免404错误
+        // 由于API路径问题，我们直接使用主订单API并过滤用户订单
+        return await fetchOrdersFromMainAPI(userId, page, pageSize);
+    } catch (error) {
+        console.error('获取用户订单出错:', error);
+        // 返回空数据结构，避免前端错误
+        return {
+            orders: [],
+            total: 0,
+            page: page,
+            pageSize: pageSize
+        };
+    }
+};
+
+// 修复备用函数，从主订单API获取用户订单
+async function fetchOrdersFromMainAPI(userId, page = 1, pageSize = 5) {
+    try {
+        // 使用主订单API，通过用户ID过滤
+        const url = `${ADMIN_API_BASE_URL}/api/admin/orders?page=1&pageSize=1000`;
+        console.log(`发送备用订单请求，URL: ${url}, 用户ID: ${userId}`);
         
         const response = await fetch(url, {
             method: 'GET',
@@ -105,32 +125,53 @@ adminAPI.getUserOrders = async (userId, page = 1, pageSize = 5) => {
         
         if (!response.ok) {
             const errorText = await response.text();
-            console.error('用户订单API响应错误:', response.status, errorText);
-            
-            // 如果是404错误，返回空数据而不是抛出错误
-            if (response.status === 404) {
-                return { orders: [], total: 0, page: 1, pageSize: pageSize };
-            }
-            
-            throw new Error(`获取用户订单失败，HTTP状态码: ${response.status}`);
+            console.error('备用订单API响应错误:', response.status, errorText);
+            return { orders: [], total: 0, page: 1, pageSize: pageSize };
         }
         
         const data = await response.json();
-        console.log('成功获取用户订单:', data);
+        console.log(`成功获取所有订单: ${data.orders ? data.orders.length : 0} 条`);
         
-        // 确保返回数据格式一致
+        // 过滤出指定用户的订单
+        let userOrders = [];
+        if (data.orders && Array.isArray(data.orders)) {
+            userOrders = data.orders.filter(order => {
+                // 兼容不同的用户ID字段格式
+                const orderUserId = order.user_id || order.userId || 
+                                   (order.user ? (order.user.user_id || order.user.id) : null);
+                
+                // 确保比较的是字符串类型
+                return String(orderUserId) === String(userId);
+            });
+        }
+        
+        console.log(`用户 ${userId} 的订单数量: ${userOrders.length}`);
+        
+        // 按创建时间降序排序，确保最新订单在前
+        userOrders.sort((a, b) => {
+            const timeA = a.created_at || 0;
+            const timeB = b.created_at || 0;
+            return timeB - timeA;
+        });
+        
+        // 分页处理
+        const startIndex = (page - 1) * pageSize;
+        const endIndex = startIndex + pageSize;
+        const paginatedOrders = userOrders.slice(startIndex, endIndex);
+        
         return {
-            orders: data.orders || [],
-            total: data.total || 0,
-            page: data.page || page,
-            pageSize: data.pageSize || pageSize
+            orders: paginatedOrders,
+            total: userOrders.length,
+            page: page,
+            pageSize: pageSize
         };
     } catch (error) {
-        console.error('获取用户订单出错:', error);
-        // 发生错误时返回空数据而不是抛出错误
+        console.error('备用方式获取用户订单出错:', error);
         return { orders: [], total: 0, page: 1, pageSize: pageSize };
     }
 };
+
+
 
 // 添加缺失的订单状态更新函数
 adminAPI.updateOrderStatus = async (orderId, status) => {
@@ -481,12 +522,17 @@ adminAPI.getUserDetails = async (userId) => {
                 userData.created_at_formatted = '未知';
             }
             
-            // 获取用户订单数据
+            // 获取用户订单数据 - 使用修复后的API路径
             try {
-                const ordersData = await adminAPI.getUserOrders(userId);
+                console.log(`尝试获取用户 ${userId} 的订单数据`);
+                // 首先尝试使用主订单API直接获取用户订单
+                const ordersData = await fetchOrdersFromMainAPI(userId, 1, 100);
                 userData.orders = ordersData.orders || [];
                 userData.order_count = ordersData.total || userData.orders.length;
+                userData.orders_count = userData.order_count; // 添加兼容字段
                 userData.recent_orders = userData.orders.slice(0, 5); // 保存最近5个订单
+                
+                console.log(`用户 ${userId} 的订单数量:`, userData.order_count);
                 
                 // 计算用户总消费金额
                 userData.total_spent = userData.orders.reduce((total, order) => {
@@ -496,14 +542,21 @@ adminAPI.getUserDetails = async (userId) => {
                 console.warn('获取用户订单失败:', ordersError);
                 userData.orders = [];
                 userData.order_count = 0;
+                userData.orders_count = 0; // 添加兼容字段
                 userData.recent_orders = [];
                 userData.total_spent = 0;
             }
             
             // 确保用户状态字段存在且格式正确
-            if (!userData.status || (userData.status !== 'active' && userData.status !== 'disabled')) {
+            if (!userData.status) {
                 userData.status = 'active'; // 默认设置为活动状态
+            } else if (userData.status !== 'active' && userData.status !== 'inactive') {
+                // 标准化状态值
+                userData.status = userData.status === 'disabled' ? 'inactive' : 'active';
             }
+            
+            // 添加状态文本字段，用于前端显示
+            userData.status_text = userData.status === 'active' ? '正常' : '禁用';
         }
         
         return userData;
@@ -521,31 +574,66 @@ adminAPI.getUsers = async (page = 1, pageSize = 10, searchQuery = '') => {
         
         // 修复用户列表数据
         if (usersData && usersData.users && Array.isArray(usersData.users)) {
-            // 确保每个用户的订单数显示正确
+            // 获取所有订单数据（一次性获取，避免多次API调用）
+            let allOrders = [];
+            try {
+                // 获取所有订单（最多1000条）
+                const ordersResponse = await fetch(`${ADMIN_API_BASE_URL}/api/admin/orders?page=1&pageSize=1000`, {
+                    method: 'GET',
+                    headers: {
+                        ...adminAuth.getHeaders(),
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (ordersResponse.ok) {
+                    const ordersData = await ordersResponse.json();
+                    allOrders = ordersData.orders || [];
+                    console.log(`成功获取所有订单数据，共 ${allOrders.length} 条`);
+                }
+            } catch (ordersError) {
+                console.warn('获取所有订单数据失败:', ordersError);
+            }
+            
+            // 计算每个用户的订单数量
+            const userOrderCounts = {};
+            allOrders.forEach(order => {
+                // 兼容不同的用户ID字段格式
+                const orderUserId = order.user_id || order.userId || 
+                                   (order.user ? (order.user.user_id || order.user.id) : null);
+                
+                if (orderUserId) {
+                    const userIdStr = String(orderUserId);
+                    userOrderCounts[userIdStr] = (userOrderCounts[userIdStr] || 0) + 1;
+                }
+            });
+            
+            // 更新用户数据
             for (let i = 0; i < usersData.users.length; i++) {
                 const user = usersData.users[i];
+                const userIdStr = String(user.user_id);
                 
-                // 如果订单数为0或不存在，尝试获取正确的订单数
-                if (!user.order_count) {
-                    try {
-                        // 获取用户订单数
-                        const userDetails = await adminAPI.getUserDetails(user.user_id);
-                        user.order_count = userDetails.order_count || 0;
-                    } catch (error) {
-                        console.warn(`获取用户${user.user_id}的订单数失败:`, error);
-                        user.order_count = 0;
-                    }
+                // 设置订单数量
+                if (!user.orders_count && !user.order_count) {
+                    const orderCount = userOrderCounts[userIdStr] || 0;
+                    user.orders_count = orderCount;
+                    user.order_count = orderCount;
+                } else if (user.orders_count && !user.order_count) {
+                    user.order_count = user.orders_count;
+                } else if (!user.orders_count && user.order_count) {
+                    user.orders_count = user.order_count;
                 }
                 
                 // 确保状态显示正确
-                if (user.status === 'active') {
-                    user.status_text = '正常';
-                } else if (user.status === 'inactive') {
-                    user.status_text = '禁用';
-                } else {
-                    user.status = 'inactive';
-                    user.status_text = '禁用';
+                if (!user.status) {
+                    user.status = 'active';
+                } else if (user.status !== 'active' && user.status !== 'inactive') {
+                    // 标准化状态值
+                    user.status = user.status === 'disabled' ? 'inactive' : 'active';
                 }
+                
+                // 添加状态文本
+                user.status_text = user.status === 'active' ? '正常' : '禁用';
             }
         }
         
