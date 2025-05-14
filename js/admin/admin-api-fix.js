@@ -92,7 +92,7 @@ adminAPI.getOrderDetails = async (orderId) => {
 adminAPI.getUserOrders = async (userId, page = 1, pageSize = 5) => {
     try {
         // 修改API路径以匹配后端实现
-        const url = `${ADMIN_API_BASE_URL}/api/admin/orders/user/${userId}?page=${page}&pageSize=${pageSize}`;
+        const url = `${ADMIN_API_BASE_URL}/api/admin/users/${userId}/orders?page=${page}&pageSize=${pageSize}`;
         console.log('发送用户订单请求，URL:', url);
         
         const response = await fetch(url, {
@@ -169,7 +169,7 @@ adminAPI.updateUserStatus = async (userId, status) => {
         // 将中文状态值转换为API需要的状态值，以符合API约束
         let apiStatus = status;
         if (status === '正常' || status === 'active') apiStatus = 'active';
-        if (status === '禁用' || status === 'disabled' || status === 'inactive') apiStatus = 'disabled';
+        if (status === '禁用' || status === 'disabled' || status === 'inactive') apiStatus = 'inactive';
         
         console.log(`转换用户状态值: ${status} -> ${apiStatus}`);
         
@@ -487,11 +487,17 @@ adminAPI.getUserDetails = async (userId) => {
                 userData.orders = ordersData.orders || [];
                 userData.order_count = ordersData.total || userData.orders.length;
                 userData.recent_orders = userData.orders.slice(0, 5); // 保存最近5个订单
+                
+                // 计算用户总消费金额
+                userData.total_spent = userData.orders.reduce((total, order) => {
+                    return total + (parseFloat(order.total_amount) || 0);
+                }, 0);
             } catch (ordersError) {
                 console.warn('获取用户订单失败:', ordersError);
                 userData.orders = [];
                 userData.order_count = 0;
                 userData.recent_orders = [];
+                userData.total_spent = 0;
             }
             
             // 确保用户状态字段存在且格式正确
