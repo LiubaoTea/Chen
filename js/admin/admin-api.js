@@ -671,6 +671,28 @@ const adminAPIObject = {
             
             const data = await response.json();
             console.log('成功获取用户详情:', data);
+            
+            // 获取用户的订单数据
+            try {
+                const userOrders = await adminAPI.getUserOrders(userId);
+                if (userOrders && userOrders.orders) {
+                    // 添加订单总数
+                    data.orders_count = userOrders.total || userOrders.orders.length;
+                    // 添加最近订单
+                    data.recent_orders = userOrders.orders.slice(0, 5);
+                    // 计算消费总额
+                    data.total_spent = userOrders.orders.reduce((total, order) => {
+                        return total + (parseFloat(order.total_amount) || 0);
+                    }, 0);
+                }
+            } catch (ordersError) {
+                console.warn('获取用户订单数据失败:', ordersError);
+                // 设置默认值
+                data.orders_count = data.orders_count || 0;
+                data.recent_orders = data.recent_orders || [];
+                data.total_spent = data.total_spent || 0;
+            }
+            
             return data;
         } catch (error) {
             console.error('获取用户详情出错:', error);
@@ -704,6 +726,35 @@ const adminAPIObject = {
             return data;
         } catch (error) {
             console.error('更新用户状态出错:', error);
+            throw error;
+        }
+    },
+    
+    // 获取用户订单
+    getUserOrders: async (userId) => {
+        try {
+            const url = `${ADMIN_API_BASE_URL}/api/admin/users/${userId}/orders`;
+            console.log('发送获取用户订单请求，URL:', url);
+            
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    ...adminAuth.getHeaders(),
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('获取用户订单API响应错误:', response.status, errorText);
+                throw new Error(`获取用户订单失败，HTTP状态码: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            console.log('成功获取用户订单:', data);
+            return data;
+        } catch (error) {
+            console.error('获取用户订单出错:', error);
             throw error;
         }
     },

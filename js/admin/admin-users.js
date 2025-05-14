@@ -88,30 +88,43 @@ function updateUsersList() {
             // 检查created_at是否存在且为有效值
             if (user.created_at) {
                 // 尝试将时间戳转换为日期
-                const date = new Date(user.created_at * 1000);
-                if (!isNaN(date.getTime())) {
-                    registerDate = date.toLocaleDateString('zh-CN');
-                } else {
-                    // 如果不是时间戳，尝试直接解析日期字符串
-                    const directDate = new Date(user.created_at);
-                    if (!isNaN(directDate.getTime())) {
-                        registerDate = directDate.toLocaleDateString('zh-CN');
+                let date;
+                // 检查是否为数字类型的时间戳
+                if (typeof user.created_at === 'number') {
+                    date = new Date(user.created_at * 1000);
+                } else if (typeof user.created_at === 'string') {
+                    // 尝试将字符串转换为数字时间戳
+                    if (!isNaN(parseInt(user.created_at))) {
+                        date = new Date(parseInt(user.created_at) * 1000);
+                    } else {
+                        // 尝试直接解析日期字符串
+                        date = new Date(user.created_at);
                     }
+                }
+                
+                if (date && !isNaN(date.getTime())) {
+                    registerDate = date.toLocaleDateString('zh-CN');
                 }
             }
             
             // 检查last_login_at是否存在且为有效值
             if (user.last_login_at) {
                 // 尝试将时间戳转换为日期
-                const date = new Date(user.last_login_at * 1000);
-                if (!isNaN(date.getTime())) {
-                    lastLoginDate = date.toLocaleDateString('zh-CN');
-                } else {
-                    // 如果不是时间戳，尝试直接解析日期字符串
-                    const directDate = new Date(user.last_login_at);
-                    if (!isNaN(directDate.getTime())) {
-                        lastLoginDate = directDate.toLocaleDateString('zh-CN');
+                let date;
+                if (typeof user.last_login_at === 'number') {
+                    date = new Date(user.last_login_at * 1000);
+                } else if (typeof user.last_login_at === 'string') {
+                    // 尝试将字符串转换为数字时间戳
+                    if (!isNaN(parseInt(user.last_login_at))) {
+                        date = new Date(parseInt(user.last_login_at) * 1000);
+                    } else {
+                        // 尝试直接解析日期字符串
+                        date = new Date(user.last_login_at);
                     }
+                }
+                
+                if (date && !isNaN(date.getTime())) {
+                    lastLoginDate = date.toLocaleDateString('zh-CN');
                 }
             }
         } catch (error) {
@@ -249,10 +262,48 @@ async function viewUserDetails(userId) {
         document.getElementById('userDetailModalLabel').textContent = `用户详情 - ${userDetails.username}`;
         
         // 格式化日期
-        const registerDate = new Date(userDetails.created_at * 1000).toLocaleString('zh-CN');
-        const lastLoginDate = userDetails.last_login_at ? 
-            new Date(userDetails.last_login_at * 1000).toLocaleString('zh-CN') : 
-            '从未登录';
+        let registerDate = '未知';
+        let lastLoginDate = '从未登录';
+        
+        try {
+            // 处理注册时间
+            if (userDetails.created_at) {
+                let date;
+                if (typeof userDetails.created_at === 'number') {
+                    date = new Date(userDetails.created_at * 1000);
+                } else if (typeof userDetails.created_at === 'string') {
+                    if (!isNaN(parseInt(userDetails.created_at))) {
+                        date = new Date(parseInt(userDetails.created_at) * 1000);
+                    } else {
+                        date = new Date(userDetails.created_at);
+                    }
+                }
+                
+                if (date && !isNaN(date.getTime())) {
+                    registerDate = date.toLocaleString('zh-CN');
+                }
+            }
+            
+            // 处理最后登录时间
+            if (userDetails.last_login_at) {
+                let date;
+                if (typeof userDetails.last_login_at === 'number') {
+                    date = new Date(userDetails.last_login_at * 1000);
+                } else if (typeof userDetails.last_login_at === 'string') {
+                    if (!isNaN(parseInt(userDetails.last_login_at))) {
+                        date = new Date(parseInt(userDetails.last_login_at) * 1000);
+                    } else {
+                        date = new Date(userDetails.last_login_at);
+                    }
+                }
+                
+                if (date && !isNaN(date.getTime())) {
+                    lastLoginDate = date.toLocaleString('zh-CN');
+                }
+            }
+        } catch (dateError) {
+            console.error('日期格式化错误:', dateError);
+        }
         
         // 用户状态
         const statusBadge = userDetails.status === 'active' ? 
@@ -286,14 +337,37 @@ async function viewUserDetails(userId) {
             ordersHtml = '<div class="table-responsive"><table class="table table-sm"><thead><tr><th>订单号</th><th>日期</th><th>金额</th><th>状态</th></tr></thead><tbody>';
             
             userDetails.recent_orders.forEach(order => {
-                const orderDate = new Date(order.created_at * 1000).toLocaleDateString('zh-CN');
+                // 格式化订单日期
+                let orderDate = '未知';
+                try {
+                    if (order.created_at) {
+                        let date;
+                        if (typeof order.created_at === 'number') {
+                            date = new Date(order.created_at * 1000);
+                        } else if (typeof order.created_at === 'string') {
+                            if (!isNaN(parseInt(order.created_at))) {
+                                date = new Date(parseInt(order.created_at) * 1000);
+                            } else {
+                                date = new Date(order.created_at);
+                            }
+                        }
+                        
+                        if (date && !isNaN(date.getTime())) {
+                            orderDate = date.toLocaleDateString('zh-CN');
+                        }
+                    }
+                } catch (dateError) {
+                    console.error('订单日期格式化错误:', dateError);
+                }
+                
                 const statusBadge = getOrderStatusBadge(order.status);
+                const totalAmount = parseFloat(order.total_amount) || 0;
                 
                 ordersHtml += `
                     <tr>
                         <td>${order.order_id}</td>
                         <td>${orderDate}</td>
-                        <td>¥${order.total_amount.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        <td>¥${totalAmount.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                         <td>${statusBadge}</td>
                     </tr>
                 `;
@@ -396,14 +470,38 @@ async function toggleUserStatus(userId, currentStatus) {
         
         console.log('切换用户状态，用户ID:', userId, '当前状态:', currentStatus, '新状态:', newStatus);
         
-        // 更新状态
-        await adminAPI.updateUserStatus(userId, newStatus);
+        // 显示加载状态
+        const toggleButtons = document.querySelectorAll(`.toggle-user-status[data-user-id="${userId}"]`);
+        toggleButtons.forEach(button => {
+            button.disabled = true;
+            button.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+        });
         
-        // 显示成功提示
-        window.showSuccessToast(`用户已${actionText}`);
-        
-        // 重新加载用户列表
-        await loadUsers(usersCurrentPage, document.getElementById('userSearchInput').value);
+        try {
+            // 更新状态
+            await adminAPI.updateUserStatus(userId, newStatus);
+            
+            // 显示成功提示
+            window.showSuccessToast(`用户已${actionText}`);
+            
+            // 重新加载用户列表
+            await loadUsers(usersCurrentPage, document.getElementById('userSearchInput').value);
+        } catch (apiError) {
+            console.error('更新用户状态API错误:', apiError);
+            
+            // 恢复按钮状态
+            toggleButtons.forEach(button => {
+                button.disabled = false;
+                button.innerHTML = currentStatus === 'active' ? '<i class="bi bi-lock"></i>' : '<i class="bi bi-unlock"></i>';
+            });
+            
+            // 检查是否是数据库约束错误
+            if (apiError.message && apiError.message.includes('约束')) {
+                window.showErrorToast('无法更新用户状态: 该用户有关联数据，请先处理相关数据');
+            } else {
+                window.showErrorToast('更新用户状态失败: ' + apiError.message);
+            }
+        }
     } catch (error) {
         console.error('更新用户状态失败:', error);
         window.showErrorToast('更新用户状态失败: ' + error.message);

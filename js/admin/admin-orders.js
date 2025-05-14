@@ -295,11 +295,11 @@ async function viewOrderDetails(orderId) {
         });
         
         // 构建收货地址信息
-        const address = orderDetails.shipping_address || {};
-        const addressHtml = address.recipient_name ? `
-            <p class="mb-1">${address.recipient_name || ''} ${address.recipient_phone || ''}</p>
-            <p class="mb-1">${address.province || ''}${address.city || ''}${address.district || ''}</p>
-            <p class="mb-0">${address.address_detail || ''}</p>
+        const address = orderDetails.address || orderDetails.shipping_address || {};
+        const addressHtml = address ? `
+            <p class="mb-1">${address.recipient_name || ''} ${address.contact_phone || address.recipient_phone || ''}</p>
+            <p class="mb-1">${address.region || ''}</p>
+            <p class="mb-0">${address.full_address || address.address_detail || ''}</p>
         ` : '<p class="mb-0">无收货地址信息</p>';
         
         // 更新模态框内容
@@ -361,7 +361,7 @@ async function viewOrderDetails(orderId) {
                         ${orderItemsHtml}
                         <div class="d-flex justify-content-end mt-3">
                             <div class="text-end">
-                                <div>商品总额: ¥${(orderDetails.items_total || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                                <div>商品总额: ¥${(orderDetails.subtotal || calculateSubtotal(orderDetails.items)).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                                 <div>运费: ¥${(orderDetails.shipping_fee || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                                 <div class="fs-5 fw-bold">订单总额: ¥${(orderDetails.total_amount || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                             </div>
@@ -437,6 +437,17 @@ function showSuccessToast(message) {
 function showErrorToast(message) {
     // 实现提示功能，可以使用Bootstrap的Toast组件
     alert(message);
+}
+
+// 计算订单商品总额
+function calculateSubtotal(items) {
+    if (!items || !Array.isArray(items)) return 0;
+    
+    return items.reduce((sum, item) => {
+        const price = item.price || item.unit_price || 0;
+        const quantity = item.quantity || 1;
+        return sum + (price * quantity);
+    }, 0);
 }
 
 // 导出模块

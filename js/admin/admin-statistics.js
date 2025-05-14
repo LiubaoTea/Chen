@@ -44,33 +44,101 @@ window.adminStatistics = { init: initStatisticsPage, refresh: refreshStatisticsD
 // 刷新统计数据
 async function refreshStatisticsData() {
     try {
+        // 显示加载状态
+        showLoadingState();
+        
         const period = document.getElementById('statisticsPeriodSelect').value;
         const startDate = document.getElementById('statisticsStartDate').value;
         const endDate = document.getElementById('statisticsEndDate').value;
         
         // 获取销售趋势数据
-        const salesTrendData = await adminAPI.getSalesTrend(period, startDate, endDate);
-        renderSalesTrendChart(salesTrendData);
+        try {
+            const salesTrendData = await adminAPI.getSalesTrend(period, startDate, endDate);
+            console.log('获取到销售趋势数据:', salesTrendData);
+            renderSalesTrendChart(salesTrendData);
+        } catch (error) {
+            console.error('获取销售趋势数据失败:', error);
+            // 使用默认数据渲染
+            renderSalesTrendChart({
+                labels: ['无数据'],
+                sales: [0],
+                orders: [0]
+            });
+        }
         
         // 获取商品销售占比数据
-        const productSalesData = await adminAPI.getProductSalesDistribution(startDate, endDate);
-        renderProductSalesChart(productSalesData);
+        try {
+            const productSalesData = await adminAPI.getProductSalesDistribution(startDate, endDate);
+            console.log('获取到商品销售占比数据:', productSalesData);
+            renderProductSalesChart(productSalesData);
+        } catch (error) {
+            console.error('获取商品销售占比数据失败:', error);
+            renderProductSalesChart([{ name: '无数据', value: 1 }]);
+        }
         
         // 获取用户增长趋势数据
-        const userGrowthData = await adminAPI.getUserGrowthTrend(period, startDate, endDate);
-        renderUserGrowthChart(userGrowthData);
+        try {
+            const userGrowthData = await adminAPI.getUserGrowthTrend(period, startDate, endDate);
+            console.log('获取到用户增长趋势数据:', userGrowthData);
+            renderUserGrowthChart(userGrowthData);
+        } catch (error) {
+            console.error('获取用户增长趋势数据失败:', error);
+            renderUserGrowthChart({ labels: ['无数据'], values: [0] });
+        }
         
         // 获取订单状态分布数据
-        const orderStatusData = await adminAPI.getOrderStatusDistribution(startDate, endDate);
-        renderOrderStatusChart(orderStatusData);
+        try {
+            const orderStatusData = await adminAPI.getOrderStatusDistribution(startDate, endDate);
+            console.log('获取到订单状态分布数据:', orderStatusData);
+            renderOrderStatusChart(orderStatusData);
+        } catch (error) {
+            console.error('获取订单状态分布数据失败:', error);
+            renderOrderStatusChart([{ status: '无数据', count: 1 }]);
+        }
         
         // 获取热销商品排行数据
-        const topProductsData = await adminAPI.getTopProducts(10, startDate, endDate);
-        renderTopProductsList(topProductsData);
+        try {
+            const topProductsData = await adminAPI.getTopProducts(10, startDate, endDate);
+            console.log('获取到热销商品排行数据:', topProductsData);
+            renderTopProductsList(topProductsData);
+        } catch (error) {
+            console.error('获取热销商品排行数据失败:', error);
+            renderTopProductsList([]);
+        }
+        
+        // 隐藏加载状态
+        hideLoadingState();
     } catch (error) {
         console.error('刷新统计数据失败:', error);
         showErrorToast('刷新统计数据失败，请稍后重试');
+        hideLoadingState();
     }
+}
+
+// 显示加载状态
+function showLoadingState() {
+    const chartContainers = document.querySelectorAll('.card-body');
+    chartContainers.forEach(container => {
+        if (container.querySelector('canvas')) {
+            const loadingSpinner = document.createElement('div');
+            loadingSpinner.className = 'text-center loading-spinner';
+            loadingSpinner.innerHTML = '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">加载中...</span></div>';
+            
+            // 清除现有的加载状态
+            const existingSpinner = container.querySelector('.loading-spinner');
+            if (existingSpinner) {
+                existingSpinner.remove();
+            }
+            
+            container.appendChild(loadingSpinner);
+        }
+    });
+}
+
+// 隐藏加载状态
+function hideLoadingState() {
+    const loadingSpinners = document.querySelectorAll('.loading-spinner');
+    loadingSpinners.forEach(spinner => spinner.remove());
 }
 
 // 设置统计页面事件监听器
@@ -141,6 +209,15 @@ function renderSalesTrendChart(data) {
     // 调整图表容器大小，确保有足够的空间显示
     const chartContainer = document.getElementById('salesTrendChart').parentNode;
     chartContainer.style.height = '300px';
+    
+    // 调整销售趋势和商品分类占比图表的布局
+    const salesTrendCard = document.querySelector('#salesTrendChart').closest('.col-md-6');
+    const productSalesCard = document.querySelector('#productSalesChart').closest('.col-md-6');
+    
+    if (salesTrendCard && productSalesCard) {
+        salesTrendCard.className = 'col-md-6 mb-4';
+        productSalesCard.className = 'col-md-6 mb-4';
+    }
     
     // 创建新图表
     try {
@@ -306,6 +383,30 @@ function renderProductSalesChart(data) {
 function renderUserGrowthChart(data) {
     const ctx = document.getElementById('userGrowthChart').getContext('2d');
     
+    // 检查图表元素是否存在
+    if (!ctx) {
+        console.error('用户增长趋势图表元素不存在');
+        return;
+    }
+    
+    // 检查Chart对象是否可用
+    if (typeof window.Chart === 'undefined') {
+        console.error('Chart对象未定义，请确保Chart.js已正确加载');
+        return;
+    }
+    
+    // 检查数据格式是否正确
+    if (!data || !data.labels || !Array.isArray(data.labels) || !data.values || !Array.isArray(data.values)) {
+        console.error('用户增长趋势数据格式不正确:', data);
+        // 创建默认数据
+        data = {
+            labels: ['无数据'],
+            values: [0]
+        };
+    }
+    
+    console.log('用户增长趋势图表数据:', data);
+    
     // 如果图表已存在，销毁它
     try {
         if (window.userGrowthChart) {
@@ -320,6 +421,10 @@ function renderUserGrowthChart(data) {
         console.error('销毁用户增长趋势图表时出错:', error);
         window.userGrowthChart = null;
     }
+    
+    // 调整图表容器大小，确保有足够的空间显示
+    const chartContainer = document.getElementById('userGrowthChart').parentNode;
+    chartContainer.style.height = '300px';
     
     // 创建新图表
     try {
@@ -358,6 +463,34 @@ function renderUserGrowthChart(data) {
 function renderOrderStatusChart(data) {
     const ctx = document.getElementById('orderStatusChart').getContext('2d');
     
+    // 检查图表元素是否存在
+    if (!ctx) {
+        console.error('订单状态分布图表元素不存在');
+        return;
+    }
+    
+    // 检查Chart对象是否可用
+    if (typeof window.Chart === 'undefined') {
+        console.error('Chart对象未定义，请确保Chart.js已正确加载');
+        return;
+    }
+    
+    // 检查数据格式是否正确
+    if (!data || !Array.isArray(data)) {
+        console.error('订单状态分布数据格式不正确:', data);
+        // 创建默认数据
+        data = [
+            { status: '待付款', count: 0 },
+            { status: '已付款', count: 0 }
+        ];
+    }
+    
+    // 处理数据格式
+    const labels = data.map(item => item.status || '未知状态');
+    const values = data.map(item => item.count || 0);
+    
+    console.log('订单状态分布图表数据:', { labels, values });
+    
     // 如果图表已存在，销毁它
     try {
         if (window.orderStatusChart) {
@@ -373,40 +506,54 @@ function renderOrderStatusChart(data) {
         window.orderStatusChart = null;
     }
     
+    // 调整图表容器大小，确保有足够的空间显示
+    const chartContainer = document.getElementById('orderStatusChart').parentNode;
+    chartContainer.style.height = '300px';
+    
     // 创建新图表
-    window.orderStatusChart = new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-            labels: data.labels,
-            datasets: [{
-                data: data.values,
-                backgroundColor: [
-                    'rgba(255, 206, 86, 0.7)',  // 待付款
-                    'rgba(54, 162, 235, 0.7)',  // 待发货
-                    'rgba(75, 192, 192, 0.7)',  // 已发货
-                    'rgba(153, 102, 255, 0.7)', // 已完成
-                    'rgba(255, 99, 132, 0.7)'   // 已取消
-                ],
-                borderColor: [
-                    'rgba(255, 206, 86, 1)',
-                    'rgba(54, 162, 235, 1)',
-                    'rgba(75, 192, 192, 1)',
-                    'rgba(153, 102, 255, 1)',
-                    'rgba(255, 99, 132, 1)'
-                ],
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false
-        }
-    });
+    try {
+        window.orderStatusChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: values,
+                    backgroundColor: [
+                        'rgba(255, 206, 86, 0.7)',  // 待付款
+                        'rgba(54, 162, 235, 0.7)',  // 待发货
+                        'rgba(75, 192, 192, 0.7)',  // 已发货
+                        'rgba(153, 102, 255, 0.7)', // 已完成
+                        'rgba(255, 99, 132, 0.7)'   // 已取消
+                    ],
+                    borderColor: [
+                        'rgba(255, 206, 86, 1)',
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(75, 192, 192, 1)',
+                        'rgba(153, 102, 255, 1)',
+                        'rgba(255, 99, 132, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+    } catch (error) {
+        console.error('创建订单状态分布图表时出错:', error);
+    }
 }
 
 // 渲染热销商品排行列表
 function renderTopProductsList(products) {
     const topProductsList = document.getElementById('topProductsList');
+    
+    // 检查元素是否存在
+    if (!topProductsList) {
+        console.error('热销商品列表元素不存在');
+        return;
+    }
     
     // 检查数据格式是否正确
     if (!products || !Array.isArray(products)) {
@@ -426,13 +573,41 @@ function renderTopProductsList(products) {
     
     console.log('渲染热销商品列表:', products);
     
+    // 确保表格头部存在
+    const tableElement = topProductsList.closest('table');
+    if (tableElement) {
+        const thead = tableElement.querySelector('thead');
+        if (!thead || !thead.querySelector('tr')) {
+            const newThead = document.createElement('thead');
+            newThead.innerHTML = `
+                <tr>
+                    <th>排名</th>
+                    <th>商品信息</th>
+                    <th>销售数量</th>
+                    <th>销售额</th>
+                    <th>占比</th>
+                </tr>
+            `;
+            tableElement.prepend(newThead);
+        }
+    }
+    
     // 计算总销售额
-    const totalSales = products.reduce((sum, product) => sum + (product.totalSales || 0), 0);
+    const totalSales = products.reduce((sum, product) => {
+        // 尝试从不同的属性获取销售额
+        const sales = product.totalSales || product.sales || product.total_sales || 0;
+        return sum + (typeof sales === 'number' ? sales : 0);
+    }, 0);
     
     // 添加商品行
     products.forEach((product, index) => {
-        // 确保totalSales是数字
-        const productSales = typeof product.totalSales === 'number' ? product.totalSales : 0;
+        // 尝试从不同的属性获取数据
+        const productName = product.name || product.product_name || '未知商品';
+        const productId = product.id || product.product_id || '未知';
+        const productImage = product.image || product.product_image || '../image/Goods/Goods_1.png';
+        const productQuantity = product.quantity || product.sales_count || 0;
+        const productSales = product.totalSales || product.sales || product.total_sales || 0;
+        
         const percentage = totalSales > 0 ? (productSales / totalSales * 100).toFixed(2) : '0.00';
         
         const row = document.createElement('tr');
@@ -440,21 +615,20 @@ function renderTopProductsList(products) {
             <td>${index + 1}</td>
             <td>
                 <div class="d-flex align-items-center">
-                    <img src="${product.image || '../image/Goods/Goods_1.png'}" alt="${product.name}" class="me-2" style="width: 40px; height: 40px; object-fit: cover;">
+                    <img src="${productImage}" alt="${productName}" class="me-2" style="width: 40px; height: 40px; object-fit: cover;">
                     <div>
-                        <div class="fw-bold">${product.name}</div>
-                        <small class="text-muted">ID: ${product.id || product.product_id || '未知'}</small>
+                        <div class="fw-bold">${productName}</div>
+                        <small class="text-muted">ID: ${productId}</small>
                     </div>
                 </div>
             </td>
-            <td>${product.quantity || 0}</td>
-            <td>¥${productSales.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+            <td>${productQuantity}</td>
+            <td>¥${typeof productSales === 'number' ? productSales.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}</td>
             <td>${percentage}%</td>
         `;
         
         topProductsList.appendChild(row);
     });
-
 }
 
 // 导出统计报表

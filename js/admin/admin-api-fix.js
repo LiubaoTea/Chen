@@ -88,6 +88,35 @@ adminAPI.getOrderDetails = async (orderId) => {
     }
 };
 
+// 添加缺失的用户订单获取函数
+adminAPI.getUserOrders = async (userId, page = 1, pageSize = 5) => {
+    try {
+        const url = `${ADMIN_API_BASE_URL}/api/admin/users/${userId}/orders?page=${page}&pageSize=${pageSize}`;
+        console.log('发送用户订单请求，URL:', url);
+        
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                ...adminAuth.getHeaders(),
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('用户订单API响应错误:', response.status, errorText);
+            throw new Error(`获取用户订单失败，HTTP状态码: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('成功获取用户订单:', data);
+        return data;
+    } catch (error) {
+        console.error('获取用户订单出错:', error);
+        throw error;
+    }
+};
+
 // 添加缺失的订单状态更新函数
 adminAPI.updateOrderStatus = async (orderId, status) => {
     try {
