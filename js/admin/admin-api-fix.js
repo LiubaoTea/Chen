@@ -53,13 +53,9 @@ adminAPI.getOrderDetails = async (orderId) => {
                 if (!data.shipping_fee && data.shipping_fee !== 0) {
                     data.shipping_fee = data.total_amount > subtotal ? data.total_amount - subtotal : 0;
                 }
-            } else {
-                // 如果没有商品信息，设置默认值
-                data.items = [];
-                data.subtotal = 0;
             }
             
-            // 确保收货地址信息完整并可显示
+            // 确保收货地址信息完整
             if (data.address) {
                 // 地址信息已存在，确保所有字段都有值
                 data.address = {
@@ -70,21 +66,9 @@ adminAPI.getOrderDetails = async (orderId) => {
                     full_address: data.address.full_address || '',
                     postal_code: data.address.postal_code || ''
                 };
-                
-                // 确保地址显示格式正确
-                if (!data.address.full_address && data.address.region) {
-                    data.address.full_address = data.address.region;
-                    if (data.address.detail) {
-                        data.address.full_address += ' ' + data.address.detail;
-                    }
-                }
-                
-                // 确保地址信息可以在界面上正确显示
-                data.shipping_address_text = `${data.address.recipient_name}, ${data.address.contact_phone}, ${data.address.region} ${data.address.full_address}`;
             } else if (data.shipping_address) {
                 // 使用shipping_address作为地址信息
                 data.address = data.shipping_address;
-                data.shipping_address_text = `${data.address.recipient_name}, ${data.address.contact_phone}, ${data.address.region} ${data.address.full_address}`;
             } else {
                 // 创建默认地址信息
                 data.address = {
@@ -94,7 +78,6 @@ adminAPI.getOrderDetails = async (orderId) => {
                     full_address: '',
                     postal_code: ''
                 };
-                data.shipping_address_text = '无收货地址信息';
             }
         }
         
@@ -148,34 +131,7 @@ adminAPI.updateUserStatus = async (userId, status) => {
         
         console.log(`转换用户状态值: ${status} -> ${apiStatus}`);
         
-        // 检查D1数据库约束条件，确保状态值有效
-        if (apiStatus !== 'active' && apiStatus !== 'inactive') {
-            console.error(`无效的用户状态值: ${apiStatus}，必须是 'active' 或 'inactive'`);
-            throw new Error(`无效的用户状态值: ${apiStatus}，必须是 'active' 或 'inactive'`);
-        }
-        
-        // 直接构造请求，绕过原始函数可能存在的问题
-        const url = `${ADMIN_API_BASE_URL}/api/admin/users/${userId}/status`;
-        console.log('发送更新用户状态请求，URL:', url);
-        
-        const response = await fetch(url, {
-            method: 'PUT',
-            headers: {
-                ...adminAuth.getHeaders(),
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ status: apiStatus })
-        });
-        
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('更新用户状态API响应错误:', response.status, errorText);
-            throw new Error(`更新用户状态失败，HTTP状态码: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        console.log('成功更新用户状态:', data);
-        return data;
+        return await originalUpdateUserStatus(userId, apiStatus);
     } catch (error) {
         console.error('更新用户状态出错:', error);
         throw error;
@@ -404,18 +360,8 @@ adminAPI.saveProduct = async (productData, isNew = false) => {
             // 确保折扣价是数字或null
             discount_price: productData.discount_price ? parseFloat(productData.discount_price) : null,
             // 确保状态值有效
-            status: ['active', 'inactive'].includes(productData.status) ? productData.status : 'active',
-            // 确保分类ID是整数
-            category_id: parseInt(productData.category_id) || 1
+            status: ['active', 'inactive'].includes(productData.status) ? productData.status : 'active'
         };
-        
-        // 如果是新商品，确保有默认值
-        if (isNew) {
-            // 确保有商品名称
-            if (!fixedProductData.name) fixedProductData.name = '新商品';
-            // 确保有商品描述
-            if (!fixedProductData.description) fixedProductData.description = '商品描述';
-        }
         
         // 调用原始保存函数
         return await originalSaveProduct(fixedProductData, isNew);
@@ -470,36 +416,6 @@ adminAPI.getUserDetails = async (userId) => {
     }
 };
 
-// 添加缺失的获取用户订单函数
-adminAPI.getUserOrders = async (userId) => {
-    try {
-        const url = `${ADMIN_API_BASE_URL}/api/admin/users/${userId}/orders`;
-        console.log('发送获取用户订单请求，URL:', url);
-        
-        const response = await fetch(url, {
-            method: 'GET',
-            headers: {
-                ...adminAuth.getHeaders(),
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('获取用户订单API响应错误:', response.status, errorText);
-            throw new Error(`获取用户订单失败，HTTP状态码: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        console.log('成功获取用户订单:', data);
-        return data;
-    } catch (error) {
-        console.error('获取用户订单出错:', error);
-        // 返回默认数据结构
-        return { orders: [] };
-    }
-};
-
 // 修复获取用户列表函数，确保订单数显示正确
 const originalGetUsers = adminAPI.getUsers;
 adminAPI.getUsers = async (page = 1, pageSize = 10, searchQuery = '') => {
@@ -513,11 +429,11 @@ adminAPI.getUsers = async (page = 1, pageSize = 10, searchQuery = '') => {
                 const user = usersData.users[i];
                 
                 // 如果订单数为0或不存在，尝试获取正确的订单数
-                if (!user.order_count || user.order_count === 0) {
+                if (!user.order_count) {
                     try {
-                        // 直接获取用户订单
-                        const ordersData = await adminAPI.getUserOrders(user.user_id);
-                        user.order_count = ordersData.orders ? ordersData.orders.length : 0;
+                        // 获取用户订单数
+                        const userDetails = await adminAPI.getUserDetails(user.user_id);
+                        user.order_count = userDetails.order_count || 0;
                     } catch (error) {
                         console.warn(`获取用户${user.user_id}的订单数失败:`, error);
                         user.order_count = 0;

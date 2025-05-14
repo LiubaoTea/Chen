@@ -129,13 +129,6 @@ function renderSalesChart(data) {
     if (salesChartContainer) {
         salesChartContainer.style.height = '300px';
         salesChartContainer.style.width = '100%';
-        
-        // 调整销售趋势图表容器宽度为50%
-        const parentElement = salesChartContainer.parentElement;
-        if (parentElement && parentElement.classList.contains('col-xl-8')) {
-            parentElement.classList.remove('col-xl-8');
-            parentElement.classList.add('col-xl-6');
-        }
     } else {
         console.error('销售趋势图表容器不存在');
         return;
@@ -283,13 +276,6 @@ function renderCategoryChart(data) {
     if (categoryChartContainer) {
         categoryChartContainer.style.height = '300px';
         categoryChartContainer.style.width = '100%';
-        
-        // 调整分类占比图表容器宽度为50%
-        const parentElement = categoryChartContainer.parentElement;
-        if (parentElement && parentElement.classList.contains('col-xl-4')) {
-            parentElement.classList.remove('col-xl-4');
-            parentElement.classList.add('col-xl-6');
-        }
     } else {
         console.error('分类占比图表容器不存在');
         return;

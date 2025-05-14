@@ -121,7 +121,7 @@ function renderSalesTrendChart(data) {
     const values = data.sales || data.values || [];
     const ordersData = data.orders || [];
     
-    console.log('销售趋势图表数据:', { labels, values });
+    console.log('销售趋势图表数据:', { labels, values, ordersData });
     
     // 如果图表已存在，先尝试销毁它
     try {
@@ -138,27 +138,12 @@ function renderSalesTrendChart(data) {
         window.salesTrendChart = null;
     }
     
+    // 调整图表容器大小，确保有足够的空间显示
+    const chartContainer = document.getElementById('salesTrendChart').parentNode;
+    chartContainer.style.height = '300px';
+    
     // 创建新图表
     try {
-        // 确保数据不为空
-        if (labels.length === 0) {
-            labels.push('本月');
-        }
-        if (values.length === 0) {
-            values.push(0);
-        }
-        if (ordersData.length === 0) {
-            ordersData.push(0);
-        }
-        
-        // 确保数据长度一致
-        while (values.length < labels.length) {
-            values.push(0);
-        }
-        while (ordersData.length < labels.length) {
-            ordersData.push(0);
-        }
-        
         window.salesTrendChart = new Chart(ctx, {
             type: 'line',
             data: {
@@ -171,7 +156,6 @@ function renderSalesTrendChart(data) {
                         borderColor: 'rgba(54, 162, 235, 1)',
                         borderWidth: 2,
                         tension: 0.1,
-                        fill: true,
                         yAxisID: 'y'
                     },
                     {
@@ -181,7 +165,6 @@ function renderSalesTrendChart(data) {
                         borderColor: 'rgba(255, 99, 132, 1)',
                         borderWidth: 2,
                         tension: 0.1,
-                        fill: true,
                         yAxisID: 'y1'
                     }
                 ]
@@ -189,29 +172,32 @@ function renderSalesTrendChart(data) {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                animation: {
+                    duration: 1000 // 添加动画效果
+                },
                 scales: {
                     y: {
                         type: 'linear',
                         display: true,
                         position: 'left',
+                        beginAtZero: true,
                         title: {
                             display: true,
                             text: '销售额'
-                        },
-                        beginAtZero: true
+                        }
                     },
                     y1: {
                         type: 'linear',
                         display: true,
                         position: 'right',
+                        beginAtZero: true,
                         title: {
                             display: true,
                             text: '订单数'
                         },
                         grid: {
                             drawOnChartArea: false
-                        },
-                        beginAtZero: true
+                        }
                     }
                 }
             }
@@ -372,25 +358,6 @@ function renderUserGrowthChart(data) {
 function renderOrderStatusChart(data) {
     const ctx = document.getElementById('orderStatusChart').getContext('2d');
     
-    // 检查数据格式是否正确
-    if (!data || !Array.isArray(data) || data.length === 0) {
-        console.error('订单状态数据格式不正确或为空:', data);
-        // 创建默认数据
-        data = [
-            { status: 'pending', count: 1, percentage: 20 },
-            { status: 'paid', count: 1, percentage: 20 },
-            { status: 'processing', count: 1, percentage: 20 },
-            { status: 'shipped', count: 1, percentage: 20 },
-            { status: 'completed', count: 1, percentage: 20 }
-        ];
-    }
-    
-    // 转换数据格式
-    const statusLabels = data.map(item => getOrderStatusText(item.status));
-    const statusCounts = data.map(item => item.count);
-    
-    console.log('订单状态图表数据:', { statusLabels, statusCounts });
-    
     // 如果图表已存在，销毁它
     try {
         if (window.orderStatusChart) {
@@ -407,80 +374,39 @@ function renderOrderStatusChart(data) {
     }
     
     // 创建新图表
-    try {
-        window.orderStatusChart = new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels: statusLabels,
-                datasets: [{
-                    data: statusCounts,
-                    backgroundColor: [
-                        '#f6c23e', // 待付款
-                        '#4e73df', // 已付款
-                        '#36b9cc', // 处理中
-                        '#1cc88a', // 已发货
-                        '#1cc88a', // 已完成
-                        '#e74a3b', // 已取消
-                        '#e74a3b'  // 已退款
-                    ],
-                    hoverBackgroundColor: [
-                        '#dda20a',
-                        '#2e59d9',
-                        '#2c9faf',
-                        '#17a673',
-                        '#17a673',
-                        '#be2617',
-                        '#be2617'
-                    ],
-                    hoverBorderColor: 'rgba(234, 236, 244, 1)'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                cutout: '70%',
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        display: true
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                const label = context.label || '';
-                                const value = context.raw;
-                                const percentage = data[context.dataIndex].percentage;
-                                return `${label}: ${value} (${percentage}%)`;
-                            }
-                        }
-                    }
-                }
-            }
-        });
-    } catch (error) {
-        console.error('创建订单状态图表时出错:', error);
-    }
+    window.orderStatusChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: data.labels,
+            datasets: [{
+                data: data.values,
+                backgroundColor: [
+                    'rgba(255, 206, 86, 0.7)',  // 待付款
+                    'rgba(54, 162, 235, 0.7)',  // 待发货
+                    'rgba(75, 192, 192, 0.7)',  // 已发货
+                    'rgba(153, 102, 255, 0.7)', // 已完成
+                    'rgba(255, 99, 132, 0.7)'   // 已取消
+                ],
+                borderColor: [
+                    'rgba(255, 206, 86, 1)',
+                    'rgba(54, 162, 235, 1)',
+                    'rgba(75, 192, 192, 1)',
+                    'rgba(153, 102, 255, 1)',
+                    'rgba(255, 99, 132, 1)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
 }
-
 
 // 渲染热销商品排行列表
 function renderTopProductsList(products) {
-    const topProductsTable = document.getElementById('topProductsTable');
     const topProductsList = document.getElementById('topProductsList');
-    
-    // 确保表格元素可见
-    if (topProductsTable) {
-        topProductsTable.style.display = 'table';
-    }
-    
-    // 检查列表元素是否存在
-    if (!topProductsList) {
-        console.error('热销商品列表元素不存在');
-        return;
-    }
-    
-    // 清空表格内容
-    topProductsList.innerHTML = '';
     
     // 检查数据格式是否正确
     if (!products || !Array.isArray(products)) {
@@ -488,6 +414,9 @@ function renderTopProductsList(products) {
         topProductsList.innerHTML = '<tr><td colspan="5" class="text-center">暂无热销商品数据</td></tr>';
         return;
     }
+    
+    // 清空表格内容
+    topProductsList.innerHTML = '';
     
     // 如果没有数据，显示提示信息
     if (products.length === 0) {
@@ -497,34 +426,36 @@ function renderTopProductsList(products) {
     
     console.log('渲染热销商品列表:', products);
     
+    // 计算总销售额
+    const totalSales = products.reduce((sum, product) => sum + (product.totalSales || 0), 0);
+    
     // 添加商品行
     products.forEach((product, index) => {
-        // 确保销售数量存在
-        const salesCount = product.sales_count || product.sold_count || 0;
-        // 确保价格存在且为数字
-        const price = typeof product.price === 'number' ? product.price : parseFloat(product.price) || 0;
+        // 确保totalSales是数字
+        const productSales = typeof product.totalSales === 'number' ? product.totalSales : 0;
+        const percentage = totalSales > 0 ? (productSales / totalSales * 100).toFixed(2) : '0.00';
         
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>${index + 1}</td>
             <td>
                 <div class="d-flex align-items-center">
-                    <img src="${product.image_url || product.image || '../image/Goods/Goods_1.png'}" alt="${product.name}" class="me-2" style="width: 40px; height: 40px; object-fit: cover;">
+                    <img src="${product.image || '../image/Goods/Goods_1.png'}" alt="${product.name}" class="me-2" style="width: 40px; height: 40px; object-fit: cover;">
                     <div>
                         <div class="fw-bold">${product.name}</div>
                         <small class="text-muted">ID: ${product.id || product.product_id || '未知'}</small>
                     </div>
                 </div>
             </td>
-            <td>¥${price.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-            <td>${salesCount}</td>
+            <td>${product.quantity || 0}</td>
+            <td>¥${productSales.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+            <td>${percentage}%</td>
         `;
         
         topProductsList.appendChild(row);
     });
+
 }
-
-
 
 // 导出统计报表
 function exportStatisticsReport() {
