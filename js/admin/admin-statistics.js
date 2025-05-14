@@ -245,17 +245,17 @@ function renderSalesTrendChart(data) {
         window.salesTrendChart = null;
     }
     
-    // 调整图表容器大小，确保有足够的空间显示
+    // 调整图表容器大小，确保有合适的显示高度
     const chartContainer = document.getElementById('salesTrendChart').parentNode;
-    chartContainer.style.height = '300px';
+    chartContainer.style.height = '250px';
     
     // 调整销售趋势和商品分类占比图表的布局
     const salesTrendCard = document.querySelector('#salesTrendChart').closest('.col-md-6');
     const productSalesCard = document.querySelector('#productSalesChart').closest('.col-md-6');
     
     if (salesTrendCard && productSalesCard) {
-        salesTrendCard.className = 'col-md-6 mb-4';
-        productSalesCard.className = 'col-md-6 mb-4';
+        salesTrendCard.className = 'col-md-6 mb-3';
+        productSalesCard.className = 'col-md-6 mb-3';
     }
     
     // 创建新图表
@@ -371,6 +371,10 @@ function renderProductSalesChart(data) {
         console.error('销毁商品销售占比图表时出错:', error);
         window.productSalesChart = null;
     }
+    
+    // 调整商品销售占比图表容器的高度
+    const chartContainer = document.getElementById('productSalesChart').parentNode;
+    chartContainer.style.height = '250px';
     
     // 创建新图表
     try {
