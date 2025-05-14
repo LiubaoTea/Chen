@@ -7,6 +7,17 @@
 import { adminAuth } from './admin-auth.js';
 import adminAPI, { API_BASE_URL, ADMIN_API_BASE_URL } from './admin-api.js';
 
+// 确保Chart.js全局可用
+if (typeof window.Chart === 'undefined' && typeof Chart !== 'undefined') {
+    window.Chart = Chart;
+}
+
+// 存储图表实例
+let salesTrendChart = null;
+let productSalesChart = null;
+let userGrowthChart = null;
+let orderStatusChart = null;
+
 // 确保API配置可用
 console.log('admin-statistics.js中的API配置:', { API_BASE_URL, ADMIN_API_BASE_URL });
 console.log('admin-statistics.js中的adminAPI:', adminAPI);
@@ -159,18 +170,23 @@ function setupStatisticsEventListeners() {
 
 // 渲染销售趋势图表
 function renderSalesTrendChart(data) {
-    const ctx = document.getElementById('salesTrendChart').getContext('2d');
-    
-    // 检查图表元素是否存在
-    if (!ctx) {
+    const canvas = document.getElementById('salesTrendChart');
+    if (!canvas) {
         console.error('销售趋势图表元素不存在');
         return;
     }
+    
+    const ctx = canvas.getContext('2d');
     
     // 检查Chart对象是否可用
     if (typeof window.Chart === 'undefined') {
         console.error('Chart对象未定义，请确保Chart.js已正确加载');
         return;
+    }
+    
+    // 销毁现有图表
+    if (salesTrendChart instanceof Chart) {
+        salesTrendChart.destroy();
     }
     
     // 检查数据格式是否正确
@@ -286,12 +302,23 @@ function renderSalesTrendChart(data) {
 
 // 渲染商品销售占比图表
 function renderProductSalesChart(data) {
-    const ctx = document.getElementById('productSalesChart').getContext('2d');
-    
-    // 检查图表元素是否存在
-    if (!ctx) {
+    const canvas = document.getElementById('productSalesChart');
+    if (!canvas) {
         console.error('商品销售占比图表元素不存在');
         return;
+    }
+    
+    const ctx = canvas.getContext('2d');
+    
+    // 检查Chart对象是否可用
+    if (typeof window.Chart === 'undefined') {
+        console.error('Chart对象未定义，请确保Chart.js已正确加载');
+        return;
+    }
+    
+    // 销毁现有图表
+    if (productSalesChart instanceof Chart) {
+        productSalesChart.destroy();
     }
     
     // 检查数据格式是否正确
@@ -381,18 +408,23 @@ function renderProductSalesChart(data) {
 
 // 渲染用户增长趋势图表
 function renderUserGrowthChart(data) {
-    const ctx = document.getElementById('userGrowthChart').getContext('2d');
-    
-    // 检查图表元素是否存在
-    if (!ctx) {
+    const canvas = document.getElementById('userGrowthChart');
+    if (!canvas) {
         console.error('用户增长趋势图表元素不存在');
         return;
     }
+    
+    const ctx = canvas.getContext('2d');
     
     // 检查Chart对象是否可用
     if (typeof window.Chart === 'undefined') {
         console.error('Chart对象未定义，请确保Chart.js已正确加载');
         return;
+    }
+    
+    // 销毁现有图表
+    if (userGrowthChart instanceof Chart) {
+        userGrowthChart.destroy();
     }
     
     // 检查数据格式是否正确
@@ -461,18 +493,23 @@ function renderUserGrowthChart(data) {
 
 // 渲染订单状态分布图表
 function renderOrderStatusChart(data) {
-    const ctx = document.getElementById('orderStatusChart').getContext('2d');
-    
-    // 检查图表元素是否存在
-    if (!ctx) {
+    const canvas = document.getElementById('orderStatusChart');
+    if (!canvas) {
         console.error('订单状态分布图表元素不存在');
         return;
     }
+    
+    const ctx = canvas.getContext('2d');
     
     // 检查Chart对象是否可用
     if (typeof window.Chart === 'undefined') {
         console.error('Chart对象未定义，请确保Chart.js已正确加载');
         return;
+    }
+    
+    // 销毁现有图表
+    if (orderStatusChart instanceof Chart) {
+        orderStatusChart.destroy();
     }
     
     // 检查数据格式是否正确
