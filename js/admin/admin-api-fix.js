@@ -91,7 +91,8 @@ adminAPI.getOrderDetails = async (orderId) => {
 // 添加缺失的用户订单获取函数
 adminAPI.getUserOrders = async (userId, page = 1, pageSize = 5) => {
     try {
-        const url = `${ADMIN_API_BASE_URL}/api/admin/users/${userId}/orders?page=${page}&pageSize=${pageSize}`;
+        // 修改API路径以匹配后端实现
+        const url = `${ADMIN_API_BASE_URL}/api/admin/orders/user/${userId}?page=${page}&pageSize=${pageSize}`;
         console.log('发送用户订单请求，URL:', url);
         
         const response = await fetch(url, {
@@ -105,15 +106,29 @@ adminAPI.getUserOrders = async (userId, page = 1, pageSize = 5) => {
         if (!response.ok) {
             const errorText = await response.text();
             console.error('用户订单API响应错误:', response.status, errorText);
+            
+            // 如果是404错误，返回空数据而不是抛出错误
+            if (response.status === 404) {
+                return { orders: [], total: 0, page: 1, pageSize: pageSize };
+            }
+            
             throw new Error(`获取用户订单失败，HTTP状态码: ${response.status}`);
         }
         
         const data = await response.json();
         console.log('成功获取用户订单:', data);
-        return data;
+        
+        // 确保返回数据格式一致
+        return {
+            orders: data.orders || [],
+            total: data.total || 0,
+            page: data.page || page,
+            pageSize: data.pageSize || pageSize
+        };
     } catch (error) {
         console.error('获取用户订单出错:', error);
-        throw error;
+        // 发生错误时返回空数据而不是抛出错误
+        return { orders: [], total: 0, page: 1, pageSize: pageSize };
     }
 };
 
@@ -153,14 +168,39 @@ adminAPI.updateUserStatus = async (userId, status) => {
     try {
         // 将中文状态值转换为API需要的状态值，以符合API约束
         let apiStatus = status;
-        if (status === '正常') apiStatus = 'active';
-        if (status === '禁用') apiStatus = 'inactive';
-        // 确保API状态值是有效的
-        if (status === 'active' || status === 'inactive') apiStatus = status;
+        if (status === '正常' || status === 'active') apiStatus = 'active';
+        if (status === '禁用' || status === 'disabled' || status === 'inactive') apiStatus = 'disabled';
         
         console.log(`转换用户状态值: ${status} -> ${apiStatus}`);
         
-        return await originalUpdateUserStatus(userId, apiStatus);
+        // 直接发送请求到后端API
+        const url = `${ADMIN_API_BASE_URL}/api/admin/users/${userId}/status`;
+        console.log('发送更新用户状态请求，URL:', url);
+        
+        const response = await fetch(url, {
+            method: 'PUT',
+            headers: {
+                ...adminAuth.getHeaders(),
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ status: apiStatus })
+        });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('更新用户状态API响应错误:', response.status, errorText);
+            throw new Error(`更新用户状态失败，HTTP状态码: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('成功更新用户状态:', data);
+        
+        // 确保返回数据格式一致
+        return {
+            user_id: userId,
+            status: apiStatus,
+            message: '用户状态更新成功'
+        };
     } catch (error) {
         console.error('更新用户状态出错:', error);
         throw error;
@@ -410,31 +450,53 @@ adminAPI.getUserDetails = async (userId) => {
         if (userData) {
             // 确保注册时间格式正确
             if (userData.created_at) {
-                // 确保created_at是数字（时间戳）
-                const timestamp = typeof userData.created_at === 'number' ? 
-                    userData.created_at : parseInt(userData.created_at);
+                let timestamp;
+                // 处理不同格式的created_at
+                if (typeof userData.created_at === 'number') {
+                    timestamp = userData.created_at;
+                } else if (typeof userData.created_at === 'string') {
+                    // 尝试解析字符串时间戳
+                    if (!isNaN(parseInt(userData.created_at))) {
+                        timestamp = parseInt(userData.created_at);
+                    } else {
+                        // 尝试解析日期字符串
+                        const date = new Date(userData.created_at);
+                        timestamp = Math.floor(date.getTime() / 1000);
+                    }
+                }
                 
                 // 创建有效的日期对象
-                const date = new Date(timestamp * 1000);
-                userData.created_at_formatted = date.toLocaleString('zh-CN');
+                if (timestamp && !isNaN(timestamp)) {
+                    const date = new Date(timestamp * 1000);
+                    if (date.getTime() > 0) { // 确保日期有效
+                        userData.created_at_formatted = date.toLocaleString('zh-CN');
+                        userData.created_at = timestamp; // 更新为标准时间戳格式
+                    } else {
+                        userData.created_at_formatted = '未知';
+                    }
+                } else {
+                    userData.created_at_formatted = '未知';
+                }
             } else {
                 userData.created_at_formatted = '未知';
             }
             
-            // 确保订单数据存在
-            if (!userData.orders || !Array.isArray(userData.orders)) {
-                // 尝试获取用户订单
-                try {
-                    const ordersData = await adminAPI.getUserOrders(userId);
-                    userData.orders = ordersData.orders || [];
-                    userData.order_count = userData.orders.length;
-                } catch (ordersError) {
-                    console.warn('获取用户订单失败:', ordersError);
-                    userData.orders = [];
-                    userData.order_count = 0;
-                }
-            } else {
-                userData.order_count = userData.orders.length;
+            // 获取用户订单数据
+            try {
+                const ordersData = await adminAPI.getUserOrders(userId);
+                userData.orders = ordersData.orders || [];
+                userData.order_count = ordersData.total || userData.orders.length;
+                userData.recent_orders = userData.orders.slice(0, 5); // 保存最近5个订单
+            } catch (ordersError) {
+                console.warn('获取用户订单失败:', ordersError);
+                userData.orders = [];
+                userData.order_count = 0;
+                userData.recent_orders = [];
+            }
+            
+            // 确保用户状态字段存在且格式正确
+            if (!userData.status || (userData.status !== 'active' && userData.status !== 'disabled')) {
+                userData.status = 'active'; // 默认设置为活动状态
             }
         }
         
