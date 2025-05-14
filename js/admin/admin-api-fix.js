@@ -210,7 +210,7 @@ adminAPI.updateUserStatus = async (userId, status) => {
         // 将中文状态值转换为API需要的状态值，以符合API约束
         let apiStatus = status;
         if (status === '正常' || status === 'active') apiStatus = 'active';
-        if (status === '禁用' || status === 'disabled' || status === 'inactive') apiStatus = 'inactive';
+        if (status === '禁用' || status === 'disabled' || status === 'inactive') apiStatus = 'disabled';
         
         console.log(`转换用户状态值: ${status} -> ${apiStatus}`);
         

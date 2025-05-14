@@ -92,20 +92,38 @@ function updateUsersList() {
                 // 检查是否为数字类型的时间戳
                 if (typeof user.created_at === 'number') {
                     // 确保时间戳是毫秒级的，如果是秒级的需要转换
-                    const timestamp = user.created_at > 10000000000 ? user.created_at : user.created_at * 1000;
-                    date = new Date(timestamp);
+                    // 检查时间戳是否为0或接近0的值，这通常表示数据库中的默认值
+                    if (user.created_at < 10) {
+                        // 使用当前时间作为备用
+                        date = new Date();
+                    } else {
+                        const timestamp = user.created_at > 10000000000 ? user.created_at : user.created_at * 1000;
+                        date = new Date(timestamp);
+                    }
                 } else if (typeof user.created_at === 'string') {
                     // 尝试将字符串转换为数字时间戳
                     if (!isNaN(parseInt(user.created_at))) {
-                        const timestamp = parseInt(user.created_at) > 10000000000 ? parseInt(user.created_at) : parseInt(user.created_at) * 1000;
-                        date = new Date(timestamp);
+                        const parsedValue = parseInt(user.created_at);
+                        // 检查时间戳是否为0或接近0的值
+                        if (parsedValue < 10) {
+                            // 使用当前时间作为备用
+                            date = new Date();
+                        } else {
+                            const timestamp = parsedValue > 10000000000 ? parsedValue : parsedValue * 1000;
+                            date = new Date(timestamp);
+                        }
                     } else {
                         // 尝试直接解析日期字符串
                         date = new Date(user.created_at);
+                        // 检查日期是否有效
+                        if (isNaN(date.getTime()) || date.getFullYear() <= 1970) {
+                            // 使用当前时间作为备用
+                            date = new Date();
+                        }
                     }
                 }
                 
-                if (date && !isNaN(date.getTime()) && date.getFullYear() > 1970) {
+                if (date && !isNaN(date.getTime())) {
                     registerDate = date.toLocaleDateString('zh-CN');
                 }
             }
@@ -116,20 +134,38 @@ function updateUsersList() {
                 let date;
                 if (typeof user.last_login_at === 'number') {
                     // 确保时间戳是毫秒级的，如果是秒级的需要转换
-                    const timestamp = user.last_login_at > 10000000000 ? user.last_login_at : user.last_login_at * 1000;
-                    date = new Date(timestamp);
+                    // 检查时间戳是否为0或接近0的值，这通常表示数据库中的默认值
+                    if (user.last_login_at < 10) {
+                        // 保持为从未登录
+                        date = null;
+                    } else {
+                        const timestamp = user.last_login_at > 10000000000 ? user.last_login_at : user.last_login_at * 1000;
+                        date = new Date(timestamp);
+                    }
                 } else if (typeof user.last_login_at === 'string') {
                     // 尝试将字符串转换为数字时间戳
                     if (!isNaN(parseInt(user.last_login_at))) {
-                        const timestamp = parseInt(user.last_login_at) > 10000000000 ? parseInt(user.last_login_at) : parseInt(user.last_login_at) * 1000;
-                        date = new Date(timestamp);
+                        const parsedValue = parseInt(user.last_login_at);
+                        // 检查时间戳是否为0或接近0的值
+                        if (parsedValue < 10) {
+                            // 保持为从未登录
+                            date = null;
+                        } else {
+                            const timestamp = parsedValue > 10000000000 ? parsedValue : parsedValue * 1000;
+                            date = new Date(timestamp);
+                        }
                     } else {
                         // 尝试直接解析日期字符串
                         date = new Date(user.last_login_at);
+                        // 检查日期是否有效
+                        if (isNaN(date.getTime()) || date.getFullYear() <= 1970) {
+                            // 保持为从未登录
+                            date = null;
+                        }
                     }
                 }
                 
-                if (date && !isNaN(date.getTime()) && date.getFullYear() > 1970) {
+                if (date && !isNaN(date.getTime())) {
                     lastLoginDate = date.toLocaleDateString('zh-CN');
                 }
             }
@@ -280,18 +316,37 @@ async function viewUserDetails(userId) {
                 let date;
                 if (typeof userDetails.created_at === 'number') {
                     // 确保时间戳是毫秒级的，如果是秒级的需要转换
-                    const timestamp = userDetails.created_at > 10000000000 ? userDetails.created_at : userDetails.created_at * 1000;
-                    date = new Date(timestamp);
+                    // 检查时间戳是否为0或接近0的值，这通常表示数据库中的默认值
+                    if (userDetails.created_at < 10) {
+                        // 使用当前时间作为备用
+                        date = new Date();
+                    } else {
+                        const timestamp = userDetails.created_at > 10000000000 ? userDetails.created_at : userDetails.created_at * 1000;
+                        date = new Date(timestamp);
+                    }
                 } else if (typeof userDetails.created_at === 'string') {
                     if (!isNaN(parseInt(userDetails.created_at))) {
-                        const timestamp = parseInt(userDetails.created_at) > 10000000000 ? parseInt(userDetails.created_at) : parseInt(userDetails.created_at) * 1000;
-                        date = new Date(timestamp);
+                        const parsedValue = parseInt(userDetails.created_at);
+                        // 检查时间戳是否为0或接近0的值
+                        if (parsedValue < 10) {
+                            // 使用当前时间作为备用
+                            date = new Date();
+                        } else {
+                            const timestamp = parsedValue > 10000000000 ? parsedValue : parsedValue * 1000;
+                            date = new Date(timestamp);
+                        }
                     } else {
+                        // 尝试直接解析日期字符串
                         date = new Date(userDetails.created_at);
+                        // 检查日期是否有效
+                        if (isNaN(date.getTime()) || date.getFullYear() <= 1970) {
+                            // 使用当前时间作为备用
+                            date = new Date();
+                        }
                     }
                 }
                 
-                if (date && !isNaN(date.getTime()) && date.getFullYear() > 1970) {
+                if (date && !isNaN(date.getTime())) {
                     registerDate = date.toLocaleString('zh-CN');
                 }
             }
@@ -301,18 +356,37 @@ async function viewUserDetails(userId) {
                 let date;
                 if (typeof userDetails.last_login_at === 'number') {
                     // 确保时间戳是毫秒级的，如果是秒级的需要转换
-                    const timestamp = userDetails.last_login_at > 10000000000 ? userDetails.last_login_at : userDetails.last_login_at * 1000;
-                    date = new Date(timestamp);
+                    // 检查时间戳是否为0或接近0的值，这通常表示数据库中的默认值
+                    if (userDetails.last_login_at < 10) {
+                        // 保持为从未登录
+                        date = null;
+                    } else {
+                        const timestamp = userDetails.last_login_at > 10000000000 ? userDetails.last_login_at : userDetails.last_login_at * 1000;
+                        date = new Date(timestamp);
+                    }
                 } else if (typeof userDetails.last_login_at === 'string') {
                     if (!isNaN(parseInt(userDetails.last_login_at))) {
-                        const timestamp = parseInt(userDetails.last_login_at) > 10000000000 ? parseInt(userDetails.last_login_at) : parseInt(userDetails.last_login_at) * 1000;
-                        date = new Date(timestamp);
+                        const parsedValue = parseInt(userDetails.last_login_at);
+                        // 检查时间戳是否为0或接近0的值
+                        if (parsedValue < 10) {
+                            // 保持为从未登录
+                            date = null;
+                        } else {
+                            const timestamp = parsedValue > 10000000000 ? parsedValue : parsedValue * 1000;
+                            date = new Date(timestamp);
+                        }
                     } else {
+                        // 尝试直接解析日期字符串
                         date = new Date(userDetails.last_login_at);
+                        // 检查日期是否有效
+                        if (isNaN(date.getTime()) || date.getFullYear() <= 1970) {
+                            // 保持为从未登录
+                            date = null;
+                        }
                     }
                 }
                 
-                if (date && !isNaN(date.getTime()) && date.getFullYear() > 1970) {
+                if (date && !isNaN(date.getTime())) {
                     lastLoginDate = date.toLocaleString('zh-CN');
                 }
             }
@@ -533,6 +607,9 @@ async function viewUserDetails(userId) {
                 `;
                 ordersContainer.innerHTML = loadingHtml;
                 
+                // 保存按钮引用，避免使用e.currentTarget（可能会在异步操作后变为null）
+                const viewAllOrdersBtn = e.currentTarget;
+                
                 try {
                     // 获取用户的所有订单
                     const result = await adminAPI.getUserOrders(userId, 1, 1000);
@@ -588,8 +665,10 @@ async function viewUserDetails(userId) {
                         ordersHtml += '</tbody></table></div>';
                         ordersContainer.innerHTML = ordersHtml;
                         
-                        // 移除查看全部按钮
-                        e.currentTarget.remove();
+                        // 移除查看全部按钮（使用保存的引用）
+                        if (viewAllOrdersBtn && viewAllOrdersBtn.parentNode) {
+                            viewAllOrdersBtn.parentNode.removeChild(viewAllOrdersBtn);
+                        }
                         
                         // 为新加载的订单查看按钮添加事件监听
                         ordersContainer.querySelectorAll('.view-order-btn').forEach(button => {
@@ -626,7 +705,7 @@ async function viewUserDetails(userId) {
 // 切换用户状态（启用/禁用）
 async function toggleUserStatus(userId, currentStatus) {
     // 确保状态值与后端API匹配
-    const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+    const newStatus = currentStatus === 'active' ? 'disabled' : 'active';
     const actionText = newStatus === 'active' ? '启用' : '禁用';
     
     try {
