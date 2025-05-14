@@ -91,18 +91,21 @@ function updateUsersList() {
                 let date;
                 // 检查是否为数字类型的时间戳
                 if (typeof user.created_at === 'number') {
-                    date = new Date(user.created_at * 1000);
+                    // 确保时间戳是毫秒级的，如果是秒级的需要转换
+                    const timestamp = user.created_at > 10000000000 ? user.created_at : user.created_at * 1000;
+                    date = new Date(timestamp);
                 } else if (typeof user.created_at === 'string') {
                     // 尝试将字符串转换为数字时间戳
                     if (!isNaN(parseInt(user.created_at))) {
-                        date = new Date(parseInt(user.created_at) * 1000);
+                        const timestamp = parseInt(user.created_at) > 10000000000 ? parseInt(user.created_at) : parseInt(user.created_at) * 1000;
+                        date = new Date(timestamp);
                     } else {
                         // 尝试直接解析日期字符串
                         date = new Date(user.created_at);
                     }
                 }
                 
-                if (date && !isNaN(date.getTime())) {
+                if (date && !isNaN(date.getTime()) && date.getFullYear() > 1970) {
                     registerDate = date.toLocaleDateString('zh-CN');
                 }
             }
@@ -112,18 +115,21 @@ function updateUsersList() {
                 // 尝试将时间戳转换为日期
                 let date;
                 if (typeof user.last_login_at === 'number') {
-                    date = new Date(user.last_login_at * 1000);
+                    // 确保时间戳是毫秒级的，如果是秒级的需要转换
+                    const timestamp = user.last_login_at > 10000000000 ? user.last_login_at : user.last_login_at * 1000;
+                    date = new Date(timestamp);
                 } else if (typeof user.last_login_at === 'string') {
                     // 尝试将字符串转换为数字时间戳
                     if (!isNaN(parseInt(user.last_login_at))) {
-                        date = new Date(parseInt(user.last_login_at) * 1000);
+                        const timestamp = parseInt(user.last_login_at) > 10000000000 ? parseInt(user.last_login_at) : parseInt(user.last_login_at) * 1000;
+                        date = new Date(timestamp);
                     } else {
                         // 尝试直接解析日期字符串
                         date = new Date(user.last_login_at);
                     }
                 }
                 
-                if (date && !isNaN(date.getTime())) {
+                if (date && !isNaN(date.getTime()) && date.getFullYear() > 1970) {
                     lastLoginDate = date.toLocaleDateString('zh-CN');
                 }
             }
@@ -273,16 +279,19 @@ async function viewUserDetails(userId) {
                 // 兼容处理，如果没有格式化日期，则自行处理
                 let date;
                 if (typeof userDetails.created_at === 'number') {
-                    date = new Date(userDetails.created_at * 1000);
+                    // 确保时间戳是毫秒级的，如果是秒级的需要转换
+                    const timestamp = userDetails.created_at > 10000000000 ? userDetails.created_at : userDetails.created_at * 1000;
+                    date = new Date(timestamp);
                 } else if (typeof userDetails.created_at === 'string') {
                     if (!isNaN(parseInt(userDetails.created_at))) {
-                        date = new Date(parseInt(userDetails.created_at) * 1000);
+                        const timestamp = parseInt(userDetails.created_at) > 10000000000 ? parseInt(userDetails.created_at) : parseInt(userDetails.created_at) * 1000;
+                        date = new Date(timestamp);
                     } else {
                         date = new Date(userDetails.created_at);
                     }
                 }
                 
-                if (date && !isNaN(date.getTime())) {
+                if (date && !isNaN(date.getTime()) && date.getFullYear() > 1970) {
                     registerDate = date.toLocaleString('zh-CN');
                 }
             }
@@ -291,16 +300,19 @@ async function viewUserDetails(userId) {
             if (userDetails.last_login_at) {
                 let date;
                 if (typeof userDetails.last_login_at === 'number') {
-                    date = new Date(userDetails.last_login_at * 1000);
+                    // 确保时间戳是毫秒级的，如果是秒级的需要转换
+                    const timestamp = userDetails.last_login_at > 10000000000 ? userDetails.last_login_at : userDetails.last_login_at * 1000;
+                    date = new Date(timestamp);
                 } else if (typeof userDetails.last_login_at === 'string') {
                     if (!isNaN(parseInt(userDetails.last_login_at))) {
-                        date = new Date(parseInt(userDetails.last_login_at) * 1000);
+                        const timestamp = parseInt(userDetails.last_login_at) > 10000000000 ? parseInt(userDetails.last_login_at) : parseInt(userDetails.last_login_at) * 1000;
+                        date = new Date(timestamp);
                     } else {
                         date = new Date(userDetails.last_login_at);
                     }
                 }
                 
-                if (date && !isNaN(date.getTime())) {
+                if (date && !isNaN(date.getTime()) && date.getFullYear() > 1970) {
                     lastLoginDate = date.toLocaleString('zh-CN');
                 }
             }
@@ -348,16 +360,19 @@ async function viewUserDetails(userId) {
                     if (order.created_at) {
                         let date;
                         if (typeof order.created_at === 'number') {
-                            date = new Date(order.created_at * 1000);
+                            // 确保时间戳是毫秒级的，如果是秒级的需要转换
+                            const timestamp = order.created_at > 10000000000 ? order.created_at : order.created_at * 1000;
+                            date = new Date(timestamp);
                         } else if (typeof order.created_at === 'string') {
                             if (!isNaN(parseInt(order.created_at))) {
-                                date = new Date(parseInt(order.created_at) * 1000);
+                                const timestamp = parseInt(order.created_at) > 10000000000 ? parseInt(order.created_at) : parseInt(order.created_at) * 1000;
+                                date = new Date(timestamp);
                             } else {
                                 date = new Date(order.created_at);
                             }
                         }
                         
-                        if (date && !isNaN(date.getTime())) {
+                        if (date && !isNaN(date.getTime()) && date.getFullYear() > 1970) {
                             orderDate = date.toLocaleDateString('zh-CN');
                         }
                     }
@@ -502,15 +517,107 @@ async function viewUserDetails(userId) {
         
         // 为查看全部订单按钮添加事件监听
         document.querySelectorAll('.view-all-orders').forEach(button => {
-            button.addEventListener('click', (e) => {
+            button.addEventListener('click', async (e) => {
                 e.preventDefault();
                 const userId = e.currentTarget.getAttribute('data-user-id');
-                // 关闭用户详情模态框
-                const userDetailModal = bootstrap.Modal.getInstance(document.getElementById('userDetailModal'));
-                userDetailModal.hide();
                 
-                // 跳转到订单管理页面并传递用户ID参数
-                window.location.href = 'admin-orders.html?user_id=' + userId;
+                // 显示加载状态
+                const ordersContainer = e.currentTarget.closest('.p-3').querySelector('.table-responsive');
+                const loadingHtml = `
+                    <div class="text-center p-3">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">加载中...</span>
+                        </div>
+                        <p class="mt-2">正在加载全部订单...</p>
+                    </div>
+                `;
+                ordersContainer.innerHTML = loadingHtml;
+                
+                try {
+                    // 获取用户的所有订单
+                    const result = await adminAPI.getUserOrders(userId, 1, 1000);
+                    
+                    if (result && result.orders && result.orders.length > 0) {
+                        // 构建订单表格
+                        let ordersHtml = '<div class="table-responsive"><table class="table table-sm"><thead><tr><th>订单号</th><th>日期</th><th>金额</th><th>状态</th><th>操作</th></tr></thead><tbody>';
+                        
+                        result.orders.forEach(order => {
+                            // 格式化订单日期
+                            let orderDate = '未知';
+                            try {
+                                if (order.created_at) {
+                                    let date;
+                                    if (typeof order.created_at === 'number') {
+                                        const timestamp = order.created_at > 10000000000 ? order.created_at : order.created_at * 1000;
+                                        date = new Date(timestamp);
+                                    } else if (typeof order.created_at === 'string') {
+                                        if (!isNaN(parseInt(order.created_at))) {
+                                            const timestamp = parseInt(order.created_at) > 10000000000 ? parseInt(order.created_at) : parseInt(order.created_at) * 1000;
+                                            date = new Date(timestamp);
+                                        } else {
+                                            date = new Date(order.created_at);
+                                        }
+                                    }
+                                    
+                                    if (date && !isNaN(date.getTime()) && date.getFullYear() > 1970) {
+                                        orderDate = date.toLocaleDateString('zh-CN');
+                                    }
+                                }
+                            } catch (dateError) {
+                                console.error('订单日期格式化错误:', dateError);
+                            }
+                            
+                            const statusBadge = getOrderStatusBadge(order.status);
+                            const totalAmount = parseFloat(order.total_amount) || 0;
+                            
+                            ordersHtml += `
+                                <tr>
+                                    <td>${order.order_id}</td>
+                                    <td>${orderDate}</td>
+                                    <td>¥${totalAmount.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                    <td>${statusBadge}</td>
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-outline-primary view-order-btn" data-order-id="${order.order_id}">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            `;
+                        });
+                        
+                        ordersHtml += '</tbody></table></div>';
+                        ordersContainer.innerHTML = ordersHtml;
+                        
+                        // 移除查看全部按钮
+                        e.currentTarget.remove();
+                        
+                        // 为新加载的订单查看按钮添加事件监听
+                        ordersContainer.querySelectorAll('.view-order-btn').forEach(button => {
+                            button.addEventListener('click', (e) => {
+                                const orderId = e.currentTarget.getAttribute('data-order-id');
+                                // 关闭用户详情模态框
+                                const userDetailModal = bootstrap.Modal.getInstance(document.getElementById('userDetailModal'));
+                                userDetailModal.hide();
+                                
+                                // 延迟一下再打开订单详情，避免模态框冲突
+                                setTimeout(() => {
+                                    // 调用订单详情查看函数（如果在全局范围内可用）
+                                    if (typeof viewOrderDetails === 'function') {
+                                        viewOrderDetails(orderId);
+                                    } else {
+                                        // 如果函数不可用，则跳转到订单管理页面
+                                        window.location.href = 'admin-orders.html?order_id=' + orderId;
+                                    }
+                                }, 300);
+                            });
+                        });
+                    } else {
+                        ordersContainer.innerHTML = '<p class="text-center text-muted">没有找到更多订单</p>';
+                    }
+                } catch (error) {
+                    console.error('加载全部订单失败:', error);
+                    ordersContainer.innerHTML = `<div class="alert alert-danger">加载订单失败: ${error.message || '请稍后重试'}</div>`;
+                }
             });
         });
     }, 100); // 短暂延迟确保DOM已更新
@@ -518,7 +625,8 @@ async function viewUserDetails(userId) {
 
 // 切换用户状态（启用/禁用）
 async function toggleUserStatus(userId, currentStatus) {
-    const newStatus = currentStatus === 'active' ? 'disabled' : 'active';
+    // 确保状态值与后端API匹配
+    const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
     const actionText = newStatus === 'active' ? '启用' : '禁用';
     
     try {
