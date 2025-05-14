@@ -208,16 +208,16 @@ const originalUpdateUserStatus = adminAPI.updateUserStatus;
 adminAPI.updateUserStatus = async (userId, status) => {
     try {
         // 将中文状态值转换为API需要的状态值，以符合API约束
-        // 根据错误日志，数据库约束要求状态值为 'active' 或 'inactive'，而不是 'disabled'
+        // 根据错误日志，数据库约束要求状态值为 'active' 或 'disabled'
         let apiStatus = status;
         
         // 状态值映射表
         const statusMap = {
             '正常': 'active',
-            '禁用': 'inactive',  // 修改为 'inactive' 而不是 'disabled'
+            '禁用': 'disabled',  // 修改为 'disabled'
             'active': 'active',
-            'disabled': 'inactive', // 修改为 'inactive'
-            'inactive': 'inactive'
+            'disabled': 'disabled', // 保持为 'disabled'
+            'inactive': 'disabled'  // 将 'inactive' 映射为 'disabled'
         };
         
         // 使用映射表获取正确的API状态值
@@ -620,9 +620,9 @@ adminAPI.getUserDetails = async (userId) => {
             // 确保用户状态字段存在且格式正确
             if (!userData.status) {
                 userData.status = 'active'; // 默认设置为活动状态
-            } else if (userData.status !== 'active' && userData.status !== 'inactive') {
-                // 标准化状态值
-                userData.status = userData.status === 'disabled' ? 'inactive' : 'active';
+            } else if (userData.status !== 'active' && userData.status !== 'disabled') {
+                // 标准化状态值 - 保持与updateUserStatus函数一致
+                userData.status = userData.status === 'inactive' ? 'disabled' : 'active';
             }
             
             // 添加状态文本字段，用于前端显示
@@ -697,9 +697,9 @@ adminAPI.getUsers = async (page = 1, pageSize = 10, searchQuery = '') => {
                 // 确保状态显示正确
                 if (!user.status) {
                     user.status = 'active';
-                } else if (user.status !== 'active' && user.status !== 'inactive') {
-                    // 标准化状态值
-                    user.status = user.status === 'disabled' ? 'inactive' : 'active';
+                } else if (user.status !== 'active' && user.status !== 'disabled') {
+                    // 标准化状态值 - 保持与updateUserStatus函数一致
+                    user.status = user.status === 'inactive' ? 'disabled' : 'active';
                 }
                 
                 // 添加状态文本

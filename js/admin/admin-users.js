@@ -289,14 +289,70 @@ async function viewUserDetails(userId) {
         let lastLoginDate = '从未登录';
         
         try {
-            // 使用修复后的API返回的格式化日期
+            // 使用API返回的格式化日期
             if (userDetails.created_at_formatted) {
                 registerDate = userDetails.created_at_formatted;
+            } else if (userDetails.created_at) {
+                // 处理时间戳
+                let timestamp;
+                if (typeof userDetails.created_at === 'number') {
+                    // 检查时间戳是否为秒级（10位）或毫秒级（13位）
+                    if (userDetails.created_at < 10000000000) { // 秒级时间戳
+                        timestamp = userDetails.created_at;
+                    } else { // 毫秒级时间戳
+                        timestamp = Math.floor(userDetails.created_at / 1000);
+                    }
+                } else if (typeof userDetails.created_at === 'string') {
+                    // 尝试解析字符串时间戳
+                    if (!isNaN(parseInt(userDetails.created_at))) {
+                        const parsedValue = parseInt(userDetails.created_at);
+                        // 检查是否为秒级或毫秒级时间戳
+                        if (parsedValue < 10000000000) { // 秒级时间戳
+                            timestamp = parsedValue;
+                        } else { // 毫秒级时间戳
+                            timestamp = Math.floor(parsedValue / 1000);
+                        }
+                    }
+                }
+                
+                // 检查时间戳是否有效（不为0或接近0的值）
+                if (timestamp && timestamp > 1000) { // 确保时间戳不是1970年附近
+                    const date = new Date(timestamp * 1000);
+                    registerDate = date.toLocaleString('zh-CN');
+                }
             }
             
-            // 使用修复后的API返回的格式化最后登录时间
+            // 使用API返回的格式化最后登录时间
             if (userDetails.last_login_at_formatted) {
                 lastLoginDate = userDetails.last_login_at_formatted;
+            } else if (userDetails.last_login_at) {
+                // 处理时间戳
+                let timestamp;
+                if (typeof userDetails.last_login_at === 'number') {
+                    // 检查时间戳是否为秒级（10位）或毫秒级（13位）
+                    if (userDetails.last_login_at < 10000000000) { // 秒级时间戳
+                        timestamp = userDetails.last_login_at;
+                    } else { // 毫秒级时间戳
+                        timestamp = Math.floor(userDetails.last_login_at / 1000);
+                    }
+                } else if (typeof userDetails.last_login_at === 'string') {
+                    // 尝试解析字符串时间戳
+                    if (!isNaN(parseInt(userDetails.last_login_at))) {
+                        const parsedValue = parseInt(userDetails.last_login_at);
+                        // 检查是否为秒级或毫秒级时间戳
+                        if (parsedValue < 10000000000) { // 秒级时间戳
+                            timestamp = parsedValue;
+                        } else { // 毫秒级时间戳
+                            timestamp = Math.floor(parsedValue / 1000);
+                        }
+                    }
+                }
+                
+                // 检查时间戳是否有效（不为0或接近0的值）
+                if (timestamp && timestamp > 1000) { // 确保时间戳不是1970年附近
+                    const date = new Date(timestamp * 1000);
+                    lastLoginDate = date.toLocaleString('zh-CN');
+                }
             }
         } catch (dateError) {
             console.error('日期格式化错误:', dateError);
@@ -613,6 +669,7 @@ async function viewUserDetails(userId) {
 // 切换用户状态（启用/禁用）
 async function toggleUserStatus(userId, currentStatus) {
     // 确保状态值与后端API匹配
+    // 后端API要求状态值为 'active' 或 'disabled'
     const newStatus = currentStatus === 'active' ? 'disabled' : 'active';
     const actionText = newStatus === 'active' ? '启用' : '禁用';
     
@@ -632,7 +689,7 @@ async function toggleUserStatus(userId, currentStatus) {
         });
         
         try {
-            // 更新状态
+            // 更新状态 - 使用修复后的API
             await adminAPI.updateUserStatus(userId, newStatus);
             
             // 显示成功提示
