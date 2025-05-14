@@ -8,8 +8,25 @@ import { adminAuth } from './admin-auth.js';
 import adminAPI, { API_BASE_URL, ADMIN_API_BASE_URL } from './admin-api.js';
 
 // 确保Chart.js全局可用
-if (typeof window.Chart === 'undefined' && typeof Chart !== 'undefined') {
-    window.Chart = Chart;
+if (typeof window.Chart === 'undefined') {
+    // 尝试从全局作用域获取Chart对象
+    if (typeof Chart !== 'undefined') {
+        window.Chart = Chart;
+    } else {
+        console.warn('Chart对象不可用，将在渲染图表前再次检查');
+    }
+}
+
+// 确保Chart对象可用的辅助函数
+function ensureChartAvailable() {
+    if (typeof window.Chart === 'undefined') {
+        if (typeof Chart !== 'undefined') {
+            window.Chart = Chart;
+            return true;
+        }
+        return false;
+    }
+    return true;
 }
 
 // 存储图表实例
@@ -28,6 +45,9 @@ async function initStatisticsPage() {
     if (!adminAuth.check()) return;
     
     try {
+        // 确保统计页面有必要的HTML结构
+        ensureStatisticsPageStructure();
+        
         // 设置默认日期范围（最近30天）
         const endDate = new Date();
         const startDate = new Date();
@@ -55,6 +75,9 @@ window.adminStatistics = { init: initStatisticsPage, refresh: refreshStatisticsD
 // 刷新统计数据
 async function refreshStatisticsData() {
     try {
+        // 确保统计页面有必要的HTML结构
+        ensureStatisticsPageStructure();
+        
         // 显示加载状态
         showLoadingState();
         
@@ -179,7 +202,7 @@ function renderSalesTrendChart(data) {
     const ctx = canvas.getContext('2d');
     
     // 检查Chart对象是否可用
-    if (typeof window.Chart === 'undefined') {
+    if (!ensureChartAvailable()) {
         console.error('Chart对象未定义，请确保Chart.js已正确加载');
         return;
     }
@@ -311,7 +334,7 @@ function renderProductSalesChart(data) {
     const ctx = canvas.getContext('2d');
     
     // 检查Chart对象是否可用
-    if (typeof window.Chart === 'undefined') {
+    if (!ensureChartAvailable()) {
         console.error('Chart对象未定义，请确保Chart.js已正确加载');
         return;
     }
@@ -417,7 +440,7 @@ function renderUserGrowthChart(data) {
     const ctx = canvas.getContext('2d');
     
     // 检查Chart对象是否可用
-    if (typeof window.Chart === 'undefined') {
+    if (!ensureChartAvailable()) {
         console.error('Chart对象未定义，请确保Chart.js已正确加载');
         return;
     }
@@ -502,7 +525,7 @@ function renderOrderStatusChart(data) {
     const ctx = canvas.getContext('2d');
     
     // 检查Chart对象是否可用
-    if (typeof window.Chart === 'undefined') {
+    if (!ensureChartAvailable()) {
         console.error('Chart对象未定义，请确保Chart.js已正确加载');
         return;
     }
@@ -584,11 +607,71 @@ function renderOrderStatusChart(data) {
 
 // 渲染热销商品排行列表
 function renderTopProductsList(products) {
-    const topProductsList = document.getElementById('topProductsList');
+    // 首先尝试获取统计页面中的热销商品列表元素
+    let topProductsList = document.getElementById('topProductsList');
     
-    // 检查元素是否存在
+    // 如果在统计页面中找不到，尝试创建表格结构
     if (!topProductsList) {
-        console.error('热销商品列表元素不存在');
+        console.warn('未找到热销商品列表元素，尝试创建表格结构');
+        const statisticsSection = document.getElementById('statistics');
+        
+        if (statisticsSection) {
+            // 检查是否已有热销商品卡片
+            let topProductsCard = statisticsSection.querySelector('#topProductsCard');
+            
+            if (!topProductsCard) {
+                // 创建热销商品卡片
+                const cardHtml = `
+                    <div class="card mb-4" id="topProductsCard">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h6 class="m-0 font-weight-bold">热销商品排行</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>排名</th>
+                                            <th>商品信息</th>
+                                            <th>销售数量</th>
+                                            <th>销售额</th>
+                                            <th>占比</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="topProductsList">
+                                        <!-- 热销商品数据将在这里动态加载 -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // 找到适合放置热销商品卡片的位置
+                const lastRow = statisticsSection.querySelector('.row:last-child');
+                if (lastRow) {
+                    // 在最后一行添加
+                    const col = document.createElement('div');
+                    col.className = 'col-12';
+                    col.innerHTML = cardHtml;
+                    lastRow.appendChild(col);
+                } else {
+                    // 创建新行
+                    const newRow = document.createElement('div');
+                    newRow.className = 'row';
+                    newRow.innerHTML = `<div class="col-12">${cardHtml}</div>`;
+                    statisticsSection.appendChild(newRow);
+                }
+                
+                // 重新获取列表元素
+                topProductsList = document.getElementById('topProductsList');
+            }
+        }
+    }
+    
+    // 如果仍然找不到元素，记录错误并返回
+    if (!topProductsList) {
+        console.error('无法找到或创建热销商品列表元素');
         return;
     }
     
@@ -609,25 +692,6 @@ function renderTopProductsList(products) {
     }
     
     console.log('渲染热销商品列表:', products);
-    
-    // 确保表格头部存在
-    const tableElement = topProductsList.closest('table');
-    if (tableElement) {
-        const thead = tableElement.querySelector('thead');
-        if (!thead || !thead.querySelector('tr')) {
-            const newThead = document.createElement('thead');
-            newThead.innerHTML = `
-                <tr>
-                    <th>排名</th>
-                    <th>商品信息</th>
-                    <th>销售数量</th>
-                    <th>销售额</th>
-                    <th>占比</th>
-                </tr>
-            `;
-            tableElement.prepend(newThead);
-        }
-    }
     
     // 计算总销售额
     const totalSales = products.reduce((sum, product) => {
@@ -666,6 +730,9 @@ function renderTopProductsList(products) {
         
         topProductsList.appendChild(row);
     });
+    
+    console.log('热销商品列表渲染完成');
+
 }
 
 // 导出统计报表
@@ -795,6 +862,137 @@ function createToastContainer() {
     container.className = 'toast-container position-fixed bottom-0 end-0 p-3';
     document.body.appendChild(container);
     return container;
+}
+
+// 确保统计页面有必要的HTML结构
+function ensureStatisticsPageStructure() {
+    const statisticsSection = document.getElementById('statistics');
+    if (!statisticsSection) {
+        console.error('统计页面元素不存在');
+        return;
+    }
+    
+    // 如果统计页面为空，创建基本结构
+    if (statisticsSection.children.length === 0) {
+        console.log('创建统计页面基本结构');
+        
+        statisticsSection.innerHTML = `
+            <div class="container-fluid">
+                <!-- 筛选和控制区域 -->
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="row g-3">
+                                    <div class="col-md-3">
+                                        <label for="statisticsPeriodSelect" class="form-label">统计周期</label>
+                                        <select class="form-select" id="statisticsPeriodSelect">
+                                            <option value="day">按天</option>
+                                            <option value="week">按周</option>
+                                            <option value="month" selected>按月</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="statisticsStartDate" class="form-label">开始日期</label>
+                                        <input type="date" class="form-control" id="statisticsStartDate">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="statisticsEndDate" class="form-label">结束日期</label>
+                                        <input type="date" class="form-control" id="statisticsEndDate">
+                                    </div>
+                                    <div class="col-md-3 d-flex align-items-end">
+                                        <button id="refreshStatisticsBtn" class="btn btn-primary me-2">
+                                            <i class="bi bi-arrow-clockwise"></i> 刷新
+                                        </button>
+                                        <button id="exportStatisticsBtn" class="btn btn-outline-secondary">
+                                            <i class="bi bi-download"></i> 导出
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 销售趋势图表 -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="m-0 font-weight-bold">销售趋势</h6>
+                            </div>
+                            <div class="card-body" style="height: 300px;">
+                                <canvas id="salesTrendChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="m-0 font-weight-bold">商品销售占比</h6>
+                            </div>
+                            <div class="card-body" style="height: 300px;">
+                                <canvas id="productSalesChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 用户增长和订单状态图表 -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="m-0 font-weight-bold">用户增长趋势</h6>
+                            </div>
+                            <div class="card-body" style="height: 300px;">
+                                <canvas id="userGrowthChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="m-0 font-weight-bold">订单状态分布</h6>
+                            </div>
+                            <div class="card-body" style="height: 300px;">
+                                <canvas id="orderStatusChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 热销商品排行 -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card mb-4" id="topProductsCard">
+                            <div class="card-header">
+                                <h6 class="m-0 font-weight-bold">热销商品排行</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-bordered table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>排名</th>
+                                                <th>商品信息</th>
+                                                <th>销售数量</th>
+                                                <th>销售额</th>
+                                                <th>占比</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="topProductsList">
+                                            <!-- 热销商品数据将在这里动态加载 -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
 }
 
 // 设置全局函数，供admin-main.js调用
