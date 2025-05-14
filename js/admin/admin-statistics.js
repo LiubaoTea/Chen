@@ -8,13 +8,23 @@ import { adminAuth } from './admin-auth.js';
 import adminAPI, { API_BASE_URL, ADMIN_API_BASE_URL } from './admin-api.js';
 
 // 确保Chart.js全局可用
-if (typeof window.Chart === 'undefined') {
-    // 尝试从全局作用域获取Chart对象
-    if (typeof Chart !== 'undefined') {
-        window.Chart = Chart;
-    } else {
-        console.warn('Chart对象不可用，将在渲染图表前再次检查');
-    }
+function initializeChart() {
+    return new Promise((resolve) => {
+        // 检查Chart对象是否已经可用
+        if (typeof window.Chart !== 'undefined') {
+            resolve(window.Chart);
+            return;
+        }
+
+        // 如果Chart对象不可用，创建并加载Chart.js脚本
+        const chartScript = document.createElement('script');
+        chartScript.src = 'https://cdn.bootcdn.net/ajax/libs/chart.js/3.9.1/chart.min.js';
+        chartScript.onload = () => {
+            window.Chart = Chart;
+            resolve(window.Chart);
+        };
+        document.head.appendChild(chartScript);
+    });
 }
 
 // 确保Chart对象可用的辅助函数
@@ -77,6 +87,9 @@ async function refreshStatisticsData() {
     try {
         // 确保统计页面有必要的HTML结构
         ensureStatisticsPageStructure();
+        
+        // 确保Chart.js已加载
+        await initializeChart();
         
         // 显示加载状态
         showLoadingState();
