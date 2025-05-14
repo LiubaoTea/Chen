@@ -717,7 +717,7 @@ function renderTopProductsList(products) {
     // 计算总销售额
     const totalSales = products.reduce((sum, product) => {
         // 尝试从不同的属性获取销售额
-        const sales = product.total_amount || product.totalSales || product.sales || product.total_sales || 0;
+        const sales = product.totalSales || product.sales || product.total_sales || 0;
         return sum + (typeof sales === 'number' ? sales : 0);
     }, 0);
     
@@ -727,8 +727,8 @@ function renderTopProductsList(products) {
         const productName = product.name || product.product_name || '未知商品';
         const productId = product.id || product.product_id || '未知';
         const productImage = product.image || product.product_image || '../image/Goods/Goods_1.png';
-        const productQuantity = product.sold_count || product.quantity || product.sales_count || 0;
-        const productSales = product.total_amount || product.totalSales || product.sales || product.total_sales || 0;
+        const productQuantity = product.quantity || product.sales_count || 0;
+        const productSales = product.totalSales || product.sales || product.total_sales || 0;
         
         const percentage = totalSales > 0 ? (productSales / totalSales * 100).toFixed(2) : '0.00';
         
