@@ -8,31 +8,25 @@ import { adminAuth } from './admin-auth.js';
 import adminAPI, { API_BASE_URL, ADMIN_API_BASE_URL } from './admin-api.js';
 
 // 确保Chart.js全局可用
-function ensureChartAvailable() {
-    return typeof window.Chart !== 'undefined';
+if (typeof window.Chart === 'undefined') {
+    // 尝试从全局作用域获取Chart对象
+    if (typeof Chart !== 'undefined') {
+        window.Chart = Chart;
+    } else {
+        console.warn('Chart对象不可用，将在渲染图表前再次检查');
+    }
 }
 
-// 等待Chart.js加载完成
-function waitForChart() {
-    return new Promise((resolve) => {
-        if (ensureChartAvailable()) {
-            resolve();
-        } else {
-            const checkInterval = setInterval(() => {
-                if (ensureChartAvailable()) {
-                    clearInterval(checkInterval);
-                    resolve();
-                }
-            }, 100);
-            
-            // 设置超时，避免无限等待
-            setTimeout(() => {
-                clearInterval(checkInterval);
-                console.error('等待Chart.js加载超时');
-                resolve();
-            }, 5000);
+// 确保Chart对象可用的辅助函数
+function ensureChartAvailable() {
+    if (typeof window.Chart === 'undefined') {
+        if (typeof Chart !== 'undefined') {
+            window.Chart = Chart;
+            return true;
         }
-    });
+        return false;
+    }
+    return true;
 }
 
 // 存储图表实例
@@ -198,7 +192,7 @@ function setupStatisticsEventListeners() {
 }
 
 // 渲染销售趋势图表
-async function renderSalesTrendChart(data) {
+function renderSalesTrendChart(data) {
     const canvas = document.getElementById('salesTrendChart');
     if (!canvas) {
         console.error('销售趋势图表元素不存在');
@@ -207,12 +201,9 @@ async function renderSalesTrendChart(data) {
     
     const ctx = canvas.getContext('2d');
     
-    // 等待Chart.js加载完成
-    await waitForChart();
-    
-    // 如果Chart对象仍然不可用，显示错误信息
+    // 检查Chart对象是否可用
     if (!ensureChartAvailable()) {
-        console.error('Chart.js加载失败，无法渲染图表');
+        console.error('Chart对象未定义，请确保Chart.js已正确加载');
         return;
     }
     
@@ -333,7 +324,7 @@ async function renderSalesTrendChart(data) {
 }
 
 // 渲染商品销售占比图表
-async function renderProductSalesChart(data) {
+function renderProductSalesChart(data) {
     const canvas = document.getElementById('productSalesChart');
     if (!canvas) {
         console.error('商品销售占比图表元素不存在');
@@ -342,12 +333,9 @@ async function renderProductSalesChart(data) {
     
     const ctx = canvas.getContext('2d');
     
-    // 等待Chart.js加载完成
-    await waitForChart();
-    
-    // 如果Chart对象仍然不可用，显示错误信息
+    // 检查Chart对象是否可用
     if (!ensureChartAvailable()) {
-        console.error('Chart.js加载失败，无法渲染图表');
+        console.error('Chart对象未定义，请确保Chart.js已正确加载');
         return;
     }
     
@@ -461,7 +449,7 @@ async function renderProductSalesChart(data) {
 }
 
 // 渲染用户增长趋势图表
-async function renderUserGrowthChart(data) {
+function renderUserGrowthChart(data) {
     const canvas = document.getElementById('userGrowthChart');
     if (!canvas) {
         console.error('用户增长趋势图表元素不存在');
@@ -470,12 +458,9 @@ async function renderUserGrowthChart(data) {
     
     const ctx = canvas.getContext('2d');
     
-    // 等待Chart.js加载完成
-    await waitForChart();
-    
-    // 如果Chart对象仍然不可用，显示错误信息
+    // 检查Chart对象是否可用
     if (!ensureChartAvailable()) {
-        console.error('Chart.js加载失败，无法渲染图表');
+        console.error('Chart对象未定义，请确保Chart.js已正确加载');
         return;
     }
     
@@ -549,7 +534,7 @@ async function renderUserGrowthChart(data) {
 }
 
 // 渲染订单状态分布图表
-async function renderOrderStatusChart(data) {
+function renderOrderStatusChart(data) {
     const canvas = document.getElementById('orderStatusChart');
     if (!canvas) {
         console.error('订单状态分布图表元素不存在');
@@ -558,12 +543,9 @@ async function renderOrderStatusChart(data) {
     
     const ctx = canvas.getContext('2d');
     
-    // 等待Chart.js加载完成
-    await waitForChart();
-    
-    // 如果Chart对象仍然不可用，显示错误信息
+    // 检查Chart对象是否可用
     if (!ensureChartAvailable()) {
-        console.error('Chart.js加载失败，无法渲染图表');
+        console.error('Chart对象未定义，请确保Chart.js已正确加载');
         return;
     }
     
