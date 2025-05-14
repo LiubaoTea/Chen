@@ -643,7 +643,7 @@ function renderTopProductsList(products) {
                 const cardHtml = `
                     <div class="card mb-4" id="topProductsCard">
                         <div class="card-header d-flex justify-content-between align-items-center">
-                            <h6 class="m-0 font-weight-bold">热销商品排行</h6>
+                            <h6 class="m-0 font-weight-bold text-primary">热销商品排行</h6>
                         </div>
                         <div class="card-body">
                             <div class="table-responsive">
@@ -666,24 +666,26 @@ function renderTopProductsList(products) {
                     </div>
                 `;
                 
-                // 找到适合放置热销商品卡片的位置
-                const lastRow = statisticsSection.querySelector('.row:last-child');
-                if (lastRow) {
-                    // 在最后一行添加
-                    const col = document.createElement('div');
-                    col.className = 'col-12';
-                    col.innerHTML = cardHtml;
-                    lastRow.appendChild(col);
-                } else {
-                    // 创建新行
-                    const newRow = document.createElement('div');
-                    newRow.className = 'row';
-                    newRow.innerHTML = `<div class="col-12">${cardHtml}</div>`;
-                    statisticsSection.appendChild(newRow);
-                }
+                // 创建新行并添加到统计部分
+                const newRow = document.createElement('div');
+                newRow.className = 'row';
+                const col = document.createElement('div');
+                col.className = 'col-12';
+                col.innerHTML = cardHtml;
+                newRow.appendChild(col);
+                statisticsSection.appendChild(newRow);
                 
                 // 重新获取列表元素
                 topProductsList = document.getElementById('topProductsList');
+            } else {
+                // 如果卡片存在但列表元素不存在，尝试获取或创建列表元素
+                topProductsList = topProductsCard.querySelector('#topProductsList');
+                if (!topProductsList) {
+                    const tbody = document.createElement('tbody');
+                    tbody.id = 'topProductsList';
+                    topProductsCard.querySelector('table').appendChild(tbody);
+                    topProductsList = tbody;
+                }
             }
         }
     }
