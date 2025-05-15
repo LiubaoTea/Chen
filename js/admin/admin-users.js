@@ -86,68 +86,28 @@ function updateUsersList() {
         
         try {
             // 使用API返回的格式化日期
-            if (user.created_at_formatted) {
-                registerDate = user.created_at_formatted.split(' ')[0]; // 只显示日期部分
-            } else if (user.created_at) {
-                // 处理时间戳
-                let timestamp;
-                if (typeof user.created_at === 'number') {
-                    // 检查时间戳是否为秒级（10位）或毫秒级（13位）
-                    if (user.created_at < 10000000000) { // 秒级时间戳
-                        timestamp = user.created_at;
-                    } else { // 毫秒级时间戳
-                        timestamp = Math.floor(user.created_at / 1000);
+            if (user.created_at) {
+                try {
+                    // 尝试解析ISO格式的时间字符串
+                    const date = new Date(user.created_at);
+                    if (!isNaN(date.getTime())) {
+                        registerDate = date.toLocaleDateString('zh-CN');
                     }
-                } else if (typeof user.created_at === 'string') {
-                    // 尝试解析字符串时间戳
-                    if (!isNaN(parseInt(user.created_at))) {
-                        const parsedValue = parseInt(user.created_at);
-                        // 检查是否为秒级或毫秒级时间戳
-                        if (parsedValue < 10000000000) { // 秒级时间戳
-                            timestamp = parsedValue;
-                        } else { // 毫秒级时间戳
-                            timestamp = Math.floor(parsedValue / 1000);
-                        }
-                    }
-                }
-                
-                // 检查时间戳是否有效（不为0或接近0的值）
-                if (timestamp && timestamp > 1000) { // 确保时间戳不是1970年附近
-                    const date = new Date(timestamp * 1000);
-                    registerDate = date.toLocaleDateString('zh-CN');
+                } catch (error) {
+                    console.error('注册时间解析错误:', error);
                 }
             }
             
-            // 使用API返回的格式化最后登录时间
-            if (user.last_login_at_formatted) {
-                lastLoginDate = user.last_login_at_formatted.split(' ')[0]; // 只显示日期部分
-            } else if (user.last_login_at) {
-                // 处理时间戳
-                let timestamp;
-                if (typeof user.last_login_at === 'number') {
-                    // 检查时间戳是否为秒级（10位）或毫秒级（13位）
-                    if (user.last_login_at < 10000000000) { // 秒级时间戳
-                        timestamp = user.last_login_at;
-                    } else { // 毫秒级时间戳
-                        timestamp = Math.floor(user.last_login_at / 1000);
+            // 处理最后登录时间
+            if (user.last_login) {
+                try {
+                    // 尝试解析ISO格式的时间字符串
+                    const date = new Date(user.last_login);
+                    if (!isNaN(date.getTime())) {
+                        lastLoginDate = date.toLocaleDateString('zh-CN');
                     }
-                } else if (typeof user.last_login_at === 'string') {
-                    // 尝试解析字符串时间戳
-                    if (!isNaN(parseInt(user.last_login_at))) {
-                        const parsedValue = parseInt(user.last_login_at);
-                        // 检查是否为秒级或毫秒级时间戳
-                        if (parsedValue < 10000000000) { // 秒级时间戳
-                            timestamp = parsedValue;
-                        } else { // 毫秒级时间戳
-                            timestamp = Math.floor(parsedValue / 1000);
-                        }
-                    }
-                }
-                
-                // 检查时间戳是否有效（不为0或接近0的值）
-                if (timestamp && timestamp > 1000) { // 确保时间戳不是1970年附近
-                    const date = new Date(timestamp * 1000);
-                    lastLoginDate = date.toLocaleDateString('zh-CN');
+                } catch (error) {
+                    console.error('最后登录时间解析错误:', error);
                 }
             }
         } catch (error) {
@@ -293,68 +253,28 @@ async function viewUserDetails(userId) {
         
         try {
             // 使用API返回的格式化日期
-            if (userDetails.created_at_formatted) {
-                registerDate = userDetails.created_at_formatted;
-            } else if (userDetails.created_at) {
-                // 处理时间戳
-                let timestamp;
-                if (typeof userDetails.created_at === 'number') {
-                    // 检查时间戳是否为秒级（10位）或毫秒级（13位）
-                    if (userDetails.created_at < 10000000000) { // 秒级时间戳
-                        timestamp = userDetails.created_at;
-                    } else { // 毫秒级时间戳
-                        timestamp = Math.floor(userDetails.created_at / 1000);
+            if (userDetails.created_at) {
+                try {
+                    // 尝试解析ISO格式的时间字符串
+                    const date = new Date(userDetails.created_at);
+                    if (!isNaN(date.getTime())) {
+                        registerDate = date.toLocaleString('zh-CN');
                     }
-                } else if (typeof userDetails.created_at === 'string') {
-                    // 尝试解析字符串时间戳
-                    if (!isNaN(parseInt(userDetails.created_at))) {
-                        const parsedValue = parseInt(userDetails.created_at);
-                        // 检查是否为秒级或毫秒级时间戳
-                        if (parsedValue < 10000000000) { // 秒级时间戳
-                            timestamp = parsedValue;
-                        } else { // 毫秒级时间戳
-                            timestamp = Math.floor(parsedValue / 1000);
-                        }
-                    }
-                }
-                
-                // 检查时间戳是否有效（不为0或接近0的值）
-                if (timestamp && timestamp > 1000) { // 确保时间戳不是1970年附近
-                    const date = new Date(timestamp * 1000);
-                    registerDate = date.toLocaleString('zh-CN');
+                } catch (error) {
+                    console.error('注册时间解析错误:', error);
                 }
             }
             
-            // 使用API返回的格式化最后登录时间
-            if (userDetails.last_login_at_formatted) {
-                lastLoginDate = userDetails.last_login_at_formatted;
-            } else if (userDetails.last_login_at) {
-                // 处理时间戳
-                let timestamp;
-                if (typeof userDetails.last_login_at === 'number') {
-                    // 检查时间戳是否为秒级（10位）或毫秒级（13位）
-                    if (userDetails.last_login_at < 10000000000) { // 秒级时间戳
-                        timestamp = userDetails.last_login_at;
-                    } else { // 毫秒级时间戳
-                        timestamp = Math.floor(userDetails.last_login_at / 1000);
+            // 处理最后登录时间
+            if (userDetails.last_login) {
+                try {
+                    // 尝试解析ISO格式的时间字符串
+                    const date = new Date(userDetails.last_login);
+                    if (!isNaN(date.getTime())) {
+                        lastLoginDate = date.toLocaleString('zh-CN');
                     }
-                } else if (typeof userDetails.last_login_at === 'string') {
-                    // 尝试解析字符串时间戳
-                    if (!isNaN(parseInt(userDetails.last_login_at))) {
-                        const parsedValue = parseInt(userDetails.last_login_at);
-                        // 检查是否为秒级或毫秒级时间戳
-                        if (parsedValue < 10000000000) { // 秒级时间戳
-                            timestamp = parsedValue;
-                        } else { // 毫秒级时间戳
-                            timestamp = Math.floor(parsedValue / 1000);
-                        }
-                    }
-                }
-                
-                // 检查时间戳是否有效（不为0或接近0的值）
-                if (timestamp && timestamp > 1000) { // 确保时间戳不是1970年附近
-                    const date = new Date(timestamp * 1000);
-                    lastLoginDate = date.toLocaleString('zh-CN');
+                } catch (error) {
+                    console.error('最后登录时间解析错误:', error);
                 }
             }
         } catch (dateError) {

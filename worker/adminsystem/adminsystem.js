@@ -194,6 +194,27 @@ const handleOptions = (request) => {
 };
 
 //==========================================================================
+//                       辅助函数
+//==========================================================================
+
+/**
+ * 格式化时间戳为ISO字符串
+ * @param {string|number} timestamp - 时间戳（可能是数字或字符串）
+ * @returns {string|null} - 格式化后的ISO时间字符串，无效则返回null
+ */
+function formatTimestamp(timestamp) {
+    if (!timestamp) return null;
+    
+    // 如果是数字时间戳（秒），转换为毫秒
+    const timeMs = typeof timestamp === 'number' ? timestamp * 1000 : Date.parse(timestamp);
+    
+    // 检查是否为有效日期
+    if (isNaN(timeMs)) return null;
+    
+    return new Date(timeMs).toISOString();
+}
+
+//==========================================================================
 //                       管理员认证和权限验证
 //==========================================================================
 // 验证管理员身份
@@ -2009,6 +2030,13 @@ const handleAdminAPI = async (request, env) => {
                 .bind(...params, limit, offset)
                 .all();
             
+            // 格式化用户列表中的时间戳
+            users.forEach(user => {
+                // 使用辅助函数格式化时间戳
+                user.created_at = formatTimestamp(user.created_at);
+                user.last_login = formatTimestamp(user.last_login);
+            });
+            
             // 获取每个用户的订单数量
             const usersWithStats = await Promise.all(users.map(async (user) => {
                 const orderStats = await env.DB.prepare(`
@@ -2073,6 +2101,10 @@ const handleAdminAPI = async (request, env) => {
                 });
             }
             
+            // 格式化时间戳
+            user.created_at = formatTimestamp(user.created_at);
+            user.last_login = formatTimestamp(user.last_login);
+            
             // 获取用户订单统计
             const orderStats = await env.DB.prepare(`
                 SELECT 
@@ -2083,6 +2115,11 @@ const handleAdminAPI = async (request, env) => {
                 WHERE user_id = ?
             `).bind(userId).first();
             
+            // 格式化最后订单日期
+            if (orderStats) {
+                orderStats.last_order_date = formatTimestamp(orderStats.last_order_date);
+            }
+            
             // 获取用户最近的订单
             const { results: recentOrders } = await env.DB.prepare(`
                 SELECT order_id, status, total_amount, created_at 
@@ -2091,6 +2128,11 @@ const handleAdminAPI = async (request, env) => {
                 ORDER BY created_at DESC
                 LIMIT 5
             `).bind(userId).all();
+            
+            // 格式化订单时间
+            recentOrders.forEach(order => {
+                order.created_at = formatTimestamp(order.created_at);
+            });
             
             // 组合完整的用户信息
             const userDetails = {
@@ -2995,10 +3037,12 @@ const handleAdminAPI = async (request, env) => {
             }
             
             const { status } = await request.json();
+            console.log('收到状态更新请求，用户ID:', userId, '状态值:', status);
             
-            // 验证状态值
-            if (!['active', 'disabled', 'inactive'].includes(status)) {
-                return new Response(JSON.stringify({ error: '无效的状态值，只能是 active、disabled 或 inactive' }), {
+            // 验证状态值，接受前端可能发送的各种状态值格式
+            const validStatuses = ['active', 'disabled', 'inactive', '正常', '禁用', '删除'];
+            if (!validStatuses.includes(status)) {
+                return new Response(JSON.stringify({ error: '无效的状态值，只能是 active、disabled、inactive、正常、禁用或删除' }), {
                     status: 400,
                     headers: { ...corsHeaders, 'Content-Type': 'application/json' }
                 });
@@ -3017,27 +3061,48 @@ const handleAdminAPI = async (request, env) => {
             }
             
             // 将前端状态值映射到数据库需要的状态值
-            let dbStatus = status;
-            if (status === 'active') {
+            let dbStatus;
+            if (status === 'active' || status === '正常') {
                 dbStatus = '正常';
-            } else if (status === 'disabled' || status === 'inactive') {
+            } else if (status === 'disabled' || status === 'inactive' || status === '禁用') {
                 dbStatus = '禁用';
+            } else if (status === '删除') {
+                dbStatus = '删除';
+            } else {
+                // 默认情况下，保持原状态值
+                dbStatus = status;
             }
+            
+            console.log('映射后的数据库状态值:', dbStatus);
             
             // 更新用户状态
             await env.DB.prepare('UPDATE users SET status = ? WHERE user_id = ?')
                 .bind(dbStatus, userId)
                 .run();
             
+            // 返回前端可识别的状态值
+            let responseStatus;
+            if (dbStatus === '正常') {
+                responseStatus = 'active';
+            } else if (dbStatus === '禁用') {
+                responseStatus = 'disabled';
+            } else if (dbStatus === '删除') {
+                responseStatus = 'inactive';
+            } else {
+                // 默认情况下，返回原状态值
+                responseStatus = status;
+            }
+            
             return new Response(JSON.stringify({
                 message: '用户状态更新成功',
                 userId,
-                status
+                status: responseStatus
             }), {
                 status: 200,
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             });
         } catch (error) {
+            console.error('更新用户状态失败:', error);
             return new Response(JSON.stringify({ error: '更新用户状态失败', details: error.message }), {
                 status: 500,
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' }
