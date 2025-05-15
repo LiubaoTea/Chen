@@ -1075,47 +1075,7 @@ const handleAdminAPI = async (request, env) => {
             });
         }
     }
-    
-    // 更新用户状态
-    if (path.match(/^\/api\/admin\/users\/\d+\/status$/) && request.method === 'PUT') {
-        try {
-            const userId = path.split('/')[4]; // 从路径中提取用户ID
-            const { status } = await request.json();
-            
-            // 验证状态值
-            if (!['active', 'disabled'].includes(status)) {
-                return new Response(JSON.stringify({ error: '无效的状态值，只能是 active 或 disabled' }), {
-                    status: 400,
-                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-                });
-            }
-            
-            // 更新用户状态
-            const result = await env.DB.prepare(`
-                UPDATE users
-                SET status = ?
-                WHERE user_id = ?
-            `).bind(status, userId).run();
-            
-            if (!result || result.changes === 0) {
-                return new Response(JSON.stringify({ error: '用户不存在或状态未更改' }), {
-                    status: 404,
-                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-                });
-            }
-            
-            return new Response(JSON.stringify({ success: true, message: '用户状态已更新', status }), {
-                status: 200,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
-        } catch (error) {
-            return new Response(JSON.stringify({ error: '更新用户状态失败', details: error.message }), {
-                status: 500,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
-        }
-    }
-    
+       
     // 获取用户增长趋势数据
     if (path === '/api/admin/statistics/user-growth' && request.method === 'GET') {
         try {
@@ -1646,49 +1606,6 @@ const handleAdminAPI = async (request, env) => {
             });
         } catch (error) {
             return new Response(JSON.stringify({ error: '更新分类失败', details: error.message }), {
-                status: 500,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
-        }
-    }
-    
-    // 更新用户状态
-    if (path.match(/^\/api\/admin\/users\/\d+\/status$/) && request.method === 'PUT') {
-        try {
-            // 从路径中提取用户ID
-            const userId = path.split('/').slice(-2)[0];
-            
-            // 获取请求体中的状态
-            const { status } = await request.json();
-            
-            // 验证状态值
-            if (status !== 'active' && status !== 'disabled') {
-                return new Response(JSON.stringify({ error: '无效的状态值，只能是 active 或 disabled' }), {
-                    status: 400,
-                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-                });
-            }
-            
-            // 更新用户状态 - 直接使用英文状态值，避免数据库约束问题
-            const result = await env.DB.prepare(
-                `UPDATE users
-                SET status = ?
-                WHERE user_id = ?`
-            ).bind(status, userId).run();
-            
-            if (result.changes === 0) {
-                return new Response(JSON.stringify({ error: '用户不存在或状态未更改' }), {
-                    status: 404,
-                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-                });
-            }
-            
-            return new Response(JSON.stringify({ success: true, message: '用户状态已更新' }), {
-                status: 200,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
-        } catch (error) {
-            return new Response(JSON.stringify({ error: '更新用户状态失败', details: error.message }), {
                 status: 500,
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             });
@@ -3080,8 +2997,8 @@ const handleAdminAPI = async (request, env) => {
             const { status } = await request.json();
             
             // 验证状态值
-            if (!['active', 'inactive'].includes(status)) {
-                return new Response(JSON.stringify({ error: '无效的状态值' }), {
+            if (!['active', 'disabled', 'inactive'].includes(status)) {
+                return new Response(JSON.stringify({ error: '无效的状态值，只能是 active、disabled 或 inactive' }), {
                     status: 400,
                     headers: { ...corsHeaders, 'Content-Type': 'application/json' }
                 });
@@ -3099,9 +3016,17 @@ const handleAdminAPI = async (request, env) => {
                 });
             }
             
+            // 将前端状态值映射到数据库需要的状态值
+            let dbStatus = status;
+            if (status === 'active') {
+                dbStatus = '正常';
+            } else if (status === 'disabled' || status === 'inactive') {
+                dbStatus = '禁用';
+            }
+            
             // 更新用户状态
             await env.DB.prepare('UPDATE users SET status = ? WHERE user_id = ?')
-                .bind(status, userId)
+                .bind(dbStatus, userId)
                 .run();
             
             return new Response(JSON.stringify({
