@@ -155,9 +155,12 @@ function updateUsersList() {
         }
         
         // 用户状态
-        const statusBadge = user.status === 'active' ? 
-            '<span class="badge bg-success">正常</span>' : 
-            '<span class="badge bg-danger">已禁用</span>';
+        let statusBadge = '<span class="badge bg-secondary">未知</span>';
+        if (user.status === 'active' || user.status === '正常') {
+            statusBadge = '<span class="badge bg-success">正常</span>';
+        } else if (user.status === 'disabled' || user.status === '禁用' || user.status === '删除') {
+            statusBadge = '<span class="badge bg-danger">已禁用</span>';
+        }
         
         row.innerHTML = `
             <td>
@@ -359,9 +362,12 @@ async function viewUserDetails(userId) {
         }
         
         // 用户状态
-        const statusBadge = userDetails.status === 'active' ? 
-            '<span class="badge bg-success">正常</span>' : 
-            '<span class="badge bg-danger">已禁用</span>';
+        let statusBadge = '<span class="badge bg-secondary">未知</span>';
+        if (userDetails.status === 'active' || userDetails.status === '正常') {
+            statusBadge = '<span class="badge bg-success">正常</span>';
+        } else if (userDetails.status === 'disabled' || userDetails.status === '禁用' || userDetails.status === '删除') {
+            statusBadge = '<span class="badge bg-danger">已禁用</span>';
+        }
         
         // 构建收货地址列表
         let addressesHtml = '<p class="text-muted">暂无收货地址</p>';

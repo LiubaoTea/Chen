@@ -207,20 +207,23 @@ adminAPI.updateOrderStatus = async (orderId, status) => {
 const originalUpdateUserStatus = adminAPI.updateUserStatus;
 adminAPI.updateUserStatus = async (userId, status) => {
     try {
-        // 将中文状态值转换为API需要的状态值，以符合API约束
-        // 根据错误日志，数据库约束要求状态值为 'active' 或 'disabled'
+        // 将前端状态值转换为数据库需要的状态值，以符合数据库约束
+        // 根据错误日志，数据库约束要求状态值为 '正常'、'禁用' 或 '删除'
         let apiStatus = status;
         
-        // 状态值映射表
+        // 前端到数据库的状态值映射表
         const statusMap = {
-            '正常': 'active',
-            '禁用': 'disabled',  // 修改为 'disabled'
-            'active': 'active',
-            'disabled': 'disabled', // 保持为 'disabled'
-            'inactive': 'disabled'  // 将 'inactive' 映射为 'disabled'
+            // 前端状态值 -> 数据库状态值
+            'active': '正常',
+            'disabled': '禁用',
+            'inactive': '禁用',
+            // 数据库状态值保持不变
+            '正常': '正常',
+            '禁用': '禁用',
+            '删除': '删除'
         };
         
-        // 使用映射表获取正确的API状态值
+        // 使用映射表获取正确的数据库状态值
         if (statusMap[status]) {
             apiStatus = statusMap[status];
         }
@@ -535,18 +538,43 @@ adminAPI.getUserDetails = async (userId) => {
                 // 检查时间戳是否有效（不为0或接近0的值）
                 if (timestamp && timestamp > 1000) { // 确保时间戳不是1970年附近
                     const date = new Date(timestamp * 1000);
-                    userData.created_at_formatted = date.toLocaleString('zh-CN');
+                    // 使用完整的日期时间格式
+                    userData.created_at_formatted = date.toLocaleString('zh-CN', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                        hour12: false
+                    });
                     userData.created_at = timestamp; // 更新为标准时间戳格式
                 } else {
                     // 如果时间戳无效，使用当前时间
                     const now = new Date();
-                    userData.created_at_formatted = now.toLocaleString('zh-CN');
+                    userData.created_at_formatted = now.toLocaleString('zh-CN', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                        hour12: false
+                    });
                     userData.created_at = Math.floor(now.getTime() / 1000);
                 }
             } else {
                 // 如果没有创建时间，使用当前时间
                 const now = new Date();
-                userData.created_at_formatted = now.toLocaleString('zh-CN');
+                userData.created_at_formatted = now.toLocaleString('zh-CN', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false
+                });
                 userData.created_at = Math.floor(now.getTime() / 1000);
             }
             
@@ -583,7 +611,16 @@ adminAPI.getUserDetails = async (userId) => {
                 // 检查时间戳是否有效（不为0或接近0的值）
                 if (timestamp && timestamp > 1000) { // 确保时间戳不是1970年附近
                     const date = new Date(timestamp * 1000);
-                    userData.last_login_at_formatted = date.toLocaleString('zh-CN');
+                    // 使用完整的日期时间格式
+                    userData.last_login_at_formatted = date.toLocaleString('zh-CN', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                        hour12: false
+                    });
                     userData.last_login_at = timestamp; // 更新为标准时间戳格式
                 } else {
                     userData.last_login_at_formatted = '从未登录';
@@ -697,8 +734,15 @@ adminAPI.getUsers = async (page = 1, pageSize = 10, searchQuery = '') => {
                 // 确保状态显示正确
                 if (!user.status) {
                     user.status = 'active';
+                } else if (user.status === '正常') {
+                    // 数据库状态值转换为前端状态值
+                    user.status = 'active';
+                } else if (user.status === '禁用') {
+                    user.status = 'disabled';
+                } else if (user.status === '删除') {
+                    user.status = 'disabled'; // 删除状态在前端显示为禁用
                 } else if (user.status !== 'active' && user.status !== 'disabled') {
-                    // 标准化状态值 - 保持与updateUserStatus函数一致
+                    // 标准化其他状态值
                     user.status = user.status === 'inactive' ? 'disabled' : 'active';
                 }
                 
