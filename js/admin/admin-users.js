@@ -255,22 +255,17 @@ async function viewUserDetails(userId) {
             // 使用API返回的格式化日期
             if (userDetails.created_at) {
                 try {
-                    // 尝试解析ISO格式的时间字符串
-                    let date;
-                    if (typeof userDetails.created_at === 'number') {
-                        // 确保时间戳是毫秒级的，如果是秒级的需要转换
-                        const timestamp = userDetails.created_at > 10000000000 ? userDetails.created_at : userDetails.created_at * 1000;
-                        date = new Date(timestamp);
-                    } else if (typeof userDetails.created_at === 'string') {
-                        if (!isNaN(parseInt(userDetails.created_at))) {
-                            const timestamp = parseInt(userDetails.created_at) > 10000000000 ? parseInt(userDetails.created_at) : parseInt(userDetails.created_at) * 1000;
-                            date = new Date(timestamp);
-                        } else {
-                            date = new Date(userDetails.created_at);
-                        }
+                    // 尝试解析时间戳
+                    let timestamp = userDetails.created_at;
+                    if (typeof timestamp === 'string') {
+                        timestamp = parseInt(timestamp);
                     }
-                    
-                    if (date && !isNaN(date.getTime()) && date.getFullYear() > 1970) {
+                    // 如果是秒级时间戳，转换为毫秒级
+                    if (timestamp < 10000000000) {
+                        timestamp *= 1000;
+                    }
+                    const date = new Date(timestamp);
+                    if (!isNaN(date.getTime())) {
                         registerDate = date.toLocaleString('zh-CN');
                     }
                 } catch (error) {
@@ -281,22 +276,17 @@ async function viewUserDetails(userId) {
             // 处理最后登录时间
             if (userDetails.last_login) {
                 try {
-                    // 尝试解析ISO格式的时间字符串
-                    let date;
-                    if (typeof userDetails.last_login === 'number') {
-                        // 确保时间戳是毫秒级的，如果是秒级的需要转换
-                        const timestamp = userDetails.last_login > 10000000000 ? userDetails.last_login : userDetails.last_login * 1000;
-                        date = new Date(timestamp);
-                    } else if (typeof userDetails.last_login === 'string') {
-                        if (!isNaN(parseInt(userDetails.last_login))) {
-                            const timestamp = parseInt(userDetails.last_login) > 10000000000 ? parseInt(userDetails.last_login) : parseInt(userDetails.last_login) * 1000;
-                            date = new Date(timestamp);
-                        } else {
-                            date = new Date(userDetails.last_login);
-                        }
+                    // 尝试解析时间戳
+                    let timestamp = userDetails.last_login;
+                    if (typeof timestamp === 'string') {
+                        timestamp = parseInt(timestamp);
                     }
-                    
-                    if (date && !isNaN(date.getTime()) && date.getFullYear() > 1970) {
+                    // 如果是秒级时间戳，转换为毫秒级
+                    if (timestamp < 10000000000) {
+                        timestamp *= 1000;
+                    }
+                    const date = new Date(timestamp);
+                    if (!isNaN(date.getTime())) {
                         lastLoginDate = date.toLocaleString('zh-CN');
                     }
                 } catch (error) {
