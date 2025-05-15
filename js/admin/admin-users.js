@@ -90,7 +90,7 @@ function updateUsersList() {
                 try {
                     // 尝试解析ISO格式的时间字符串
                     const date = new Date(user.created_at);
-                    if (!isNaN(date.getTime())) {
+                    if (!isNaN(date.getTime()) && date.getFullYear() > 1970) {
                         registerDate = date.toLocaleString('zh-CN');
                     }
                 } catch (error) {
@@ -103,7 +103,7 @@ function updateUsersList() {
                 try {
                     // 尝试解析ISO格式的时间字符串
                     const date = new Date(user.last_login);
-                    if (!isNaN(date.getTime())) {
+                    if (!isNaN(date.getTime()) && date.getFullYear() > 1970) {
                         lastLoginDate = date.toLocaleString('zh-CN');
                     }
                 } catch (error) {
@@ -256,8 +256,21 @@ async function viewUserDetails(userId) {
             if (userDetails.created_at) {
                 try {
                     // 尝试解析ISO格式的时间字符串
-                    const date = new Date(userDetails.created_at);
-                    if (!isNaN(date.getTime()) && date.getFullYear() > 1970) {
+                    let date;
+                    if (typeof userDetails.created_at === 'number') {
+                        // 确保时间戳是毫秒级的，如果是秒级的需要转换
+                        const timestamp = userDetails.created_at > 10000000000 ? userDetails.created_at : userDetails.created_at * 1000;
+                        date = new Date(timestamp);
+                    } else if (typeof userDetails.created_at === 'string') {
+                        if (!isNaN(parseInt(userDetails.created_at))) {
+                            const timestamp = parseInt(userDetails.created_at) > 10000000000 ? parseInt(userDetails.created_at) : parseInt(userDetails.created_at) * 1000;
+                            date = new Date(timestamp);
+                        } else {
+                            date = new Date(userDetails.created_at);
+                        }
+                    }
+                    
+                    if (date && !isNaN(date.getTime()) && date.getFullYear() > 1970) {
                         registerDate = date.toLocaleString('zh-CN');
                     }
                 } catch (error) {
@@ -269,8 +282,21 @@ async function viewUserDetails(userId) {
             if (userDetails.last_login) {
                 try {
                     // 尝试解析ISO格式的时间字符串
-                    const date = new Date(userDetails.last_login);
-                    if (!isNaN(date.getTime()) && date.getFullYear() > 1970) {
+                    let date;
+                    if (typeof userDetails.last_login === 'number') {
+                        // 确保时间戳是毫秒级的，如果是秒级的需要转换
+                        const timestamp = userDetails.last_login > 10000000000 ? userDetails.last_login : userDetails.last_login * 1000;
+                        date = new Date(timestamp);
+                    } else if (typeof userDetails.last_login === 'string') {
+                        if (!isNaN(parseInt(userDetails.last_login))) {
+                            const timestamp = parseInt(userDetails.last_login) > 10000000000 ? parseInt(userDetails.last_login) : parseInt(userDetails.last_login) * 1000;
+                            date = new Date(timestamp);
+                        } else {
+                            date = new Date(userDetails.last_login);
+                        }
+                    }
+                    
+                    if (date && !isNaN(date.getTime()) && date.getFullYear() > 1970) {
                         lastLoginDate = date.toLocaleString('zh-CN');
                     }
                 } catch (error) {
