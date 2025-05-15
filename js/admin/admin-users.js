@@ -91,7 +91,7 @@ function updateUsersList() {
                     // 尝试解析ISO格式的时间字符串
                     const date = new Date(user.created_at);
                     if (!isNaN(date.getTime())) {
-                        registerDate = date.toLocaleDateString('zh-CN');
+                        registerDate = date.toLocaleString('zh-CN');
                     }
                 } catch (error) {
                     console.error('注册时间解析错误:', error);
@@ -104,7 +104,7 @@ function updateUsersList() {
                     // 尝试解析ISO格式的时间字符串
                     const date = new Date(user.last_login);
                     if (!isNaN(date.getTime())) {
-                        lastLoginDate = date.toLocaleDateString('zh-CN');
+                        lastLoginDate = date.toLocaleString('zh-CN');
                     }
                 } catch (error) {
                     console.error('最后登录时间解析错误:', error);
@@ -257,7 +257,7 @@ async function viewUserDetails(userId) {
                 try {
                     // 尝试解析ISO格式的时间字符串
                     const date = new Date(userDetails.created_at);
-                    if (!isNaN(date.getTime())) {
+                    if (!isNaN(date.getTime()) && date.getFullYear() > 1970) {
                         registerDate = date.toLocaleString('zh-CN');
                     }
                 } catch (error) {
@@ -270,7 +270,7 @@ async function viewUserDetails(userId) {
                 try {
                     // 尝试解析ISO格式的时间字符串
                     const date = new Date(userDetails.last_login);
-                    if (!isNaN(date.getTime())) {
+                    if (!isNaN(date.getTime()) && date.getFullYear() > 1970) {
                         lastLoginDate = date.toLocaleString('zh-CN');
                     }
                 } catch (error) {
