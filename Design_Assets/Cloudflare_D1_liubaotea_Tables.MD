@@ -69,6 +69,8 @@ CREATE INDEX idx_product_name ON products ("name");         -- 商品名称索�
 CREATE INDEX idx_aging_years ON products ("aging_years");   -- 陈化年份索引
 CREATE INDEX idx_product_status ON products ("status");     -- 状态索引（新增优化）
 
+ALTER TABLE products ADD COLUMN "original_price" REAL NOT NULL DEFAULT 0.0;-- 添加原价列（支持小数点，默认值为0）
+
 3、orders：（订单）
 -- 创建订单主表
 CREATE TABLE orders (

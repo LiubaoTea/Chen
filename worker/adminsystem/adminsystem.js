@@ -1180,20 +1180,35 @@ const handleAdminAPI = async (request, env) => {
                 });
             }
             
-            const { 
-                product_name, 
-                description, 
-                price, 
-                stock_quantity, 
-                category_id, 
-                image_url, 
-                is_featured, 
-                is_active 
-            } = await request.json();
+            // 获取请求数据
+            const requestData = await request.formData();
+            
+            // 解析JSON数据
+            const productDataStr = requestData.get('data');
+            if (!productDataStr) {
+                return new Response(JSON.stringify({ error: '缺少商品数据' }), {
+                    status: 400,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                });
+            }
+            
+            const productData = JSON.parse(productDataStr);
+            console.log('接收到的商品数据:', productData);
+            
+            // 字段映射，适配前端发送的字段名
+            const product_name = productData.name;
+            const description = productData.description;
+            const price = productData.price;
+            const stock_quantity = productData.stock;
+            const category_mappings = productData.category_mappings || [];
+            const category_id = category_mappings.length > 0 ? category_mappings[0].category_id : null;
+            const image_url = productData.image_url || '';
+            const is_featured = productData.is_featured || false;
+            const is_active = productData.status === 'active';
             
             // 验证必填字段
-            if (!product_name || !price || !category_id) {
-                return new Response(JSON.stringify({ error: '商品名称、价格和分类为必填项' }), {
+            if (!product_name || !price) {
+                return new Response(JSON.stringify({ error: '商品名称和价格为必填项' }), {
                     status: 400,
                     headers: { ...corsHeaders, 'Content-Type': 'application/json' }
                 });
@@ -1225,7 +1240,7 @@ const handleAdminAPI = async (request, env) => {
                 category_id,
                 image_url || '',
                 is_featured ? 1 : 0,
-                is_active !== undefined ? (is_active ? 1 : 0) : 1,
+                is_active !== undefined ? (is_active ? 1 : 0) : 1
             ).run();
             
             // 获取新插入的商品ID
@@ -1278,20 +1293,35 @@ const handleAdminAPI = async (request, env) => {
                 });
             }
             
-            const { 
-                product_name, 
-                description, 
-                price, 
-                stock_quantity, 
-                category_id, 
-                image_url, 
-                is_featured, 
-                is_active 
-            } = await request.json();
+            // 获取请求数据
+            const requestData = await request.formData();
+            
+            // 解析JSON数据
+            const productDataStr = requestData.get('data');
+            if (!productDataStr) {
+                return new Response(JSON.stringify({ error: '缺少商品数据' }), {
+                    status: 400,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                });
+            }
+            
+            const productData = JSON.parse(productDataStr);
+            console.log('接收到的商品编辑数据:', productData);
+            
+            // 字段映射，适配前端发送的字段名
+            const product_name = productData.name;
+            const description = productData.description;
+            const price = productData.price;
+            const stock_quantity = productData.stock;
+            const category_mappings = productData.category_mappings || [];
+            const category_id = category_mappings.length > 0 ? category_mappings[0].category_id : null;
+            const image_url = productData.image_url || '';
+            const is_featured = productData.is_featured || false;
+            const is_active = productData.status === 'active';
             
             // 验证必填字段
-            if (!product_name || !price || !category_id) {
-                return new Response(JSON.stringify({ error: '商品名称、价格和分类为必填项' }), {
+            if (!product_name || !price) {
+                return new Response(JSON.stringify({ error: '商品名称和价格为必填项' }), {
                     status: 400,
                     headers: { ...corsHeaders, 'Content-Type': 'application/json' }
                 });
