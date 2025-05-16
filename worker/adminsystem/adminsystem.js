@@ -205,8 +205,26 @@ const handleOptions = (request) => {
 function formatTimestamp(timestamp) {
     if (!timestamp) return null;
     
-    // 如果是数字时间戳（秒），转换为毫秒
-    const timeMs = typeof timestamp === 'number' ? timestamp * 1000 : Date.parse(timestamp);
+    // 处理不同类型的时间戳
+    let timeMs;
+    
+    if (typeof timestamp === 'number') {
+        // 如果是数字，判断是秒还是毫秒级时间戳
+        // 通常秒级时间戳长度为10位，毫秒级为13位
+        timeMs = timestamp.toString().length <= 10 ? timestamp * 1000 : timestamp;
+    } else if (typeof timestamp === 'string') {
+        // 尝试解析字符串格式的时间戳
+        if (/^\d+$/.test(timestamp)) {
+            // 纯数字字符串，按照数字时间戳处理
+            const numTimestamp = parseInt(timestamp, 10);
+            timeMs = numTimestamp.toString().length <= 10 ? numTimestamp * 1000 : numTimestamp;
+        } else {
+            // 其他格式的日期字符串
+            timeMs = Date.parse(timestamp);
+        }
+    } else {
+        return null; // 不支持的类型
+    }
     
     // 检查是否为有效日期
     if (isNaN(timeMs)) return null;
@@ -2032,9 +2050,31 @@ const handleAdminAPI = async (request, env) => {
             
             // 格式化用户列表中的时间戳
             users.forEach(user => {
-                // 使用辅助函数格式化时间戳
-                user.created_at = formatTimestamp(user.created_at);
-                user.last_login = formatTimestamp(user.last_login);
+                // 使用辅助函数格式化时间戳并添加格式化的日期字符串
+                const createdAtISO = formatTimestamp(user.created_at);
+                const lastLoginISO = formatTimestamp(user.last_login);
+                
+                // 添加格式化的日期字符串，用于前端显示
+                user.created_at = createdAtISO;
+                user.last_login = lastLoginISO;
+                user.created_at_formatted = createdAtISO ? new Date(createdAtISO).toLocaleString('zh-CN', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false
+                }).replace(/\//g, '/') : '未知';
+                user.last_login_at_formatted = lastLoginISO ? new Date(lastLoginISO).toLocaleString('zh-CN', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false
+                }).replace(/\//g, '/') : '从未登录';
             });
             
             // 获取每个用户的订单数量
@@ -2101,9 +2141,31 @@ const handleAdminAPI = async (request, env) => {
                 });
             }
             
-            // 格式化时间戳
-            user.created_at = formatTimestamp(user.created_at);
-            user.last_login = formatTimestamp(user.last_login);
+            // 保存原始时间戳并添加格式化的日期字符串
+            const createdAtISO = formatTimestamp(user.created_at);
+            const lastLoginISO = formatTimestamp(user.last_login);
+            
+            // 添加格式化的日期字符串，用于前端显示
+            user.created_at = createdAtISO;
+            user.last_login = lastLoginISO;
+            user.created_at_formatted = createdAtISO ? new Date(createdAtISO).toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            }).replace(/\//g, '/') : '未知';
+            user.last_login_at_formatted = lastLoginISO ? new Date(lastLoginISO).toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            }).replace(/\//g, '/') : '从未登录';
             
             // 获取用户订单统计
             const orderStats = await env.DB.prepare(`
@@ -2117,7 +2179,17 @@ const handleAdminAPI = async (request, env) => {
             
             // 格式化最后订单日期
             if (orderStats) {
-                orderStats.last_order_date = formatTimestamp(orderStats.last_order_date);
+                const lastOrderDateISO = formatTimestamp(orderStats.last_order_date);
+                orderStats.last_order_date = lastOrderDateISO;
+                orderStats.last_order_date_formatted = lastOrderDateISO ? new Date(lastOrderDateISO).toLocaleString('zh-CN', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false
+                }).replace(/\//g, '/') : '无订单';
             }
             
             // 获取用户最近的订单
@@ -2131,7 +2203,17 @@ const handleAdminAPI = async (request, env) => {
             
             // 格式化订单时间
             recentOrders.forEach(order => {
-                order.created_at = formatTimestamp(order.created_at);
+                const orderDateISO = formatTimestamp(order.created_at);
+                order.created_at = orderDateISO;
+                order.created_at_formatted = orderDateISO ? new Date(orderDateISO).toLocaleString('zh-CN', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false
+                }).replace(/\//g, '/') : '未知';
             });
             
             // 组合完整的用户信息
