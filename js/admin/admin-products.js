@@ -629,18 +629,6 @@ async function showProductModal(productId = null) {
     modalTitle.textContent = productId ? '编辑商品' : '添加商品';
     
     try {
-        const categorySelect = document.getElementById('productCategory');
-        
-        // 清空现有选项
-        categorySelect.innerHTML = '<option value="">选择分类</option>';
-        
-        // 添加分类选项
-        categoriesData.forEach(category => {
-            const option = document.createElement('option');
-            option.value = category.category_id;
-            option.textContent = category.category_name;
-            categorySelect.appendChild(option);
-        });
         
         // 如果是编辑模式，加载商品数据
         if (productId) {
