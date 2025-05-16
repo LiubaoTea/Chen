@@ -62,61 +62,22 @@ async function loadCategories() {
         
         console.log('成功加载分类数据:', categoriesData);
         
-        // 更新筛选器下拉框
         const categoryFilter = document.getElementById('productCategoryFilter');
-        if (categoryFilter) {
-            // 清空现有选项
-            categoryFilter.innerHTML = '<option value="">所有分类</option>';
-            
-            // 添加分类选项
-            categoriesData.forEach(category => {
-                const option = document.createElement('option');
-                option.value = category.category_id;
-                option.textContent = category.category_name;
-                categoryFilter.appendChild(option);
-            });
-        } else {
+        if (!categoryFilter) {
             console.warn('未找到分类筛选器元素');
+            return;
         }
         
-        // 更新商品编辑表单中的分类复选框
-        const categoriesContainer = document.getElementById('productCategoriesContainer');
-        if (categoriesContainer) {
-            // 清空现有选项
-            categoriesContainer.innerHTML = '';
-            
-            if (categoriesData.length === 0) {
-                categoriesContainer.innerHTML = '<div class="form-text text-center">暂无分类数据</div>';
-                return;
-            }
-            
-            // 添加分类复选框
-            categoriesData.forEach(category => {
-                const checkboxDiv = document.createElement('div');
-                checkboxDiv.className = 'form-check';
-                
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.className = 'form-check-input category-checkbox';
-                checkbox.id = `category-${category.category_id}`;
-                checkbox.value = category.category_id;
-                checkbox.dataset.categoryId = category.category_id;
-                
-                // 添加事件监听器，更新隐藏字段
-                checkbox.addEventListener('change', updateSelectedCategories);
-                
-                const label = document.createElement('label');
-                label.className = 'form-check-label';
-                label.htmlFor = `category-${category.category_id}`;
-                label.textContent = category.category_name;
-                
-                checkboxDiv.appendChild(checkbox);
-                checkboxDiv.appendChild(label);
-                categoriesContainer.appendChild(checkboxDiv);
-            });
-        } else {
-            console.warn('未找到分类复选框容器元素');
-        }
+        // 清空现有选项
+        categoryFilter.innerHTML = '<option value="">所有分类</option>';
+        
+        // 添加分类选项
+        categoriesData.forEach(category => {
+            const option = document.createElement('option');
+            option.value = category.category_id;
+            option.textContent = category.category_name;
+            categoryFilter.appendChild(option);
+        });
     } catch (error) {
         console.error('加载商品分类失败:', error);
         // 显示错误信息
@@ -126,35 +87,9 @@ async function loadCategories() {
             categoryFilter.innerHTML = '<option value="">加载分类失败</option>';
         }
         
-        const categoriesContainer = document.getElementById('productCategoriesContainer');
-        if (categoriesContainer) {
-            categoriesContainer.innerHTML = '<div class="form-text text-center text-danger">加载分类失败</div>';
-        }
-        
         // 重新抛出错误，让上层函数处理
         throw error;
     }
-}
-
-// 更新选中的分类到隐藏字段
-function updateSelectedCategories() {
-    const checkboxes = document.querySelectorAll('.category-checkbox:checked');
-    const selectedIds = Array.from(checkboxes).map(cb => cb.value);
-    
-    // 更新隐藏字段的值
-    const hiddenField = document.getElementById('selectedCategories');
-    if (hiddenField) {
-        hiddenField.value = selectedIds.join(',');
-        
-        // 验证是否至少选择了一个分类
-        if (selectedIds.length > 0) {
-            hiddenField.setCustomValidity('');
-        } else {
-            hiddenField.setCustomValidity('请至少选择一个分类');
-        }
-    }
-    
-    console.log('已选择的分类ID:', selectedIds);
 }
 
 // 从D1数据库加载商品列表
@@ -698,53 +633,18 @@ function fillProductForm(product) {
     document.getElementById('productId').value = product.product_id;
     document.getElementById('productName').value = product.name;
     
-    // 处理分类 - 清除所有选中状态
-    document.querySelectorAll('.category-checkbox').forEach(checkbox => {
-        checkbox.checked = false;
-    });
-    
-    // 获取商品的分类ID列表
-    let categoryIds = [];
-    
+    // 处理分类 - 优先使用新的分类关系结构
     // 优先使用新的数据结构：通过category_mappings获取分类信息
     if (product.category_mappings && product.category_mappings.length > 0) {
-        categoryIds = product.category_mappings.map(mapping => mapping.category_id.toString());
+        document.getElementById('productCategory').value = product.category_mappings[0].category_id;
     }
     // 其次使用categories数组
     else if (product.categories && product.categories.length > 0) {
-        categoryIds = product.categories.map(id => id.toString());
+        document.getElementById('productCategory').value = product.categories[0];
     }
     // 最后尝试使用category_id字段
-    else if (product.category_id) {
-        categoryIds = [product.category_id.toString()];
-    }
-    
-    console.log('商品分类ID列表:', categoryIds);
-    
-    // 选中对应的复选框
-    categoryIds.forEach(categoryId => {
-        const checkbox = document.getElementById(`category-${categoryId}`);
-        if (checkbox) {
-            checkbox.checked = true;
-        } else {
-            console.warn(`未找到分类复选框: category-${categoryId}`);
-        }
-    });
-    
-    // 更新隐藏字段
-    const hiddenField = document.getElementById('selectedCategories');
-    if (hiddenField) {
-        hiddenField.value = categoryIds.join(',');
-        // 清除任何验证错误
-        hiddenField.setCustomValidity('');
-    }
-    
-    // 确保表单验证状态更新
-    if (categoryIds.length > 0) {
-        const form = document.getElementById('productForm');
-        if (form) {
-            form.classList.remove('was-validated');
-        }
+    else {
+        document.getElementById('productCategory').value = product.category_id || '';
     }
     
     document.getElementById('productPrice').value = product.price;
@@ -765,6 +665,7 @@ function fillProductForm(product) {
     const imageUrl = `${API_BASE_URL}/image/Goods/Goods_${product.product_id}.png`;
     document.getElementById('productImagePreview').src = imageUrl;
     document.getElementById('productImagePreview').classList.remove('d-none');
+
 }
 
 // 保存商品（添加或更新）
@@ -778,41 +679,12 @@ async function saveProduct() {
     
     // 获取表单数据
     const productId = document.getElementById('productId').value;
-    
-    // 获取选中的分类ID - 直接从复选框获取
-    const categoryCheckboxes = document.querySelectorAll('.category-checkbox:checked');
-    let selectedCategoryIds = Array.from(categoryCheckboxes).map(cb => cb.value);
-    
-    // 更新隐藏字段的值，确保与选中的复选框同步
-    const selectedCategoriesField = document.getElementById('selectedCategories');
-    if (selectedCategoriesField) {
-        selectedCategoriesField.value = selectedCategoryIds.join(',');
-    }
-    
-    // 如果没有选择分类，显示错误
-    if (selectedCategoryIds.length === 0) {
-        // 设置自定义验证消息
-        if (selectedCategoriesField) {
-            selectedCategoriesField.setCustomValidity('请至少选择一个分类');
-        }
-        form.classList.add('was-validated');
-        return;
-    } else if (selectedCategoriesField) {
-        // 清除验证消息
-        selectedCategoriesField.setCustomValidity('');
-    }
-    
-    // 构建分类映射数组
-    const categoryMappings = selectedCategoryIds.map(categoryId => ({
-        category_id: categoryId
-    }));
-    
-    console.log('保存的分类映射:', categoryMappings);
+    const categoryId = document.getElementById('productCategory').value;
     
     const productData = {
         name: document.getElementById('productName').value,
-        // 使用category_mappings数组，适配新的数据库结构
-        category_mappings: categoryMappings,
+        // 使用category_mappings数组替代categories数组，适配新的数据库结构
+        category_mappings: categoryId ? [{ category_id: categoryId }] : [],
         price: parseFloat(document.getElementById('productPrice').value),
         original_price: document.getElementById('productOriginalPrice').value ? 
             parseFloat(document.getElementById('productOriginalPrice').value) : null,
@@ -861,10 +733,6 @@ async function saveProduct() {
         // 如果有图片文件，添加到表单数据
         if (imageFile) {
             formData.append('image', imageFile);
-            // 如果是编辑模式，传递商品ID以便正确命名图片
-            if (productId) {
-                formData.append('productId', productId);
-            }
         }
         
         // 发送请求

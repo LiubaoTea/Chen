@@ -86,13 +86,12 @@
                             <div class="invalid-feedback">请输入商品名称</div>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">商品分类 <span class="text-danger">*</span></label>
-                            <div id="productCategoriesContainer" class="border rounded p-2" style="max-height: 200px; overflow-y: auto;">
-                                <!-- 分类复选框将通过JS动态加载 -->
-                                <div class="form-text text-center" id="noCategoriesMessage">加载分类中...</div>
-                            </div>
-                            <div class="invalid-feedback">请至少选择一个分类</div>
-                            <input type="hidden" id="selectedCategories" required>
+                            <label for="productCategory" class="form-label">商品分类 <span class="text-danger">*</span></label>
+                            <select class="form-select" id="productCategory" required>
+                                <option value="">选择分类</option>
+                                <!-- 分类选项将通过JS动态加载 -->
+                            </select>
+                            <div class="invalid-feedback">请选择商品分类</div>
                         </div>
                     </div>
                     

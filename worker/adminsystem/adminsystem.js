@@ -252,77 +252,6 @@ const checkAdminPermission = (adminInfo, requiredRole = 'admin') => {
 };
 
 //==========================================================================
-//                       图片上传处理函数
-//==========================================================================
-
-/**
- * 处理图片上传到R2存储桶
- * @param {Request} request - 请求对象
- * @param {Object} env - 环境变量
- * @returns {Promise<Response>} - 上传结果响应
- */
-async function handleImageUpload(request, env) {
-    try {
-        // 解析multipart/form-data请求
-        const formData = await request.formData();
-        const file = formData.get('image');
-        const productId = formData.get('productId'); // 获取商品ID，如果有的话
-        
-        if (!file || !(file instanceof File)) {
-            return new Response(JSON.stringify({ error: '未找到有效的图片文件' }), {
-                status: 400,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
-        }
-        
-        let fileName, storagePath;
-        
-        // 如果提供了商品ID，使用固定命名格式
-        if (productId) {
-            // 使用固定的命名格式：Goods_[productId].png
-            fileName = `Goods_${productId}.png`;
-            storagePath = 'image/Goods/' + fileName;
-            console.log(`使用商品ID命名图片: ${fileName}`);
-        } else {
-            // 否则使用时间戳和随机数生成文件名
-            const timestamp = Date.now();
-            const randomNum = Math.floor(Math.random() * 10000);
-            const fileExt = file.name.split('.').pop() || 'png';
-            fileName = `Goods_${timestamp}_${randomNum}.${fileExt}`;
-            storagePath = 'image/Goods/' + fileName;
-            console.log(`使用时间戳命名图片: ${fileName}`);
-        }
-        
-        // 上传到R2存储桶
-        await env.IMAGES_BUCKET.put(storagePath, file.stream(), {
-            httpMetadata: {
-                contentType: file.type || 'image/png',
-            },
-        });
-        
-        // 返回成功响应和图片URL
-        const imageUrl = `https://r2liubaotea.liubaotea.online/${storagePath}`;
-        
-        return new Response(JSON.stringify({
-            success: true,
-            message: '图片上传成功',
-            imageUrl: imageUrl,
-            fileName: fileName,
-            storagePath: storagePath
-        }), {
-            status: 200,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-    } catch (error) {
-        console.error('图片上传失败:', error);
-        return new Response(JSON.stringify({ error: '图片上传失败', details: error.message }), {
-            status: 500,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-    }
-}
-
-//==========================================================================
 //                       管理员API路由处理
 //==========================================================================
 const handleAdminAPI = async (request, env) => {
@@ -1561,65 +1490,6 @@ const handleAdminAPI = async (request, env) => {
         }
     }
     
-    // 处理图片上传请求
-    if (path === '/api/admin/upload/image' && request.method === 'POST') {
-        try {
-            // 检查超级管理员权限
-            if (!checkAdminPermission(adminInfo, 'superadmin')) {
-                return new Response(JSON.stringify({ error: '权限不足，需要超级管理员权限' }), {
-                    status: 403,
-                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-                });
-            }
-            
-            // 解析multipart/form-data请求
-            const formData = await request.formData();
-            const file = formData.get('image');
-            
-            if (!file || !(file instanceof File)) {
-                return new Response(JSON.stringify({ error: '未找到有效的图片文件' }), {
-                    status: 400,
-                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-                });
-            }
-            
-            // 生成文件名（使用Goods_前缀加时间戳和随机数）
-            const timestamp = Date.now();
-            const randomNum = Math.floor(Math.random() * 10000);
-            const fileExt = file.name.split('.').pop();
-            const fileName = `Goods_${timestamp}_${randomNum}.${fileExt}`;
-            
-            // 设置存储路径
-            const storagePath = 'image/Goods/' + fileName;
-            
-            // 上传到R2存储桶
-            await env.IMAGES_BUCKET.put(storagePath, file.stream(), {
-                httpMetadata: {
-                    contentType: file.type,
-                },
-            });
-            
-            // 返回成功响应和图片URL
-            const imageUrl = `https://r2liubaotea.liubaotea.online/${storagePath}`;
-            
-            return new Response(JSON.stringify({
-                success: true,
-                message: '图片上传成功',
-                imageUrl: imageUrl,
-                fileName: fileName
-            }), {
-                status: 200,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
-        } catch (error) {
-            console.error('图片上传失败:', error);
-            return new Response(JSON.stringify({ error: '图片上传失败', details: error.message }), {
-                status: 500,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
-        }
-    }
-    
     // 删除商品
     if (path.match(/^\/api\/admin\/products\/\d+$/) && request.method === 'DELETE') {
         try {
@@ -1634,7 +1504,7 @@ const handleAdminAPI = async (request, env) => {
             const productId = path.split('/').pop();
             
             // 检查商品是否存在
-            const existingProduct = await env.DB.prepare('SELECT product_id, name FROM products WHERE product_id = ?')
+            const existingProduct = await env.DB.prepare('SELECT product_id FROM products WHERE product_id = ?')
                 .bind(productId)
                 .first();
                 
@@ -1663,62 +1533,23 @@ const handleAdminAPI = async (request, env) => {
                 });
             }
             
-            // 开始事务
-            await env.DB.prepare('BEGIN').run();
+            // 先删除商品分类映射关系
+            await env.DB.prepare('DELETE FROM product_category_mapping WHERE product_id = ?')
+                .bind(productId)
+                .run();
             
-            try {
-                // 先删除商品分类映射关系
-                const deleteMapping = await env.DB.prepare('DELETE FROM product_category_mapping WHERE product_id = ?')
-                    .bind(productId)
-                    .run();
-                    
-                console.log(`已删除 ${deleteMapping.meta?.changes || 0} 条分类映射记录`);
-                
-                // 然后删除商品本身
-                const deleteProduct = await env.DB.prepare('DELETE FROM products WHERE product_id = ?')
-                    .bind(productId)
-                    .run();
-                
-                console.log(`已删除商品 ID: ${productId}, 名称: ${existingProduct.name}`);
-                
-                // 提交事务
-                await env.DB.prepare('COMMIT').run();
-                
-                // 尝试删除R2存储桶中的商品图片
-                try {
-                    // 删除标准商品图片
-                    const standardImageKey = `image/Goods/Goods_${productId}.png`;
-                    await env.IMAGES_BUCKET.delete(standardImageKey);
-                    console.log(`已删除商品标准图片: ${standardImageKey}`);
-                    
-                    // 尝试列出并删除所有与该商品相关的图片
-                    const prefix = `image/Goods/Goods_${productId}_`;
-                    const objects = await env.IMAGES_BUCKET.list({ prefix: prefix });
-                    
-                    if (objects.objects && objects.objects.length > 0) {
-                        for (const obj of objects.objects) {
-                            await env.IMAGES_BUCKET.delete(obj.key);
-                            console.log(`已删除商品相关图片: ${obj.key}`);
-                        }
-                    }
-                } catch (imageError) {
-                    // 图片删除失败不影响商品删除的整体结果
-                    console.warn(`删除商品图片失败: ${imageError.message}`);
-                }
-                
-                return new Response(JSON.stringify({
-                    success: true,
-                    message: '商品删除成功',
-                    productId: productId
-                }), {
-                    status: 200,
-                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-                });
-            } catch (error) {
-                // 如果出错，回滚事务
-                await env.DB.prepare('ROLLBACK').run();
-                throw error;
-            }
+            // 删除商品
+            await env.DB.prepare('DELETE FROM products WHERE product_id = ?')
+                .bind(productId)
+                .run();
+            
+            return new Response(JSON.stringify({
+                message: '商品删除成功',
+                productId
+            }), {
+                status: 200,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
         } catch (error) {
             console.error('删除商品失败:', error);
             return new Response(JSON.stringify({ error: '删除商品失败', details: error.message }), {
