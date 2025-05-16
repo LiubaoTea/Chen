@@ -416,11 +416,37 @@ const handleAdminAPI = async (request, env) => {
                 LIMIT ?`
             ).bind(limit).all();
             
+            // 获取所有商品的分类映射
+            if (products.length > 0) {
+                const productIds = products.map(p => p.product_id);
+                const placeholders = productIds.map(() => '?').join(',');
+                
+                const { results: mappings } = await env.DB.prepare(`
+                    SELECT * FROM product_category_mapping 
+                    WHERE product_id IN (${placeholders})
+                `).bind(...productIds).all();
+                
+                // 将分类映射添加到对应的商品中
+                const mappingsByProductId = {};
+                for (const mapping of mappings) {
+                    if (!mappingsByProductId[mapping.product_id]) {
+                        mappingsByProductId[mapping.product_id] = [];
+                    }
+                    mappingsByProductId[mapping.product_id].push(mapping);
+                }
+                
+                // 将映射添加到商品对象中
+                for (const product of products) {
+                    product.category_mappings = mappingsByProductId[product.product_id] || [];
+                }
+            }
+            
             return new Response(JSON.stringify(products), {
                 status: 200,
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             });
         } catch (error) {
+            console.error('获取热销商品失败:', error);
             return new Response(JSON.stringify({ error: '获取热销商品失败', details: error.message }), {
                 status: 500,
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -962,7 +988,7 @@ const handleAdminAPI = async (request, env) => {
             
             if (search) {
                 whereClause += whereClause ? ' AND ' : ' WHERE ';
-                whereClause += '(product_name LIKE ? OR description LIKE ?)';
+                whereClause += '(name LIKE ? OR description LIKE ?)';
                 params.push(`%${search}%`, `%${search}%`);
             }
             
@@ -989,6 +1015,31 @@ const handleAdminAPI = async (request, env) => {
             const { results: products } = await env.DB.prepare(productsQuery)
                 .bind(...params, pageSize, offset)
                 .all();
+            
+            // 获取所有商品的分类映射
+            if (products.length > 0) {
+                const productIds = products.map(p => p.product_id);
+                const placeholders = productIds.map(() => '?').join(',');
+                
+                const { results: mappings } = await env.DB.prepare(`
+                    SELECT * FROM product_category_mapping 
+                    WHERE product_id IN (${placeholders})
+                `).bind(...productIds).all();
+                
+                // 将分类映射添加到对应的商品中
+                const mappingsByProductId = {};
+                for (const mapping of mappings) {
+                    if (!mappingsByProductId[mapping.product_id]) {
+                        mappingsByProductId[mapping.product_id] = [];
+                    }
+                    mappingsByProductId[mapping.product_id].push(mapping);
+                }
+                
+                // 将映射添加到商品对象中
+                for (const product of products) {
+                    product.category_mappings = mappingsByProductId[product.product_id] || [];
+                }
+            }
             
             return new Response(JSON.stringify({
                 products,
@@ -1017,9 +1068,8 @@ const handleAdminAPI = async (request, env) => {
             
             // 获取商品详情
             const product = await env.DB.prepare(`
-                SELECT p.*, NULL as category_name 
-                FROM products p
-                WHERE p.product_id = ?
+                SELECT * FROM products
+                WHERE product_id = ?
             `).bind(productId).first();
             
             if (!product) {
@@ -1029,11 +1079,21 @@ const handleAdminAPI = async (request, env) => {
                 });
             }
             
+            // 获取商品分类映射
+            const { results: mappings } = await env.DB.prepare(`
+                SELECT * FROM product_category_mapping 
+                WHERE product_id = ?
+            `).bind(productId).all();
+            
+            // 合并商品信息和分类映射
+            product.category_mappings = mappings;
+            
             return new Response(JSON.stringify(product), {
                 status: 200,
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             });
         } catch (error) {
+            console.error('获取商品详情失败:', error);
             return new Response(JSON.stringify({ error: '获取商品详情失败', details: error.message }), {
                 status: 500,
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -1196,62 +1256,81 @@ const handleAdminAPI = async (request, env) => {
             console.log('接收到的商品数据:', productData);
             
             // 字段映射，适配前端发送的字段名
-            const product_name = productData.name;
-            const description = productData.description;
+            const name = productData.name;
+            const description = productData.description || '';
             const price = productData.price;
-            const stock_quantity = productData.stock;
+            const original_price = productData.original_price || price;
+            const stock = productData.stock || 0;
+            const specifications = productData.specifications || '{}';
+            const aging_years = productData.aging_years || 0;
+            const status = productData.status === 'active' ? 'active' : 'inactive';
             const category_mappings = productData.category_mappings || [];
-            const category_id = category_mappings.length > 0 ? category_mappings[0].category_id : null;
-            const image_url = productData.image_url || '';
-            const is_featured = productData.is_featured || false;
-            const is_active = productData.status === 'active';
             
             // 验证必填字段
-            if (!product_name || !price) {
+            if (!name || !price) {
                 return new Response(JSON.stringify({ error: '商品名称和价格为必填项' }), {
                     status: 400,
                     headers: { ...corsHeaders, 'Content-Type': 'application/json' }
                 });
             }
             
-            // 检查分类是否存在
-            const category = await env.DB.prepare('SELECT category_id FROM product_categories WHERE category_id = ?')
-                .bind(category_id)
-                .first();
-                
-            if (!category) {
-                return new Response(JSON.stringify({ error: '所选分类不存在' }), {
-                    status: 400,
-                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-                });
-            }
-            
-            // 插入商品数据
+            // 开始数据库事务
+            // 插入商品数据到products表
             const result = await env.DB.prepare(`
                 INSERT INTO products (
-                    product_name, description, price, stock_quantity, 
-                    category_id, image_url, is_featured, is_active, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                    name, description, price, original_price, stock, 
+                    specifications, aging_years, status, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
             `).bind(
-                product_name,
-                description || '',
+                name,
+                description,
                 price,
-                stock_quantity || 0,
-                category_id,
-                image_url || '',
-                is_featured ? 1 : 0,
-                is_active !== undefined ? (is_active ? 1 : 0) : 1
+                original_price,
+                stock,
+                specifications,
+                aging_years,
+                status
             ).run();
             
             // 获取新插入的商品ID
             const newProductId = result.meta?.last_row_id;
             
+            // 处理商品分类映射
+            if (category_mappings && category_mappings.length > 0) {
+                for (const mapping of category_mappings) {
+                    // 检查分类是否存在
+                    const category = await env.DB.prepare('SELECT category_id, category_name FROM product_categories WHERE category_id = ?')
+                        .bind(mapping.category_id)
+                        .first();
+                    
+                    if (category) {
+                        // 插入商品-分类映射
+                        await env.DB.prepare(`
+                            INSERT INTO product_category_mapping (
+                                product_id, name, category_id, category_name, created_at
+                            ) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+                        `).bind(
+                            newProductId,
+                            name,
+                            category.category_id,
+                            category.category_name
+                        ).run();
+                    }
+                }
+            }
+            
             // 获取新插入的商品详情
             const newProduct = await env.DB.prepare(`
-                SELECT p.*, NULL as category_name 
-                FROM products p
-                WHERE p.product_id = ?
+                SELECT * FROM products WHERE product_id = ?
             `).bind(newProductId).first();
+            
+            // 获取商品分类映射
+            const { results: mappings } = await env.DB.prepare(`
+                SELECT * FROM product_category_mapping WHERE product_id = ?
+            `).bind(newProductId).all();
+            
+            // 合并商品信息和分类映射
+            newProduct.category_mappings = mappings;
             
             return new Response(JSON.stringify({
                 message: '商品添加成功',
@@ -1261,6 +1340,7 @@ const handleAdminAPI = async (request, env) => {
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             });
         } catch (error) {
+            console.error('添加商品失败:', error);
             return new Response(JSON.stringify({ error: '添加商品失败', details: error.message }), {
                 status: 500,
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -1309,69 +1389,90 @@ const handleAdminAPI = async (request, env) => {
             console.log('接收到的商品编辑数据:', productData);
             
             // 字段映射，适配前端发送的字段名
-            const product_name = productData.name;
-            const description = productData.description;
+            const name = productData.name;
+            const description = productData.description || '';
             const price = productData.price;
-            const stock_quantity = productData.stock;
+            const original_price = productData.original_price || price;
+            const stock = productData.stock || 0;
+            const specifications = productData.specifications || '{}';
+            const aging_years = productData.aging_years || 0;
+            const status = productData.status === 'active' ? 'active' : 'inactive';
             const category_mappings = productData.category_mappings || [];
-            const category_id = category_mappings.length > 0 ? category_mappings[0].category_id : null;
-            const image_url = productData.image_url || '';
-            const is_featured = productData.is_featured || false;
-            const is_active = productData.status === 'active';
             
             // 验证必填字段
-            if (!product_name || !price) {
+            if (!name || !price) {
                 return new Response(JSON.stringify({ error: '商品名称和价格为必填项' }), {
                     status: 400,
                     headers: { ...corsHeaders, 'Content-Type': 'application/json' }
                 });
             }
             
-            // 检查分类是否存在
-            if (category_id) {
-                const category = await env.DB.prepare('SELECT category_id FROM product_categories WHERE category_id = ?')
-                    .bind(category_id)
-                    .first();
-                    
-                if (!category) {
-                    return new Response(JSON.stringify({ error: '所选分类不存在' }), {
-                        status: 400,
-                        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-                    });
-                }
-            }
-            
             // 更新商品数据
             await env.DB.prepare(`
                 UPDATE products SET
-                    product_name = ?,
+                    name = ?,
                     description = ?,
                     price = ?,
-                    stock_quantity = ?,
-                    category_id = ?,
-                    image_url = ?,
-                    is_featured = ?,
-                    is_active = ?,
-                    updated_at = CURRENT_TIMESTAMP
+                    original_price = ?,
+                    stock = ?,
+                    specifications = ?,
+                    aging_years = ?,
+                    status = ?
                 WHERE product_id = ?
             `).bind(
-                product_name,
-                description || '',
+                name,
+                description,
                 price,
-                stock_quantity || 0,
-                category_id,
-                image_url || '',
-                is_featured ? 1 : 0,
-                is_active !== undefined ? (is_active ? 1 : 0) : 1,
+                original_price,
+                stock,
+                specifications,
+                aging_years,
+                status,
                 productId
             ).run();
             
+            // 处理商品分类映射
+            // 首先删除现有的映射关系
+            await env.DB.prepare(`
+                DELETE FROM product_category_mapping WHERE product_id = ?
+            `).bind(productId).run();
+            
+            // 添加新的映射关系
+            if (category_mappings && category_mappings.length > 0) {
+                for (const mapping of category_mappings) {
+                    // 检查分类是否存在
+                    const category = await env.DB.prepare('SELECT category_id, category_name FROM product_categories WHERE category_id = ?')
+                        .bind(mapping.category_id)
+                        .first();
+                    
+                    if (category) {
+                        // 插入商品-分类映射
+                        await env.DB.prepare(`
+                            INSERT INTO product_category_mapping (
+                                product_id, name, category_id, category_name, created_at
+                            ) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+                        `).bind(
+                            productId,
+                            name,
+                            category.category_id,
+                            category.category_name
+                        ).run();
+                    }
+                }
+            }
+            
             // 获取更新后的商品详情
             const updatedProduct = await env.DB.prepare(`
-                SELECT p.*, NULL as category_name 
-                FROM products p
-                WHERE p.product_id = ?
+                SELECT * FROM products WHERE product_id = ?
             `).bind(productId).first();
+            
+            // 获取商品分类映射
+            const { results: mappings } = await env.DB.prepare(`
+                SELECT * FROM product_category_mapping WHERE product_id = ?
+            `).bind(productId).all();
+            
+            // 合并商品信息和分类映射
+            updatedProduct.category_mappings = mappings;
             
             return new Response(JSON.stringify({
                 message: '商品更新成功',
@@ -1381,6 +1482,7 @@ const handleAdminAPI = async (request, env) => {
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             });
         } catch (error) {
+            console.error('更新商品失败:', error);
             return new Response(JSON.stringify({ error: '更新商品失败', details: error.message }), {
                 status: 500,
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -1431,6 +1533,11 @@ const handleAdminAPI = async (request, env) => {
                 });
             }
             
+            // 先删除商品分类映射关系
+            await env.DB.prepare('DELETE FROM product_category_mapping WHERE product_id = ?')
+                .bind(productId)
+                .run();
+            
             // 删除商品
             await env.DB.prepare('DELETE FROM products WHERE product_id = ?')
                 .bind(productId)
@@ -1444,6 +1551,7 @@ const handleAdminAPI = async (request, env) => {
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             });
         } catch (error) {
+            console.error('删除商品失败:', error);
             return new Response(JSON.stringify({ error: '删除商品失败', details: error.message }), {
                 status: 500,
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' }
