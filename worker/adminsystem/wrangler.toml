@@ -8,3 +8,8 @@ compatibility_date = "2025-05-06"
 binding = "DB"
 database_name = "liubaocha-db"
 database_id = "440ba7f7-c29c-406c-95ba-ebb2b6aa98cd"
+
+# 配置R2存储桶绑定
+[[r2_buckets]]
+binding = "IMAGES_BUCKET"
+bucket_name = "liubaotea-images"
