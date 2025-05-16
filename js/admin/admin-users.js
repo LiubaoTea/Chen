@@ -86,7 +86,10 @@ function updateUsersList() {
         
         try {
             // 使用API返回的格式化日期
-            if (user.created_at) {
+            if (user.created_at_formatted) {
+                // 直接使用后端返回的格式化日期
+                registerDate = user.created_at_formatted;
+            } else if (user.created_at) {
                 try {
                     // 尝试解析ISO格式的时间字符串
                     const date = new Date(user.created_at);
@@ -99,7 +102,10 @@ function updateUsersList() {
             }
             
             // 处理最后登录时间
-            if (user.last_login) {
+            if (user.last_login_at_formatted) {
+                // 直接使用后端返回的格式化日期
+                lastLoginDate = user.last_login_at_formatted;
+            } else if (user.last_login) {
                 try {
                     // 尝试解析ISO格式的时间字符串
                     const date = new Date(user.last_login);
@@ -253,44 +259,76 @@ async function viewUserDetails(userId) {
         
         try {
             // 使用API返回的格式化日期
-            if (userDetails.created_at) {
+            if (userDetails.created_at_formatted) {
+                // 直接使用后端返回的格式化日期
+                registerDate = userDetails.created_at_formatted;
+            } else if (userDetails.created_at) {
                 try {
                     // 尝试解析时间戳
                     let timestamp = userDetails.created_at;
                     if (typeof timestamp === 'string') {
+                        // 尝试将字符串转换为数字
                         timestamp = parseInt(timestamp);
                     }
-                    // 如果是秒级时间戳，转换为毫秒级
-                    if (timestamp < 10000000000) {
-                        timestamp *= 1000;
-                    }
-                    const date = new Date(timestamp);
-                    if (!isNaN(date.getTime())) {
-                        registerDate = date.toLocaleString('zh-CN');
+                    
+                    // 检查时间戳是否有效
+                    if (!isNaN(timestamp)) {
+                        // 如果是秒级时间戳，转换为毫秒级
+                        if (timestamp < 10000000000) {
+                            timestamp *= 1000;
+                        }
+                        
+                        // 创建日期对象并检查是否有效
+                        const date = new Date(timestamp);
+                        if (!isNaN(date.getTime())) {
+                            // 检查年份是否合理（避免1970年或未来过远的年份）
+                            const year = date.getFullYear();
+                            if (year > 1970 && year < 2100) {
+                                registerDate = date.toLocaleString('zh-CN');
+                            } else {
+                                console.warn('注册时间年份异常:', year, '原始值:', userDetails.created_at);
+                            }
+                        }
                     }
                 } catch (error) {
-                    console.error('注册时间解析错误:', error);
+                    console.error('注册时间解析错误:', error, '原始值:', userDetails.created_at);
                 }
             }
             
             // 处理最后登录时间
-            if (userDetails.last_login) {
+            if (userDetails.last_login_at_formatted) {
+                // 直接使用后端返回的格式化日期
+                lastLoginDate = userDetails.last_login_at_formatted;
+            } else if (userDetails.last_login) {
                 try {
                     // 尝试解析时间戳
                     let timestamp = userDetails.last_login;
                     if (typeof timestamp === 'string') {
+                        // 尝试将字符串转换为数字
                         timestamp = parseInt(timestamp);
                     }
-                    // 如果是秒级时间戳，转换为毫秒级
-                    if (timestamp < 10000000000) {
-                        timestamp *= 1000;
-                    }
-                    const date = new Date(timestamp);
-                    if (!isNaN(date.getTime())) {
-                        lastLoginDate = date.toLocaleString('zh-CN');
+                    
+                    // 检查时间戳是否有效
+                    if (!isNaN(timestamp)) {
+                        // 如果是秒级时间戳，转换为毫秒级
+                        if (timestamp < 10000000000) {
+                            timestamp *= 1000;
+                        }
+                        
+                        // 创建日期对象并检查是否有效
+                        const date = new Date(timestamp);
+                        if (!isNaN(date.getTime())) {
+                            // 检查年份是否合理（避免1970年或未来过远的年份）
+                            const year = date.getFullYear();
+                            if (year > 1970 && year < 2100) {
+                                lastLoginDate = date.toLocaleString('zh-CN');
+                            } else {
+                                console.warn('最后登录时间年份异常:', year, '原始值:', userDetails.last_login);
+                            }
+                        }
                     }
                 } catch (error) {
-                    console.error('最后登录时间解析错误:', error);
+                    console.error('最后登录时间解析错误:', error, '原始值:', userDetails.last_login);
                 }
             }
         } catch (dateError) {
@@ -337,23 +375,43 @@ async function viewUserDetails(userId) {
                 // 格式化订单日期
                 let orderDate = '未知';
                 try {
-                    if (order.created_at) {
-                        let date;
+                    if (order.created_at_formatted) {
+                        // 直接使用后端返回的格式化日期
+                        orderDate = order.created_at_formatted;
+                    } else if (order.created_at) {
+                        let timestamp;
                         if (typeof order.created_at === 'number') {
-                            // 确保时间戳是毫秒级的，如果是秒级的需要转换
-                            const timestamp = order.created_at > 10000000000 ? order.created_at : order.created_at * 1000;
-                            date = new Date(timestamp);
+                            timestamp = order.created_at;
                         } else if (typeof order.created_at === 'string') {
                             if (!isNaN(parseInt(order.created_at))) {
-                                const timestamp = parseInt(order.created_at) > 10000000000 ? parseInt(order.created_at) : parseInt(order.created_at) * 1000;
-                                date = new Date(timestamp);
+                                timestamp = parseInt(order.created_at);
                             } else {
-                                date = new Date(order.created_at);
+                                // 尝试解析日期字符串
+                                const dateObj = new Date(order.created_at);
+                                if (!isNaN(dateObj.getTime())) {
+                                    timestamp = dateObj.getTime();
+                                }
                             }
                         }
                         
-                        if (date && !isNaN(date.getTime()) && date.getFullYear() > 1970) {
-                            orderDate = date.toLocaleDateString('zh-CN');
+                        // 检查时间戳是否有效
+                        if (timestamp && !isNaN(timestamp)) {
+                            // 如果是秒级时间戳，转换为毫秒级
+                            if (timestamp < 10000000000) {
+                                timestamp *= 1000;
+                            }
+                            
+                            // 创建日期对象并检查是否有效
+                            const date = new Date(timestamp);
+                            if (!isNaN(date.getTime())) {
+                                // 检查年份是否合理（避免1970年或未来过远的年份）
+                                const year = date.getFullYear();
+                                if (year > 1970 && year < 2100) {
+                                    orderDate = date.toLocaleDateString('zh-CN');
+                                } else {
+                                    console.warn('订单日期年份异常:', year, '原始值:', order.created_at);
+                                }
+                            }
                         }
                     }
                 } catch (dateError) {
@@ -528,22 +586,43 @@ async function viewUserDetails(userId) {
                             // 格式化订单日期
                             let orderDate = '未知';
                             try {
-                                if (order.created_at) {
-                                    let date;
+                                if (order.created_at_formatted) {
+                                    // 直接使用后端返回的格式化日期
+                                    orderDate = order.created_at_formatted;
+                                } else if (order.created_at) {
+                                    let timestamp;
                                     if (typeof order.created_at === 'number') {
-                                        const timestamp = order.created_at > 10000000000 ? order.created_at : order.created_at * 1000;
-                                        date = new Date(timestamp);
+                                        timestamp = order.created_at;
                                     } else if (typeof order.created_at === 'string') {
                                         if (!isNaN(parseInt(order.created_at))) {
-                                            const timestamp = parseInt(order.created_at) > 10000000000 ? parseInt(order.created_at) : parseInt(order.created_at) * 1000;
-                                            date = new Date(timestamp);
+                                            timestamp = parseInt(order.created_at);
                                         } else {
-                                            date = new Date(order.created_at);
+                                            // 尝试解析日期字符串
+                                            const dateObj = new Date(order.created_at);
+                                            if (!isNaN(dateObj.getTime())) {
+                                                timestamp = dateObj.getTime();
+                                            }
                                         }
                                     }
                                     
-                                    if (date && !isNaN(date.getTime()) && date.getFullYear() > 1970) {
-                                        orderDate = date.toLocaleDateString('zh-CN');
+                                    // 检查时间戳是否有效
+                                    if (timestamp && !isNaN(timestamp)) {
+                                        // 如果是秒级时间戳，转换为毫秒级
+                                        if (timestamp < 10000000000) {
+                                            timestamp *= 1000;
+                                        }
+                                        
+                                        // 创建日期对象并检查是否有效
+                                        const date = new Date(timestamp);
+                                        if (!isNaN(date.getTime())) {
+                                            // 检查年份是否合理（避免1970年或未来过远的年份）
+                                            const year = date.getFullYear();
+                                            if (year > 1970 && year < 2100) {
+                                                orderDate = date.toLocaleDateString('zh-CN');
+                                            } else {
+                                                console.warn('订单日期年份异常:', year, '原始值:', order.created_at);
+                                            }
+                                        }
                                     }
                                 }
                             } catch (dateError) {

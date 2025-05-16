@@ -202,11 +202,39 @@ const handleOptions = (request) => {
  * @param {string|number} timestamp - 时间戳（可能是数字或字符串）
  * @returns {string|null} - 格式化后的ISO时间字符串，无效则返回null
  */
+/**
+ * 格式化时间戳为ISO字符串
+ * @param {string|number} timestamp - 时间戳（可能是数字或字符串）
+ * @returns {string|null} - 格式化后的ISO时间字符串，无效则返回null
+ */
 function formatTimestamp(timestamp) {
     if (!timestamp) return null;
     
-    // 如果是数字时间戳（秒），转换为毫秒
-    const timeMs = typeof timestamp === 'number' ? timestamp * 1000 : Date.parse(timestamp);
+    let timeMs;
+    
+    // 处理不同类型的时间戳输入
+    if (typeof timestamp === 'number') {
+        // 如果是数字，判断是秒还是毫秒级时间戳
+        // 通常秒级时间戳长度为10位，毫秒级为13位
+        timeMs = timestamp.toString().length <= 10 ? timestamp * 1000 : timestamp;
+    } else if (typeof timestamp === 'string') {
+        // 尝试解析ISO格式的字符串
+        if (timestamp.match(/^\d{4}-\d{2}-\d{2}T/)) {
+            // 已经是ISO格式
+            return timestamp;
+        } else {
+            // 尝试作为数字解析
+            const numTimestamp = parseInt(timestamp, 10);
+            if (!isNaN(numTimestamp)) {
+                timeMs = numTimestamp.toString().length <= 10 ? numTimestamp * 1000 : numTimestamp;
+            } else {
+                // 尝试其他日期格式解析
+                timeMs = Date.parse(timestamp);
+            }
+        }
+    } else {
+        return null;
+    }
     
     // 检查是否为有效日期
     if (isNaN(timeMs)) return null;
@@ -2033,8 +2061,40 @@ const handleAdminAPI = async (request, env) => {
             // 格式化用户列表中的时间戳
             users.forEach(user => {
                 // 使用辅助函数格式化时间戳
-                user.created_at = formatTimestamp(user.created_at);
-                user.last_login = formatTimestamp(user.last_login);
+                const createdAtISO = formatTimestamp(user.created_at);
+                const lastLoginISO = formatTimestamp(user.last_login);
+                
+                // 保存ISO格式时间戳
+                user.created_at = createdAtISO;
+                user.last_login = lastLoginISO;
+                
+                // 添加格式化后的时间字段，用于前端显示
+                user.created_at_formatted = createdAtISO ? 
+                    new Date(createdAtISO).toLocaleString('zh-CN', { 
+                        year: 'numeric', 
+                        month: '2-digit', 
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                        hour12: false
+                    }).replace(/\//g, '/') : '未知';
+                    
+                user.last_login_at_formatted = lastLoginISO ? 
+                    new Date(lastLoginISO).toLocaleString('zh-CN', { 
+                        year: 'numeric', 
+                        month: '2-digit', 
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                        hour12: false
+                    }).replace(/\//g, '/') : '从未登录';
+                
+                // 添加可读的状态文本
+                user.status_text = user.status === 'active' ? '正常' : 
+                                  user.status === 'suspended' ? '已停用' : 
+                                  user.status === 'deleted' ? '已删除' : user.status;
             });
             
             // 获取每个用户的订单数量
@@ -2087,9 +2147,9 @@ const handleAdminAPI = async (request, env) => {
                 });
             }
             
-            // 获取用户基本信息（不返回密码哈希）
+            // 获取用户基本信息（包括密码哈希，但在返回前会移除）
             const user = await env.DB.prepare(`
-                SELECT user_id, username, email, phone_number, created_at, last_login, status 
+                SELECT user_id, username, password_hash, email, phone_number, created_at, last_login, status 
                 FROM users
                 WHERE user_id = ?
             `).bind(userId).first();
@@ -2101,14 +2161,48 @@ const handleAdminAPI = async (request, env) => {
                 });
             }
             
-            // 格式化时间戳
-            user.created_at = formatTimestamp(user.created_at);
-            user.last_login = formatTimestamp(user.last_login);
+            // 格式化时间戳并添加格式化后的时间字段
+            const createdAtISO = formatTimestamp(user.created_at);
+            const lastLoginISO = formatTimestamp(user.last_login);
+            
+            // 添加格式化后的时间字段
+            user.created_at_formatted = createdAtISO ? 
+                new Date(createdAtISO).toLocaleString('zh-CN', { 
+                    year: 'numeric', 
+                    month: '2-digit', 
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false
+                }).replace(/\//g, '/') : '未知';
+                
+            user.last_login_at_formatted = lastLoginISO ? 
+                new Date(lastLoginISO).toLocaleString('zh-CN', { 
+                    year: 'numeric', 
+                    month: '2-digit', 
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false
+                }).replace(/\//g, '/') : '从未登录';
+            
+            // 保存原始ISO格式时间戳
+            user.created_at = createdAtISO;
+            user.last_login = lastLoginISO;
+            
+            // 添加可读的状态文本
+            user.status_text = user.status === 'active' ? '正常' : 
+                              user.status === 'suspended' ? '已停用' : 
+                              user.status === 'deleted' ? '已删除' : user.status;
+            
+            user.is_deleted = user.status === 'deleted' ? '是' : '否';
             
             // 获取用户订单统计
             const orderStats = await env.DB.prepare(`
                 SELECT 
-                    COUNT(*) as total_orders,
+                    COUNT(*) as orders_count,
                     SUM(CASE WHEN status != 'cancelled' THEN total_amount ELSE 0 END) as total_spent,
                     MAX(created_at) as last_order_date
                 FROM orders 
@@ -2117,7 +2211,15 @@ const handleAdminAPI = async (request, env) => {
             
             // 格式化最后订单日期
             if (orderStats) {
-                orderStats.last_order_date = formatTimestamp(orderStats.last_order_date);
+                const lastOrderDateISO = formatTimestamp(orderStats.last_order_date);
+                orderStats.last_order_date = lastOrderDateISO;
+                orderStats.last_order_date_formatted = lastOrderDateISO ? 
+                    new Date(lastOrderDateISO).toLocaleString('zh-CN', { 
+                        year: 'numeric', 
+                        month: '2-digit', 
+                        day: '2-digit',
+                        hour12: false
+                    }).replace(/\//g, '/') : '无订单';
             }
             
             // 获取用户最近的订单
@@ -2129,27 +2231,71 @@ const handleAdminAPI = async (request, env) => {
                 LIMIT 5
             `).bind(userId).all();
             
+            // 获取用户所有订单
+            const { results: allOrders } = await env.DB.prepare(`
+                SELECT order_id, status, total_amount, created_at 
+                FROM orders
+                WHERE user_id = ?
+                ORDER BY created_at DESC
+            `).bind(userId).all();
+            
             // 格式化订单时间
             recentOrders.forEach(order => {
-                order.created_at = formatTimestamp(order.created_at);
+                const orderDateISO = formatTimestamp(order.created_at);
+                order.created_at = orderDateISO;
+                order.created_at_formatted = orderDateISO ? 
+                    new Date(orderDateISO).toLocaleString('zh-CN', { 
+                        year: 'numeric', 
+                        month: '2-digit', 
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: false
+                    }).replace(/\//g, '/') : '未知';
             });
+            
+            allOrders.forEach(order => {
+                const orderDateISO = formatTimestamp(order.created_at);
+                order.created_at = orderDateISO;
+                order.created_at_formatted = orderDateISO ? 
+                    new Date(orderDateISO).toLocaleString('zh-CN', { 
+                        year: 'numeric', 
+                        month: '2-digit', 
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: false
+                    }).replace(/\//g, '/') : '未知';
+            });
+            
+            // 获取用户地址
+            const { results: addresses } = await env.DB.prepare(`
+                SELECT * FROM user_addresses
+                WHERE user_id = ?
+                ORDER BY is_default DESC
+            `).bind(userId).all();
             
             // 组合完整的用户信息
             const userDetails = {
                 ...user,
-                stats: {
-                    total_orders: orderStats?.total_orders || 0,
-                    total_spent: orderStats?.total_spent || 0,
-                    last_order_date: orderStats?.last_order_date || null
-                },
-                recent_orders: recentOrders
+                order_count: orderStats?.orders_count || 0,
+                orders_count: orderStats?.orders_count || 0,
+                total_spent: orderStats?.total_spent || 0,
+                recent_orders: recentOrders,
+                recentOrders: recentOrders, // 兼容旧版前端
+                orders: allOrders,
+                addresses: addresses
             };
+            
+            // 移除敏感信息
+            delete userDetails.password_hash;
             
             return new Response(JSON.stringify(userDetails), {
                 status: 200,
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             });
         } catch (error) {
+            console.error('获取用户详情失败:', error);
             return new Response(JSON.stringify({ error: '获取用户详情失败', details: error.message }), {
                 status: 500,
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' }
