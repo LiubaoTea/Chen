@@ -21,6 +21,9 @@ const adminAPIObject = {
     // 导出API配置
     API_BASE_URL,
     ADMIN_API_BASE_URL,
+    // 导出辅助函数
+    generateSalesTrendFromOrders: null, // 先声明，后面会定义
+    generateProductSalesDistribution: null, // 先声明，后面会定义
     // 获取商品列表
     getProducts: async (page = 1, pageSize = 10, categoryId = '', searchQuery = '') => {
         try {
@@ -226,6 +229,9 @@ const adminAPIObject = {
             if (startDate) url += `&startDate=${startDate}`;
             if (endDate) url += `&endDate=${endDate}`;
             
+            // 添加参数，确保包含所有订单状态（包括待付款和已付款）
+            url += '&include_all_status=true';
+            
             console.log('发送销售趋势请求，URL:', url);
             
             const response = await fetch(url, {
@@ -244,11 +250,146 @@ const adminAPIObject = {
             
             const data = await response.json();
             console.log('成功获取销售趋势数据:', data);
+            
+            // 如果API返回的数据为空或无效，尝试从订单数据生成趋势
+            if (!data || !data.labels || data.labels.length === 0 || 
+                (data.sales && data.sales.every(val => val === 0)) && 
+                (data.orders && data.orders.every(val => val === 0))) {
+                
+                console.log('API返回的销售趋势数据为空，尝试从订单数据生成趋势');
+                
+                // 获取订单数据来生成趋势
+                try {
+                    const ordersUrl = `${ADMIN_API_BASE_URL}/api/admin/orders?pageSize=1000`;
+                    const ordersResponse = await fetch(ordersUrl, {
+                        method: 'GET',
+                        headers: {
+                            ...adminAuth.getHeaders(),
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    if (ordersResponse.ok) {
+                        const ordersData = await ordersResponse.json();
+                        if (ordersData && ordersData.orders && ordersData.orders.length > 0) {
+                            // 生成销售趋势数据
+                            const trendData = adminAPIObject.generateSalesTrendFromOrders(ordersData.orders, period, startDate, endDate);
+                            console.log('从订单数据生成的销售趋势:', trendData);
+                            return trendData;
+                        }
+                    }
+                } catch (ordersError) {
+                    console.error('从订单数据生成销售趋势失败:', ordersError);
+                }
+            }
+            
             return data;
         } catch (error) {
             console.error('获取销售趋势数据出错:', error);
             throw error; // 不再返回模拟数据，而是将错误抛出，让调用者处理
         }
+    },
+    
+    // 从订单数据生成销售趋势
+    generateSalesTrendFromOrders: (orders, period = 'month', startDate = '', endDate = '') => {
+        // 如果没有订单数据，返回空趋势
+        if (!orders || orders.length === 0) {
+            return { labels: [], sales: [], orders: [] };
+        }
+        
+        // 解析日期范围
+        const start = startDate ? new Date(startDate) : new Date();
+        start.setHours(0, 0, 0, 0);
+        
+        const end = endDate ? new Date(endDate) : new Date();
+        end.setHours(23, 59, 59, 999);
+        
+        // 根据周期设置日期格式和范围
+        let dateFormat;
+        let dateRange = [];
+        let currentDate = new Date(start);
+        
+        switch (period) {
+            case 'day':
+                dateFormat = date => `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
+                // 生成日期范围（每天）
+                while (currentDate <= end) {
+                    dateRange.push(dateFormat(currentDate));
+                    currentDate.setDate(currentDate.getDate() + 1);
+                }
+                break;
+                
+            case 'week':
+                dateFormat = date => {
+                    const year = date.getFullYear();
+                    const month = date.getMonth() + 1;
+                    const day = date.getDate();
+                    return `${month}月${day}日`;
+                };
+                // 生成日期范围（每周）
+                while (currentDate <= end) {
+                    dateRange.push(dateFormat(currentDate));
+                    currentDate.setDate(currentDate.getDate() + 7);
+                }
+                break;
+                
+            case 'year':
+                dateFormat = date => `${date.getFullYear()}年${(date.getMonth() + 1).toString().padStart(2, '0')}月`;
+                // 生成日期范围（每月）
+                while (currentDate <= end) {
+                    dateRange.push(dateFormat(currentDate));
+                    currentDate.setMonth(currentDate.getMonth() + 1);
+                }
+                break;
+                
+            case 'month':
+            default:
+                dateFormat = date => `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
+                // 生成日期范围（每天，按月查看）
+                while (currentDate <= end) {
+                    dateRange.push(dateFormat(currentDate));
+                    currentDate.setDate(currentDate.getDate() + 1);
+                }
+                break;
+        }
+        
+        // 初始化销售额和订单数量数组
+        const salesMap = {};
+        const ordersCountMap = {};
+        
+        // 初始化每个日期的销售额和订单数量为0
+        dateRange.forEach(date => {
+            salesMap[date] = 0;
+            ordersCountMap[date] = 0;
+        });
+        
+        // 统计每个日期的销售额和订单数量
+        orders.forEach(order => {
+            // 确保订单有创建时间
+            if (!order.created_at) return;
+            
+            // 转换时间戳为日期对象
+            const orderDate = new Date(order.created_at * 1000);
+            
+            // 格式化订单日期
+            const formattedDate = dateFormat(orderDate);
+            
+            // 如果该日期在范围内，累加销售额和订单数量
+            if (salesMap.hasOwnProperty(formattedDate)) {
+                // 累加销售额（包括待付款和已付款的订单）
+                salesMap[formattedDate] += order.total_amount || 0;
+                
+                // 累加订单数量
+                ordersCountMap[formattedDate] += 1;
+            }
+        });
+        
+        // 转换为数组格式返回
+        return {
+            labels: dateRange,
+            sales: dateRange.map(date => salesMap[date] || 0),
+            orders: dateRange.map(date => ordersCountMap[date] || 0)
+        };
     },
     
     // 获取分类占比数据
@@ -288,6 +429,9 @@ const adminAPIObject = {
             if (startDate) url += `?startDate=${startDate}`;
             if (endDate) url += `${startDate ? '&' : '?'}endDate=${endDate}`;
             
+            // 添加参数，确保包含所有订单状态（包括待付款和已付款）
+            url += `${url.includes('?') ? '&' : '?'}include_all_status=true`;
+            
             console.log('发送商品销售分布请求，URL:', url);
             
             const response = await fetch(url, {
@@ -308,7 +452,7 @@ const adminAPIObject = {
             console.log('成功获取商品销售分布数据:', data);
             
             // 确保数据格式一致
-            const formattedData = data.map(item => ({
+            let formattedData = data.map(item => ({
                 name: item.name || item.product_name || '未知商品',
                 value: item.value || item.amount || item.sales_amount || 0,
                 amount: item.amount || item.sales_amount || item.value || 0,
@@ -316,11 +460,161 @@ const adminAPIObject = {
                 percentage: item.percentage || 0
             }));
             
+            // 检查是否有有效的销售数据
+            const hasValidData = formattedData.some(item => 
+                item.name !== '无销售数据' && (item.value > 0 || item.amount > 0 || item.sold_count > 0)
+            );
+            
+            // 如果API返回的数据为空或无效，尝试从订单数据生成销售分布
+            if (!hasValidData) {
+                console.log('API返回的商品销售分布数据为空，尝试从订单数据生成');
+                
+                try {
+                    // 获取订单数据
+                    const ordersUrl = `${ADMIN_API_BASE_URL}/api/admin/orders?pageSize=1000`;
+                    const ordersResponse = await fetch(ordersUrl, {
+                        method: 'GET',
+                        headers: {
+                            ...adminAuth.getHeaders(),
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    if (ordersResponse.ok) {
+                        const ordersData = await ordersResponse.json();
+                        
+                        // 获取商品数据
+                        const productsUrl = `${ADMIN_API_BASE_URL}/api/admin/products?pageSize=1000`;
+                        const productsResponse = await fetch(productsUrl, {
+                            method: 'GET',
+                            headers: {
+                                ...adminAuth.getHeaders(),
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                        
+                        if (productsResponse.ok && ordersData && ordersData.orders && ordersData.orders.length > 0) {
+                            const productsData = await productsResponse.json();
+                            
+                            // 生成商品销售分布数据
+                            const distributionData = adminAPIObject.generateProductSalesDistribution(
+                                ordersData.orders, 
+                                productsData.products || [], 
+                                startDate, 
+                                endDate
+                            );
+                            
+                            console.log('从订单数据生成的商品销售分布:', distributionData);
+                            return distributionData;
+                        }
+                    }
+                } catch (genError) {
+                    console.error('从订单数据生成商品销售分布失败:', genError);
+                }
+            }
+            
             return formattedData;
         } catch (error) {
             console.error('获取商品销售分布数据出错:', error);
             throw error;
         }
+    },
+    
+    // 从订单数据生成商品销售分布
+    generateProductSalesDistribution: (orders, products, startDate, endDate) => {
+        // 如果没有订单数据，返回默认分布
+        if (!orders || orders.length === 0) {
+            return [{
+                name: '无销售数据',
+                value: 0,
+                amount: 0,
+                sold_count: 0,
+                percentage: 100
+            }];
+        }
+        
+        // 解析日期范围
+        const start = startDate ? new Date(startDate) : new Date(0); // 从1970年开始
+        start.setHours(0, 0, 0, 0);
+        
+        const end = endDate ? new Date(endDate) : new Date();
+        end.setHours(23, 59, 59, 999);
+        
+        // 创建商品ID到名称的映射
+        const productMap = {};
+        if (products && products.length > 0) {
+            products.forEach(product => {
+                productMap[product.product_id] = product.name || product.product_name || `商品#${product.product_id}`;
+            });
+        }
+        
+        // 初始化商品销售统计
+        const productSales = {};
+        
+        // 统计每个商品的销售额和销售数量
+        orders.forEach(order => {
+            // 确保订单有创建时间
+            if (!order.created_at) return;
+            
+            // 转换时间戳为日期对象
+            const orderDate = new Date(order.created_at * 1000);
+            
+            // 检查订单是否在日期范围内
+            if (orderDate >= start && orderDate <= end) {
+                // 处理订单中的商品
+                if (order.items && Array.isArray(order.items)) {
+                    order.items.forEach(item => {
+                        const productId = item.product_id;
+                        const productName = productMap[productId] || item.name || `商品#${productId}`;
+                        const quantity = item.quantity || 1;
+                        const price = item.price || 0;
+                        const amount = price * quantity;
+                        
+                        // 累加商品销售额和数量
+                        if (!productSales[productId]) {
+                            productSales[productId] = {
+                                name: productName,
+                                value: 0,
+                                amount: 0,
+                                sold_count: 0
+                            };
+                        }
+                        
+                        productSales[productId].value += amount;
+                        productSales[productId].amount += amount;
+                        productSales[productId].sold_count += quantity;
+                    });
+                }
+            }
+        });
+        
+        // 转换为数组格式
+        let salesArray = Object.values(productSales);
+        
+        // 如果没有销售数据，返回默认值
+        if (salesArray.length === 0) {
+            return [{
+                name: '无销售数据',
+                value: 0,
+                amount: 0,
+                sold_count: 0,
+                percentage: 100
+            }];
+        }
+        
+        // 计算总销售额
+        const totalSales = salesArray.reduce((sum, item) => sum + item.amount, 0);
+        
+        // 计算每个商品的销售百分比
+        salesArray = salesArray.map(item => ({
+            ...item,
+            percentage: totalSales > 0 ? Math.round((item.amount / totalSales) * 100) : 0
+        }));
+        
+        // 按销售额降序排序
+        salesArray.sort((a, b) => b.amount - a.amount);
+        
+        return salesArray;
     },
     
     // 获取订单列表
@@ -838,6 +1132,10 @@ const adminAPIObject = {
         }
     }
 };
+
+// 将辅助函数赋值给adminAPIObject对象本身
+adminAPIObject.generateSalesTrendFromOrders = adminAPIObject.generateSalesTrendFromOrders;
+adminAPIObject.generateProductSalesDistribution = adminAPIObject.generateProductSalesDistribution;
 
 // 创建adminAPI对象的实例
 const adminAPI = adminAPIObject;
