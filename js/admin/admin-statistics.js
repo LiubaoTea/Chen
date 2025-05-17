@@ -262,7 +262,14 @@ function renderSalesTrendChart(data) {
     const chartContainer = document.getElementById('salesTrendChart').parentNode;
     chartContainer.style.height = '250px';
     
-    // 移除旧的布局调整代码，由adjustChartLayout函数统一处理
+    // 调整销售趋势和商品分类占比图表的布局
+    const salesTrendCard = document.querySelector('#salesTrendChart').closest('.col-md-6');
+    const productSalesCard = document.querySelector('#productSalesChart').closest('.col-md-6');
+    
+    if (salesTrendCard && productSalesCard) {
+        salesTrendCard.className = 'col-md-6 mb-3';
+        productSalesCard.className = 'col-md-6 mb-3';
+    }
     
     // 创建新图表
     try {
@@ -381,8 +388,6 @@ function renderProductSalesChart(data) {
     // 调整商品销售占比图表容器的高度
     const chartContainer = document.getElementById('productSalesChart').parentNode;
     chartContainer.style.height = '250px';
-    
-    // 移除旧的布局调整代码，由adjustChartLayout函数统一处理
     
     // 创建新图表
     try {
@@ -1027,38 +1032,3 @@ function ensureStatisticsPageStructure() {
 // 设置全局函数，供admin-main.js调用
 window.initStatisticsPage = initStatisticsPage;
 window.refreshStatisticsData = refreshStatisticsData;
-
-// 调整图表布局，将销售趋势图和商品销售占比图上下排列
-function adjustChartLayout() {
-    // 获取图表容器
-    const salesTrendCard = document.getElementById('salesTrendChart')?.closest('.card')?.parentElement;
-    const productSalesCard = document.getElementById('productSalesChart')?.closest('.card')?.parentElement;
-    
-    if (!salesTrendCard || !productSalesCard) {
-        console.error('找不到图表容器，无法调整布局');
-        return;
-    }
-    
-    // 获取父容器
-    const parentRow = salesTrendCard.parentElement;
-    if (!parentRow) return;
-    
-    // 修改容器样式为占满整行
-    salesTrendCard.className = 'col-12 mb-4';
-    productSalesCard.className = 'col-12 mb-4';
-    
-    // 确保销售趋势图在上，商品销售占比图在下
-    if (parentRow.contains(salesTrendCard) && parentRow.contains(productSalesCard)) {
-        parentRow.insertBefore(salesTrendCard, productSalesCard);
-    }
-}
-
-// 在页面加载完成后调整布局
-document.addEventListener('DOMContentLoaded', adjustChartLayout);
-
-// 在刷新统计数据后也调整布局
-const originalRefreshStatisticsData = refreshStatisticsData;
-window.refreshStatisticsData = async function() {
-    await originalRefreshStatisticsData();
-    adjustChartLayout();
-};
