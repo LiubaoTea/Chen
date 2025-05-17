@@ -280,7 +280,7 @@ const adminAPIObject = {
         }
     },
     
-    // 获取商品销售分布数据（使用分类占比数据作为替代）
+    // 获取商品销售分布数据
     getProductSalesDistribution: async (startDate, endDate) => {
         try {
             // 构建API URL，添加日期参数
@@ -290,40 +290,33 @@ const adminAPIObject = {
             
             console.log('发送商品销售分布请求，URL:', url);
             
-            try {
-                // 尝试调用专门的销售分布API
-                const response = await fetch(url, {
-                    method: 'GET',
-                    headers: {
-                        ...adminAuth.getHeaders(),
-                        'Content-Type': 'application/json'
-                    }
-                });
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    console.log('成功获取商品销售分布数据:', data);
-                    return data;
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    ...adminAuth.getHeaders(),
+                    'Content-Type': 'application/json'
                 }
-                
-                // 如果API返回错误，使用分类占比数据作为替代
-                console.warn('商品销售分布API不可用，使用分类占比数据作为替代');
-            } catch (apiError) {
-                console.warn('商品销售分布API调用失败，使用分类占比数据作为替代:', apiError);
+            });
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('商品销售分布API响应错误:', response.status, errorText);
+                throw new Error(`获取商品销售分布数据失败，HTTP状态码: ${response.status}`);
             }
             
-            // 使用分类占比数据作为替代
-            const categoryData = await adminAPI.getCategoryDistribution();
+            const data = await response.json();
+            console.log('成功获取商品销售分布数据:', data);
             
-            // 转换数据格式以适应销售分布图表
-            const salesDistributionData = categoryData.map(category => ({
-                name: category.category_name || category.name || '未分类',
-                value: category.product_count || category.count || 0,
-                percentage: category.percentage || 0
+            // 确保数据格式一致
+            const formattedData = data.map(item => ({
+                name: item.name || item.product_name || '未知商品',
+                value: item.value || item.amount || item.sales_amount || 0,
+                amount: item.amount || item.sales_amount || item.value || 0,
+                sold_count: item.sold_count || 0,
+                percentage: item.percentage || 0
             }));
             
-            console.log('成功获取商品销售分布数据(使用分类占比替代):', salesDistributionData);
-            return salesDistributionData;
+            return formattedData;
         } catch (error) {
             console.error('获取商品销售分布数据出错:', error);
             throw error;

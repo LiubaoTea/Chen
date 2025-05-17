@@ -946,7 +946,7 @@ const handleAdminAPI = async (request, env) => {
             const { results: salesData } = await env.DB.prepare(
                 `SELECT 
                     p.product_id,
-                    p.product_name,
+                    p.name as product_name,
                     SUM(oi.quantity) as sold_count,
                     SUM(oi.price * oi.quantity) as sales_amount
                 FROM order_items oi
@@ -954,7 +954,7 @@ const handleAdminAPI = async (request, env) => {
                 JOIN products p ON oi.product_id = p.product_id
                 WHERE o.status != 'cancelled' ${dateCondition}
                 GROUP BY p.product_id
-                ORDER BY sold_count DESC
+                ORDER BY sales_amount DESC
                 LIMIT 10`
             ).bind(...params).all();
             
@@ -969,8 +969,9 @@ const handleAdminAPI = async (request, env) => {
             // 格式化响应数据
             const formattedData = salesData.map(item => ({
                 name: item.product_name,
-                value: item.sold_count,
+                value: item.sales_amount,
                 amount: item.sales_amount,
+                sold_count: item.sold_count,
                 percentage: totalSales.total > 0 ? 
                     Math.round((item.sales_amount / totalSales.total) * 100) : 0
             }));
@@ -994,6 +995,7 @@ const handleAdminAPI = async (request, env) => {
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             });
         } catch (error) {
+            console.error('获取商品销售分布数据失败:', error);
             return new Response(JSON.stringify({ error: '获取商品销售分布数据失败', details: error.message }), {
                 status: 500,
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -3333,54 +3335,8 @@ const handleAdminAPI = async (request, env) => {
         }
     }
     
-    // 获取商品销售分布数据
-    if (path === '/api/admin/products/sales-distribution' && request.method === 'GET') {
-        try {
-            const startDate = url.searchParams.get('startDate');
-            const endDate = url.searchParams.get('endDate');
-            
-            let dateCondition = '';
-            const params = [];
-            
-            if (startDate && endDate) {
-                dateCondition = 'AND o.created_at BETWEEN ? AND ?';
-                params.push(startDate, endDate);
-            } else if (startDate) {
-                dateCondition = 'AND o.created_at >= ?';
-                params.push(startDate);
-            } else if (endDate) {
-                dateCondition = 'AND o.created_at <= ?';
-                params.push(endDate);
-            }
-            
-            // 获取商品销售分布数据
-            const { results: salesDistribution } = await env.DB.prepare(`
-                SELECT 
-                    p.product_id,
-                    p.name as product_name,
-                    SUM(oi.quantity) as quantity_sold,
-                    SUM(oi.quantity * oi.price) as total_sales,
-                    COUNT(DISTINCT o.order_id) as orders_count
-                FROM order_items oi
-                JOIN orders o ON oi.order_id = o.order_id
-                JOIN products p ON oi.product_id = p.product_id
-                WHERE o.status != 'cancelled' ${dateCondition}
-                GROUP BY p.product_id
-                ORDER BY quantity_sold DESC
-                LIMIT 20
-            `).bind(...params).all();
-            
-            return new Response(JSON.stringify(salesDistribution), {
-                status: 200,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
-        } catch (error) {
-            return new Response(JSON.stringify({ error: '获取商品销售分布数据失败', details: error.message }), {
-                status: 500,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
-        }
-    }
+    // 此处已移除重复的商品销售分布API端点实现
+    // 请使用上方的'/api/admin/products/sales-distribution'端点
     
     // 获取用户增长趋势数据
     if (path === '/api/admin/statistics/user-growth' && request.method === 'GET') {
