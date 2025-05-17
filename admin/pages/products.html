@@ -87,11 +87,16 @@
                         </div>
                         <div class="col-md-6">
                             <label for="productCategory" class="form-label">商品分类 <span class="text-danger">*</span></label>
-                            <select class="form-select" id="productCategory" required>
-                                <option value="">选择分类</option>
-                                <!-- 分类选项将通过JS动态加载 -->
-                            </select>
-                            <div class="invalid-feedback">请选择商品分类</div>
+                            <div class="dropdown">
+                                <button class="form-select text-start" type="button" id="productCategoryDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                    选择分类
+                                </button>
+                                <ul class="dropdown-menu w-100" id="productCategory" aria-labelledby="productCategoryDropdown" style="max-height: 300px; overflow-y: auto;">
+                                    <!-- 分类选项将通过JS动态加载，每个选项前有复选框 -->
+                                </ul>
+                            </div>
+                            <input type="hidden" id="selectedCategories" required>
+                            <div class="invalid-feedback">请选择至少一个商品分类</div>
                         </div>
                     </div>
                     

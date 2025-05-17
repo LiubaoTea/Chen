@@ -558,24 +558,49 @@ async function showProductModal(productId = null) {
     document.getElementById('productForm').reset();
     document.getElementById('productImagePreview').src = '';
     document.getElementById('productImagePreview').classList.add('d-none');
+    document.getElementById('selectedCategories').value = '';
     
     // 设置模态框标题
     const modalTitle = document.getElementById('productModalLabel');
     modalTitle.textContent = productId ? '编辑商品' : '添加商品';
     
     try {
-        const categorySelect = document.getElementById('productCategory');
+        const categoryList = document.getElementById('productCategory');
         
         // 清空现有选项
-        categorySelect.innerHTML = '<option value="">选择分类</option>';
+        categoryList.innerHTML = '';
         
-        // 添加分类选项
+        // 添加分类选项，每个选项前有复选框
         categoriesData.forEach(category => {
-            const option = document.createElement('option');
-            option.value = category.category_id;
-            option.textContent = category.category_name;
-            categorySelect.appendChild(option);
+            const li = document.createElement('li');
+            li.className = 'dropdown-item';
+            
+            const checkboxDiv = document.createElement('div');
+            checkboxDiv.className = 'form-check';
+            
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.className = 'form-check-input';
+            checkbox.id = `category-${category.category_id}`;
+            checkbox.value = category.category_id;
+            checkbox.addEventListener('change', function() {
+                updateCategoryDropdownText();
+                updateSelectedCategories();
+            });
+            
+            const label = document.createElement('label');
+            label.className = 'form-check-label';
+            label.htmlFor = `category-${category.category_id}`;
+            label.textContent = category.category_name;
+            
+            checkboxDiv.appendChild(checkbox);
+            checkboxDiv.appendChild(label);
+            li.appendChild(checkboxDiv);
+            categoryList.appendChild(li);
         });
+        
+        // 初始化下拉按钮文本
+        document.getElementById('productCategoryDropdown').textContent = '选择分类';
         
         // 如果是编辑模式，加载商品数据
         if (productId) {
@@ -633,19 +658,41 @@ function fillProductForm(product) {
     document.getElementById('productId').value = product.product_id;
     document.getElementById('productName').value = product.name;
     
+    // 清除所有已选分类
+    document.querySelectorAll('#productCategory .form-check-input').forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    
     // 处理分类 - 优先使用新的分类关系结构
+    // 获取所有分类ID
+    let categoryIds = [];
+    
     // 优先使用新的数据结构：通过category_mappings获取分类信息
     if (product.category_mappings && product.category_mappings.length > 0) {
-        document.getElementById('productCategory').value = product.category_mappings[0].category_id;
+        categoryIds = product.category_mappings.map(mapping => mapping.category_id.toString());
     }
     // 其次使用categories数组
     else if (product.categories && product.categories.length > 0) {
-        document.getElementById('productCategory').value = product.categories[0];
+        categoryIds = product.categories.map(id => id.toString());
     }
     // 最后尝试使用category_id字段
-    else {
-        document.getElementById('productCategory').value = product.category_id || '';
+    else if (product.category_id) {
+        categoryIds = [product.category_id.toString()];
     }
+    
+    // 选中对应的复选框
+    categoryIds.forEach(id => {
+        const checkbox = document.querySelector(`#productCategory .form-check-input[value="${id}"]`);
+        if (checkbox) {
+            checkbox.checked = true;
+        }
+    });
+    
+    // 更新下拉按钮文本
+    updateCategoryDropdownText();
+    
+    // 更新隐藏字段的值
+    document.getElementById('selectedCategories').value = categoryIds.join(',');
     
     document.getElementById('productPrice').value = product.price;
     document.getElementById('productOriginalPrice').value = product.original_price || '';
@@ -668,8 +715,40 @@ function fillProductForm(product) {
 
 }
 
+// 更新分类下拉按钮文本
+function updateCategoryDropdownText() {
+    const checkedCategories = document.querySelectorAll('#productCategory .form-check-input:checked');
+    const dropdownButton = document.getElementById('productCategoryDropdown');
+    
+    if (checkedCategories.length === 0) {
+        dropdownButton.textContent = '选择分类';
+    } else if (checkedCategories.length === 1) {
+        const categoryName = checkedCategories[0].nextElementSibling.textContent;
+        dropdownButton.textContent = categoryName;
+    } else {
+        dropdownButton.textContent = `已选择 ${checkedCategories.length} 个分类`;
+    }
+}
+
+// 更新隐藏字段中的已选分类
+function updateSelectedCategories() {
+    const checkedCategories = document.querySelectorAll('#productCategory .form-check-input:checked');
+    const selectedCategoryIds = Array.from(checkedCategories).map(checkbox => checkbox.value);
+    document.getElementById('selectedCategories').value = selectedCategoryIds.join(',');
+    
+    // 如果至少选择了一个分类，移除验证错误
+    if (selectedCategoryIds.length > 0) {
+        document.getElementById('selectedCategories').setCustomValidity('');
+    } else {
+        document.getElementById('selectedCategories').setCustomValidity('请选择至少一个分类');
+    }
+}
+
 // 保存商品（添加或更新）
 async function saveProduct() {
+    // 确保至少选择了一个分类
+    updateSelectedCategories();
+    
     // 验证表单
     const form = document.getElementById('productForm');
     if (!form.checkValidity()) {
@@ -679,12 +758,16 @@ async function saveProduct() {
     
     // 获取表单数据
     const productId = document.getElementById('productId').value;
-    const categoryId = document.getElementById('productCategory').value;
+    const selectedCategoriesValue = document.getElementById('selectedCategories').value;
+    const categoryIds = selectedCategoriesValue ? selectedCategoriesValue.split(',') : [];
+    
+    // 构建分类映射数组
+    const categoryMappings = categoryIds.map(id => ({ category_id: parseInt(id) }));
     
     const productData = {
         name: document.getElementById('productName').value,
-        // 使用category_mappings数组替代categories数组，适配新的数据库结构
-        category_mappings: categoryId ? [{ category_id: categoryId }] : [],
+        // 使用category_mappings数组存储多个分类
+        category_mappings: categoryMappings,
         price: parseFloat(document.getElementById('productPrice').value),
         original_price: document.getElementById('productOriginalPrice').value ? 
             parseFloat(document.getElementById('productOriginalPrice').value) : null,
@@ -798,7 +881,7 @@ async function deleteProduct(productId) {
             ...adminAuth.getHeaders() // 添加认证头信息
         };
         
-        const response = await fetch(`${API_BASE_URL}/api/products/${productId}`, {
+        const response = await fetch(`${ADMIN_API_BASE_URL}/api/admin/products/${productId}`, {
             method: 'DELETE',
             headers: headers
         });
