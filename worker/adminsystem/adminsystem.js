@@ -1602,7 +1602,7 @@ const handleAdminAPI = async (request, env) => {
             
             // 检查商品是否已被订单引用
             const orderItem = await env.DB.prepare(`
-                SELECT oi.order_item_id 
+                SELECT oi.item_id 
                 FROM order_items oi 
                 WHERE oi.product_id = ? 
                 LIMIT 1
