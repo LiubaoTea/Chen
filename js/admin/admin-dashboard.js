@@ -11,6 +11,9 @@ import adminAPI, { API_BASE_URL, ADMIN_API_BASE_URL } from './admin-api.js';
 console.log('admin-dashboard.js中的API配置:', { API_BASE_URL, ADMIN_API_BASE_URL });
 console.log('admin-dashboard.js中的adminAPI:', adminAPI);
 
+// 当前选择的时间周期
+let currentPeriod = 'month';
+
 // 加载仪表盘数据
 async function loadDashboardData() {
     // 检查是否已登录
@@ -30,12 +33,15 @@ async function loadDashboardData() {
         updateTopProducts(topProducts);
         
         // 获取销售趋势数据
-        const salesTrend = await adminAPI.getSalesTrend('month');
+        const salesTrend = await adminAPI.getSalesTrend(currentPeriod);
         renderSalesChart(salesTrend);
         
         // 获取分类占比数据
         const categoryDistribution = await adminAPI.getCategoryDistribution();
         renderCategoryChart(categoryDistribution);
+        
+        // 初始化时间周期选择器
+        initPeriodSelector();
     } catch (error) {
         console.error('加载仪表盘数据失败:', error);
         // 显示错误提示
@@ -121,6 +127,70 @@ function updateTopProducts(products) {
     });
 }
 
+// 初始化时间周期选择器
+function initPeriodSelector() {
+    // 检查是否已经初始化
+    if (document.getElementById('periodSelector')) {
+        return;
+    }
+    
+    // 获取销售趋势图表容器的父元素
+    const salesChartCard = document.getElementById('salesChart').closest('.card');
+    if (!salesChartCard) return;
+    
+    // 获取卡片头部
+    const cardHeader = salesChartCard.querySelector('.card-header');
+    if (!cardHeader) return;
+    
+    // 创建时间周期选择器
+    const periodSelector = document.createElement('div');
+    periodSelector.id = 'periodSelector';
+    periodSelector.className = 'btn-group btn-group-sm float-end';
+    periodSelector.innerHTML = `
+        <button type="button" class="btn btn-outline-primary period-btn" data-period="day">日</button>
+        <button type="button" class="btn btn-outline-primary period-btn" data-period="week">周</button>
+        <button type="button" class="btn btn-outline-primary period-btn active" data-period="month">月</button>
+        <button type="button" class="btn btn-outline-primary period-btn" data-period="year">年</button>
+    `;
+    
+    // 添加到卡片头部
+    cardHeader.appendChild(periodSelector);
+    
+    // 添加事件监听器
+    const periodButtons = periodSelector.querySelectorAll('.period-btn');
+    periodButtons.forEach(button => {
+        button.addEventListener('click', async function() {
+            // 移除所有按钮的active类
+            periodButtons.forEach(btn => btn.classList.remove('active'));
+            // 添加当前按钮的active类
+            this.classList.add('active');
+            
+            // 更新当前周期
+            currentPeriod = this.dataset.period;
+            
+            try {
+                // 显示加载状态
+                const salesChartContainer = document.getElementById('salesChart');
+                if (salesChartContainer) {
+                    salesChartContainer.style.opacity = '0.5';
+                }
+                
+                // 获取新的销售趋势数据
+                const salesTrend = await adminAPI.getSalesTrend(currentPeriod);
+                renderSalesChart(salesTrend);
+                
+                // 恢复正常显示
+                if (salesChartContainer) {
+                    salesChartContainer.style.opacity = '1';
+                }
+            } catch (error) {
+                console.error('获取销售趋势数据失败:', error);
+                showErrorToast('获取销售趋势数据失败，请稍后重试');
+            }
+        });
+    });
+}
+
 // 渲染销售趋势图表
 function renderSalesChart(data) {
     const salesChartContainer = document.getElementById('salesChart');
@@ -164,6 +234,9 @@ function renderSalesChart(data) {
         data.orders = new Array(data.labels.length).fill(0);
     }
     
+    // 根据当前周期格式化标签
+    const formattedLabels = formatLabelsForPeriod(data.labels, currentPeriod);
+    
     // 销毁现有图表（如果存在）
     if (window.salesChart instanceof Chart) {
         window.salesChart.destroy();
@@ -173,7 +246,7 @@ function renderSalesChart(data) {
     window.salesChart = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: data.labels,
+            labels: formattedLabels,
             datasets: [{
                 label: '销售额',
                 data: data.sales,
@@ -266,6 +339,41 @@ function renderSalesChart(data) {
             }
         }
     });
+}
+
+// 根据时间周期格式化标签
+function formatLabelsForPeriod(labels, period) {
+    if (!labels || !Array.isArray(labels)) return labels;
+    
+    switch (period) {
+        case 'day':
+            // 日期格式：05-20
+            return labels.map(label => {
+                if (label.includes('-')) {
+                    const parts = label.split('-');
+                    if (parts.length >= 3) {
+                        return `${parts[1]}-${parts[2]}`;
+                    }
+                }
+                return label;
+            });
+        case 'week':
+            // 周格式：第X周
+            return labels.map((label, index) => `第${index + 1}周`);
+        case 'month':
+            // 月份格式：2023-05
+            return labels;
+        case 'year':
+            // 年份格式：2023年
+            return labels.map(label => {
+                if (label.includes('-')) {
+                    return `${label.split('-')[0]}年`;
+                }
+                return label;
+            });
+        default:
+            return labels;
+    }
 }
 
 // 渲染分类占比图表
@@ -448,5 +556,33 @@ function showErrorToast(message) {
     });
 }
 
+// 调整布局，将销售趋势图和商品销售占比图上下排列
+function adjustChartLayout() {
+    // 获取图表容器
+    const salesChartCard = document.getElementById('salesChart')?.closest('.card')?.parentElement;
+    const categoryChartCard = document.getElementById('categoryChart')?.closest('.card')?.parentElement;
+    
+    if (!salesChartCard || !categoryChartCard) {
+        console.error('找不到图表容器，无法调整布局');
+        return;
+    }
+    
+    // 获取父容器
+    const parentRow = salesChartCard.parentElement;
+    if (!parentRow) return;
+    
+    // 修改容器样式为占满整行
+    salesChartCard.className = 'col-12 mb-4';
+    categoryChartCard.className = 'col-12 mb-4';
+    
+    // 确保销售趋势图在上，商品销售占比图在下
+    if (parentRow.contains(salesChartCard) && parentRow.contains(categoryChartCard)) {
+        parentRow.insertBefore(salesChartCard, categoryChartCard);
+    }
+}
+
 // 设置全局函数，供admin-main.js调用
 window.loadDashboardData = loadDashboardData;
+
+// 在页面加载完成后调整布局
+document.addEventListener('DOMContentLoaded', adjustChartLayout);
