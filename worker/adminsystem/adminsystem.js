@@ -549,15 +549,18 @@ const handleAdminAPI = async (request, env) => {
             const params = [];
             
             // 根据时间周期设置SQL日期格式和数据点数量
-            if (period === 'week') {
+            if (period === 'day') {
                 timeFormat = '%Y-%m-%d'; // 按天
-                limit = 7;
+                limit = 24; // 显示最近24天
+            } else if (period === 'week') {
+                timeFormat = '%Y-%m-%d'; // 按天
+                limit = 12; // 显示最近12周的数据点
             } else if (period === 'year') {
                 timeFormat = '%Y-%m'; // 按月
-                limit = 12;
+                limit = 12; // 显示12个月
             } else { // month
                 timeFormat = '%Y-%m-%d'; // 按天
-                limit = 30;
+                limit = 30; // 显示最近30天
             }
             
             // 构建日期条件
@@ -852,15 +855,18 @@ const handleAdminAPI = async (request, env) => {
             const params = [];
             
             // 根据时间周期设置SQL日期格式和数据点数量
-            if (period === 'week') {
+            if (period === 'day') {
                 timeFormat = '%Y-%m-%d'; // 按天
-                limit = 7;
+                limit = 24; // 显示最近24天
+            } else if (period === 'week') {
+                timeFormat = '%Y-%m-%d'; // 按天
+                limit = 12; // 显示最近12周的数据点
             } else if (period === 'year') {
                 timeFormat = '%Y-%m'; // 按月
-                limit = 12;
+                limit = 12; // 显示12个月
             } else { // month
                 timeFormat = '%Y-%m-%d'; // 按天
-                limit = 30;
+                limit = 30; // 显示最近30天
             }
             
             // 构建日期条件
@@ -948,7 +954,7 @@ const handleAdminAPI = async (request, env) => {
                     p.product_id,
                     p.name as product_name,
                     SUM(oi.quantity) as sold_count,
-                    SUM(oi.price * oi.quantity) as sales_amount
+                    SUM(p.price * oi.quantity) as sales_amount
                 FROM order_items oi
                 JOIN orders o ON oi.order_id = o.order_id
                 JOIN products p ON oi.product_id = p.product_id
@@ -960,9 +966,10 @@ const handleAdminAPI = async (request, env) => {
             
             // 计算总销售额（用于计算百分比）
             const totalSales = await env.DB.prepare(
-                `SELECT SUM(oi.price * oi.quantity) as total
+                `SELECT SUM(p.price * oi.quantity) as total
                 FROM order_items oi
                 JOIN orders o ON oi.order_id = o.order_id
+                JOIN products p ON oi.product_id = p.product_id
                 WHERE o.status != 'cancelled' ${dateCondition}`
             ).bind(...params).first();
             
@@ -1209,15 +1216,18 @@ const handleAdminAPI = async (request, env) => {
             const params = [];
             
             // 根据时间周期设置SQL日期格式和数据点数量
-            if (period === 'week') {
+            if (period === 'day') {
                 timeFormat = '%Y-%m-%d'; // 按天
-                limit = 7;
+                limit = 24; // 显示最近24天
+            } else if (period === 'week') {
+                timeFormat = '%Y-%m-%d'; // 按天
+                limit = 12; // 显示最近12周的数据点
             } else if (period === 'year') {
                 timeFormat = '%Y-%m'; // 按月
-                limit = 12;
+                limit = 12; // 显示12个月
             } else { // month
                 timeFormat = '%Y-%m-%d'; // 按天
-                limit = 30;
+                limit = 30; // 显示最近30天
             }
             
             // 构建日期条件

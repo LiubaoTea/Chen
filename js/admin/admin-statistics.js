@@ -102,12 +102,26 @@ async function refreshStatisticsData() {
         try {
             const salesTrendData = await adminAPI.getSalesTrend(period, startDate, endDate);
             console.log('获取到销售趋势数据:', salesTrendData);
-            renderSalesTrendChart(salesTrendData);
+            
+            // 检查数据是否为空或格式不正确
+            if (!salesTrendData || 
+                !salesTrendData.labels || 
+                !Array.isArray(salesTrendData.labels) || 
+                salesTrendData.labels.length === 0) {
+                console.warn('销售趋势数据为空或格式不正确，使用默认数据');
+                renderSalesTrendChart({
+                    labels: [new Date().toISOString().split('T')[0]],
+                    sales: [0],
+                    orders: [0]
+                });
+            } else {
+                renderSalesTrendChart(salesTrendData);
+            }
         } catch (error) {
             console.error('获取销售趋势数据失败:', error);
             // 使用默认数据渲染
             renderSalesTrendChart({
-                labels: ['无数据'],
+                labels: [new Date().toISOString().split('T')[0]],
                 sales: [0],
                 orders: [0]
             });
@@ -164,28 +178,62 @@ async function refreshStatisticsData() {
 
 // 显示加载状态
 function showLoadingState() {
-    const chartContainers = document.querySelectorAll('.card-body');
-    chartContainers.forEach(container => {
-        if (container.querySelector('canvas')) {
-            const loadingSpinner = document.createElement('div');
-            loadingSpinner.className = 'text-center loading-spinner';
-            loadingSpinner.innerHTML = '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">加载中...</span></div>';
-            
-            // 清除现有的加载状态
-            const existingSpinner = container.querySelector('.loading-spinner');
-            if (existingSpinner) {
-                existingSpinner.remove();
-            }
-            
-            container.appendChild(loadingSpinner);
-        }
+    // 使用新的加载状态UI
+    const loadingElements = document.querySelectorAll('.chart-loading');
+    loadingElements.forEach(element => {
+        element.classList.remove('d-none');
+    });
+    
+    // 隐藏所有占位符
+    const placeholders = document.querySelectorAll('.chart-placeholder');
+    placeholders.forEach(placeholder => {
+        placeholder.classList.add('d-none');
     });
 }
 
 // 隐藏加载状态
 function hideLoadingState() {
-    const loadingSpinners = document.querySelectorAll('.loading-spinner');
-    loadingSpinners.forEach(spinner => spinner.remove());
+    // 隐藏所有加载状态
+    const loadingElements = document.querySelectorAll('.chart-loading');
+    loadingElements.forEach(element => {
+        element.classList.add('d-none');
+    });
+}
+
+// 显示无数据占位符
+function showNoDataPlaceholder(chartId) {
+    const chartElement = document.getElementById(chartId);
+    if (!chartElement) return;
+    
+    // 隐藏图表
+    chartElement.style.display = 'none';
+    
+    // 显示占位符
+    const cardBody = chartElement.closest('.card-body');
+    if (cardBody) {
+        const placeholder = cardBody.querySelector('.chart-placeholder');
+        if (placeholder) {
+            placeholder.classList.remove('d-none');
+        }
+    }
+}
+
+// 隐藏无数据占位符
+function hideNoDataPlaceholder(chartId) {
+    const chartElement = document.getElementById(chartId);
+    if (!chartElement) return;
+    
+    // 显示图表
+    chartElement.style.display = 'block';
+    
+    // 隐藏占位符
+    const cardBody = chartElement.closest('.card-body');
+    if (cardBody) {
+        const placeholder = cardBody.querySelector('.chart-placeholder');
+        if (placeholder) {
+            placeholder.classList.add('d-none');
+        }
+    }
 }
 
 // 设置统计页面事件监听器
@@ -229,31 +277,61 @@ function renderSalesTrendChart(data) {
     let labels = [];
     let values = [];
     let ordersData = [];
+    let hasRealData = false;
     
     if (!data) {
         console.error('销售趋势数据为空');
         // 创建默认数据
-        labels = ['无数据'];
+        const today = new Date().toISOString().split('T')[0];
+        labels = [today];
         values = [0];
         ordersData = [0];
     } else if (Array.isArray(data)) {
         // 处理数组格式的返回数据（来自/api/admin/stats/sales-trend）
         console.log('处理数组格式的销售趋势数据:', data);
-        labels = data.map(item => item.time_period || '无日期');
-        values = data.map(item => item.sales_amount || 0);
-        ordersData = data.map(item => item.orders_count || 0);
+        if (data.length === 0) {
+            // 如果数组为空，使用当前日期作为标签
+            const today = new Date().toISOString().split('T')[0];
+            labels = [today];
+            values = [0];
+            ordersData = [0];
+        } else {
+            labels = data.map(item => item.time_period || '无日期');
+            values = data.map(item => parseFloat(item.sales_amount) || 0);
+            ordersData = data.map(item => parseInt(item.orders_count) || 0);
+            hasRealData = data.some(item => (parseFloat(item.sales_amount) > 0 || parseInt(item.orders_count) > 0));
+        }
     } else if (data.labels && Array.isArray(data.labels)) {
         // 处理对象格式的返回数据（来自/api/admin/sales/trend）
         console.log('处理对象格式的销售趋势数据:', data);
-        labels = data.labels;
-        values = data.sales || data.values || [];
-        ordersData = data.orders || [];
+        if (data.labels.length === 0) {
+            // 如果标签数组为空，使用当前日期作为标签
+            const today = new Date().toISOString().split('T')[0];
+            labels = [today];
+            values = [0];
+            ordersData = [0];
+        } else {
+            labels = data.labels;
+            values = data.sales ? data.sales.map(val => parseFloat(val) || 0) : [];
+            ordersData = data.orders ? data.orders.map(val => parseInt(val) || 0) : [];
+            hasRealData = (values.some(val => val > 0) || ordersData.some(val => val > 0));
+        }
     } else {
         console.error('销售趋势数据格式不正确:', data);
         // 创建默认数据
-        labels = ['无数据'];
+        const today = new Date().toISOString().split('T')[0];
+        labels = [today];
         values = [0];
         ordersData = [0];
+    }
+    
+    // 检查是否有实际数据，如果没有则显示占位符
+    if (!hasRealData && (values.every(v => v === 0) && ordersData.every(v => v === 0))) {
+        console.log('销售趋势无实际数据，显示占位符');
+        showNoDataPlaceholder('salesTrendChart');
+        return;
+    } else {
+        hideNoDataPlaceholder('salesTrendChart');
     }
     
     // 确保数据长度一致
@@ -298,8 +376,8 @@ function renderSalesTrendChart(data) {
             if (parts.length >= 2) {
                 return parts[0] + '年' + parts[1] + '月';
             }
-        } else if ((period === 'month' || period === 'week') && label.includes('-')) {
-            // 月报表和周报表显示日期
+        } else if ((period === 'month' || period === 'week' || period === 'day') && label.includes('-')) {
+            // 月报表、周报表和日报表显示日期
             const date = new Date(label);
             if (!isNaN(date.getTime())) {
                 return (date.getMonth() + 1) + '月' + date.getDate() + '日';
@@ -345,7 +423,8 @@ function renderSalesTrendChart(data) {
                         tension: 0.1,
                         yAxisID: 'y',
                         pointRadius: 4,
-                        pointHoverRadius: 6
+                        pointHoverRadius: 6,
+                        fill: true
                     },
                     {
                         label: `${periodText}订单数`,
@@ -356,7 +435,8 @@ function renderSalesTrendChart(data) {
                         tension: 0.1,
                         yAxisID: 'y1',
                         pointRadius: 4,
-                        pointHoverRadius: 6
+                        pointHoverRadius: 6,
+                        fill: false
                     }
                 ]
             },
