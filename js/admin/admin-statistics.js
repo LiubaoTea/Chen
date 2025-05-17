@@ -241,7 +241,27 @@ function renderSalesTrendChart(data) {
     const values = data.sales || data.values || [];
     const ordersData = data.orders || [];
     
-    console.log('销售趋势图表数据:', { labels, values, ordersData });
+    // 获取当前选择的时间周期
+    const period = document.getElementById('statisticsPeriodSelect').value;
+    let periodText = '';
+    switch(period) {
+        case 'day':
+            periodText = '日';
+            break;
+        case 'week':
+            periodText = '周';
+            break;
+        case 'month':
+            periodText = '月';
+            break;
+        case 'year':
+            periodText = '年';
+            break;
+        default:
+            periodText = '';
+    }
+    
+    console.log(`获取到${periodText}销售趋势数据:`, { labels, values, ordersData });
     
     // 如果图表已存在，先尝试销毁它
     try {
@@ -260,16 +280,7 @@ function renderSalesTrendChart(data) {
     
     // 调整图表容器大小，确保有合适的显示高度
     const chartContainer = document.getElementById('salesTrendChart').parentNode;
-    chartContainer.style.height = '250px';
-    
-    // 调整销售趋势和商品分类占比图表的布局
-    const salesTrendCard = document.querySelector('#salesTrendChart').closest('.col-md-6');
-    const productSalesCard = document.querySelector('#productSalesChart').closest('.col-md-6');
-    
-    if (salesTrendCard && productSalesCard) {
-        salesTrendCard.className = 'col-md-6 mb-3';
-        productSalesCard.className = 'col-md-6 mb-3';
-    }
+    chartContainer.style.height = '350px';
     
     // 创建新图表
     try {
@@ -279,7 +290,7 @@ function renderSalesTrendChart(data) {
                 labels: labels,
                 datasets: [
                     {
-                        label: '销售额',
+                        label: `${periodText}销售额`,
                         data: values,
                         backgroundColor: 'rgba(54, 162, 235, 0.2)',
                         borderColor: 'rgba(54, 162, 235, 1)',
@@ -288,7 +299,7 @@ function renderSalesTrendChart(data) {
                         yAxisID: 'y'
                     },
                     {
-                        label: '订单数',
+                        label: `${periodText}订单数`,
                         data: ordersData,
                         backgroundColor: 'rgba(255, 99, 132, 0.2)',
                         borderColor: 'rgba(255, 99, 132, 1)',
@@ -303,6 +314,33 @@ function renderSalesTrendChart(data) {
                 maintainAspectRatio: false,
                 animation: {
                     duration: 1000 // 添加动画效果
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: `${periodText}销售趋势图表`,
+                        font: {
+                            size: 16
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    if (context.datasetIndex === 0) {
+                                        label += '¥' + context.parsed.y.toLocaleString('zh-CN');
+                                    } else {
+                                        label += context.parsed.y;
+                                    }
+                                }
+                                return label;
+                            }
+                        }
+                    }
                 },
                 scales: {
                     y: {
@@ -387,7 +425,7 @@ function renderProductSalesChart(data) {
     
     // 调整商品销售占比图表容器的高度
     const chartContainer = document.getElementById('productSalesChart').parentNode;
-    chartContainer.style.height = '250px';
+    chartContainer.style.height = '300px';
     
     // 创建新图表
     try {
@@ -950,17 +988,21 @@ function ensureStatisticsPageStructure() {
                 
                 <!-- 销售趋势图表 -->
                 <div class="row mb-4">
-                    <div class="col-md-6">
+                    <div class="col-md-12">
                         <div class="card">
                             <div class="card-header">
                                 <h6 class="m-0 font-weight-bold">销售趋势</h6>
                             </div>
-                            <div class="card-body" style="height: 300px;">
+                            <div class="card-body" style="height: 350px;">
                                 <canvas id="salesTrendChart"></canvas>
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-6">
+                </div>
+                
+                <!-- 商品销售占比图表 -->
+                <div class="row mb-4">
+                    <div class="col-md-12">
                         <div class="card">
                             <div class="card-header">
                                 <h6 class="m-0 font-weight-bold">商品销售占比</h6>
