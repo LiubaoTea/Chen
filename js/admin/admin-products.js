@@ -429,12 +429,14 @@ function updateProductsList() {
         // 添加编辑按钮事件
         row.querySelector('.edit-product').addEventListener('click', function() {
             const productId = this.getAttribute('data-id');
+            console.log('点击编辑按钮，商品ID:', productId);
             editProduct(productId);
         });
         
         // 添加删除按钮事件
         row.querySelector('.delete-product').addEventListener('click', function() {
             const productId = this.getAttribute('data-id');
+            console.log('点击删除按钮，商品ID:', productId);
             confirmDeleteProduct(productId);
         });
     });
@@ -861,9 +863,16 @@ function editProduct(productId) {
 
 // 确认删除商品
 function confirmDeleteProduct(productId) {
+    console.log('确认删除商品，ID:', productId);
+    
     // 查找商品信息
-    const product = productsData.find(p => p.product_id === productId);
-    if (!product) return;
+    const product = productsData.find(p => p.product_id == productId);
+    if (!product) {
+        console.error('未找到要删除的商品，ID:', productId);
+        return;
+    }
+    
+    console.log('找到要删除的商品:', product);
     
     // 显示确认对话框
     if (confirm(`确定要删除商品 "${product.name}"？此操作不可恢复。`)) {
@@ -874,6 +883,8 @@ function confirmDeleteProduct(productId) {
 // 删除商品
 async function deleteProduct(productId) {
     try {
+        console.log('开始删除商品，ID:', productId);
+        
         // 发送删除请求到D1数据库
         // 获取管理员认证头信息
         const headers = {
@@ -881,14 +892,23 @@ async function deleteProduct(productId) {
             ...adminAuth.getHeaders() // 添加认证头信息
         };
         
+        console.log('发送删除请求，URL:', `${ADMIN_API_BASE_URL}/api/admin/products/${productId}`);
+        
         const response = await fetch(`${ADMIN_API_BASE_URL}/api/admin/products/${productId}`, {
             method: 'DELETE',
             headers: headers
         });
         
+        console.log('删除请求响应状态:', response.status);
+        
         if (!response.ok) {
+            const errorText = await response.text();
+            console.error('删除商品API响应错误:', response.status, errorText);
             throw new Error(`删除商品失败，HTTP状态码: ${response.status}`);
         }
+        
+        const result = await response.json();
+        console.log('删除商品成功，响应数据:', result);
         
         showSuccessToast('商品删除成功');
         

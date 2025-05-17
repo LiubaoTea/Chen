@@ -471,6 +471,62 @@ const adminAPIObject = {
         }
     },
     
+    // 删除商品
+    deleteProduct: async (productId) => {
+        try {
+            console.log('API层 - 开始删除商品，ID:', productId);
+            
+            // 首先删除商品分类映射关系
+            try {
+                console.log('API层 - 尝试删除商品分类映射关系');
+                const mappingUrl = `${ADMIN_API_BASE_URL}/api/admin/product-category-mappings/${productId}`;
+                console.log('API层 - 发送删除映射请求，URL:', mappingUrl);
+                
+                const mappingResponse = await fetch(mappingUrl, {
+                    method: 'DELETE',
+                    headers: {
+                        ...adminAuth.getHeaders(),
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!mappingResponse.ok) {
+                    console.warn('删除商品分类映射失败，继续删除商品:', mappingResponse.status);
+                } else {
+                    console.log('成功删除商品分类映射');
+                }
+            } catch (mappingError) {
+                console.warn('删除商品分类映射出错，继续删除商品:', mappingError);
+                // 继续执行，不中断主流程
+            }
+            
+            // 然后删除商品本身
+            const url = `${ADMIN_API_BASE_URL}/api/admin/products/${productId}`;
+            console.log('API层 - 发送删除商品请求，URL:', url);
+            
+            const response = await fetch(url, {
+                method: 'DELETE',
+                headers: {
+                    ...adminAuth.getHeaders(),
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('删除商品API响应错误:', response.status, errorText);
+                throw new Error(`删除商品失败，HTTP状态码: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            console.log('API层 - 成功删除商品，响应数据:', data);
+            return data;
+        } catch (error) {
+            console.error('API层 - 删除商品出错:', error);
+            throw error;
+        }
+    },
+    
     // 获取评价列表
     getReviews: async (page = 1, pageSize = 10, status = '', rating = '', searchQuery = '') => {
         try {
