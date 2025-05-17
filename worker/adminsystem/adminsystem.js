@@ -215,6 +215,46 @@ function formatTimestamp(timestamp) {
 }
 
 //==========================================================================
+//                       图片处理函数
+//==========================================================================
+
+/**
+ * 处理从R2存储获取商品图片的请求
+ * @param {Request} request - 请求对象
+ * @param {Object} env - 环境变量
+ * @returns {Promise<Response>} - 响应对象
+ */
+const handleImageRequest = async (request, env) => {
+    const url = new URL(request.url);
+    const path = url.pathname;
+    
+    // 检查路径是否以/image/开头
+    if (path.startsWith('/image/')) {
+        try {
+            // 从R2存储中获取图片
+            const imagePath = path.substring(1); // 去掉开头的斜杠
+            const object = await env.BUCKET.get(imagePath);
+            
+            if (!object) {
+                return new Response('Image not found', { status: 404 });
+            }
+            
+            // 设置适当的Content-Type
+            const headers = new Headers();
+            headers.set('Content-Type', object.httpMetadata.contentType || 'image/jpeg');
+            headers.set('Cache-Control', 'public, max-age=31536000'); // 缓存一年
+            
+            return new Response(object.body, { headers });
+        } catch (error) {
+            console.error('获取图片失败:', error);
+            return new Response('Error fetching image: ' + error.message, { status: 500 });
+        }
+    }
+    
+    return null; // 不是图片请求，返回null让后续处理
+}
+
+//==========================================================================
 //                       管理员认证和权限验证
 //==========================================================================
 // 验证管理员身份
@@ -1319,6 +1359,27 @@ const handleAdminAPI = async (request, env) => {
                 }
             }
             
+            // 处理图片上传到R2存储桶
+            const imageFile = requestData.get('image');
+            if (imageFile && imageFile.size > 0) {
+                try {
+                    // 构建图片存储路径
+                    const imagePath = `image/Goods/Goods_${newProductId}.png`;
+                    
+                    // 上传图片到R2存储桶
+                    await env.BUCKET.put(imagePath, imageFile.stream(), {
+                        httpMetadata: {
+                            contentType: imageFile.type || 'image/png'
+                        }
+                    });
+                    
+                    console.log(`商品图片上传成功: ${imagePath}`);
+                } catch (uploadError) {
+                    console.error('图片上传失败:', uploadError);
+                    // 不中断流程，继续返回商品信息
+                }
+            }
+            
             // 获取新插入的商品详情
             const newProduct = await env.DB.prepare(`
                 SELECT * FROM products WHERE product_id = ?
@@ -1331,6 +1392,9 @@ const handleAdminAPI = async (request, env) => {
             
             // 合并商品信息和分类映射
             newProduct.category_mappings = mappings;
+            
+            // 添加图片URL
+            newProduct.image_url = `https://${env.R2_DOMAIN}/image/Goods/Goods_${newProductId}.png`;
             
             return new Response(JSON.stringify({
                 message: '商品添加成功',
@@ -1398,6 +1462,27 @@ const handleAdminAPI = async (request, env) => {
             const aging_years = productData.aging_years || 0;
             const status = productData.status === 'active' ? 'active' : 'inactive';
             const category_mappings = productData.category_mappings || [];
+            
+            // 处理图片上传到R2存储桶
+            const imageFile = requestData.get('image');
+            if (imageFile && imageFile.size > 0) {
+                try {
+                    // 构建图片存储路径
+                    const imagePath = `image/Goods/Goods_${productId}.png`;
+                    
+                    // 上传图片到R2存储桶
+                    await env.BUCKET.put(imagePath, imageFile.stream(), {
+                        httpMetadata: {
+                            contentType: imageFile.type || 'image/png'
+                        }
+                    });
+                    
+                    console.log(`商品图片更新成功: ${imagePath}`);
+                } catch (uploadError) {
+                    console.error('图片上传失败:', uploadError);
+                    // 不中断流程，继续更新商品信息
+                }
+            }
             
             // 验证必填字段
             if (!name || !price) {
@@ -3373,6 +3458,14 @@ export default {
         
         const url = new URL(request.url);
         const path = url.pathname;
+        
+        // 处理图片请求
+        if (path.startsWith('/image/')) {
+            const imageResponse = await handleImageRequest(request, env);
+            if (imageResponse) {
+                return imageResponse;
+            }
+        }
         
         // 处理管理员API请求
         if (path.startsWith('/api/admin/')) {
