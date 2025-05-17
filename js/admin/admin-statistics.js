@@ -244,24 +244,50 @@ function renderSalesTrendChart(data) {
     // 获取当前选择的时间周期
     const period = document.getElementById('statisticsPeriodSelect').value;
     let periodText = '';
+    let xAxisTitle = '';
+    
+    // 根据不同的时间周期设置标题和格式化标签
     switch(period) {
         case 'day':
             periodText = '日';
+            xAxisTitle = '日期';
             break;
         case 'week':
             periodText = '周';
+            xAxisTitle = '日期';
             break;
         case 'month':
             periodText = '月';
+            xAxisTitle = '日期';
             break;
         case 'year':
             periodText = '年';
+            xAxisTitle = '月份';
             break;
         default:
             periodText = '';
+            xAxisTitle = '时间';
     }
     
-    console.log(`获取到${periodText}销售趋势数据:`, { labels, values, ordersData });
+    // 格式化标签显示
+    const formattedLabels = labels.map(label => {
+        if (period === 'year' && label.includes('-')) {
+            // 年报表显示月份
+            const parts = label.split('-');
+            if (parts.length >= 2) {
+                return parts[0] + '年' + parts[1] + '月';
+            }
+        } else if ((period === 'month' || period === 'week') && label.includes('-')) {
+            // 月报表和周报表显示日期
+            const date = new Date(label);
+            if (!isNaN(date.getTime())) {
+                return (date.getMonth() + 1) + '月' + date.getDate() + '日';
+            }
+        }
+        return label;
+    });
+    
+    console.log(`获取到${periodText}销售趋势数据:`, { labels: formattedLabels, values, ordersData });
     
     // 如果图表已存在，先尝试销毁它
     try {
@@ -280,14 +306,14 @@ function renderSalesTrendChart(data) {
     
     // 调整图表容器大小，确保有合适的显示高度
     const chartContainer = document.getElementById('salesTrendChart').parentNode;
-    chartContainer.style.height = '350px';
+    chartContainer.style.height = '400px'; // 增加高度以适应全宽显示
     
     // 创建新图表
     try {
         window.salesTrendChart = new Chart(ctx, {
             type: 'line',
             data: {
-                labels: labels,
+                labels: formattedLabels,
                 datasets: [
                     {
                         label: `${periodText}销售额`,
@@ -296,7 +322,9 @@ function renderSalesTrendChart(data) {
                         borderColor: 'rgba(54, 162, 235, 1)',
                         borderWidth: 2,
                         tension: 0.1,
-                        yAxisID: 'y'
+                        yAxisID: 'y',
+                        pointRadius: 4,
+                        pointHoverRadius: 6
                     },
                     {
                         label: `${periodText}订单数`,
@@ -305,7 +333,9 @@ function renderSalesTrendChart(data) {
                         borderColor: 'rgba(255, 99, 132, 1)',
                         borderWidth: 2,
                         tension: 0.1,
-                        yAxisID: 'y1'
+                        yAxisID: 'y1',
+                        pointRadius: 4,
+                        pointHoverRadius: 6
                     }
                 ]
             },
@@ -320,7 +350,12 @@ function renderSalesTrendChart(data) {
                         display: true,
                         text: `${periodText}销售趋势图表`,
                         font: {
-                            size: 16
+                            size: 18,
+                            weight: 'bold'
+                        },
+                        padding: {
+                            top: 10,
+                            bottom: 20
                         }
                     },
                     tooltip: {
@@ -334,15 +369,49 @@ function renderSalesTrendChart(data) {
                                     if (context.datasetIndex === 0) {
                                         label += '¥' + context.parsed.y.toLocaleString('zh-CN');
                                     } else {
-                                        label += context.parsed.y;
+                                        label += context.parsed.y + ' 单';
                                     }
                                 }
                                 return label;
                             }
                         }
+                    },
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 20,
+                            font: {
+                                size: 14
+                            }
+                        }
                     }
                 },
                 scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: xAxisTitle,
+                            font: {
+                                size: 14,
+                                weight: 'bold'
+                            },
+                            padding: {top: 10, bottom: 0}
+                        },
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 0,
+                            autoSkip: true,
+                            maxTicksLimit: formattedLabels.length > 15 ? 15 : formattedLabels.length
+                        },
+                        grid: {
+                            display: true,
+                            drawBorder: true,
+                            drawOnChartArea: true,
+                            drawTicks: true,
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        }
+                    },
                     y: {
                         type: 'linear',
                         display: true,
@@ -350,7 +419,16 @@ function renderSalesTrendChart(data) {
                         beginAtZero: true,
                         title: {
                             display: true,
-                            text: '销售额'
+                            text: '销售额 (¥)',
+                            font: {
+                                size: 14,
+                                weight: 'bold'
+                            }
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return '¥' + value.toLocaleString('zh-CN');
+                            }
                         }
                     },
                     y1: {
@@ -360,7 +438,11 @@ function renderSalesTrendChart(data) {
                         beginAtZero: true,
                         title: {
                             display: true,
-                            text: '订单数'
+                            text: '订单数 (单)',
+                            font: {
+                                size: 14,
+                                weight: 'bold'
+                            }
                         },
                         grid: {
                             drawOnChartArea: false
@@ -425,12 +507,12 @@ function renderProductSalesChart(data) {
     
     // 调整商品销售占比图表容器的高度
     const chartContainer = document.getElementById('productSalesChart').parentNode;
-    chartContainer.style.height = '300px';
+    chartContainer.style.height = '350px';
     
-    // 创建新图表
+    // 创建新图表 - 在全宽布局中使用环形图而不是饼图，并添加标题
     try {
         window.productSalesChart = new Chart(ctx, {
-            type: 'pie',
+            type: 'doughnut', // 使用环形图代替饼图
             data: {
                 labels: labels,
                 datasets: [{
@@ -459,13 +541,27 @@ function renderProductSalesChart(data) {
                         'rgba(40, 159, 64, 1)',
                         'rgba(210, 199, 199, 1)'
                     ],
-                    borderWidth: 1
+                    borderWidth: 1,
+                    hoverOffset: 15 // 悬停时突出显示扇区
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                cutout: '50%', // 环形图中间空白区域大小
                 plugins: {
+                    title: {
+                        display: true,
+                        text: '商品销售占比分析',
+                        font: {
+                            size: 18,
+                            weight: 'bold'
+                        },
+                        padding: {
+                            top: 10,
+                            bottom: 20
+                        }
+                    },
                     legend: {
                         position: 'right',
                         align: 'center',
@@ -490,6 +586,12 @@ function renderProductSalesChart(data) {
                             }
                         }
                     }
+                },
+                // 添加动画效果
+                animation: {
+                    animateScale: true,
+                    animateRotate: true,
+                    duration: 1000
                 }
             }
         });
