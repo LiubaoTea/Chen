@@ -546,7 +546,7 @@ function addProductRowEventListeners() {
     // 删除商品按钮
     document.querySelectorAll('.delete-product').forEach(button => {
         button.addEventListener('click', (e) => {
-            const productId = e.currentTarget.getAttribute('data-product-id');
+            const productId = e.currentTarget.getAttribute('data-id');
             confirmDeleteProduct(productId);
         });
     });
