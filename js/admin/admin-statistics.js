@@ -225,21 +225,42 @@ function renderSalesTrendChart(data) {
         salesTrendChart.destroy();
     }
     
-    // 检查数据格式是否正确
-    if (!data || !data.labels || !Array.isArray(data.labels)) {
+    // 检查数据格式是否正确，并处理不同的API返回格式
+    let labels = [];
+    let values = [];
+    let ordersData = [];
+    
+    if (!data) {
+        console.error('销售趋势数据为空');
+        // 创建默认数据
+        labels = ['无数据'];
+        values = [0];
+        ordersData = [0];
+    } else if (Array.isArray(data)) {
+        // 处理数组格式的返回数据（来自/api/admin/stats/sales-trend）
+        console.log('处理数组格式的销售趋势数据:', data);
+        labels = data.map(item => item.time_period || '无日期');
+        values = data.map(item => item.sales_amount || 0);
+        ordersData = data.map(item => item.orders_count || 0);
+    } else if (data.labels && Array.isArray(data.labels)) {
+        // 处理对象格式的返回数据（来自/api/admin/sales/trend）
+        console.log('处理对象格式的销售趋势数据:', data);
+        labels = data.labels;
+        values = data.sales || data.values || [];
+        ordersData = data.orders || [];
+    } else {
         console.error('销售趋势数据格式不正确:', data);
         // 创建默认数据
-        data = {
-            labels: ['无数据'],
-            sales: [0],
-            orders: [0]
-        };
+        labels = ['无数据'];
+        values = [0];
+        ordersData = [0];
     }
     
-    // 确保数据格式一致，支持新的API返回格式
-    const labels = Array.isArray(data.labels) ? data.labels : [];
-    const values = data.sales || data.values || [];
-    const ordersData = data.orders || [];
+    // 确保数据长度一致
+    const maxLength = Math.max(labels.length, values.length, ordersData.length);
+    while (labels.length < maxLength) labels.push('无数据');
+    while (values.length < maxLength) values.push(0);
+    while (ordersData.length < maxLength) ordersData.push(0);
     
     // 获取当前选择的时间周期
     const period = document.getElementById('statisticsPeriodSelect').value;
