@@ -566,12 +566,8 @@ async function showProductModal(productId = null) {
     try {
         const categorySelect = document.getElementById('productCategory');
         
-        // 设置为多选
-        categorySelect.multiple = true;
-        categorySelect.size = 5; // 显示5行选项
-        
         // 清空现有选项
-        categorySelect.innerHTML = '';
+        categorySelect.innerHTML = '<option value="">选择分类</option>';
         
         // 添加分类选项
         categoriesData.forEach(category => {
@@ -580,15 +576,6 @@ async function showProductModal(productId = null) {
             option.textContent = category.category_name;
             categorySelect.appendChild(option);
         });
-        
-        // 添加提示文本
-        const helpText = document.querySelector('#productCategory + .form-text');
-        if (!helpText) {
-            const div = document.createElement('div');
-            div.className = 'form-text';
-            div.textContent = '按住Ctrl键可选择多个分类';
-            categorySelect.parentNode.insertBefore(div, categorySelect.nextSibling);
-        }
         
         // 如果是编辑模式，加载商品数据
         if (productId) {
@@ -647,32 +634,17 @@ function fillProductForm(product) {
     document.getElementById('productName').value = product.name;
     
     // 处理分类 - 优先使用新的分类关系结构
-    // 清除所有已选项
-    const categorySelect = document.getElementById('productCategory');
-    Array.from(categorySelect.options).forEach(option => {
-        option.selected = false;
-    });
-    
     // 优先使用新的数据结构：通过category_mappings获取分类信息
     if (product.category_mappings && product.category_mappings.length > 0) {
-        // 选中所有相关分类
-        product.category_mappings.forEach(mapping => {
-            const option = Array.from(categorySelect.options).find(opt => opt.value == mapping.category_id);
-            if (option) option.selected = true;
-        });
+        document.getElementById('productCategory').value = product.category_mappings[0].category_id;
     }
     // 其次使用categories数组
     else if (product.categories && product.categories.length > 0) {
-        // 选中所有相关分类
-        product.categories.forEach(categoryId => {
-            const option = Array.from(categorySelect.options).find(opt => opt.value == categoryId);
-            if (option) option.selected = true;
-        });
+        document.getElementById('productCategory').value = product.categories[0];
     }
     // 最后尝试使用category_id字段
-    else if (product.category_id) {
-        const option = Array.from(categorySelect.options).find(opt => opt.value == product.category_id);
-        if (option) option.selected = true;
+    else {
+        document.getElementById('productCategory').value = product.category_id || '';
     }
     
     document.getElementById('productPrice').value = product.price;
@@ -707,17 +679,12 @@ async function saveProduct() {
     
     // 获取表单数据
     const productId = document.getElementById('productId').value;
-    const categorySelect = document.getElementById('productCategory');
-    
-    // 获取所有选中的分类
-    const selectedCategories = Array.from(categorySelect.selectedOptions).map(option => ({
-        category_id: option.value
-    }));
+    const categoryId = document.getElementById('productCategory').value;
     
     const productData = {
         name: document.getElementById('productName').value,
-        // 使用category_mappings数组存储多个分类
-        category_mappings: selectedCategories,
+        // 使用category_mappings数组替代categories数组，适配新的数据库结构
+        category_mappings: categoryId ? [{ category_id: categoryId }] : [],
         price: parseFloat(document.getElementById('productPrice').value),
         original_price: document.getElementById('productOriginalPrice').value ? 
             parseFloat(document.getElementById('productOriginalPrice').value) : null,
@@ -831,8 +798,7 @@ async function deleteProduct(productId) {
             ...adminAuth.getHeaders() // 添加认证头信息
         };
         
-        // 修正API路径，使用管理员API路径
-        const response = await fetch(`${ADMIN_API_BASE_URL}/api/admin/products/${productId}`, {
+        const response = await fetch(`${API_BASE_URL}/api/products/${productId}`, {
             method: 'DELETE',
             headers: headers
         });
