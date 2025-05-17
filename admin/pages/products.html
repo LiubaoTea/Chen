@@ -87,11 +87,11 @@
                         </div>
                         <div class="col-md-6">
                             <label for="productCategory" class="form-label">商品分类 <span class="text-danger">*</span></label>
-                            <select class="form-select" id="productCategory" required>
-                                <option value="">选择分类</option>
+                            <select class="form-select" id="productCategory" required multiple>
                                 <!-- 分类选项将通过JS动态加载 -->
                             </select>
-                            <div class="invalid-feedback">请选择商品分类</div>
+                            <div class="form-text">按住Ctrl键可选择多个分类</div>
+                            <div class="invalid-feedback">请选择至少一个商品分类</div>
                         </div>
                     </div>
                     
