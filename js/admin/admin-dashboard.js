@@ -219,6 +219,8 @@ function renderSalesChart(data) {
     let hasRealData = false;
     
     try {
+        console.log('开始处理销售趋势数据，原始数据:', data);
+        
         // 检查数据格式是否正确，并处理不同的API返回格式
         if (!data) {
             console.warn('销售趋势数据为空，使用默认数据');
@@ -245,9 +247,23 @@ function renderSalesChart(data) {
         } else if (data.labels && Array.isArray(data.labels)) {
             // 处理对象格式的返回数据（来自/api/admin/sales/trend）
             console.log('处理对象格式的销售趋势数据:', data);
-            labels = data.labels || [];
-            salesData = data.sales ? data.sales.map(val => parseFloat(val) || 0) : [];
-            ordersData = data.orders ? data.orders.map(val => parseInt(val) || 0) : [];
+            // 安全地获取标签和数据，确保它们是数组
+            labels = Array.isArray(data.labels) ? data.labels : [];
+            
+            // 安全地处理销售额数据
+            if (data.sales && Array.isArray(data.sales)) {
+                salesData = data.sales.map(val => (val !== null && val !== undefined) ? parseFloat(val) || 0 : 0);
+            } else {
+                salesData = [];
+            }
+            
+            // 安全地处理订单数据
+            if (data.orders && Array.isArray(data.orders)) {
+                ordersData = data.orders.map(val => (val !== null && val !== undefined) ? parseInt(val) || 0 : 0);
+            } else {
+                ordersData = [];
+            }
+            
             hasRealData = (salesData.some(val => val > 0) || ordersData.some(val => val > 0));
         } else {
             console.error('销售趋势数据格式不正确:', data);
@@ -261,23 +277,38 @@ function renderSalesChart(data) {
         // 始终显示图表，无论是否有实际数据
         hasRealData = true;
         console.log(`销售趋势数据已处理，将显示图表（周期：${currentPeriod}，是否有实际数据：${hasRealData}）`);
+        console.log('处理后的数据：', { labels, salesData, ordersData });
         
         // 确保数据长度一致
-        const maxLength = Math.max(labels.length, salesData.length, ordersData.length);
-        while (labels.length < maxLength) labels.push('无数据');
-        while (salesData.length < maxLength) salesData.push(0);
-        while (ordersData.length < maxLength) ordersData.push(0);
+        const maxLength = Math.max(labels.length || 0, salesData.length || 0, ordersData.length || 0);
         
-        // 确保至少有一个数据点
-        if (labels.length === 0) {
+        // 如果所有数组都为空，添加一个默认数据点
+        if (maxLength === 0) {
             const today = new Date().toISOString().split('T')[0];
             labels = [today];
             salesData = [0];
             ordersData = [0];
+        } else {
+            // 确保所有数组长度一致
+            while (labels.length < maxLength) labels.push('无数据');
+            while (salesData.length < maxLength) salesData.push(0);
+            while (ordersData.length < maxLength) ordersData.push(0);
         }
         
+        // 确保标签数组中没有null或undefined
+        labels = labels.map(label => label || '无数据');
+        
+        // 在格式化前确保标签数据是有效的
+        // 再次确保标签数组中没有null或undefined值
+        const cleanLabels = labels.map(label => {
+            if (label === null || label === undefined) return '无数据';
+            return label;
+        });
+        
+        console.log('清理后准备格式化的标签:', cleanLabels);
         // 根据当前周期格式化标签
-        const formattedLabels = formatLabelsForPeriod(labels, currentPeriod);
+        const formattedLabels = formatLabelsForPeriod(cleanLabels, currentPeriod);
+        console.log('格式化后的标签:', formattedLabels);
         
         // 销毁现有图表（如果存在）
         try {
@@ -500,67 +531,82 @@ function formatLabelsForPeriod(labels, period) {
     
     // 确保所有标签都有值，将null或undefined替换为'无数据'
     const safeLabels = labels.map(label => label || '无数据');
+    console.log('安全处理后的标签:', safeLabels);
     
-    switch (period) {
-        case 'day':
-            // 日期格式：05-20
-            return safeLabels.map(label => {
-                if (label && typeof label === 'string' && label.includes('-')) {
-                    try {
-                        const parts = label.split('-');
-                        if (parts.length >= 3) {
-                            return `${parts[1]}-${parts[2]}`;
+    // 根据不同的时间周期格式化标签
+    try {
+        switch (period) {
+            case 'day':
+                // 日期格式：05-20
+                return safeLabels.map(label => {
+                    // 确保label是字符串
+                    const strLabel = String(label || '无日期');
+                    if (strLabel.indexOf('-') !== -1) {
+                        try {
+                            const parts = strLabel.split('-');
+                            if (parts.length >= 3) {
+                                return `${parts[1]}-${parts[2]}`;
+                            }
+                        } catch (error) {
+                            console.warn('格式化日期标签出错:', error);
                         }
-                    } catch (error) {
-                        console.warn('格式化日期标签出错:', error);
                     }
-                }
-                return label;
-            });
-        case 'week':
-            // 周格式：第X周
-            return safeLabels.map((label, index) => {
-                if (label && typeof label === 'string' && label.includes('week')) {
-                    try {
-                        const parts = label.split('-');
-                        if (parts.length >= 3) {
-                            return `${parts[0]}年第${parts[2]}周`;
+                    return strLabel;
+                });
+            case 'week':
+                // 周格式：第X周
+                return safeLabels.map((label, index) => {
+                    // 确保label是字符串
+                    const strLabel = String(label || '无日期');
+                    if (strLabel.indexOf('week') !== -1) {
+                        try {
+                            const parts = strLabel.split('-');
+                            if (parts.length >= 3) {
+                                return `${parts[0]}年第${parts[2]}周`;
+                            }
+                        } catch (error) {
+                            console.warn('格式化周标签出错:', error);
                         }
-                    } catch (error) {
-                        console.warn('格式化周标签出错:', error);
                     }
-                }
-                return `第${index + 1}周`;
-            });
-        case 'month':
-            // 月份格式：2023-05
-            return safeLabels.map(label => {
-                if (label && typeof label === 'string' && label.includes('-')) {
-                    try {
-                        const parts = label.split('-');
-                        if (parts.length >= 2) {
-                            return `${parts[0]}年${parts[1]}月`;
+                    return `第${index + 1}周`;
+                });
+            case 'month':
+                // 月份格式：2023-05
+                return safeLabels.map(label => {
+                    // 确保label是字符串
+                    const strLabel = String(label || '无日期');
+                    if (strLabel.indexOf('-') !== -1) {
+                        try {
+                            const parts = strLabel.split('-');
+                            if (parts.length >= 2) {
+                                return `${parts[0]}年${parts[1]}月`;
+                            }
+                        } catch (error) {
+                            console.warn('格式化月份标签出错:', error);
                         }
-                    } catch (error) {
-                        console.warn('格式化月份标签出错:', error);
                     }
-                }
-                return label;
-            });
-        case 'year':
-            // 年份格式：2023年
-            return safeLabels.map(label => {
-                if (label && typeof label === 'string' && label.includes('-')) {
-                    try {
-                        return `${label.split('-')[0]}年`;
-                    } catch (error) {
-                        console.warn('格式化年份标签出错:', error);
+                    return strLabel;
+                });
+            case 'year':
+                // 年份格式：2023年
+                return safeLabels.map(label => {
+                    // 确保label是字符串
+                    const strLabel = String(label || '无日期');
+                    if (strLabel.indexOf('-') !== -1) {
+                        try {
+                            return `${strLabel.split('-')[0]}年`;
+                        } catch (error) {
+                            console.warn('格式化年份标签出错:', error);
+                        }
                     }
-                }
-                return label;
-            });
-        default:
-            return safeLabels;
+                    return strLabel;
+                });
+            default:
+                return safeLabels;
+        }
+    } catch (error) {
+        console.error('格式化标签时出现未处理的错误:', error);
+        return safeLabels; // 出错时返回原始标签
     }
 }
 
@@ -587,84 +633,121 @@ function renderCategoryChart(data) {
         return;
     }
     
-    // 检查数据格式是否正确，支持API返回的数组格式
-    if (!data || !Array.isArray(data)) {
-        console.error('分类占比数据格式不正确:', data);
-        // 创建默认数据
-        data = [{ category_name: '无数据', product_count: 100 }];
-    }
-    
-    // 从数组格式转换为图表所需的格式
-    const labels = data.map(item => item.category_name);
-    const values = data.map(item => item.product_count);
-    
-    const chartData = {
-        labels: labels,
-        values: values
-    };
-    
-    // 销毁现有图表（如果存在）
-    if (window.categoryChart instanceof Chart) {
-        window.categoryChart.destroy();
-    }
-    
-    // 创建新图表
-    window.categoryChart = new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-            labels: chartData.labels,
-            datasets: [{
-                data: chartData.values,
-                backgroundColor: [
-                    '#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b',
-                    '#5a5c69', '#6f42c1', '#fd7e14', '#20c9a6', '#858796'
-                ],
-                hoverBackgroundColor: [
-                    '#2e59d9', '#17a673', '#2c9faf', '#dda20a', '#be2617',
-                    '#3a3b45', '#4e2c94', '#ca6510', '#13855c', '#60616f'
-                ],
-                hoverBorderColor: 'rgba(234, 236, 244, 1)'
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            cutout: '70%',
-            layout: {
-                padding: {
-                    left: 10,
-                    right: 25,
-                    top: 25,
-                    bottom: 25
+    try {
+        console.log('开始处理分类占比数据，原始数据:', data);
+        
+        // 检查数据格式是否正确，支持API返回的数组格式
+        if (!data) {
+            console.warn('分类占比数据为空，使用默认数据');
+            data = [{ category_name: '无数据', product_count: 100 }];
+        } else if (!Array.isArray(data)) {
+            console.warn('分类占比数据不是数组格式，尝试转换');
+            // 尝试将对象格式转换为数组格式
+            if (data.categories && Array.isArray(data.categories)) {
+                data = data.categories;
+            } else {
+                console.error('无法转换分类占比数据格式，使用默认数据');
+                data = [{ category_name: '无数据', product_count: 100 }];
+            }
+        } else if (data.length === 0) {
+            console.warn('分类占比数据数组为空，使用默认数据');
+            data = [{ category_name: '无数据', product_count: 100 }];
+        }
+        
+        // 从数组格式转换为图表所需的格式，确保每个项目都有有效的名称和数量
+        const labels = data.map(item => {
+            // 尝试获取分类名称，支持多种属性名
+            const name = item.category_name || item.name || item.label || '未命名分类';
+            return name;
+        });
+        
+        const values = data.map(item => {
+            // 尝试获取商品数量，支持多种属性名
+            const count = item.product_count || item.count || item.value || 0;
+            return parseFloat(count) || 0; // 确保是数字
+        });
+        
+        console.log('处理后的分类占比数据:', { labels, values });
+        
+        const chartData = {
+            labels: labels,
+            values: values
+        };
+        
+        // 销毁现有图表（如果存在）
+        try {
+            if (window.categoryChart) {
+                if (typeof window.categoryChart.destroy === 'function') {
+                    window.categoryChart.destroy();
+                } else {
+                    window.categoryChart = null;
                 }
+            }
+        } catch (error) {
+            console.error('销毁旧图表时出错:', error);
+            window.categoryChart = null;
+        }
+        
+        // 创建新图表
+    window.categoryChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: chartData.labels,
+                datasets: [{
+                    data: chartData.values,
+                    backgroundColor: [
+                        '#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b',
+                        '#5a5c69', '#6f42c1', '#fd7e14', '#20c9a6', '#858796'
+                    ],
+                    hoverBackgroundColor: [
+                        '#2e59d9', '#17a673', '#2c9faf', '#dda20a', '#be2617',
+                        '#3a3b45', '#4e2c94', '#ca6510', '#13855c', '#60616f'
+                    ],
+                    hoverBorderColor: 'rgba(234, 236, 244, 1)'
+                }]
             },
-            plugins: {
-                legend: {
-                    position: 'bottom',
-                    labels: {
-                        usePointStyle: true,
-                        padding: 20
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '70%',
+                layout: {
+                    padding: {
+                        left: 10,
+                        right: 25,
+                        top: 25,
+                        bottom: 25
                     }
                 },
-                tooltip: {
-                    backgroundColor: 'rgb(255, 255, 255)',
-                    bodyColor: '#858796',
-                    borderColor: '#dddfeb',
-                    borderWidth: 1,
-                    displayColors: false,
-                    callbacks: {
-                        label: function(context) {
-                            const label = context.label || '';
-                            const value = context.parsed;
-                            const total = context.dataset.data.reduce((acc, data) => acc + data, 0);
-                            const percentage = Math.round((value / total) * 100);
-                            return `${label}: ${percentage}%`;
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 20
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgb(255, 255, 255)',
+                        bodyColor: '#858796',
+                        borderColor: '#dddfeb',
+                        borderWidth: 1,
+                        displayColors: false,
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.parsed;
+                                const total = context.dataset.data.reduce((acc, data) => acc + data, 0);
+                                const percentage = Math.round((value / total) * 100);
+                                return `${label}: ${percentage}%`;
+                            }
                         }
                     }
                 }
             }
-        }
-    });
+        });
+    } catch (error) {
+        console.error('渲染分类占比图表时出错:', error);
+    }
 }
 
 
