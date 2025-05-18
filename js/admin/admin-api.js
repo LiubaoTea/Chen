@@ -322,14 +322,21 @@ const adminAPIObject = {
             case 'week':
                 dateFormat = date => {
                     const year = date.getFullYear();
-                    const month = date.getMonth() + 1;
-                    const day = date.getDate();
-                    return `${month}月${day}日`;
+                    const weekNumber = getWeekNumber(date);
+                    // 返回格式：2023-week-32 (这样在前端可以更容易解析)
+                    return `${year}-week-${weekNumber}`;
                 };
                 // 生成日期范围（每周）
                 while (currentDate <= end) {
                     dateRange.push(dateFormat(currentDate));
                     currentDate.setDate(currentDate.getDate() + 7);
+                }
+                
+                // 辅助函数：获取日期所在的周数
+                function getWeekNumber(date) {
+                    const firstDayOfYear = new Date(date.getFullYear(), 0, 1);
+                    const pastDaysOfYear = (date - firstDayOfYear) / 86400000;
+                    return Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
                 }
                 break;
                 

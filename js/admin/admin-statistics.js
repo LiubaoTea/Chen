@@ -325,14 +325,11 @@ function renderSalesTrendChart(data) {
         ordersData = [0];
     }
     
-    // 检查是否有实际数据，如果没有则显示占位符
-    if (!hasRealData && (values.every(v => v === 0) && ordersData.every(v => v === 0))) {
-        console.log('销售趋势无实际数据，显示占位符');
-        showNoDataPlaceholder('salesTrendChart');
-        return;
-    } else {
-        hideNoDataPlaceholder('salesTrendChart');
-    }
+    // 检查是否有实际数据，但无论如何都显示图表而不是占位符
+    // 即使所有值为0，也应该显示时间轴，这样用户可以看到趋势线
+    console.log('销售趋势数据处理完成，显示图表');
+    // 始终隐藏占位符，显示图表，即使数据全为0
+    hideNoDataPlaceholder('salesTrendChart');
     
     // 确保数据长度一致
     const maxLength = Math.max(labels.length, values.length, ordersData.length);
@@ -378,13 +375,30 @@ function renderSalesTrendChart(data) {
             }
         } else if ((period === 'month' || period === 'week' || period === 'day') && label.includes('-')) {
             // 月报表、周报表和日报表显示日期
-            const date = new Date(label);
-            if (!isNaN(date.getTime())) {
-                return (date.getMonth() + 1) + '月' + date.getDate() + '日';
+            try {
+                const date = new Date(label);
+                if (!isNaN(date.getTime())) {
+                    return (date.getMonth() + 1) + '月' + date.getDate() + '日';
+                }
+            } catch (error) {
+                console.warn('日期格式化错误:', error, label);
+                // 尝试其他格式解析
+                if (label.includes('week')) {
+                    // 处理周格式，例如 "2023-week-32"
+                    const parts = label.split('-');
+                    if (parts.length >= 3) {
+                        return parts[0] + '年第' + parts[2] + '周';
+                    }
+                }
             }
         }
         return label;
     });
+    
+    // 确保标签不为空
+    if (formattedLabels.length === 0) {
+        formattedLabels.push('无数据');
+    }
     
     console.log(`获取到${periodText}销售趋势数据:`, { labels: formattedLabels, values, ordersData });
     
@@ -585,6 +599,15 @@ function renderProductSalesChart(data) {
         data = [{ name: '无数据', value: 1 }];
     }
     
+    // 检查是否所有数据值都为0
+    const hasRealData = data.some(item => (item.value > 0 || item.amount > 0 || item.sold_count > 0));
+    // 即使没有实际数据，也显示图表
+    console.log('商品销售数据处理中，无论是否有销售额都将显示图表');
+    // 如果数据中只有一项且名称为'无数据'或'无销售数据'，尝试替换为更友好的显示
+    if (data.length === 1 && (data[0].name === '无数据' || data[0].name === '无销售数据')) {
+        data[0].name = '暂无销售数据';
+    }
+    
     // 提取标签和值
     const labels = data.map(item => item.name || item.category_name || '未分类');
     const values = data.map(item => item.value || item.product_count || 0);
@@ -612,12 +635,20 @@ function renderProductSalesChart(data) {
     
     // 创建新图表 - 在全宽布局中使用环形图而不是饼图，并添加标题
     try {
+        // 检查是否所有值都为0
+        const allZeros = values.every(val => val === 0);
+        
+        // 如果所有值都为0，但有标签，则为每个标签分配相等的值以显示图表
+        const chartData = allZeros && labels.length > 0 ? 
+            labels.map(() => 1) : // 所有项目显示相等比例
+            values;
+        
         window.productSalesChart = new Chart(ctx, {
             type: 'doughnut', // 使用环形图代替饼图
             data: {
                 labels: labels,
                 datasets: [{
-                    data: values,
+                    data: chartData,
                     backgroundColor: [
                         'rgba(255, 99, 132, 0.7)',
                         'rgba(54, 162, 235, 0.7)',
@@ -681,6 +712,10 @@ function renderProductSalesChart(data) {
                         callbacks: {
                             label: function(context) {
                                 const label = context.label || '';
+                                // 如果所有值为0，显示特殊提示
+                                if (allZeros) {
+                                    return `${label}: 暂无销售数据`;
+                                }
                                 const value = context.raw;
                                 const percentage = context.parsed;
                                 return label + ': ¥' + value.toLocaleString('zh-CN') + ' (' + percentage.toFixed(2) + '%)';

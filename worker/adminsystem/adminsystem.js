@@ -214,6 +214,80 @@ function formatTimestamp(timestamp) {
     return new Date(timeMs).toISOString();
 }
 
+/**
+ * 生成空的时间序列数据，用于没有实际销售数据时提供合理的图表数据结构
+ * @param {string} period - 时间周期（day, week, month, year）
+ * @param {string} startDate - 开始日期（可选）
+ * @param {string} endDate - 结束日期（可选）
+ * @returns {Object} - 包含labels, sales, orders数组的对象
+ */
+function generateEmptyTimeSeriesData(period, startDate, endDate) {
+    const now = new Date();
+    const labels = [];
+    const sales = [];
+    const orders = [];
+    
+    // 设置默认的结束日期为今天
+    const end = endDate ? new Date(endDate) : now;
+    
+    // 根据不同的时间周期生成不同数量的数据点
+    let start;
+    let dateFormat;
+    let increment;
+    
+    switch(period) {
+        case 'day':
+            // 生成最近24天的数据点
+            start = startDate ? new Date(startDate) : new Date(end);
+            start.setDate(end.getDate() - 23); // 24天包括今天
+            dateFormat = date => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+            increment = date => { date.setDate(date.getDate() + 1); };
+            break;
+            
+        case 'week':
+            // 生成最近12周的数据点
+            start = startDate ? new Date(startDate) : new Date(end);
+            start.setDate(end.getDate() - 12 * 7);
+            dateFormat = date => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+            increment = date => { date.setDate(date.getDate() + 7); };
+            break;
+            
+        case 'year':
+            // 生成最近12个月的数据点
+            start = startDate ? new Date(startDate) : new Date(end);
+            start.setMonth(end.getMonth() - 11);
+            dateFormat = date => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+            increment = date => { date.setMonth(date.getMonth() + 1); };
+            break;
+            
+        case 'month':
+        default:
+            // 生成最近30天的数据点
+            start = startDate ? new Date(startDate) : new Date(end);
+            start.setDate(end.getDate() - 29); // 30天包括今天
+            dateFormat = date => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+            increment = date => { date.setDate(date.getDate() + 1); };
+    }
+    
+    // 生成时间序列数据
+    const current = new Date(start);
+    while (current <= end) {
+        labels.push(dateFormat(current));
+        sales.push(0); // 空销售额
+        orders.push(0); // 空订单数
+        increment(current);
+    }
+    
+    // 确保至少有一个数据点
+    if (labels.length === 0) {
+        labels.push(dateFormat(now));
+        sales.push(0);
+        orders.push(0);
+    }
+    
+    return { labels, sales, orders };
+}
+
 //==========================================================================
 //                       图片处理函数
 //==========================================================================
@@ -593,12 +667,9 @@ const handleAdminAPI = async (request, env) => {
             
             // 确保返回足够的数据点以便图表完整展示
             if (salesData.length === 0) {
-                // 如果没有数据，返回一个空数据点以便前端能正确渲染图表
-                return new Response(JSON.stringify({
-                    labels: [new Date().toISOString().split('T')[0]],
-                    sales: [0],
-                    orders: [0]
-                }), {
+                // 如果没有数据，根据所选周期生成适当的空数据点序列
+                const emptyData = generateEmptyTimeSeriesData(period, startDate, endDate);
+                return new Response(JSON.stringify(emptyData), {
                     status: 200,
                     headers: { ...corsHeaders, 'Content-Type': 'application/json' }
                 });
@@ -953,12 +1024,11 @@ const handleAdminAPI = async (request, env) => {
                 `SELECT 
                     p.product_id,
                     p.name as product_name,
-                    SUM(oi.quantity) as sold_count,
-                    SUM(p.price * oi.quantity) as sales_amount
-                FROM order_items oi
-                JOIN orders o ON oi.order_id = o.order_id
-                JOIN products p ON oi.product_id = p.product_id
-                WHERE o.status != 'cancelled' ${dateCondition}
+                    COALESCE(SUM(oi.quantity), 0) as sold_count,
+                    COALESCE(SUM(oi.price * oi.quantity), 0) as sales_amount
+                FROM products p
+                LEFT JOIN order_items oi ON p.product_id = oi.product_id
+                LEFT JOIN orders o ON oi.order_id = o.order_id AND o.status != 'cancelled' ${dateCondition}
                 GROUP BY p.product_id
                 ORDER BY sales_amount DESC
                 LIMIT 10`
@@ -966,10 +1036,9 @@ const handleAdminAPI = async (request, env) => {
             
             // 计算总销售额（用于计算百分比）
             const totalSales = await env.DB.prepare(
-                `SELECT SUM(p.price * oi.quantity) as total
+                `SELECT COALESCE(SUM(oi.price * oi.quantity), 0) as total
                 FROM order_items oi
                 JOIN orders o ON oi.order_id = o.order_id
-                JOIN products p ON oi.product_id = p.product_id
                 WHERE o.status != 'cancelled' ${dateCondition}`
             ).bind(...params).first();
             
