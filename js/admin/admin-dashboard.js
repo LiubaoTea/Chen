@@ -244,24 +244,41 @@ function renderSalesChart(data) {
                 ordersData = data.map(item => parseInt(item.orders_count) || 0);
                 hasRealData = data.some(item => (parseFloat(item.sales_amount) > 0 || parseInt(item.orders_count) > 0));
             }
-        } else if (data.labels && Array.isArray(data.labels)) {
+        } else if (data.labels) {
             // 处理对象格式的返回数据（来自/api/admin/sales/trend）
             console.log('处理对象格式的销售趋势数据:', data);
             // 安全地获取标签和数据，确保它们是数组
-            labels = Array.isArray(data.labels) ? data.labels : [];
+            if (Array.isArray(data.labels)) {
+                labels = data.labels.filter(label => label !== null && label !== undefined);
+                // 如果过滤后标签数组为空，添加一个默认标签
+                if (labels.length === 0) {
+                    labels = [new Date().toISOString().split('T')[0]];
+                }
+            } else {
+                // 如果labels不是数组，创建一个包含当前日期的数组
+                labels = [new Date().toISOString().split('T')[0]];
+            }
             
             // 安全地处理销售额数据
             if (data.sales && Array.isArray(data.sales)) {
                 salesData = data.sales.map(val => (val !== null && val !== undefined) ? parseFloat(val) || 0 : 0);
+                // 确保销售数据长度与标签一致
+                while (salesData.length < labels.length) salesData.push(0);
+                while (salesData.length > labels.length && labels.length > 0) salesData.pop();
             } else {
-                salesData = [];
+                // 创建与标签长度相同的销售数据数组
+                salesData = new Array(labels.length).fill(0);
             }
             
             // 安全地处理订单数据
             if (data.orders && Array.isArray(data.orders)) {
                 ordersData = data.orders.map(val => (val !== null && val !== undefined) ? parseInt(val) || 0 : 0);
+                // 确保订单数据长度与标签一致
+                while (ordersData.length < labels.length) ordersData.push(0);
+                while (ordersData.length > labels.length && labels.length > 0) ordersData.pop();
             } else {
-                ordersData = [];
+                // 创建与标签长度相同的订单数据数组
+                ordersData = new Array(labels.length).fill(0);
             }
             
             hasRealData = (salesData.some(val => val > 0) || ordersData.some(val => val > 0));
@@ -523,6 +540,7 @@ function renderSalesChart(data) {
 
 // 根据时间周期格式化标签
 function formatLabelsForPeriod(labels, period) {
+    console.log('安全处理后的标签:', labels);
     // 确保labels是数组且不为空
     if (!labels || !Array.isArray(labels)) {
         console.log('标签不是数组或为空，返回默认标签');

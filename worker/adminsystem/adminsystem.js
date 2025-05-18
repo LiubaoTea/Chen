@@ -619,6 +619,7 @@ const handleAdminAPI = async (request, env) => {
             const period = url.searchParams.get('period') || 'month';
             const startDate = url.searchParams.get('startDate');
             const endDate = url.searchParams.get('endDate');
+            const includeAllStatus = url.searchParams.get('include_all_status') === 'true';
             let timeFormat, limit, dateCondition;
             const params = [];
             
@@ -651,15 +652,18 @@ const handleAdminAPI = async (request, env) => {
                 dateCondition = '';
             }
             
+            // 构建状态条件
+            const statusCondition = includeAllStatus ? '' : "AND status != 'cancelled'";
+            
             // 获取销售趋势数据
             params.push(limit);
             const { results: salesData } = await env.DB.prepare(
                 `SELECT 
-                    strftime('${timeFormat}', created_at) as time_period,
+                    strftime('${timeFormat}', datetime(created_at, 'unixepoch')) as time_period,
                     SUM(total_amount) as sales_amount,
                     COUNT(*) as orders_count
                 FROM orders
-                WHERE status != 'cancelled' ${dateCondition}
+                WHERE 1=1 ${statusCondition} ${dateCondition}
                 GROUP BY time_period
                 ORDER BY time_period ASC
                 LIMIT ?`
@@ -675,11 +679,36 @@ const handleAdminAPI = async (request, env) => {
                 });
             }
             
+            // 获取当前日期，用于确保有当天的数据点
+            const now = new Date();
+            let currentPeriodLabel;
+            
+            if (period === 'year') {
+                currentPeriodLabel = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+            } else {
+                currentPeriodLabel = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+            }
+            
+            // 检查是否已有当天数据，如果没有则添加
+            const hasCurrentDay = salesData.some(item => item.time_period === currentPeriodLabel);
+            
+            if (!hasCurrentDay && (period === 'day' || period === 'month')) {
+                // 添加当天数据点
+                salesData.push({
+                    time_period: currentPeriodLabel,
+                    sales_amount: 0,
+                    orders_count: 0
+                });
+                
+                // 按日期排序
+                salesData.sort((a, b) => a.time_period.localeCompare(b.time_period));
+            }
+            
             // 转换数据格式以适应前端图表
             const formattedData = {
                 labels: salesData.map(item => item.time_period),
-                sales: salesData.map(item => item.sales_amount),
-                orders: salesData.map(item => item.orders_count)
+                sales: salesData.map(item => parseFloat(item.sales_amount) || 0),
+                orders: salesData.map(item => parseInt(item.orders_count) || 0)
             };
             
             return new Response(JSON.stringify(formattedData), {
@@ -687,8 +716,15 @@ const handleAdminAPI = async (request, env) => {
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             });
         } catch (error) {
-            return new Response(JSON.stringify({ error: '获取销售趋势数据失败', details: error.message }), {
-                status: 500,
+            console.error('获取销售趋势数据失败:', error);
+            // 出错时返回空数据结构，确保前端不会崩溃
+            const emptyData = {
+                labels: [new Date().toISOString().split('T')[0]],
+                sales: [0],
+                orders: [0]
+            };
+            return new Response(JSON.stringify(emptyData), {
+                status: 200,
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             });
         }
