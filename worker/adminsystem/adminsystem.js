@@ -1019,13 +1019,13 @@ const handleAdminAPI = async (request, env) => {
                 params.push(endDate);
             }
             
-            // 获取商品销售分布数据
+            // 获取商品销售分布数据 - 修复SQL查询，使用正确的字段名
             const { results: salesData } = await env.DB.prepare(
                 `SELECT 
                     p.product_id,
                     p.name as product_name,
                     COALESCE(SUM(oi.quantity), 0) as sold_count,
-                    COALESCE(SUM(oi.price * oi.quantity), 0) as sales_amount
+                    COALESCE(SUM(oi.unit_price * oi.quantity), 0) as sales_amount
                 FROM products p
                 LEFT JOIN order_items oi ON p.product_id = oi.product_id
                 LEFT JOIN orders o ON oi.order_id = o.order_id AND o.status != 'cancelled' ${dateCondition}
@@ -1034,9 +1034,9 @@ const handleAdminAPI = async (request, env) => {
                 LIMIT 10`
             ).bind(...params).all();
             
-            // 计算总销售额（用于计算百分比）
+            // 计算总销售额（用于计算百分比）- 修复SQL查询，使用正确的字段名
             const totalSales = await env.DB.prepare(
-                `SELECT COALESCE(SUM(oi.price * oi.quantity), 0) as total
+                `SELECT COALESCE(SUM(oi.unit_price * oi.quantity), 0) as total
                 FROM order_items oi
                 JOIN orders o ON oi.order_id = o.order_id
                 WHERE o.status != 'cancelled' ${dateCondition}`

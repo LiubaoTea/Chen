@@ -325,11 +325,16 @@ function renderSalesTrendChart(data) {
         ordersData = [0];
     }
     
-    // 检查是否有实际数据，但无论如何都显示图表而不是占位符
-    // 即使所有值为0，也应该显示时间轴，这样用户可以看到趋势线
-    console.log('销售趋势数据处理完成，显示图表');
-    // 始终隐藏占位符，显示图表，即使数据全为0
-    hideNoDataPlaceholder('salesTrendChart');
+    // 检查是否有实际数据
+    if (period === 'week' && !hasRealData) {
+        // 对于周报表，如果没有实际数据，显示占位符
+        console.log('销售趋势无实际数据，显示占位符');
+        showNoDataPlaceholder('salesTrendChart');
+    } else {
+        // 对于其他报表，或者有实际数据的周报表，显示图表
+        console.log('销售趋势有实际数据，显示图表');
+        hideNoDataPlaceholder('salesTrendChart');
+    }
     
     // 确保数据长度一致
     const maxLength = Math.max(labels.length, values.length, ordersData.length);
@@ -337,8 +342,7 @@ function renderSalesTrendChart(data) {
     while (values.length < maxLength) values.push(0);
     while (ordersData.length < maxLength) ordersData.push(0);
     
-    // 获取当前选择的时间周期
-    const period = document.getElementById('statisticsPeriodSelect').value;
+    // 获取当前选择的时间周期（使用已有的period变量，避免重复定义）
     let periodText = '';
     let xAxisTitle = '';
     
@@ -716,8 +720,13 @@ function renderProductSalesChart(data) {
                                 if (allZeros) {
                                     return `${label}: 暂无销售数据`;
                                 }
-                                const value = context.raw;
-                                const percentage = context.parsed;
+                                
+                                // 获取原始数据中的值和百分比
+                                const index = context.dataIndex;
+                                const value = data[index] ? (data[index].value || data[index].amount || 0) : 0;
+                                const percentage = data[index] ? (data[index].percentage || 0) : 0;
+                                
+                                // 格式化显示
                                 return label + ': ¥' + value.toLocaleString('zh-CN') + ' (' + percentage.toFixed(2) + '%)';
                             }
                         }
