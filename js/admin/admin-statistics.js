@@ -330,6 +330,8 @@ function renderSalesTrendChart(data) {
     
     // 始终显示图表，无论是否有实际数据
     hideNoDataPlaceholder('salesTrendChart');
+    // 即使所有值为0，也强制设置hasRealData为true，确保显示图表
+    hasRealData = true;
     console.log(`销售趋势数据已处理，将显示图表（周期：${period}，是否有实际数据：${hasRealData}）`);
     
     // 确保数据长度一致
