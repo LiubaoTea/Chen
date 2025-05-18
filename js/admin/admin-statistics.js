@@ -326,15 +326,11 @@ function renderSalesTrendChart(data) {
     }
     
     // 检查是否有实际数据，如果没有则显示占位符
-    // 修复hasRealData判断逻辑，只要values或ordersData中有非零值，就认为有实际数据
-    hasRealData = values.some(v => v > 0) || ordersData.some(v => v > 0);
-    
-    if (!hasRealData) {
+    if (!hasRealData && (values.every(v => v === 0) && ordersData.every(v => v === 0))) {
         console.log('销售趋势无实际数据，显示占位符');
         showNoDataPlaceholder('salesTrendChart');
         return;
     } else {
-        console.log('销售趋势有实际数据，显示图表');
         hideNoDataPlaceholder('salesTrendChart');
     }
     
@@ -590,19 +586,8 @@ function renderProductSalesChart(data) {
     }
     
     // 提取标签和值
-    const labels = data.map(item => item.name || item.category_name || item.product_name || '未分类');
-    const values = data.map(item => parseFloat(item.value || item.sales_amount || item.product_count || 0));
-    
-    // 检查是否有实际数据
-    const hasRealData = values.some(v => v > 0);
-    if (!hasRealData) {
-        console.log('商品销售占比无实际数据，显示占位符');
-        showNoDataPlaceholder('productSalesChart');
-        return;
-    } else {
-        console.log('商品销售占比有实际数据，显示图表');
-        hideNoDataPlaceholder('productSalesChart');
-    }
+    const labels = data.map(item => item.name || item.category_name || '未分类');
+    const values = data.map(item => item.value || item.product_count || 0);
     
     console.log('商品销售占比图表数据:', { labels, values });
     
@@ -697,9 +682,7 @@ function renderProductSalesChart(data) {
                             label: function(context) {
                                 const label = context.label || '';
                                 const value = context.raw;
-                                // 计算总和用于百分比计算
-                                const total = context.dataset.data.reduce((sum, val) => sum + val, 0);
-                                const percentage = total > 0 ? (value / total * 100) : 0;
+                                const percentage = context.parsed;
                                 return label + ': ¥' + value.toLocaleString('zh-CN') + ' (' + percentage.toFixed(2) + '%)';
                             }
                         }
