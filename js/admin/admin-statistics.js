@@ -273,6 +273,9 @@ function renderSalesTrendChart(data) {
         salesTrendChart.destroy();
     }
     
+    // 获取当前选择的时间周期
+    const period = document.getElementById('statisticsPeriodSelect')?.value || 'day';
+    
     // 检查数据格式是否正确，并处理不同的API返回格式
     let labels = [];
     let values = [];
@@ -325,16 +328,9 @@ function renderSalesTrendChart(data) {
         ordersData = [0];
     }
     
-    // 检查是否有实际数据
-    if (period === 'week' && !hasRealData) {
-        // 对于周报表，如果没有实际数据，显示占位符
-        console.log('销售趋势无实际数据，显示占位符');
-        showNoDataPlaceholder('salesTrendChart');
-    } else {
-        // 对于其他报表，或者有实际数据的周报表，显示图表
-        console.log('销售趋势有实际数据，显示图表');
-        hideNoDataPlaceholder('salesTrendChart');
-    }
+    // 始终显示图表，无论是否有实际数据
+    hideNoDataPlaceholder('salesTrendChart');
+    console.log(`销售趋势数据已处理，将显示图表（周期：${period}，是否有实际数据：${hasRealData}）`);
     
     // 确保数据长度一致
     const maxLength = Math.max(labels.length, values.length, ordersData.length);
