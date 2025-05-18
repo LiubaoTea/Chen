@@ -315,6 +315,25 @@ function renderSalesChart(data) {
                 chartTitle = '销售趋势图表';
         }
         
+        // 在图表标题区域添加周期标题
+        const chartTitleElement = document.createElement('div');
+        chartTitleElement.className = 'text-center text-danger mb-2';
+        chartTitleElement.style.fontSize = '18px';
+        chartTitleElement.style.fontWeight = 'bold';
+        chartTitleElement.textContent = `${periodText}销售趋势图表`;
+        
+        // 查找图表容器的父元素
+        const chartParent = salesChartContainer.parentElement;
+        
+        // 检查是否已存在标题元素
+        const existingTitle = chartParent.querySelector('.text-danger.mb-2');
+        if (existingTitle) {
+            existingTitle.textContent = `${periodText}销售趋势图表`;
+        } else {
+            // 在图表前插入标题
+            chartParent.insertBefore(chartTitleElement, salesChartContainer);
+        }
+        
         // 创建新图表
         window.salesChart = new Chart(ctx, {
             type: 'line',
@@ -335,7 +354,12 @@ function renderSalesChart(data) {
                     pointBorderWidth: 2,
                     fill: true,
                     tension: 0.1,
-                    yAxisID: 'y'
+                    yAxisID: 'y',
+                    // 确保即使数据为0也显示连续的线
+                    spanGaps: false,
+                    segment: {
+                        borderColor: ctx => 'rgba(78, 115, 223, 1)'
+                    }
                 }, {
                     label: `${periodText}订单数`,
                     data: ordersData,
@@ -351,7 +375,12 @@ function renderSalesChart(data) {
                     pointBorderWidth: 2,
                     fill: true,
                     tension: 0.1,
-                    yAxisID: 'y1'
+                    yAxisID: 'y1',
+                    // 确保即使数据为0也显示连续的线
+                    spanGaps: false,
+                    segment: {
+                        borderColor: ctx => 'rgba(28, 200, 138, 1)'
+                    }
                 }]
             },
             options: {
@@ -384,7 +413,14 @@ function renderSalesChart(data) {
                             drawBorder: false
                         },
                         ticks: {
-                            maxTicksLimit: 7
+                            // 根据不同周期调整显示的刻度数量
+                            maxTicksLimit: currentPeriod === 'day' ? 12 : 
+                                          currentPeriod === 'week' ? 12 : 
+                                          currentPeriod === 'month' ? 15 : 
+                                          currentPeriod === 'year' ? 12 : 7,
+                            font: {
+                                size: 11
+                            }
                         }
                     },
                     y: {
@@ -434,7 +470,7 @@ function renderSalesChart(data) {
                 },
                 plugins: {
                     title: {
-                        display: true,
+                        display: false, // 不使用Chart.js的标题，使用自定义标题
                         text: chartTitle,
                         font: {
                             size: 16,
@@ -569,7 +605,7 @@ function generateEmptyTimeSeriesData(period, startDate, endDate) {
         case 'week':
             // 生成最近12周的数据点
             start = startDate ? new Date(startDate) : new Date(end);
-            start.setDate(end.getDate() - 12 * 7);
+            start.setDate(end.getDate() - 11 * 7); // 确保生成12周的数据（包括当前周）
             dateFormat = date => {
                 const year = date.getFullYear();
                 const weekNumber = getWeekNumber(date);
@@ -581,7 +617,9 @@ function generateEmptyTimeSeriesData(period, startDate, endDate) {
         case 'year':
             // 生成最近12个月的数据点
             start = startDate ? new Date(startDate) : new Date(end);
-            start.setMonth(end.getMonth() - 11);
+            start.setMonth(end.getMonth() - 11); // 确保生成12个月的数据（包括当前月）
+            // 将日期设置为月初，确保月份计算准确
+            start.setDate(1);
             dateFormat = date => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
             increment = date => { date.setMonth(date.getMonth() + 1); };
             break;
@@ -611,6 +649,37 @@ function generateEmptyTimeSeriesData(period, startDate, endDate) {
         orders.push(0);
     }
     
+    // 确保数据点数量符合要求
+    const requiredPoints = period === 'day' ? 24 : 
+                          period === 'week' ? 12 : 
+                          period === 'month' ? 30 : 
+                          period === 'year' ? 12 : 30;
+                          
+    // 如果数据点不足，在前面补充0值数据点
+    if (labels.length < requiredPoints) {
+        const missingPoints = requiredPoints - labels.length;
+        console.log(`数据点不足，需要补充${missingPoints}个数据点`);
+        
+        // 创建一个临时日期对象，用于生成缺失的标签
+        const tempDate = new Date(start);
+        for (let i = 0; i < missingPoints; i++) {
+            // 向前移动一个时间单位
+            if (period === 'day' || period === 'month') {
+                tempDate.setDate(tempDate.getDate() - 1);
+            } else if (period === 'week') {
+                tempDate.setDate(tempDate.getDate() - 7);
+            } else if (period === 'year') {
+                tempDate.setMonth(tempDate.getMonth() - 1);
+            }
+            
+            // 在数组前面插入新的数据点
+            labels.unshift(dateFormat(tempDate));
+            sales.unshift(0);
+            orders.unshift(0);
+        }
+    }
+    
+    console.log(`生成了${labels.length}个数据点，周期为${period}`);
     return { labels, sales, orders };
 }
 
@@ -704,7 +773,7 @@ function formatLabelsForPeriod(labels, period) {
     try {
         switch (period) {
             case 'day':
-                // 日期格式：05-20
+                // 日期格式：5月20日
                 return safeLabels.map(label => {
                     // 确保label是字符串
                     const strLabel = String(label || '无日期');
@@ -712,7 +781,8 @@ function formatLabelsForPeriod(labels, period) {
                         try {
                             const parts = strLabel.split('-');
                             if (parts.length >= 3) {
-                                return `${parts[1]}-${parts[2]}`;
+                                // 转换为中文格式：5月20日
+                                return `${parseInt(parts[1])}月${parseInt(parts[2])}日`;
                             }
                         } catch (error) {
                             console.warn('格式化日期标签出错:', error);
@@ -727,6 +797,12 @@ function formatLabelsForPeriod(labels, period) {
                     const strLabel = String(label || '无日期');
                     if (strLabel.indexOf('week') !== -1) {
                         try {
+                            // 处理格式如 2025-week-20 的标签
+                            const weekParts = strLabel.split('-week-');
+                            if (weekParts.length === 2) {
+                                return `${weekParts[0]}年第${weekParts[1]}周`;
+                            }
+                            // 兼容其他格式
                             const parts = strLabel.split('-');
                             if (parts.length >= 3) {
                                 return `${parts[0]}年第${parts[2]}周`;
@@ -738,15 +814,19 @@ function formatLabelsForPeriod(labels, period) {
                     return `第${index + 1}周`;
                 });
             case 'month':
-                // 月份格式：2023-05
+                // 月份格式：2023年5月
                 return safeLabels.map(label => {
                     // 确保label是字符串
                     const strLabel = String(label || '无日期');
                     if (strLabel.indexOf('-') !== -1) {
                         try {
                             const parts = strLabel.split('-');
-                            if (parts.length >= 2) {
-                                return `${parts[0]}年${parts[1]}月`;
+                            if (parts.length >= 3) {
+                                // 如果是完整日期格式 (YYYY-MM-DD)，只显示月日
+                                return `${parseInt(parts[1])}月${parseInt(parts[2])}日`;
+                            } else if (parts.length >= 2) {
+                                // 如果是年月格式 (YYYY-MM)，显示年月
+                                return `${parts[0]}年${parseInt(parts[1])}月`;
                             }
                         } catch (error) {
                             console.warn('格式化月份标签出错:', error);
@@ -755,13 +835,20 @@ function formatLabelsForPeriod(labels, period) {
                     return strLabel;
                 });
             case 'year':
-                // 年份格式：2023年
+                // 年月格式：2023年5月
                 return safeLabels.map(label => {
                     // 确保label是字符串
                     const strLabel = String(label || '无日期');
                     if (strLabel.indexOf('-') !== -1) {
                         try {
-                            return `${strLabel.split('-')[0]}年`;
+                            const parts = strLabel.split('-');
+                            if (parts.length >= 2) {
+                                // 转换为中文格式：2023年5月
+                                return `${parts[0]}年${parseInt(parts[1])}月`;
+                            } else {
+                                // 如果只有年份
+                                return `${parts[0]}年`;
+                            }
                         } catch (error) {
                             console.warn('格式化年份标签出错:', error);
                         }
@@ -855,8 +942,27 @@ function renderCategoryChart(data) {
             window.categoryChart = null;
         }
         
+        // 在图表标题区域添加标题
+        const chartTitleElement = document.createElement('div');
+        chartTitleElement.className = 'text-center text-danger mb-2';
+        chartTitleElement.style.fontSize = '18px';
+        chartTitleElement.style.fontWeight = 'bold';
+        chartTitleElement.textContent = '商品分类占比图表';
+        
+        // 查找图表容器的父元素
+        const chartParent = categoryChartContainer.parentElement;
+        
+        // 检查是否已存在标题元素
+        const existingTitle = chartParent.querySelector('.text-danger.mb-2');
+        if (existingTitle) {
+            existingTitle.textContent = '商品分类占比图表';
+        } else {
+            // 在图表前插入标题
+            chartParent.insertBefore(chartTitleElement, categoryChartContainer);
+        }
+        
         // 创建新图表
-    window.categoryChart = new Chart(ctx, {
+        window.categoryChart = new Chart(ctx, {
             type: 'doughnut',
             data: {
                 labels: chartData.labels,
