@@ -212,60 +212,119 @@ function renderSalesChart(data) {
         return;
     }
     
+    // 处理不同格式的数据
+    let labels = [];
+    let salesData = [];
+    let ordersData = [];
+    let hasRealData = false;
+    
     try {
         console.log('开始处理销售趋势数据，原始数据:', data);
         
-        // 根据当前周期生成适当的时间序列数据
-        let timeSeriesData;
-        
-        // 如果数据为空或格式不正确，生成空的时间序列数据
-        if (!data || (Array.isArray(data) && data.length === 0) || (!Array.isArray(data) && (!data.labels || !Array.isArray(data.labels)))) {
-            console.warn('销售趋势数据为空或格式不正确，生成空的时间序列数据');
-            timeSeriesData = generateEmptyTimeSeriesData(currentPeriod);
+        // 检查数据格式是否正确，并处理不同的API返回格式
+        if (!data) {
+            console.warn('销售趋势数据为空，使用默认数据');
+            // 创建默认数据
+            const today = new Date().toISOString().split('T')[0];
+            labels = [today];
+            salesData = [0];
+            ordersData = [0];
         } else if (Array.isArray(data)) {
             // 处理数组格式的返回数据（来自/api/admin/stats/sales-trend）
             console.log('处理数组格式的销售趋势数据:', data);
-            
-            // 提取标签和数据
-            const labels = data.map(item => item.time_period || '无日期');
-            const salesData = data.map(item => parseFloat(item.sales_amount) || 0);
-            const ordersData = data.map(item => parseInt(item.orders_count) || 0);
-            
-            // 如果数据点数量不足，补充空数据
-            timeSeriesData = ensureDataPointsCount(labels, salesData, ordersData, currentPeriod);
+            if (data.length === 0) {
+                // 如果数组为空，使用当前日期作为标签
+                const today = new Date().toISOString().split('T')[0];
+                labels = [today];
+                salesData = [0];
+                ordersData = [0];
+            } else {
+                labels = data.map(item => item.time_period || '无日期');
+                salesData = data.map(item => parseFloat(item.sales_amount) || 0);
+                ordersData = data.map(item => parseInt(item.orders_count) || 0);
+                hasRealData = data.some(item => (parseFloat(item.sales_amount) > 0 || parseInt(item.orders_count) > 0));
+            }
         } else if (data.labels) {
             // 处理对象格式的返回数据（来自/api/admin/sales/trend）
             console.log('处理对象格式的销售趋势数据:', data);
-            
-            // 安全地获取标签和数据
-            const labels = Array.isArray(data.labels) ? data.labels.filter(label => label !== null && label !== undefined) : [];
+            // 安全地获取标签和数据，确保它们是数组
+            if (Array.isArray(data.labels)) {
+                labels = data.labels.filter(label => label !== null && label !== undefined);
+                // 如果过滤后标签数组为空，添加一个默认标签
+                if (labels.length === 0) {
+                    labels = [new Date().toISOString().split('T')[0]];
+                }
+            } else {
+                // 如果labels不是数组，创建一个包含当前日期的数组
+                labels = [new Date().toISOString().split('T')[0]];
+            }
             
             // 安全地处理销售额数据
-            let salesData = [];
             if (data.sales && Array.isArray(data.sales)) {
                 salesData = data.sales.map(val => (val !== null && val !== undefined) ? parseFloat(val) || 0 : 0);
+                // 确保销售数据长度与标签一致
+                while (salesData.length < labels.length) salesData.push(0);
+                while (salesData.length > labels.length && labels.length > 0) salesData.pop();
+            } else {
+                // 创建与标签长度相同的销售数据数组
+                salesData = new Array(labels.length).fill(0);
             }
             
             // 安全地处理订单数据
-            let ordersData = [];
             if (data.orders && Array.isArray(data.orders)) {
                 ordersData = data.orders.map(val => (val !== null && val !== undefined) ? parseInt(val) || 0 : 0);
+                // 确保订单数据长度与标签一致
+                while (ordersData.length < labels.length) ordersData.push(0);
+                while (ordersData.length > labels.length && labels.length > 0) ordersData.pop();
+            } else {
+                // 创建与标签长度相同的订单数据数组
+                ordersData = new Array(labels.length).fill(0);
             }
             
-            // 如果数据点数量不足，补充空数据
-            timeSeriesData = ensureDataPointsCount(labels, salesData, ordersData, currentPeriod);
+            hasRealData = (salesData.some(val => val > 0) || ordersData.some(val => val > 0));
         } else {
             console.error('销售趋势数据格式不正确:', data);
-            timeSeriesData = generateEmptyTimeSeriesData(currentPeriod);
+            // 创建默认数据
+            const today = new Date().toISOString().split('T')[0];
+            labels = [today];
+            salesData = [0];
+            ordersData = [0];
         }
         
-        console.log('处理后的时间序列数据:', timeSeriesData);
+        // 始终显示图表，无论是否有实际数据
+        hasRealData = true;
+        console.log(`销售趋势数据已处理，将显示图表（周期：${currentPeriod}，是否有实际数据：${hasRealData}）`);
+        console.log('处理后的数据：', { labels, salesData, ordersData });
         
-        // 确保所有数组长度一致
-        const { labels, sales: salesData, orders: ordersData } = timeSeriesData;
+        // 确保数据长度一致
+        const maxLength = Math.max(labels.length || 0, salesData.length || 0, ordersData.length || 0);
         
-        // 格式化标签
-        const formattedLabels = formatLabelsForPeriod(labels, currentPeriod);
+        // 如果所有数组都为空，添加一个默认数据点
+        if (maxLength === 0) {
+            const today = new Date().toISOString().split('T')[0];
+            labels = [today];
+            salesData = [0];
+            ordersData = [0];
+        } else {
+            // 确保所有数组长度一致
+            while (labels.length < maxLength) labels.push('无数据');
+            while (salesData.length < maxLength) salesData.push(0);
+            while (ordersData.length < maxLength) ordersData.push(0);
+        }
+        
+        // 确保标签数组中没有null或undefined
+        labels = labels.map(label => label || '无数据');
+        
+        // 在格式化前确保标签数据是有效的
+        // 再次确保标签数组中没有null或undefined值
+        const cleanLabels = labels.map(label => {
+            if (label === null || label === undefined) return '无数据';
+            return label;
+        });
+        
+        console.log('清理后准备格式化的标签:', cleanLabels);
+        // 根据当前周期格式化标签
+        const formattedLabels = formatLabelsForPeriod(cleanLabels, currentPeriod);
         console.log('格式化后的标签:', formattedLabels);
         
         // 销毁现有图表（如果存在）
@@ -286,33 +345,27 @@ function renderSalesChart(data) {
         // 获取当前选择的时间周期的文本表示
         let periodText = '';
         let xAxisTitle = '';
-        let chartTitle = '';
         
         switch(currentPeriod) {
             case 'day': 
                 periodText = '日'; 
                 xAxisTitle = '日期';
-                chartTitle = '日销售趋势图表';
                 break;
             case 'week': 
                 periodText = '周'; 
-                xAxisTitle = '周次';
-                chartTitle = '周销售趋势图表';
+                xAxisTitle = '日期';
                 break;
             case 'month': 
                 periodText = '月'; 
                 xAxisTitle = '日期';
-                chartTitle = '月销售趋势图表';
                 break;
             case 'year': 
                 periodText = '年'; 
                 xAxisTitle = '月份';
-                chartTitle = '年销售趋势图表';
                 break;
             default: 
                 periodText = '';
                 xAxisTitle = '时间';
-                chartTitle = '销售趋势图表';
         }
         
         // 创建新图表
@@ -435,7 +488,7 @@ function renderSalesChart(data) {
                 plugins: {
                     title: {
                         display: true,
-                        text: chartTitle,
+                        text: `${periodText}销售趋势`,
                         font: {
                             size: 16,
                             weight: 'bold'
@@ -483,208 +536,6 @@ function renderSalesChart(data) {
     } catch (error) {
         console.error('渲染销售趋势图表时出错:', error);
     }
-}
-
-/**
- * 确保数据点数量符合当前周期的要求
- * @param {Array} labels - 标签数组
- * @param {Array} salesData - 销售额数据数组
- * @param {Array} ordersData - 订单数据数组
- * @param {string} period - 时间周期（day, week, month, year）
- * @returns {Object} - 包含调整后的labels, sales, orders数组的对象
- */
-function ensureDataPointsCount(labels, salesData, ordersData, period) {
-    // 根据不同的时间周期，确定所需的数据点数量
-    let requiredPoints = 0;
-    switch(period) {
-        case 'day':
-            requiredPoints = 24; // 最近24天
-            break;
-        case 'week':
-            requiredPoints = 12; // 最近12周
-            break;
-        case 'month':
-            requiredPoints = 30; // 最近30天
-            break;
-        case 'year':
-            requiredPoints = 12; // 最近12个月
-            break;
-        default:
-            requiredPoints = 30; // 默认30个数据点
-    }
-    
-    // 如果现有数据点数量不足，生成空的时间序列数据
-    if (labels.length === 0 || labels.length < requiredPoints) {
-        return generateEmptyTimeSeriesData(period);
-    }
-    
-    // 如果现有数据点数量超过所需数量，截取最近的数据点
-    if (labels.length > requiredPoints) {
-        const startIndex = labels.length - requiredPoints;
-        return {
-            labels: labels.slice(startIndex),
-            sales: salesData.slice(startIndex),
-            orders: ordersData.slice(startIndex)
-        };
-    }
-    
-    // 如果数据点数量正好，直接返回
-    return {
-        labels: labels,
-        sales: salesData,
-        orders: ordersData
-    };
-}
-
-/**
- * 生成空的时间序列数据，用于没有实际销售数据时提供合理的图表数据结构
- * @param {string} period - 时间周期（day, week, month, year）
- * @param {string} startDate - 开始日期（可选）
- * @param {string} endDate - 结束日期（可选）
- * @returns {Object} - 包含labels, sales, orders数组的对象
- */
-function generateEmptyTimeSeriesData(period, startDate, endDate) {
-    const now = new Date();
-    const labels = [];
-    const sales = [];
-    const orders = [];
-    
-    // 设置默认的结束日期为今天
-    const end = endDate ? new Date(endDate) : now;
-    
-    // 根据不同的时间周期生成不同数量的数据点
-    let start;
-    let dateFormat;
-    let increment;
-    
-    switch(period) {
-        case 'day':
-            // 生成最近24天的数据点
-            start = startDate ? new Date(startDate) : new Date(end);
-            start.setDate(end.getDate() - 23); // 24天包括今天
-            dateFormat = date => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-            increment = date => { date.setDate(date.getDate() + 1); };
-            break;
-            
-        case 'week':
-            // 生成最近12周的数据点
-            start = startDate ? new Date(startDate) : new Date(end);
-            start.setDate(end.getDate() - 12 * 7);
-            dateFormat = date => {
-                const year = date.getFullYear();
-                const weekNumber = getWeekNumber(date);
-                return `${year}-week-${weekNumber}`;
-            };
-            increment = date => { date.setDate(date.getDate() + 7); };
-            break;
-            
-        case 'year':
-            // 生成最近12个月的数据点
-            start = startDate ? new Date(startDate) : new Date(end);
-            start.setMonth(end.getMonth() - 11);
-            dateFormat = date => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-            increment = date => { date.setMonth(date.getMonth() + 1); };
-            break;
-            
-        case 'month':
-        default:
-            // 生成最近30天的数据点
-            start = startDate ? new Date(startDate) : new Date(end);
-            start.setDate(end.getDate() - 29); // 30天包括今天
-            dateFormat = date => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-            increment = date => { date.setDate(date.getDate() + 1); };
-    }
-    
-    // 生成时间序列数据
-    const current = new Date(start);
-    while (current <= end) {
-        labels.push(dateFormat(current));
-        sales.push(0); // 空销售额
-        orders.push(0); // 空订单数
-        increment(current);
-    }
-    
-    // 确保至少有一个数据点
-    if (labels.length === 0) {
-        labels.push(dateFormat(now));
-        sales.push(0);
-        orders.push(0);
-    }
-    
-    return { labels, sales, orders };
-}
-
-/**
- * 获取日期所在的周数
- * @param {Date} date - 日期对象
- * @returns {number} - 周数
- */
-function getWeekNumber(date) {
-    const firstDayOfYear = new Date(date.getFullYear(), 0, 1);
-    const pastDaysOfYear = (date - firstDayOfYear) / 86400000;
-    return Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
-}
-
-/**
- * 确保数据点数量符合当前周期的要求
- * @param {Array} labels - 标签数组
- * @param {Array} salesData - 销售额数组
- * @param {Array} ordersData - 订单数数组
- * @param {string} period - 时间周期（day, week, month, year）
- * @returns {Object} - 包含labels, sales, orders数组的对象
- */
-function ensureDataPointsCount(labels, salesData, ordersData, period) {
-    // 如果数据为空，直接生成空的时间序列数据
-    if (!labels || labels.length === 0) {
-        return generateEmptyTimeSeriesData(period);
-    }
-    
-    // 根据不同的时间周期，确定所需的数据点数量
-    let requiredCount;
-    switch(period) {
-        case 'day':
-            requiredCount = 24; // 24天
-            break;
-        case 'week':
-            requiredCount = 12; // 12周
-            break;
-        case 'year':
-            requiredCount = 12; // 12个月
-            break;
-        case 'month':
-        default:
-            requiredCount = 30; // 30天
-    }
-    
-    // 如果数据点数量已经足够，直接返回
-    if (labels.length >= requiredCount) {
-        // 确保销售额和订单数数组长度与标签一致
-        const sales = salesData.slice(0, labels.length);
-        const orders = ordersData.slice(0, labels.length);
-        
-        // 补充缺失的数据
-        while (sales.length < labels.length) sales.push(0);
-        while (orders.length < labels.length) orders.push(0);
-        
-        return { labels, sales, orders };
-    }
-    
-    // 如果数据点数量不足，生成空的时间序列数据
-    const emptyData = generateEmptyTimeSeriesData(period);
-    
-    // 将现有数据合并到空数据中
-    // 这里假设标签是日期格式，可以通过比较来找到对应位置
-    for (let i = 0; i < labels.length; i++) {
-        const label = labels[i];
-        const index = emptyData.labels.indexOf(label);
-        
-        if (index !== -1) {
-            emptyData.sales[index] = salesData[i] || 0;
-            emptyData.orders[index] = ordersData[i] || 0;
-        }
-    }
-    
-    return emptyData;
 }
 
 // 根据时间周期格式化标签
