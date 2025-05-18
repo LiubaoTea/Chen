@@ -216,6 +216,7 @@ function renderSalesChart(data) {
     let labels = [];
     let salesData = [];
     let ordersData = [];
+    let hasRealData = false;
     
     try {
         // 检查数据格式是否正确，并处理不同的API返回格式
@@ -227,7 +228,7 @@ function renderSalesChart(data) {
             salesData = [0];
             ordersData = [0];
         } else if (Array.isArray(data)) {
-            // 处理数组格式的返回数据
+            // 处理数组格式的返回数据（来自/api/admin/stats/sales-trend）
             console.log('处理数组格式的销售趋势数据:', data);
             if (data.length === 0) {
                 // 如果数组为空，使用当前日期作为标签
@@ -239,13 +240,15 @@ function renderSalesChart(data) {
                 labels = data.map(item => item.time_period || '无日期');
                 salesData = data.map(item => parseFloat(item.sales_amount) || 0);
                 ordersData = data.map(item => parseInt(item.orders_count) || 0);
+                hasRealData = data.some(item => (parseFloat(item.sales_amount) > 0 || parseInt(item.orders_count) > 0));
             }
         } else if (data.labels && Array.isArray(data.labels)) {
-            // 处理对象格式的返回数据
+            // 处理对象格式的返回数据（来自/api/admin/sales/trend）
             console.log('处理对象格式的销售趋势数据:', data);
             labels = data.labels || [];
             salesData = data.sales ? data.sales.map(val => parseFloat(val) || 0) : [];
             ordersData = data.orders ? data.orders.map(val => parseInt(val) || 0) : [];
+            hasRealData = (salesData.some(val => val > 0) || ordersData.some(val => val > 0));
         } else {
             console.error('销售趋势数据格式不正确:', data);
             // 创建默认数据
@@ -254,6 +257,10 @@ function renderSalesChart(data) {
             salesData = [0];
             ordersData = [0];
         }
+        
+        // 始终显示图表，无论是否有实际数据
+        hasRealData = true;
+        console.log(`销售趋势数据已处理，将显示图表（周期：${currentPeriod}，是否有实际数据：${hasRealData}）`);
         
         // 确保数据长度一致
         const maxLength = Math.max(labels.length, salesData.length, ordersData.length);
@@ -273,18 +280,44 @@ function renderSalesChart(data) {
         const formattedLabels = formatLabelsForPeriod(labels, currentPeriod);
         
         // 销毁现有图表（如果存在）
-        if (window.salesChart instanceof Chart) {
-            window.salesChart.destroy();
+        try {
+            if (window.salesChart) {
+                if (typeof window.salesChart.destroy === 'function') {
+                    window.salesChart.destroy();
+                } else {
+                    // 如果destroy不是函数，则重置为null
+                    window.salesChart = null;
+                }
+            }
+        } catch (error) {
+            console.error('销毁旧图表时出错:', error);
+            window.salesChart = null;
         }
         
         // 获取当前选择的时间周期的文本表示
         let periodText = '';
+        let xAxisTitle = '';
+        
         switch(currentPeriod) {
-            case 'day': periodText = '日'; break;
-            case 'week': periodText = '周'; break;
-            case 'month': periodText = '月'; break;
-            case 'year': periodText = '年'; break;
-            default: periodText = '';
+            case 'day': 
+                periodText = '日'; 
+                xAxisTitle = '日期';
+                break;
+            case 'week': 
+                periodText = '周'; 
+                xAxisTitle = '日期';
+                break;
+            case 'month': 
+                periodText = '月'; 
+                xAxisTitle = '日期';
+                break;
+            case 'year': 
+                periodText = '年'; 
+                xAxisTitle = '月份';
+                break;
+            default: 
+                periodText = '';
+                xAxisTitle = '时间';
         }
         
         // 创建新图表
@@ -306,7 +339,8 @@ function renderSalesChart(data) {
                     pointHitRadius: 10,
                     pointBorderWidth: 2,
                     fill: true,
-                    tension: 0.1
+                    tension: 0.1,
+                    yAxisID: 'y'
                 }, {
                     label: `${periodText}订单数`,
                     data: ordersData,
@@ -321,7 +355,8 @@ function renderSalesChart(data) {
                     pointHitRadius: 10,
                     pointBorderWidth: 2,
                     fill: true,
-                    tension: 0.1
+                    tension: 0.1,
+                    yAxisID: 'y1'
                 }]
             },
             options: {
@@ -340,6 +375,15 @@ function renderSalesChart(data) {
                 },
                 scales: {
                     x: {
+                        title: {
+                            display: true,
+                            text: xAxisTitle,
+                            font: {
+                                size: 14,
+                                weight: 'bold'
+                            },
+                            padding: {top: 10, bottom: 0}
+                        },
                         grid: {
                             display: false,
                             drawBorder: false
@@ -349,11 +393,23 @@ function renderSalesChart(data) {
                         }
                     },
                     y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: '销售额 (¥)',
+                            font: {
+                                size: 14,
+                                weight: 'bold'
+                            }
+                        },
                         ticks: {
                             maxTicksLimit: 5,
                             padding: 10,
                             callback: function(value) {
-                                return '¥' + value.toLocaleString();
+                                return '¥' + value.toLocaleString('zh-CN');
                             }
                         },
                         grid: {
@@ -361,6 +417,23 @@ function renderSalesChart(data) {
                             drawBorder: false,
                             borderDash: [2],
                             zeroLineBorderDash: [2]
+                        }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: '订单数 (单)',
+                            font: {
+                                size: 14,
+                                weight: 'bold'
+                            }
+                        },
+                        grid: {
+                            drawOnChartArea: false
                         }
                     }
                 },
@@ -379,7 +452,14 @@ function renderSalesChart(data) {
                     },
                     legend: {
                         display: true,
-                        position: 'top'
+                        position: 'top',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 20,
+                            font: {
+                                size: 14
+                            }
+                        }
                     },
                     tooltip: {
                         backgroundColor: 'rgb(255, 255, 255)',
@@ -395,9 +475,9 @@ function renderSalesChart(data) {
                                 const label = context.dataset.label || '';
                                 const value = context.parsed.y;
                                 if (context.datasetIndex === 0) {
-                                    return label + ': ¥' + value.toLocaleString();
+                                    return label + ': ¥' + value.toLocaleString('zh-CN');
                                 } else {
-                                    return label + ': ' + value.toLocaleString() + ' 单';
+                                    return label + ': ' + value.toLocaleString('zh-CN') + ' 单';
                                 }
                             }
                         }
@@ -412,38 +492,78 @@ function renderSalesChart(data) {
 
 // 根据时间周期格式化标签
 function formatLabelsForPeriod(labels, period) {
-    if (!labels || !Array.isArray(labels)) return labels;
+    // 确保labels是数组且不为空
+    if (!labels || !Array.isArray(labels)) {
+        console.log('标签不是数组或为空，返回默认标签');
+        return ['无数据'];
+    }
+    
+    // 确保所有标签都有值，将null或undefined替换为'无数据'
+    const safeLabels = labels.map(label => label || '无数据');
     
     switch (period) {
         case 'day':
             // 日期格式：05-20
-            return labels.map(label => {
+            return safeLabels.map(label => {
                 if (label && typeof label === 'string' && label.includes('-')) {
-                    const parts = label.split('-');
-                    if (parts.length >= 3) {
-                        return `${parts[1]}-${parts[2]}`;
+                    try {
+                        const parts = label.split('-');
+                        if (parts.length >= 3) {
+                            return `${parts[1]}-${parts[2]}`;
+                        }
+                    } catch (error) {
+                        console.warn('格式化日期标签出错:', error);
                     }
                 }
-                return label || '无数据';
+                return label;
             });
         case 'week':
             // 周格式：第X周
-            return labels.map((label, index) => `第${index + 1}周`);
+            return safeLabels.map((label, index) => {
+                if (label && typeof label === 'string' && label.includes('week')) {
+                    try {
+                        const parts = label.split('-');
+                        if (parts.length >= 3) {
+                            return `${parts[0]}年第${parts[2]}周`;
+                        }
+                    } catch (error) {
+                        console.warn('格式化周标签出错:', error);
+                    }
+                }
+                return `第${index + 1}周`;
+            });
         case 'month':
             // 月份格式：2023-05
-            return labels.map(label => label || '无数据');
+            return safeLabels.map(label => {
+                if (label && typeof label === 'string' && label.includes('-')) {
+                    try {
+                        const parts = label.split('-');
+                        if (parts.length >= 2) {
+                            return `${parts[0]}年${parts[1]}月`;
+                        }
+                    } catch (error) {
+                        console.warn('格式化月份标签出错:', error);
+                    }
+                }
+                return label;
+            });
         case 'year':
             // 年份格式：2023年
-            return labels.map(label => {
+            return safeLabels.map(label => {
                 if (label && typeof label === 'string' && label.includes('-')) {
-                    return `${label.split('-')[0]}年`;
+                    try {
+                        return `${label.split('-')[0]}年`;
+                    } catch (error) {
+                        console.warn('格式化年份标签出错:', error);
+                    }
                 }
-                return label || '无数据';
+                return label;
             });
         default:
-            return labels.map(label => label || '无数据');
+            return safeLabels;
     }
 }
+
 
 
 // 渲染分类占比图表
