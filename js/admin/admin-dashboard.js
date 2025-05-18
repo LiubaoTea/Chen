@@ -212,133 +212,202 @@ function renderSalesChart(data) {
         return;
     }
     
-    // 检查数据格式是否正确
-    if (!data || !data.labels || !Array.isArray(data.labels)) {
-        console.error('销售趋势数据格式不正确:', data);
-        // 创建默认数据
-        data = {
-            labels: ['无数据'],
-            sales: [0],
-            orders: [0]
-        };
-    }
+    // 处理不同格式的数据
+    let labels = [];
+    let salesData = [];
+    let ordersData = [];
     
-    // 确保sales和orders数据存在
-    if (!data.sales || !Array.isArray(data.sales)) {
-        console.warn('销售额数据不存在或格式不正确，使用默认值');
-        data.sales = new Array(data.labels.length).fill(0);
-    }
-    
-    if (!data.orders || !Array.isArray(data.orders)) {
-        console.warn('订单数据不存在或格式不正确，使用默认值');
-        data.orders = new Array(data.labels.length).fill(0);
-    }
-    
-    // 根据当前周期格式化标签
-    const formattedLabels = formatLabelsForPeriod(data.labels, currentPeriod);
-    
-    // 销毁现有图表（如果存在）
-    if (window.salesChart instanceof Chart) {
-        window.salesChart.destroy();
-    }
-    
-    // 创建新图表
-    window.salesChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: formattedLabels,
-            datasets: [{
-                label: '销售额',
-                data: data.sales,
-                backgroundColor: 'rgba(78, 115, 223, 0.05)',
-                borderColor: 'rgba(78, 115, 223, 1)',
-                pointRadius: 3,
-                pointBackgroundColor: 'rgba(78, 115, 223, 1)',
-                pointBorderColor: 'rgba(78, 115, 223, 1)',
-                pointHoverRadius: 5,
-                pointHoverBackgroundColor: 'rgba(78, 115, 223, 1)',
-                pointHoverBorderColor: 'rgba(78, 115, 223, 1)',
-                pointHitRadius: 10,
-                pointBorderWidth: 2,
-                fill: true
-            }, {
-                label: '订单数',
-                data: data.orders,
-                backgroundColor: 'rgba(28, 200, 138, 0.05)',
-                borderColor: 'rgba(28, 200, 138, 1)',
-                pointRadius: 3,
-                pointBackgroundColor: 'rgba(28, 200, 138, 1)',
-                pointBorderColor: 'rgba(28, 200, 138, 1)',
-                pointHoverRadius: 5,
-                pointHoverBackgroundColor: 'rgba(28, 200, 138, 1)',
-                pointHoverBorderColor: 'rgba(28, 200, 138, 1)',
-                pointHitRadius: 10,
-                pointBorderWidth: 2,
-                fill: true
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            layout: {
-                padding: {
-                    left: 10,
-                    right: 25,
-                    top: 25,
-                    bottom: 25
-                }
+    try {
+        // 检查数据格式是否正确，并处理不同的API返回格式
+        if (!data) {
+            console.warn('销售趋势数据为空，使用默认数据');
+            // 创建默认数据
+            const today = new Date().toISOString().split('T')[0];
+            labels = [today];
+            salesData = [0];
+            ordersData = [0];
+        } else if (Array.isArray(data)) {
+            // 处理数组格式的返回数据
+            console.log('处理数组格式的销售趋势数据:', data);
+            if (data.length === 0) {
+                // 如果数组为空，使用当前日期作为标签
+                const today = new Date().toISOString().split('T')[0];
+                labels = [today];
+                salesData = [0];
+                ordersData = [0];
+            } else {
+                labels = data.map(item => item.time_period || '无日期');
+                salesData = data.map(item => parseFloat(item.sales_amount) || 0);
+                ordersData = data.map(item => parseInt(item.orders_count) || 0);
+            }
+        } else if (data.labels && Array.isArray(data.labels)) {
+            // 处理对象格式的返回数据
+            console.log('处理对象格式的销售趋势数据:', data);
+            labels = data.labels || [];
+            salesData = data.sales ? data.sales.map(val => parseFloat(val) || 0) : [];
+            ordersData = data.orders ? data.orders.map(val => parseInt(val) || 0) : [];
+        } else {
+            console.error('销售趋势数据格式不正确:', data);
+            // 创建默认数据
+            const today = new Date().toISOString().split('T')[0];
+            labels = [today];
+            salesData = [0];
+            ordersData = [0];
+        }
+        
+        // 确保数据长度一致
+        const maxLength = Math.max(labels.length, salesData.length, ordersData.length);
+        while (labels.length < maxLength) labels.push('无数据');
+        while (salesData.length < maxLength) salesData.push(0);
+        while (ordersData.length < maxLength) ordersData.push(0);
+        
+        // 确保至少有一个数据点
+        if (labels.length === 0) {
+            const today = new Date().toISOString().split('T')[0];
+            labels = [today];
+            salesData = [0];
+            ordersData = [0];
+        }
+        
+        // 根据当前周期格式化标签
+        const formattedLabels = formatLabelsForPeriod(labels, currentPeriod);
+        
+        // 销毁现有图表（如果存在）
+        if (window.salesChart instanceof Chart) {
+            window.salesChart.destroy();
+        }
+        
+        // 获取当前选择的时间周期的文本表示
+        let periodText = '';
+        switch(currentPeriod) {
+            case 'day': periodText = '日'; break;
+            case 'week': periodText = '周'; break;
+            case 'month': periodText = '月'; break;
+            case 'year': periodText = '年'; break;
+            default: periodText = '';
+        }
+        
+        // 创建新图表
+        window.salesChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: formattedLabels,
+                datasets: [{
+                    label: `${periodText}销售额`,
+                    data: salesData,
+                    backgroundColor: 'rgba(78, 115, 223, 0.05)',
+                    borderColor: 'rgba(78, 115, 223, 1)',
+                    pointRadius: 3,
+                    pointBackgroundColor: 'rgba(78, 115, 223, 1)',
+                    pointBorderColor: 'rgba(78, 115, 223, 1)',
+                    pointHoverRadius: 5,
+                    pointHoverBackgroundColor: 'rgba(78, 115, 223, 1)',
+                    pointHoverBorderColor: 'rgba(78, 115, 223, 1)',
+                    pointHitRadius: 10,
+                    pointBorderWidth: 2,
+                    fill: true,
+                    tension: 0.1
+                }, {
+                    label: `${periodText}订单数`,
+                    data: ordersData,
+                    backgroundColor: 'rgba(28, 200, 138, 0.05)',
+                    borderColor: 'rgba(28, 200, 138, 1)',
+                    pointRadius: 3,
+                    pointBackgroundColor: 'rgba(28, 200, 138, 1)',
+                    pointBorderColor: 'rgba(28, 200, 138, 1)',
+                    pointHoverRadius: 5,
+                    pointHoverBackgroundColor: 'rgba(28, 200, 138, 1)',
+                    pointHoverBorderColor: 'rgba(28, 200, 138, 1)',
+                    pointHitRadius: 10,
+                    pointBorderWidth: 2,
+                    fill: true,
+                    tension: 0.1
+                }]
             },
-            scales: {
-                x: {
-                    grid: {
-                        display: false,
-                        drawBorder: false
-                    },
-                    ticks: {
-                        maxTicksLimit: 7
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: {
+                    duration: 1000 // 添加动画效果
+                },
+                layout: {
+                    padding: {
+                        left: 10,
+                        right: 25,
+                        top: 25,
+                        bottom: 25
                     }
                 },
-                y: {
-                    ticks: {
-                        maxTicksLimit: 5,
-                        padding: 10,
-                        callback: function(value) {
-                            return '¥' + value.toLocaleString();
+                scales: {
+                    x: {
+                        grid: {
+                            display: false,
+                            drawBorder: false
+                        },
+                        ticks: {
+                            maxTicksLimit: 7
                         }
                     },
-                    grid: {
-                        color: 'rgb(234, 236, 244)',
-                        drawBorder: false,
-                        borderDash: [2],
-                        zeroLineBorderDash: [2]
+                    y: {
+                        ticks: {
+                            maxTicksLimit: 5,
+                            padding: 10,
+                            callback: function(value) {
+                                return '¥' + value.toLocaleString();
+                            }
+                        },
+                        grid: {
+                            color: 'rgb(234, 236, 244)',
+                            drawBorder: false,
+                            borderDash: [2],
+                            zeroLineBorderDash: [2]
+                        }
                     }
-                }
-            },
-            plugins: {
-                legend: {
-                    display: true,
-                    position: 'top'
                 },
-                tooltip: {
-                    backgroundColor: 'rgb(255, 255, 255)',
-                    bodyColor: '#858796',
-                    titleColor: '#6e707e',
-                    titleMarginBottom: 10,
-                    borderColor: '#dddfeb',
-                    borderWidth: 1,
-                    padding: 15,
-                    displayColors: false,
-                    callbacks: {
-                        label: function(context) {
-                            const label = context.dataset.label || '';
-                            const value = context.parsed.y;
-                            return label + ': ¥' + value.toLocaleString();
+                plugins: {
+                    title: {
+                        display: true,
+                        text: `${periodText}销售趋势`,
+                        font: {
+                            size: 16,
+                            weight: 'bold'
+                        },
+                        padding: {
+                            top: 10,
+                            bottom: 20
+                        }
+                    },
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgb(255, 255, 255)',
+                        bodyColor: '#858796',
+                        titleColor: '#6e707e',
+                        titleMarginBottom: 10,
+                        borderColor: '#dddfeb',
+                        borderWidth: 1,
+                        padding: 15,
+                        displayColors: false,
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.dataset.label || '';
+                                const value = context.parsed.y;
+                                if (context.datasetIndex === 0) {
+                                    return label + ': ¥' + value.toLocaleString();
+                                } else {
+                                    return label + ': ' + value.toLocaleString() + ' 单';
+                                }
+                            }
                         }
                     }
                 }
             }
-        }
-    });
+        });
+    } catch (error) {
+        console.error('渲染销售趋势图表时出错:', error);
+    }
 }
 
 // 根据时间周期格式化标签
@@ -349,32 +418,33 @@ function formatLabelsForPeriod(labels, period) {
         case 'day':
             // 日期格式：05-20
             return labels.map(label => {
-                if (label.includes('-')) {
+                if (label && typeof label === 'string' && label.includes('-')) {
                     const parts = label.split('-');
                     if (parts.length >= 3) {
                         return `${parts[1]}-${parts[2]}`;
                     }
                 }
-                return label;
+                return label || '无数据';
             });
         case 'week':
             // 周格式：第X周
             return labels.map((label, index) => `第${index + 1}周`);
         case 'month':
             // 月份格式：2023-05
-            return labels;
+            return labels.map(label => label || '无数据');
         case 'year':
             // 年份格式：2023年
             return labels.map(label => {
-                if (label.includes('-')) {
+                if (label && typeof label === 'string' && label.includes('-')) {
                     return `${label.split('-')[0]}年`;
                 }
-                return label;
+                return label || '无数据';
             });
         default:
-            return labels;
+            return labels.map(label => label || '无数据');
     }
 }
+
 
 // 渲染分类占比图表
 function renderCategoryChart(data) {
