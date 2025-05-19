@@ -361,21 +361,23 @@ function renderSalesChart(data) {
         });
         
         // 安全销毁现有图表（如果存在）
-        if (window.salesChart && typeof window.salesChart.destroy === 'function') {
+        if (window.salesChart) {
             try {
-                window.salesChart.destroy();
+                if (typeof window.salesChart.destroy === 'function') {
+                    window.salesChart.destroy();
+                } else {
+                    // 如果salesChart存在但没有destroy方法，直接清除画布
+                    const canvas = document.getElementById('salesChart');
+                    if (canvas) {
+                        const ctx = canvas.getContext('2d');
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    }
+                }
             } catch (error) {
                 console.error('销毁销售趋势图表时出错:', error);
+            } finally {
+                window.salesChart = null;
             }
-            window.salesChart = null;
-        } else if (window.salesChart) {
-            // 如果salesChart存在但没有destroy方法，直接清除画布
-            const canvas = document.getElementById('salesChart');
-            if (canvas) {
-                const ctx = canvas.getContext('2d');
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-            }
-            window.salesChart = null;
         }
         
         // 获取周期文本
