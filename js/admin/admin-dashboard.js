@@ -368,6 +368,14 @@ function renderSalesChart(data) {
                 console.error('销毁销售趋势图表时出错:', error);
             }
             window.salesChart = null;
+        } else if (window.salesChart) {
+            // 如果salesChart存在但没有destroy方法，直接清除画布
+            const canvas = document.getElementById('salesChart');
+            if (canvas) {
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+            window.salesChart = null;
         }
         
         // 获取周期文本
