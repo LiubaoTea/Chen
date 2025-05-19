@@ -216,157 +216,120 @@ function renderSalesChart(data) {
     let labels = [];
     let salesData = [];
     let ordersData = [];
-    let hasRealData = false;
     
     try {
         console.log('开始处理销售趋势数据，原始数据:', data);
         
-        // 检查数据格式是否正确，并处理不同的API返回格式
-        if (!data) {
-            console.warn('销售趋势数据为空，使用默认数据');
-            // 创建默认数据
-            const today = new Date().toISOString().split('T')[0];
-            labels = [today];
-            salesData = [0];
-            ordersData = [0];
-        } else if (Array.isArray(data)) {
-            // 处理数组格式的返回数据（来自/api/admin/stats/sales-trend）
-            console.log('处理数组格式的销售趋势数据:', data);
-            if (data.length === 0) {
-                // 如果数组为空，使用当前日期作为标签
-                const today = new Date().toISOString().split('T')[0];
-                labels = [today];
-                salesData = [0];
-                ordersData = [0];
-            } else {
-                labels = data.map(item => item.time_period || '无日期');
-                salesData = data.map(item => parseFloat(item.sales_amount) || 0);
-                ordersData = data.map(item => parseInt(item.orders_count) || 0);
-                hasRealData = data.some(item => (parseFloat(item.sales_amount) > 0 || parseInt(item.orders_count) > 0));
+        // 根据当前周期生成完整的时间序列
+        const endDate = new Date();
+        let startDate = new Date();
+        let dateFormat = '';
+        let labelFormat = '';
+        
+        switch(currentPeriod) {
+            case 'day':
+                startDate.setDate(endDate.getDate() - 24); // 最近24天
+                dateFormat = 'YYYY-MM-DD';
+                labelFormat = 'MM月DD日';
+                break;
+            case 'week':
+                startDate.setDate(endDate.getDate() - 12 * 7); // 最近12周
+                dateFormat = 'YYYY-[week]-WW';
+                labelFormat = 'YYYY年第WW周';
+                break;
+            case 'month':
+                startDate.setMonth(endDate.getMonth() - 12); // 最近12个月
+                dateFormat = 'YYYY-MM';
+                labelFormat = 'YYYY年MM月';
+                break;
+            case 'year':
+                startDate.setMonth(endDate.getMonth() - 11); // 最近12个月（年视图）
+                dateFormat = 'YYYY-MM';
+                labelFormat = 'YYYY年MM月';
+                break;
+            default:
+                startDate.setDate(endDate.getDate() - 24); // 默认显示最近24天
+                dateFormat = 'YYYY-MM-DD';
+                labelFormat = 'MM月DD日';
+        }
+        
+        // 生成完整的时间序列
+        labels = [];
+        let currentDate = new Date(startDate);
+        while (currentDate <= endDate) {
+            let label = '';
+            switch(currentPeriod) {
+                case 'day':
+                    label = currentDate.toISOString().split('T')[0];
+                    break;
+                case 'week':
+                    const weekNumber = Math.ceil((currentDate.getDate() + currentDate.getDay()) / 7);
+                    label = `${currentDate.getFullYear()}-week-${weekNumber.toString().padStart(2, '0')}`;
+                    break;
+                case 'month':
+                case 'year':
+                    label = `${currentDate.getFullYear()}-${(currentDate.getMonth() + 1).toString().padStart(2, '0')}`;
+                    break;
             }
-        } else if (data.labels) {
-            // 处理对象格式的返回数据（来自/api/admin/sales/trend）
-            console.log('处理对象格式的销售趋势数据:', data);
-            // 安全地获取标签和数据，确保它们是数组
-            if (Array.isArray(data.labels)) {
-                labels = data.labels.filter(label => label !== null && label !== undefined);
-                // 如果过滤后标签数组为空，添加一个默认标签
-                if (labels.length === 0) {
-                    labels = [new Date().toISOString().split('T')[0]];
+            labels.push(label);
+            
+            // 更新日期
+            switch(currentPeriod) {
+                case 'day':
+                    currentDate.setDate(currentDate.getDate() + 1);
+                    break;
+                case 'week':
+                    currentDate.setDate(currentDate.getDate() + 7);
+                    break;
+                case 'month':
+                case 'year':
+                    currentDate.setMonth(currentDate.getMonth() + 1);
+                    break;
+            }
+        }
+        
+        // 初始化销售数据和订单数据数组
+        salesData = new Array(labels.length).fill(0);
+        ordersData = new Array(labels.length).fill(0);
+        
+        // 将API返回的数据映射到对应的时间点
+        if (data && data.labels && Array.isArray(data.labels)) {
+            data.labels.forEach((label, index) => {
+                const dataIndex = labels.indexOf(label);
+                if (dataIndex !== -1) {
+                    salesData[dataIndex] = parseFloat(data.sales[index]) || 0;
+                    ordersData[dataIndex] = parseInt(data.orders[index]) || 0;
                 }
-            } else {
-                // 如果labels不是数组，创建一个包含当前日期的数组
-                labels = [new Date().toISOString().split('T')[0]];
-            }
-            
-            // 安全地处理销售额数据
-            if (data.sales && Array.isArray(data.sales)) {
-                salesData = data.sales.map(val => (val !== null && val !== undefined) ? parseFloat(val) || 0 : 0);
-                // 确保销售数据长度与标签一致
-                while (salesData.length < labels.length) salesData.push(0);
-                while (salesData.length > labels.length && labels.length > 0) salesData.pop();
-            } else {
-                // 创建与标签长度相同的销售数据数组
-                salesData = new Array(labels.length).fill(0);
-            }
-            
-            // 安全地处理订单数据
-            if (data.orders && Array.isArray(data.orders)) {
-                ordersData = data.orders.map(val => (val !== null && val !== undefined) ? parseInt(val) || 0 : 0);
-                // 确保订单数据长度与标签一致
-                while (ordersData.length < labels.length) ordersData.push(0);
-                while (ordersData.length > labels.length && labels.length > 0) ordersData.pop();
-            } else {
-                // 创建与标签长度相同的订单数据数组
-                ordersData = new Array(labels.length).fill(0);
-            }
-            
-            hasRealData = (salesData.some(val => val > 0) || ordersData.some(val => val > 0));
-        } else {
-            console.error('销售趋势数据格式不正确:', data);
-            // 创建默认数据
-            const today = new Date().toISOString().split('T')[0];
-            labels = [today];
-            salesData = [0];
-            ordersData = [0];
+            });
         }
         
-        // 始终显示图表，无论是否有实际数据
-        hasRealData = true;
-        console.log(`销售趋势数据已处理，将显示图表（周期：${currentPeriod}，是否有实际数据：${hasRealData}）`);
-        console.log('处理后的数据：', { labels, salesData, ordersData });
-        
-        // 确保数据长度一致
-        const maxLength = Math.max(labels.length || 0, salesData.length || 0, ordersData.length || 0);
-        
-        // 如果所有数组都为空，添加一个默认数据点
-        if (maxLength === 0) {
-            const today = new Date().toISOString().split('T')[0];
-            labels = [today];
-            salesData = [0];
-            ordersData = [0];
-        } else {
-            // 确保所有数组长度一致
-            while (labels.length < maxLength) labels.push('无数据');
-            while (salesData.length < maxLength) salesData.push(0);
-            while (ordersData.length < maxLength) ordersData.push(0);
-        }
-        
-        // 确保标签数组中没有null或undefined
-        labels = labels.map(label => label || '无数据');
-        
-        // 在格式化前确保标签数据是有效的
-        // 再次确保标签数组中没有null或undefined值
-        const cleanLabels = labels.map(label => {
-            if (label === null || label === undefined) return '无数据';
-            return label;
+        // 格式化标签显示
+        const formattedLabels = labels.map(label => {
+            if (currentPeriod === 'year' || currentPeriod === 'month') {
+                const [year, month] = label.split('-');
+                return `${month}月`;
+            } else if (currentPeriod === 'week') {
+                const [year, , week] = label.split('-');
+                return `第${week}周`;
+            } else {
+                const date = new Date(label);
+                return `${date.getMonth() + 1}月${date.getDate()}日`;
+            }
         });
         
-        console.log('清理后准备格式化的标签:', cleanLabels);
-        // 根据当前周期格式化标签
-        const formattedLabels = formatLabelsForPeriod(cleanLabels, currentPeriod);
-        console.log('格式化后的标签:', formattedLabels);
-        
         // 销毁现有图表（如果存在）
-        try {
-            if (window.salesChart) {
-                if (typeof window.salesChart.destroy === 'function') {
-                    window.salesChart.destroy();
-                } else {
-                    // 如果destroy不是函数，则重置为null
-                    window.salesChart = null;
-                }
-            }
-        } catch (error) {
-            console.error('销毁旧图表时出错:', error);
+        if (window.salesChart) {
+            window.salesChart.destroy();
             window.salesChart = null;
         }
         
-        // 获取当前选择的时间周期的文本表示
-        let periodText = '';
-        let xAxisTitle = '';
-        
-        switch(currentPeriod) {
-            case 'day': 
-                periodText = '日'; 
-                xAxisTitle = '日期';
-                break;
-            case 'week': 
-                periodText = '周'; 
-                xAxisTitle = '日期';
-                break;
-            case 'month': 
-                periodText = '月'; 
-                xAxisTitle = '日期';
-                break;
-            case 'year': 
-                periodText = '年'; 
-                xAxisTitle = '月份';
-                break;
-            default: 
-                periodText = '';
-                xAxisTitle = '时间';
-        }
+        // 获取周期文本
+        const periodText = {
+            day: '日',
+            week: '周',
+            month: '月',
+            year: '年'
+        }[currentPeriod] || '';
         
         // 创建新图表
         window.salesChart = new Chart(ctx, {
@@ -411,7 +374,7 @@ function renderSalesChart(data) {
                 responsive: true,
                 maintainAspectRatio: false,
                 animation: {
-                    duration: 1000 // 添加动画效果
+                    duration: 1000
                 },
                 layout: {
                     padding: {
@@ -423,21 +386,15 @@ function renderSalesChart(data) {
                 },
                 scales: {
                     x: {
-                        title: {
-                            display: true,
-                            text: xAxisTitle,
-                            font: {
-                                size: 14,
-                                weight: 'bold'
-                            },
-                            padding: {top: 10, bottom: 0}
-                        },
                         grid: {
-                            display: false,
-                            drawBorder: false
+                            display: true,
+                            drawBorder: true,
+                            color: 'rgba(0, 0, 0, 0.1)'
                         },
                         ticks: {
-                            maxTicksLimit: 7
+                            display: true,
+                            maxRotation: 45,
+                            minRotation: 45
                         }
                     },
                     y: {
@@ -454,17 +411,13 @@ function renderSalesChart(data) {
                             }
                         },
                         ticks: {
-                            maxTicksLimit: 5,
-                            padding: 10,
                             callback: function(value) {
                                 return '¥' + value.toLocaleString('zh-CN');
                             }
                         },
                         grid: {
-                            color: 'rgb(234, 236, 244)',
-                            drawBorder: false,
-                            borderDash: [2],
-                            zeroLineBorderDash: [2]
+                            color: 'rgba(0, 0, 0, 0.1)',
+                            drawBorder: true
                         }
                     },
                     y1: {
@@ -481,7 +434,7 @@ function renderSalesChart(data) {
                             }
                         },
                         grid: {
-                            drawOnChartArea: false
+                            display: false
                         }
                     }
                 },
