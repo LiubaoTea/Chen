@@ -212,61 +212,8 @@ function renderSalesChart(data) {
         return;
     }
     
-    // 处理不同格式的数据
-    let labels = [];
-    let salesData = [];
-    let ordersData = [];
-    let hasRealData = false;
-    
     try {
         console.log('开始处理销售趋势数据，原始数据:', data);
-        
-        // 检查数据格式是否正确，并处理不同的API返回格式
-        if (!data) {
-            console.error('销售趋势数据为空');
-            // 创建默认数据
-            const today = new Date().toISOString().split('T')[0];
-            labels = [today];
-            salesData = [0];
-            ordersData = [0];
-        } else if (Array.isArray(data)) {
-            // 处理数组格式的返回数据
-            console.log('处理数组格式的销售趋势数据:', data);
-            if (data.length === 0) {
-                // 如果数组为空，使用当前日期作为标签
-                const today = new Date().toISOString().split('T')[0];
-                labels = [today];
-                salesData = [0];
-                ordersData = [0];
-            } else {
-                labels = data.map(item => item.time_period || '无日期');
-                salesData = data.map(item => parseFloat(item.sales_amount) || 0);
-                ordersData = data.map(item => parseInt(item.orders_count) || 0);
-                hasRealData = data.some(item => (parseFloat(item.sales_amount) > 0 || parseInt(item.orders_count) > 0));
-            }
-        } else if (data.labels && Array.isArray(data.labels)) {
-            // 处理对象格式的返回数据
-            console.log('处理对象格式的销售趋势数据:', data);
-            if (data.labels.length === 0) {
-                // 如果标签数组为空，使用当前日期作为标签
-                const today = new Date().toISOString().split('T')[0];
-                labels = [today];
-                salesData = [0];
-                ordersData = [0];
-            } else {
-                labels = data.labels;
-                salesData = data.sales ? data.sales.map(val => parseFloat(val) || 0) : [];
-                ordersData = data.orders ? data.orders.map(val => parseInt(val) || 0) : [];
-                hasRealData = (salesData.some(val => val > 0) || ordersData.some(val => val > 0));
-            }
-        } else {
-            console.error('销售趋势数据格式不正确:', data);
-            // 创建默认数据
-            const today = new Date().toISOString().split('T')[0];
-            labels = [today];
-            salesData = [0];
-            ordersData = [0];
-        }
         
         // 根据当前周期生成完整的时间序列
         const endDate = new Date();
@@ -334,64 +281,40 @@ function renderSalesChart(data) {
         const completeSalesData = new Array(completeLabels.length).fill(0);
         const completeOrdersData = new Array(completeLabels.length).fill(0);
         
-        // 将API返回的数据映射到对应的时间点
-        labels.forEach((label, index) => {
-            const dataIndex = completeLabels.indexOf(label);
-            if (dataIndex !== -1) {
-                completeSalesData[dataIndex] = salesData[index] || 0;
-                completeOrdersData[dataIndex] = ordersData[index] || 0;
-            }
-        });
-        
-        // 使用完整的数据集
-        labels = completeLabels;
-        salesData = completeSalesData;
-        ordersData = completeOrdersData;
-        
-        // 确保数据长度一致
-        const maxLength = Math.max(labels.length, salesData.length, ordersData.length);
-        while (labels.length < maxLength) labels.push('无数据');
-        while (salesData.length < maxLength) salesData.push(0);
-        while (ordersData.length < maxLength) ordersData.push(0);
-        
-        // 获取周期文本
-        const periodText = {
-            day: '日',
-            week: '周',
-            month: '月',
-            year: '年'
-        }[currentPeriod] || '';
+        // 处理API返回的数据
+        if (data && Array.isArray(data)) {
+            data.forEach(item => {
+                const label = item.time_period;
+                const dataIndex = completeLabels.indexOf(label);
+                if (dataIndex !== -1) {
+                    completeSalesData[dataIndex] = parseFloat(item.sales_amount) || 0;
+                    completeOrdersData[dataIndex] = parseInt(item.orders_count) || 0;
+                }
+            });
+        } else if (data && data.labels && Array.isArray(data.labels)) {
+            data.labels.forEach((label, index) => {
+                const dataIndex = completeLabels.indexOf(label);
+                if (dataIndex !== -1) {
+                    completeSalesData[dataIndex] = parseFloat(data.sales[index]) || 0;
+                    completeOrdersData[dataIndex] = parseInt(data.orders[index]) || 0;
+                }
+            });
+        }
         
         // 格式化标签显示
-        const formattedLabels = labels.map(label => {
+        const formattedLabels = completeLabels.map(label => {
             if (currentPeriod === 'year' && label.includes('-')) {
-                // 年报表显示月份
                 const parts = label.split('-');
-                if (parts.length >= 2) {
-                    return parts[1] + '月';
-                }
+                return parts[1] + '月';
             } else if (currentPeriod === 'month' && label.includes('-')) {
-                // 月报表显示月份
                 const parts = label.split('-');
-                if (parts.length >= 2) {
-                    return parts[1] + '月';
-                }
+                return parts[1] + '月';
             } else if (currentPeriod === 'week' && label.includes('week')) {
-                // 周报表显示周数
                 const parts = label.split('-');
-                if (parts.length >= 3) {
-                    return '第' + parts[2] + '周';
-                }
+                return '第' + parts[2] + '周';
             } else if (currentPeriod === 'day' && label.includes('-')) {
-                // 日报表显示日期
-                try {
-                    const date = new Date(label);
-                    if (!isNaN(date.getTime())) {
-                        return (date.getMonth() + 1) + '月' + date.getDate() + '日';
-                    }
-                } catch (error) {
-                    console.warn('日期格式化错误:', error, label);
-                }
+                const date = new Date(label);
+                return (date.getMonth() + 1) + '月' + date.getDate() + '日';
             }
             return label;
         });
@@ -402,6 +325,14 @@ function renderSalesChart(data) {
             window.salesChart = null;
         }
         
+        // 获取周期文本
+        const periodText = {
+            day: '日',
+            week: '周',
+            month: '月',
+            year: '年'
+        }[currentPeriod] || '';
+        
         // 创建新图表
         window.salesChart = new Chart(ctx, {
             type: 'line',
@@ -409,7 +340,7 @@ function renderSalesChart(data) {
                 labels: formattedLabels,
                 datasets: [{
                     label: `${periodText}销售额`,
-                    data: salesData,
+                    data: completeSalesData,
                     backgroundColor: 'rgba(54, 162, 235, 0.2)',
                     borderColor: 'rgba(54, 162, 235, 1)',
                     borderWidth: 2,
@@ -425,7 +356,7 @@ function renderSalesChart(data) {
                     yAxisID: 'y'
                 }, {
                     label: `${periodText}订单数`,
-                    data: ordersData,
+                    data: completeOrdersData,
                     backgroundColor: 'rgba(255, 99, 132, 0.2)',
                     borderColor: 'rgba(255, 99, 132, 1)',
                     borderWidth: 2,
@@ -469,8 +400,7 @@ function renderSalesChart(data) {
                         ticks: {
                             maxRotation: 45,
                             minRotation: 0,
-                            autoSkip: true,
-                            maxTicksLimit: formattedLabels.length > 15 ? 15 : formattedLabels.length
+                            autoSkip: false // 显示所有标签
                         },
                         grid: {
                             display: true,
