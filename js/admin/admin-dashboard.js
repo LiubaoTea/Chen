@@ -25,11 +25,29 @@ function initializeChart() {
 
         // 如果Chart对象不可用，创建并加载Chart.js脚本
         const chartScript = document.createElement('script');
-        chartScript.src = 'https://cdn.bootcdn.net/ajax/libs/chart.js/3.9.1/chart.min.js';
+        
+        // 主CDN源
+        const primaryCDN = 'https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js';
+        // 备用CDN源
+        const fallbackCDN = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js';
+        
+        chartScript.src = primaryCDN;
+        
         chartScript.onload = () => {
             window.Chart = Chart;
             resolve(window.Chart);
         };
+        
+        chartScript.onerror = () => {
+            console.log('主CDN加载失败，尝试备用CDN');
+            chartScript.src = fallbackCDN;
+            
+            chartScript.onerror = () => {
+                console.error('所有CDN源加载失败');
+                reject(new Error('无法加载Chart.js库'));
+            };
+        };
+        
         document.head.appendChild(chartScript);
     });
 }
