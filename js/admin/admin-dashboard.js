@@ -360,9 +360,13 @@ function renderSalesChart(data) {
             return label;
         });
         
-        // 销毁现有图表（如果存在）
-        if (window.salesChart) {
-            window.salesChart.destroy();
+        // 安全销毁现有图表（如果存在）
+        if (window.salesChart && typeof window.salesChart.destroy === 'function') {
+            try {
+                window.salesChart.destroy();
+            } catch (error) {
+                console.error('销毁销售趋势图表时出错:', error);
+            }
             window.salesChart = null;
         }
         
