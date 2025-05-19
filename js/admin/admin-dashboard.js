@@ -73,16 +73,28 @@ async function loadDashboardData() {
         const topProducts = await adminAPI.getTopProducts(5);
         updateTopProducts(topProducts);
         
+        // 初始化时间周期选择器
+        initPeriodSelector();
+        
         // 获取销售趋势数据
-        const salesTrend = await adminAPI.getSalesTrend(currentPeriod);
+        const salesTrend = await adminAPI.getSalesTrend(currentPeriod, true);
+        // 确保在渲染图表前window.salesChart为null
+        if (window.salesChart) {
+            try {
+                if (window.salesChart instanceof Chart) {
+                    window.salesChart.destroy();
+                }
+            } catch (error) {
+                console.warn('销毁旧图表失败:', error);
+            } finally {
+                window.salesChart = null;
+            }
+        }
         renderSalesChart(salesTrend);
         
         // 获取分类占比数据
         const categoryDistribution = await adminAPI.getCategoryDistribution();
         renderCategoryChart(categoryDistribution);
-        
-        // 初始化时间周期选择器
-        initPeriodSelector();
     } catch (error) {
         console.error('加载仪表盘数据失败:', error);
         // 显示错误提示
@@ -324,6 +336,7 @@ function renderSalesChart(data) {
         
         // 处理API返回的数据
         if (data && Array.isArray(data)) {
+            console.log('处理数组格式的销售趋势数据:', data);
             data.forEach(item => {
                 const label = item.time_period;
                 const dataIndex = completeLabels.indexOf(label);
@@ -333,11 +346,33 @@ function renderSalesChart(data) {
                 }
             });
         } else if (data && data.labels && Array.isArray(data.labels)) {
+            console.log('处理对象格式的销售趋势数据:', data);
+            // 直接使用API返回的数据填充到我们的完整数据集中
             data.labels.forEach((label, index) => {
-                const dataIndex = completeLabels.indexOf(label);
+                // 尝试在我们生成的标签中找到匹配项
+                let dataIndex = completeLabels.indexOf(label);
+                
+                // 如果找不到精确匹配，尝试查找包含相同年月的标签
+                if (dataIndex === -1 && label.includes('-')) {
+                    const labelParts = label.split('-');
+                    const yearMonth = labelParts.slice(0, 2).join('-'); // 获取年-月部分
+                    
+                    // 查找包含相同年月的标签
+                    dataIndex = completeLabels.findIndex(l => l.startsWith(yearMonth));
+                }
+                
                 if (dataIndex !== -1) {
-                    completeSalesData[dataIndex] = parseFloat(data.sales[index]) || 0;
-                    completeOrdersData[dataIndex] = parseInt(data.orders[index]) || 0;
+                    // 确保数据是数字
+                    const salesValue = parseFloat(data.sales[index]) || 0;
+                    const ordersValue = parseInt(data.orders[index]) || 0;
+                    
+                    completeSalesData[dataIndex] = salesValue;
+                    completeOrdersData[dataIndex] = ordersValue;
+                } else {
+                    // 如果在生成的标签中找不到匹配项，直接添加到末尾
+                    completeLabels.push(label);
+                    completeSalesData.push(parseFloat(data.sales[index]) || 0);
+                    completeOrdersData.push(parseInt(data.orders[index]) || 0);
                 }
             });
         } else if (!data) {
@@ -370,24 +405,27 @@ function renderSalesChart(data) {
         });
         
         // 安全销毁现有图表（如果存在）
-        if (window.salesChart) {
+        if (window.salesChart instanceof Chart) {
             try {
-                if (typeof window.salesChart.destroy === 'function') {
-                    window.salesChart.destroy();
-                } else {
-                    // 如果salesChart存在但没有destroy方法，直接清除画布
-                    const canvas = document.getElementById('salesChart');
-                    if (canvas) {
-                        const ctx = canvas.getContext('2d');
-                        ctx.clearRect(0, 0, canvas.width, canvas.height);
-                    }
-                }
+                window.salesChart.destroy();
             } catch (error) {
                 console.error('销毁销售趋势图表时出错:', error);
-            } finally {
-                window.salesChart = null;
+            }
+        } else if (window.salesChart) {
+            // 如果salesChart存在但不是Chart实例，直接清除画布
+            try {
+                const canvas = document.getElementById('salesChart');
+                if (canvas) {
+                    const ctx = canvas.getContext('2d');
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                }
+            } catch (error) {
+                console.error('清除画布时出错:', error);
             }
         }
+        
+        // 确保window.salesChart为null，以便创建新图表
+        window.salesChart = null;
         
         // 获取周期文本
         const periodText = {
@@ -726,19 +764,28 @@ function renderCategoryChart(data) {
             values: values
         };
         
-        // 销毁现有图表（如果存在）
-        try {
-            if (window.categoryChart) {
-                if (typeof window.categoryChart.destroy === 'function') {
-                    window.categoryChart.destroy();
-                } else {
-                    window.categoryChart = null;
-                }
+        // 安全销毁现有图表（如果存在）
+        if (window.categoryChart instanceof Chart) {
+            try {
+                window.categoryChart.destroy();
+            } catch (error) {
+                console.error('销毁分类占比图表时出错:', error);
             }
-        } catch (error) {
-            console.error('销毁旧图表时出错:', error);
-            window.categoryChart = null;
+        } else if (window.categoryChart) {
+            // 如果categoryChart存在但不是Chart实例，直接清除画布
+            try {
+                const canvas = document.getElementById('categoryChart');
+                if (canvas) {
+                    const ctx = canvas.getContext('2d');
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                }
+            } catch (error) {
+                console.error('清除画布时出错:', error);
+            }
         }
+        
+        // 确保window.categoryChart为null，以便创建新图表
+        window.categoryChart = null;
         
         // 创建新图表
     window.categoryChart = new Chart(ctx, {

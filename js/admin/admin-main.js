@@ -28,6 +28,25 @@ document.addEventListener('DOMContentLoaded', () => {
         loginModal.show();
     } else {
         // 已登录，加载仪表盘数据
+        // 确保Chart.js已加载
+        if (typeof window.Chart === 'undefined') {
+            console.warn('Chart.js未加载，尝试加载Chart.js');
+            const chartScript = document.createElement('script');
+            chartScript.src = 'https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js';
+            chartScript.onload = () => {
+                window.Chart = Chart;
+                console.log('Chart.js已加载，Chart全局对象:', window.Chart);
+                initDashboard();
+            };
+            document.head.appendChild(chartScript);
+        } else {
+            console.log('Chart.js已加载，Chart全局对象:', window.Chart);
+            initDashboard();
+        }
+    }
+    
+    // 初始化仪表盘函数
+    function initDashboard() {
         // 检查window.loadDashboardData是否可用，如果不可用则使用本地函数
         if (typeof window.loadDashboardData === 'function') {
             window.loadDashboardData();
@@ -168,6 +187,28 @@ function navigateToPage(pageName) {
         // 根据页面类型加载相应数据
         switch (pageName) {
             case 'dashboard':
+                // 安全销毁现有图表（如果存在）
+                if (window.salesChart instanceof Chart) {
+                    try {
+                        window.salesChart.destroy();
+                    } catch (error) {
+                        console.warn('销毁销售趋势图表失败:', error);
+                    } finally {
+                        window.salesChart = null;
+                    }
+                }
+                
+                if (window.categoryChart instanceof Chart) {
+                    try {
+                        window.categoryChart.destroy();
+                    } catch (error) {
+                        console.warn('销毁分类占比图表失败:', error);
+                    } finally {
+                        window.categoryChart = null;
+                    }
+                }
+                
+                // 重新加载仪表盘数据
                 loadDashboardData();
                 break;
             case 'products':
