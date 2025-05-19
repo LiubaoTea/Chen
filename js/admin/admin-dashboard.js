@@ -229,21 +229,6 @@ function renderSalesChart(data) {
             labels = [today];
             salesData = [0];
             ordersData = [0];
-        } else if (data.labels && Array.isArray(data.labels)) {
-            // 处理对象格式的返回数据
-            console.log('处理对象格式的销售趋势数据:', data);
-            if (data.labels.length === 0) {
-                // 如果标签数组为空，使用当前日期作为标签
-                const today = new Date().toISOString().split('T')[0];
-                labels = [today];
-                salesData = [0];
-                ordersData = [0];
-            } else {
-                labels = data.labels;
-                salesData = data.sales ? data.sales.map(val => parseFloat(val) || 0) : [];
-                ordersData = data.orders ? data.orders.map(val => parseInt(val) || 0) : [];
-                hasRealData = (salesData.some(val => val > 0) || ordersData.some(val => val > 0));
-            }
         } else if (Array.isArray(data)) {
             // 处理数组格式的返回数据
             console.log('处理数组格式的销售趋势数据:', data);
@@ -258,6 +243,21 @@ function renderSalesChart(data) {
                 salesData = data.map(item => parseFloat(item.sales_amount) || 0);
                 ordersData = data.map(item => parseInt(item.orders_count) || 0);
                 hasRealData = data.some(item => (parseFloat(item.sales_amount) > 0 || parseInt(item.orders_count) > 0));
+            }
+        } else if (data.labels && Array.isArray(data.labels)) {
+            // 处理对象格式的返回数据
+            console.log('处理对象格式的销售趋势数据:', data);
+            if (data.labels.length === 0) {
+                // 如果标签数组为空，使用当前日期作为标签
+                const today = new Date().toISOString().split('T')[0];
+                labels = [today];
+                salesData = [0];
+                ordersData = [0];
+            } else {
+                labels = data.labels;
+                salesData = data.sales ? data.sales.map(val => parseFloat(val) || 0) : [];
+                ordersData = data.orders ? data.orders.map(val => parseInt(val) || 0) : [];
+                hasRealData = (salesData.some(val => val > 0) || ordersData.some(val => val > 0));
             }
         } else {
             console.error('销售趋势数据格式不正确:', data);
