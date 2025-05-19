@@ -14,12 +14,35 @@ console.log('admin-dashboard.js中的adminAPI:', adminAPI);
 // 当前选择的时间周期
 let currentPeriod = 'month';
 
+// 确保Chart.js全局可用
+function initializeChart() {
+    return new Promise((resolve) => {
+        // 检查Chart对象是否已经可用
+        if (typeof window.Chart !== 'undefined') {
+            resolve(window.Chart);
+            return;
+        }
+
+        // 如果Chart对象不可用，创建并加载Chart.js脚本
+        const chartScript = document.createElement('script');
+        chartScript.src = 'https://cdn.bootcdn.net/ajax/libs/chart.js/3.9.1/chart.min.js';
+        chartScript.onload = () => {
+            window.Chart = Chart;
+            resolve(window.Chart);
+        };
+        document.head.appendChild(chartScript);
+    });
+}
+
 // 加载仪表盘数据
 async function loadDashboardData() {
     // 检查是否已登录
     if (!adminAuth.check()) return;
     
     try {
+        // 确保Chart.js已加载
+        await initializeChart();
+        
         // 获取仪表盘统计数据
         const statsData = await adminAPI.getDashboardStats();
         updateDashboardStats(statsData);
