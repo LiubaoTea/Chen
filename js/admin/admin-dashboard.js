@@ -14,35 +14,12 @@ console.log('admin-dashboard.js中的adminAPI:', adminAPI);
 // 当前选择的时间周期
 let currentPeriod = 'month';
 
-// 确保Chart.js全局可用
-function initializeChart() {
-    return new Promise((resolve) => {
-        // 检查Chart对象是否已经可用
-        if (typeof window.Chart !== 'undefined') {
-            resolve(window.Chart);
-            return;
-        }
-
-        // 如果Chart对象不可用，创建并加载Chart.js脚本
-        const chartScript = document.createElement('script');
-        chartScript.src = 'https://cdn.bootcdn.net/ajax/libs/chart.js/3.9.1/chart.min.js';
-        chartScript.onload = () => {
-            window.Chart = Chart;
-            resolve(window.Chart);
-        };
-        document.head.appendChild(chartScript);
-    });
-}
-
 // 加载仪表盘数据
 async function loadDashboardData() {
     // 检查是否已登录
     if (!adminAuth.check()) return;
     
     try {
-        // 确保Chart.js已加载
-        await initializeChart();
-        
         // 获取仪表盘统计数据
         const statsData = await adminAPI.getDashboardStats();
         updateDashboardStats(statsData);
@@ -328,7 +305,7 @@ function renderSalesChart(data) {
         const formattedLabels = completeLabels.map(label => {
             if (currentPeriod === 'year' && label.includes('-')) {
                 const parts = label.split('-');
-                return parts[0] + '年' + parts[1] + '月';
+                return parts[1] + '月';
             } else if (currentPeriod === 'month' && label.includes('-')) {
                 const parts = label.split('-');
                 return parts[1] + '月';
@@ -336,38 +313,15 @@ function renderSalesChart(data) {
                 const parts = label.split('-');
                 return '第' + parts[2] + '周';
             } else if (currentPeriod === 'day' && label.includes('-')) {
-                try {
-                    const date = new Date(label);
-                    if (!isNaN(date.getTime())) {
-                        return (date.getMonth() + 1) + '月' + date.getDate() + '日';
-                    }
-                } catch (error) {
-                    console.warn('日期格式化错误:', error, label);
-                }
+                const date = new Date(label);
+                return (date.getMonth() + 1) + '月' + date.getDate() + '日';
             }
             return label;
         });
         
-        // 确保标签不为空
-        if (formattedLabels.length === 0) {
-            formattedLabels.push('无数据');
-            completeSalesData.push(0);
-            completeOrdersData.push(0);
-        }
-        
-        console.log(`获取到${currentPeriod}销售趋势数据:`, { 
-            labels: formattedLabels, 
-            salesData: completeSalesData, 
-            ordersData: completeOrdersData 
-        });
-        
         // 销毁现有图表（如果存在）
         if (window.salesChart) {
-            try {
-                window.salesChart.destroy();
-            } catch (error) {
-                console.error('销毁旧图表时出错:', error);
-            }
+            window.salesChart.destroy();
             window.salesChart = null;
         }
         
@@ -384,42 +338,39 @@ function renderSalesChart(data) {
             type: 'line',
             data: {
                 labels: formattedLabels,
-                datasets: [
-                    {
-                        label: `${periodText}销售额`,
-                        data: completeSalesData,
-                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                        borderColor: 'rgba(54, 162, 235, 1)',
-                        borderWidth: 2,
-                        pointRadius: 4,
-                        pointBackgroundColor: 'rgba(54, 162, 235, 1)',
-                        pointBorderColor: 'rgba(54, 162, 235, 1)',
-                        pointHoverRadius: 6,
-                        pointHoverBackgroundColor: 'rgba(54, 162, 235, 1)',
-                        pointHoverBorderColor: 'rgba(54, 162, 235, 1)',
-                        pointHitRadius: 10,
-                        fill: true,
-                        tension: 0.1,
-                        yAxisID: 'y'
-                    }, 
-                    {
-                        label: `${periodText}订单数`,
-                        data: completeOrdersData,
-                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
-                        borderColor: 'rgba(255, 99, 132, 1)',
-                        borderWidth: 2,
-                        pointRadius: 4,
-                        pointBackgroundColor: 'rgba(255, 99, 132, 1)',
-                        pointBorderColor: 'rgba(255, 99, 132, 1)',
-                        pointHoverRadius: 6,
-                        pointHoverBackgroundColor: 'rgba(255, 99, 132, 1)',
-                        pointHoverBorderColor: 'rgba(255, 99, 132, 1)',
-                        pointHitRadius: 10,
-                        fill: false,
-                        tension: 0.1,
-                        yAxisID: 'y1'
-                    }
-                ]
+                datasets: [{
+                    label: `${periodText}销售额`,
+                    data: completeSalesData,
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 2,
+                    pointRadius: 4,
+                    pointBackgroundColor: 'rgba(54, 162, 235, 1)',
+                    pointBorderColor: 'rgba(54, 162, 235, 1)',
+                    pointHoverRadius: 6,
+                    pointHoverBackgroundColor: 'rgba(54, 162, 235, 1)',
+                    pointHoverBorderColor: 'rgba(54, 162, 235, 1)',
+                    pointHitRadius: 10,
+                    fill: true,
+                    tension: 0.1,
+                    yAxisID: 'y'
+                }, {
+                    label: `${periodText}订单数`,
+                    data: completeOrdersData,
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 2,
+                    pointRadius: 4,
+                    pointBackgroundColor: 'rgba(255, 99, 132, 1)',
+                    pointBorderColor: 'rgba(255, 99, 132, 1)',
+                    pointHoverRadius: 6,
+                    pointHoverBackgroundColor: 'rgba(255, 99, 132, 1)',
+                    pointHoverBorderColor: 'rgba(255, 99, 132, 1)',
+                    pointHitRadius: 10,
+                    fill: false,
+                    tension: 0.1,
+                    yAxisID: 'y1'
+                }]
             },
             options: {
                 responsive: true,
@@ -433,48 +384,6 @@ function renderSalesChart(data) {
                         right: 25,
                         top: 25,
                         bottom: 25
-                    }
-                },
-                plugins: {
-                    title: {
-                        display: true,
-                        text: `${periodText}销售趋势图表`,
-                        font: {
-                            size: 18,
-                            weight: 'bold'
-                        },
-                        padding: {
-                            top: 10,
-                            bottom: 20
-                        }
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                let label = context.dataset.label || '';
-                                if (label) {
-                                    label += ': ';
-                                }
-                                if (context.parsed.y !== null) {
-                                    if (context.datasetIndex === 0) {
-                                        label += '¥' + context.parsed.y.toLocaleString('zh-CN');
-                                    } else {
-                                        label += context.parsed.y + ' 单';
-                                    }
-                                }
-                                return label;
-                            }
-                        }
-                    },
-                    legend: {
-                        position: 'top',
-                        labels: {
-                            usePointStyle: true,
-                            padding: 20,
-                            font: {
-                                size: 14
-                            }
-                        }
                     }
                 },
                 scales: {
@@ -763,16 +672,12 @@ function renderCategoryChart(data) {
             window.categoryChart = null;
         }
         
-        // 调整图表容器大小，确保有合适的显示高度
-        categoryChartContainer.style.height = '300px';
-        
         // 创建新图表
-        window.categoryChart = new Chart(ctx, {
+    window.categoryChart = new Chart(ctx, {
             type: 'doughnut',
             data: {
                 labels: chartData.labels,
                 datasets: [{
-                    label: '商品分类占比',
                     data: chartData.values,
                     backgroundColor: [
                         '#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b',
@@ -798,26 +703,11 @@ function renderCategoryChart(data) {
                     }
                 },
                 plugins: {
-                    title: {
-                        display: true,
-                        text: '商品分类占比图表',
-                        font: {
-                            size: 18,
-                            weight: 'bold'
-                        },
-                        padding: {
-                            top: 10,
-                            bottom: 20
-                        }
-                    },
                     legend: {
                         position: 'bottom',
                         labels: {
                             usePointStyle: true,
-                            padding: 20,
-                            font: {
-                                size: 14
-                            }
+                            padding: 20
                         }
                     },
                     tooltip: {
@@ -825,14 +715,14 @@ function renderCategoryChart(data) {
                         bodyColor: '#858796',
                         borderColor: '#dddfeb',
                         borderWidth: 1,
-                        displayColors: true,
+                        displayColors: false,
                         callbacks: {
                             label: function(context) {
                                 const label = context.label || '';
                                 const value = context.parsed;
                                 const total = context.dataset.data.reduce((acc, data) => acc + data, 0);
                                 const percentage = Math.round((value / total) * 100);
-                                return `${label}: ${value} (${percentage}%)`;
+                                return `${label}: ${percentage}%`;
                             }
                         }
                     }
