@@ -187,15 +187,13 @@ function navigateToPage(pageName) {
         // 根据页面类型加载相应数据
         switch (pageName) {
             case 'dashboard':
-                // 安全销毁现有图表（如果存在）
-                if (window.salesChart instanceof Chart) {
-                    try {
-                        window.salesChart.destroy();
-                    } catch (error) {
-                        console.warn('销毁销售趋势图表失败:', error);
-                    } finally {
-                        window.salesChart = null;
-                    }
+                // 使用新版仪表盘刷新函数
+                if (typeof window.adminDashboard !== 'undefined' && typeof window.adminDashboard.refresh === 'function') {
+                    window.adminDashboard.refresh();
+                } else if (typeof window.loadDashboardData === 'function') {
+                    window.loadDashboardData();
+                } else {
+                    console.warn('仪表盘刷新函数未找到');
                 }
                 
                 if (window.categoryChart instanceof Chart) {
@@ -598,112 +596,8 @@ function updateTopProducts(products) {
 }
 
 // 渲染销售趋势图表
-function renderSalesChart(data) {
-    const salesChartCanvas = document.getElementById('salesChart');
-    if (!salesChartCanvas) return;
-    
-    // 检查Chart对象是否可用
-    if (typeof window.Chart === 'undefined') {
-        console.error('Chart对象未定义，请确保Chart.js已正确加载');
-        return;
-    }
-    
-    // 检查是否已存在Chart实例并正确销毁
-    try {
-        if (window.salesChart) {
-            if (typeof window.salesChart.destroy === 'function') {
-                window.salesChart.destroy();
-            } else {
-                window.salesChart = null;
-            }
-        }
-    } catch (error) {
-        console.error('销毁旧图表时出错:', error);
-        window.salesChart = null;
-    }
-    
-    // 检查数据格式，兼容两种格式：数组格式和{labels,sales,orders}格式
-    let labels, salesData, ordersData;
-    
-    if (Array.isArray(data)) {
-        // 数组格式
-        labels = data.map(item => item.time_period);
-        salesData = data.map(item => item.sales_amount);
-        ordersData = data.map(item => item.orders_count);
-    } else if (data && data.labels && data.sales && data.orders) {
-        // 对象格式
-        labels = data.labels;
-        salesData = data.sales;
-        ordersData = data.orders;
-    } else {
-        console.error('销售趋势数据格式不正确:', data);
-        return;
-    }
-    
-    // 创建图表
-    window.salesChart = new Chart(salesChartCanvas, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [
-                {
-                    label: '销售额',
-                    data: salesData,
-                    borderColor: '#4e73df',
-                    backgroundColor: 'rgba(78, 115, 223, 0.05)',
-                    pointRadius: 3,
-                    pointBackgroundColor: '#4e73df',
-                    pointBorderColor: '#4e73df',
-                    pointHoverRadius: 5,
-                    pointHoverBackgroundColor: '#4e73df',
-                    pointHoverBorderColor: '#4e73df',
-                    pointHitRadius: 10,
-                    pointBorderWidth: 2,
-                    fill: true
-                },
-                {
-                    label: '订单数',
-                    data: ordersData,
-                    borderColor: '#1cc88a',
-                    backgroundColor: 'rgba(28, 200, 138, 0.05)',
-                    pointRadius: 3,
-                    pointBackgroundColor: '#1cc88a',
-                    pointBorderColor: '#1cc88a',
-                    pointHoverRadius: 5,
-                    pointHoverBackgroundColor: '#1cc88a',
-                    pointHoverBorderColor: '#1cc88a',
-                    pointHitRadius: 10,
-                    pointBorderWidth: 2,
-                    fill: true
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                x: {
-                    grid: {
-                        display: false
-                    }
-                },
-                y: {
-                    ticks: {
-                        callback: function(value) {
-                            return '¥' + value.toLocaleString();
-                        }
-                    }
-                }
-            },
-            plugins: {
-                legend: {
-                    display: true,
-                    position: 'top'
-                }
-            }
-        }
-    });
-}
+// 旧版renderSalesChart函数已移除，统一使用admin-dashboard.js中的新版双Y轴图表
+// 如需渲染销售趋势图表，请使用window.adminDashboard.refresh()函数
 
 // 渲染分类占比图表
 function renderCategoryChart(data) {

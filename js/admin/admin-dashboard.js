@@ -279,11 +279,12 @@ function renderSalesChart(data) {
                 xAxisTitle = '日期';
                 break;
             case 'week':
-                startDate.setDate(endDate.getDate() - 12 * 7); // 最近12周
+                startDate.setDate(endDate.getDate() - 9 * 7); // 最近10周
                 xAxisTitle = '周';
                 break;
             case 'month':
-                startDate.setMonth(endDate.getMonth() - 12); // 最近12个月
+                // 设置为当年的1月
+                startDate = new Date(endDate.getFullYear(), 0, 1);
                 xAxisTitle = '月份';
                 break;
             case 'year':
@@ -305,7 +306,10 @@ function renderSalesChart(data) {
                     label = currentDate.toISOString().split('T')[0];
                     break;
                 case 'week':
-                    const weekNumber = Math.ceil((currentDate.getDate() + currentDate.getDay()) / 7);
+                    // 使用ISO周数计算方法，确保周数计算准确
+                    const firstDayOfYear = new Date(currentDate.getFullYear(), 0, 1);
+                    const pastDaysOfYear = (currentDate - firstDayOfYear) / 86400000;
+                    const weekNumber = Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
                     label = `${currentDate.getFullYear()}-week-${weekNumber.toString().padStart(2, '0')}`;
                     break;
                 case 'month':
@@ -347,34 +351,56 @@ function renderSalesChart(data) {
             });
         } else if (data && data.labels && Array.isArray(data.labels)) {
             console.log('处理对象格式的销售趋势数据:', data);
-            // 直接使用API返回的数据填充到我们的完整数据集中
-            data.labels.forEach((label, index) => {
-                // 尝试在我们生成的标签中找到匹配项
-                let dataIndex = completeLabels.indexOf(label);
-                
-                // 如果找不到精确匹配，尝试查找包含相同年月的标签
-                if (dataIndex === -1 && label.includes('-')) {
-                    const labelParts = label.split('-');
-                    const yearMonth = labelParts.slice(0, 2).join('-'); // 获取年-月部分
+            
+            // 检查数据是否来自1970年（错误数据）
+            const hasInvalidData = data.labels.some(label => label.startsWith('1970'));
+            if (hasInvalidData) {
+                console.warn('检测到无效的历史数据（1970年），将使用当前生成的时间序列');
+                // 使用已生成的空数据继续，不处理API返回的数据
+            } else {
+                // 直接使用API返回的数据填充到我们的完整数据集中
+                data.labels.forEach((label, index) => {
+                    // 尝试在我们生成的标签中找到匹配项
+                    let dataIndex = completeLabels.indexOf(label);
                     
-                    // 查找包含相同年月的标签
-                    dataIndex = completeLabels.findIndex(l => l.startsWith(yearMonth));
-                }
-                
-                if (dataIndex !== -1) {
-                    // 确保数据是数字
-                    const salesValue = parseFloat(data.sales[index]) || 0;
-                    const ordersValue = parseInt(data.orders[index]) || 0;
+                    // 如果找不到精确匹配，尝试查找包含相同年月的标签
+                    if (dataIndex === -1 && label.includes('-')) {
+                        const labelParts = label.split('-');
+                        const yearMonth = labelParts.slice(0, 2).join('-'); // 获取年-月部分
+                        
+                        // 查找包含相同年月的标签
+                        dataIndex = completeLabels.findIndex(l => l.startsWith(yearMonth));
+                    }
                     
-                    completeSalesData[dataIndex] = salesValue;
-                    completeOrdersData[dataIndex] = ordersValue;
-                } else {
-                    // 如果在生成的标签中找不到匹配项，直接添加到末尾
-                    completeLabels.push(label);
-                    completeSalesData.push(parseFloat(data.sales[index]) || 0);
-                    completeOrdersData.push(parseInt(data.orders[index]) || 0);
-                }
-            });
+                    if (dataIndex !== -1) {
+                        // 确保数据是数字
+                        const salesValue = parseFloat(data.sales[index]) || 0;
+                        const ordersValue = parseInt(data.orders[index]) || 0;
+                        
+                        completeSalesData[dataIndex] = salesValue;
+                        completeOrdersData[dataIndex] = ordersValue;
+                    } else if (currentPeriod === 'month' && label.includes('-')) {
+                        // 对于月视图，尝试匹配月份
+                        const labelParts = label.split('-');
+                        const month = parseInt(labelParts[1]);
+                        const year = parseInt(labelParts[0]);
+                        
+                        // 只处理当年的数据
+                        if (year === endDate.getFullYear()) {
+                            // 查找当年对应月份的索引
+                            const monthIndex = completeLabels.findIndex(l => {
+                                const parts = l.split('-');
+                                return parts[0] === labelParts[0] && parts[1] === labelParts[1];
+                            });
+                            
+                            if (monthIndex !== -1) {
+                                completeSalesData[monthIndex] = parseFloat(data.sales[index]) || 0;
+                                completeOrdersData[monthIndex] = parseInt(data.orders[index]) || 0;
+                            }
+                        }
+                    }
+                });
+            }
         } else if (!data) {
             console.warn('销售趋势数据为空，将显示空图表');
             // 即使没有数据，也会显示图表，因为completeLabels和completeSalesData已经初始化为0
@@ -387,7 +413,7 @@ function renderSalesChart(data) {
                 return parts[0] + '年' + parts[1] + '月';
             } else if (currentPeriod === 'month' && label.includes('-')) {
                 const parts = label.split('-');
-                return parts[0] + '年' + parts[1] + '月';
+                return parts[1] + '月'; // 只显示月份，不显示年份，简化显示
             } else if (currentPeriod === 'week' && label.includes('week')) {
                 const parts = label.split('-');
                 return parts[0] + '年第' + parts[2] + '周';
@@ -403,6 +429,32 @@ function renderSalesChart(data) {
             }
             return label;
         });
+        
+        // 对于月视图，特殊处理API返回的数据
+        if (currentPeriod === 'month' && data && data.labels && Array.isArray(data.labels)) {
+            // 检查是否有当前年份的数据
+            const currentYear = endDate.getFullYear();
+            data.labels.forEach((label, index) => {
+                if (label.includes('-')) {
+                    const parts = label.split('-');
+                    const year = parseInt(parts[0]);
+                    const month = parseInt(parts[1]);
+                    
+                    // 如果是当年的数据
+                    if (year === currentYear) {
+                        // 找到对应月份在completeLabels中的索引
+                        const monthLabel = `${year}-${month.toString().padStart(2, '0')}`;
+                        const monthIndex = completeLabels.findIndex(l => l.startsWith(monthLabel));
+                        
+                        if (monthIndex !== -1) {
+                            // 更新销售额和订单数
+                            completeSalesData[monthIndex] = parseFloat(data.sales[index]) || 0;
+                            completeOrdersData[monthIndex] = parseInt(data.orders[index]) || 0;
+                        }
+                    }
+                }
+            });
+        }
         
         // 安全销毁现有图表（如果存在）
         if (window.salesChart instanceof Chart) {
@@ -505,8 +557,8 @@ function renderSalesChart(data) {
                         ticks: {
                             maxRotation: 45,
                             minRotation: 0,
-                            autoSkip: false, // 显示所有标签
-                            maxTicksLimit: formattedLabels.length > 30 ? 30 : formattedLabels.length // 限制最大标签数量
+                            autoSkip: true, // 自动跳过部分标签以避免拥挤
+                            maxTicksLimit: currentPeriod === 'month' ? 12 : (currentPeriod === 'week' ? 10 : 24) // 根据周期限制标签数量
                         },
                         grid: {
                             display: true,
