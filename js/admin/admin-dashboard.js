@@ -340,22 +340,31 @@ function renderSalesChart(data) {
                     completeOrdersData[dataIndex] = parseInt(data.orders[index]) || 0;
                 }
             });
+        } else if (!data) {
+            console.warn('销售趋势数据为空，将显示空图表');
+            // 即使没有数据，也会显示图表，因为completeLabels和completeSalesData已经初始化为0
         }
         
         // 格式化标签显示
         const formattedLabels = completeLabels.map(label => {
             if (currentPeriod === 'year' && label.includes('-')) {
                 const parts = label.split('-');
-                return parts[1] + '月';
+                return parts[0] + '年' + parts[1] + '月';
             } else if (currentPeriod === 'month' && label.includes('-')) {
                 const parts = label.split('-');
-                return parts[1] + '月';
+                return parts[0] + '年' + parts[1] + '月';
             } else if (currentPeriod === 'week' && label.includes('week')) {
                 const parts = label.split('-');
-                return '第' + parts[2] + '周';
+                return parts[0] + '年第' + parts[2] + '周';
             } else if (currentPeriod === 'day' && label.includes('-')) {
-                const date = new Date(label);
-                return (date.getMonth() + 1) + '月' + date.getDate() + '日';
+                try {
+                    const date = new Date(label);
+                    if (!isNaN(date.getTime())) {
+                        return (date.getMonth() + 1) + '月' + date.getDate() + '日';
+                    }
+                } catch (error) {
+                    console.warn('日期格式化错误:', error, label);
+                }
             }
             return label;
         });
@@ -387,6 +396,9 @@ function renderSalesChart(data) {
             month: '月',
             year: '年'
         }[currentPeriod] || '';
+        
+        // 调整图表容器大小，确保有合适的显示高度
+        salesChartContainer.style.height = '400px'; // 增加高度以适应全宽显示
         
         // 创建新图表
         window.salesChart = new Chart(ctx, {
@@ -455,7 +467,8 @@ function renderSalesChart(data) {
                         ticks: {
                             maxRotation: 45,
                             minRotation: 0,
-                            autoSkip: false // 显示所有标签
+                            autoSkip: false, // 显示所有标签
+                            maxTicksLimit: formattedLabels.length > 30 ? 30 : formattedLabels.length // 限制最大标签数量
                         },
                         grid: {
                             display: true,
@@ -509,7 +522,7 @@ function renderSalesChart(data) {
                 plugins: {
                     title: {
                         display: true,
-                        text: `${periodText}销售趋势`,
+                        text: `${periodText}销售趋势图表`,
                         font: {
                             size: 18,
                             weight: 'bold'
