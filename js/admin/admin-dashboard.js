@@ -344,13 +344,23 @@ function renderSalesChart(data) {
                 xAxisTitle = '周';
                 // 对于周视图，将ISO格式转换为更友好的显示
                 displayLabels = displayLabels.map(label => {
-                    if (label.includes('W')) {
-                        const parts = label.split('-W');
-                        return `${parts[0]}年第${parts[1]}周`;
-                    }
-                    if (label.includes('week')) {
-                        const parts = label.split('-week-');
-                        return `${parts[0]}年第${parts[1]}周`;
+                    try {
+                        // 尝试解析日期格式
+                        const date = new Date(label);
+                        if (!isNaN(date.getTime())) {
+                            // 计算周数
+                            const startOfYear = new Date(date.getFullYear(), 0, 1);
+                            const days = Math.floor((date - startOfYear) / (24 * 60 * 60 * 1000));
+                            const weekNumber = Math.ceil((days + startOfYear.getDay() + 1) / 7);
+                            return `${date.getFullYear()}年第${weekNumber}周`;
+                        }
+                    } catch (error) {
+                        console.warn('周数格式化错误:', error, label);
+                        // 尝试其他格式解析
+                        if (label.includes('week')) {
+                            const parts = label.split('-week-');
+                            return `${parts[0]}年第${parts[1]}周`;
+                        }
                     }
                     return label;
                 });
@@ -407,7 +417,7 @@ function renderSalesChart(data) {
         while (salesData.length < maxLength) salesData.push(0);
         while (ordersData.length < maxLength) ordersData.push(0);
         
-        // 确保即使所有值为0，也显示图表
+        // 始终显示图表，无论是否有实际数据
         const hasRealData = true;
         
         // 销售额和订单数量的最大值，用于设置Y轴刻度
