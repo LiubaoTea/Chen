@@ -297,6 +297,18 @@ const adminAPIObject = {
             return { labels: [], sales: [], orders: [] };
         }
         
+        // 过滤掉1970年的无效数据
+        orders = orders.filter(order => {
+            if (!order.created_at) return false;
+            const orderDate = new Date(order.created_at * 1000);
+            return orderDate.getFullYear() > 1970;
+        });
+        
+        // 如果过滤后没有订单数据，返回空趋势
+        if (orders.length === 0) {
+            return { labels: [], sales: [], orders: [] };
+        }
+        
         // 解析日期范围
         const start = startDate ? new Date(startDate) : new Date();
         start.setHours(0, 0, 0, 0);
@@ -320,42 +332,60 @@ const adminAPIObject = {
                 break;
                 
             case 'week':
+                // 修复周数计算逻辑
                 dateFormat = date => {
                     const year = date.getFullYear();
                     const weekNumber = getWeekNumber(date);
-                    // 返回格式：2023-week-32 (这样在前端可以更容易解析)
-                    return `${year}-week-${weekNumber}`;
+                    // 返回格式：2023-W32 (符合ISO标准)
+                    return `${year}-W${weekNumber.toString().padStart(2, '0')}`;
                 };
+                
                 // 生成日期范围（每周）
+                const weekSet = new Set(); // 使用Set避免重复周
                 while (currentDate <= end) {
-                    dateRange.push(dateFormat(currentDate));
+                    const weekKey = dateFormat(currentDate);
+                    weekSet.add(weekKey);
                     currentDate.setDate(currentDate.getDate() + 7);
                 }
+                dateRange = Array.from(weekSet);
                 
-                // 辅助函数：获取日期所在的周数
+                // 辅助函数：获取日期所在的周数（ISO标准）
                 function getWeekNumber(date) {
-                    const firstDayOfYear = new Date(date.getFullYear(), 0, 1);
-                    const pastDaysOfYear = (date - firstDayOfYear) / 86400000;
-                    return Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
+                    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+                    const dayNum = d.getUTCDay() || 7;
+                    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+                    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+                    return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
                 }
                 break;
                 
             case 'year':
+                // 按年显示每个月的数据
                 dateFormat = date => `${date.getFullYear()}年${(date.getMonth() + 1).toString().padStart(2, '0')}月`;
+                
                 // 生成日期范围（每月）
+                const yearMonthSet = new Set(); // 使用Set避免重复月份
                 while (currentDate <= end) {
-                    dateRange.push(dateFormat(currentDate));
+                    yearMonthSet.add(dateFormat(currentDate));
                     currentDate.setMonth(currentDate.getMonth() + 1);
                 }
+                dateRange = Array.from(yearMonthSet);
                 break;
                 
             case 'month':
             default:
-                dateFormat = date => `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
-                // 生成日期范围（每天，按月查看）
-                while (currentDate <= end) {
-                    dateRange.push(dateFormat(currentDate));
-                    currentDate.setDate(currentDate.getDate() + 1);
+                // 确保月视图显示当年12个月
+                const currentYear = new Date().getFullYear();
+                dateFormat = date => {
+                    // 只显示月份名称，不包含年份和日期
+                    const monthNames = ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月'];
+                    return monthNames[date.getMonth()];
+                };
+                
+                // 生成当年12个月的日期范围
+                for (let month = 0; month < 12; month++) {
+                    const monthDate = new Date(currentYear, month, 1);
+                    dateRange.push(dateFormat(monthDate));
                 }
                 break;
         }
@@ -377,6 +407,9 @@ const adminAPIObject = {
             
             // 转换时间戳为日期对象
             const orderDate = new Date(order.created_at * 1000);
+            
+            // 跳过1970年的无效数据
+            if (orderDate.getFullYear() <= 1970) return;
             
             // 格式化订单日期
             const formattedDate = dateFormat(orderDate);
