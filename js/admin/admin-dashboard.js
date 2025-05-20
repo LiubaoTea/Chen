@@ -448,26 +448,32 @@ function renderSalesChart(data) {
                     {
                         label: `${periodText}销售额`,
                         data: salesData,
-                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                        borderColor: 'rgba(54, 162, 235, 1)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
                         borderWidth: 2,
-                        tension: 0.1,
+                        tension: 0.4,
                         yAxisID: 'y',
                         pointRadius: 4,
                         pointHoverRadius: 6,
-                        fill: true
+                        fill: true,
+                        pointBackgroundColor: 'rgba(75, 192, 192, 1)',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2
                     },
                     {
                         label: `${periodText}订单数`,
                         data: ordersData,
-                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
-                        borderColor: 'rgba(255, 99, 132, 1)',
+                        backgroundColor: 'rgba(255, 159, 64, 0.2)',
+                        borderColor: 'rgba(255, 159, 64, 1)',
                         borderWidth: 2,
-                        tension: 0.1,
+                        tension: 0.4,
                         yAxisID: 'y1',
                         pointRadius: 4,
                         pointHoverRadius: 6,
-                        fill: false
+                        fill: true,
+                        pointBackgroundColor: 'rgba(255, 159, 64, 1)',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2
                     }
                 ]
             },
@@ -475,24 +481,43 @@ function renderSalesChart(data) {
                 responsive: true,
                 maintainAspectRatio: false,
                 animation: {
-                    duration: 1000 // 添加动画效果
+                    duration: 1000,
+                    easing: 'easeInOutQuart'
+                },
+                layout: {
+                    padding: {
+                        top: 20,
+                        right: 20,
+                        bottom: 20,
+                        left: 20
+                    }
                 },
                 plugins: {
                     title: {
                         display: true,
                         text: `${periodText}销售趋势图表`,
                         font: {
-                            size: 18,
-                            weight: 'bold'
+                            size: 20,
+                            weight: 'bold',
+                            family: '"Microsoft YaHei", sans-serif'
                         },
                         padding: {
-                            top: 10,
+                            top: 20,
                             bottom: 20
-                        }
+                        },
+                        color: '#333'
                     },
                     tooltip: {
                         mode: 'index',
                         intersect: false,
+                        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                        titleColor: '#333',
+                        bodyColor: '#666',
+                        borderColor: 'rgba(0, 0, 0, 0.1)',
+                        borderWidth: 1,
+                        padding: 12,
+                        cornerRadius: 6,
+                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
                         callbacks: {
                             label: function(context) {
                                 let label = context.dataset.label || '';
@@ -512,12 +537,15 @@ function renderSalesChart(data) {
                     },
                     legend: {
                         position: 'top',
+                        align: 'center',
                         labels: {
                             usePointStyle: true,
                             padding: 20,
                             font: {
-                                size: 14
-                            }
+                                size: 14,
+                                family: '"Microsoft YaHei", sans-serif'
+                            },
+                            color: '#666'
                         }
                     }
                 },
@@ -528,25 +556,30 @@ function renderSalesChart(data) {
                             text: xAxisTitle,
                             font: {
                                 size: 14,
-                                weight: 'bold'
+                                weight: 'bold',
+                                family: '"Microsoft YaHei", sans-serif'
                             },
-                            padding: {top: 10, bottom: 0}
+                            padding: {top: 15, bottom: 5},
+                            color: '#666'
                         },
                         ticks: {
                             maxRotation: 45,
                             minRotation: 0,
                             autoSkip: true,
-                            maxTicksLimit: displayLabels.length > 15 ? 15 : displayLabels.length,
+                            maxTicksLimit: displayLabels.length > 12 ? 12 : displayLabels.length,
                             font: {
-                                size: 12
-                            }
+                                size: 12,
+                                family: '"Microsoft YaHei", sans-serif'
+                            },
+                            color: '#666'
                         },
                         grid: {
                             display: true,
                             drawBorder: true,
                             drawOnChartArea: true,
                             drawTicks: true,
-                            color: 'rgba(0, 0, 0, 0.1)'
+                            color: 'rgba(0, 0, 0, 0.05)',
+                            borderDash: [5, 5]
                         }
                     },
                     y: {
@@ -559,8 +592,10 @@ function renderSalesChart(data) {
                             text: '销售额 (¥)',
                             font: {
                                 size: 14,
-                                weight: 'bold'
-                            }
+                                weight: 'bold',
+                                family: '"Microsoft YaHei", sans-serif'
+                            },
+                            color: '#666'
                         },
                         ticks: {
                             callback: function(value) {
@@ -568,11 +603,18 @@ function renderSalesChart(data) {
                             },
                             stepSize: salesYAxisStepSize,
                             font: {
-                                size: 12
-                            }
+                                size: 12,
+                                family: '"Microsoft YaHei", sans-serif'
+                            },
+                            color: '#666',
+                            padding: 8
                         },
                         min: 0,
-                        max: salesYAxisMax
+                        max: salesYAxisMax,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)',
+                            borderDash: [5, 5]
+                        }
                     },
                     y1: {
                         type: 'linear',
@@ -584,8 +626,10 @@ function renderSalesChart(data) {
                             text: '订单数量 (单)',
                             font: {
                                 size: 14,
-                                weight: 'bold'
-                            }
+                                weight: 'bold',
+                                family: '"Microsoft YaHei", sans-serif'
+                            },
+                            color: '#666'
                         },
                         ticks: {
                             callback: function(value) {
@@ -593,13 +637,18 @@ function renderSalesChart(data) {
                             },
                             stepSize: ordersYAxisStepSize,
                             font: {
-                                size: 12
-                            }
+                                size: 12,
+                                family: '"Microsoft YaHei", sans-serif'
+                            },
+                            color: '#666',
+                            padding: 8
                         },
                         min: 0,
                         max: ordersYAxisMax,
                         grid: {
-                            drawOnChartArea: false
+                            drawOnChartArea: false,
+                            color: 'rgba(0, 0, 0, 0.05)',
+                            borderDash: [5, 5]
                         }
                     }
                 }
