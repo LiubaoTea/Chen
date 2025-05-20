@@ -188,9 +188,8 @@ function navigateToPage(pageName) {
         switch (pageName) {
             case 'dashboard':
                 // 使用新版仪表盘刷新函数
-                if (typeof window.adminDashboard !== 'undefined' && typeof window.adminDashboard.refresh === 'function') {
-                    window.adminDashboard.refresh();
-                } else if (typeof window.loadDashboardData === 'function') {
+                if (typeof window.loadDashboardData === 'function') {
+                    // 直接调用loadDashboardData函数，该函数内部会使用新版本的双Y轴图表
                     window.loadDashboardData();
                 } else {
                     console.warn('仪表盘刷新函数未找到');
@@ -466,12 +465,13 @@ async function loadDashboardData() {
         
         // 获取销售趋势数据
         try {
-            const salesTrend = await adminAPI.getSalesTrend(currentPeriod || 'month');
-            if (typeof window.adminDashboard !== 'undefined' && typeof window.adminDashboard.renderSalesChart === 'function') {
-                window.adminDashboard.renderSalesChart(salesTrend);
+            // 使用默认值'month'，因为currentPeriod变量在admin-dashboard.js中定义
+            const salesTrend = await adminAPI.getSalesTrend('month');
+            if (typeof window.renderSalesChart === 'function') {
+                // 直接调用全局renderSalesChart函数，确保使用新版本的双Y轴图表
+                window.renderSalesChart(salesTrend);
             } else {
-                console.warn('使用本地renderSalesChart函数');
-                renderSalesChart(salesTrend);
+                console.error('无法找到renderSalesChart函数，请确保admin-dashboard.js已正确加载');
             }
         } catch (trendError) {
             console.error('获取销售趋势数据失败:', trendError);
@@ -601,8 +601,8 @@ function updateTopProducts(products) {
 }
 
 // 渲染销售趋势图表
-// 旧版renderSalesChart函数已移除，统一使用admin-dashboard.js中的新版双Y轴图表
-// 如需渲染销售趋势图表，请使用window.adminDashboard.refresh()函数
+// 统一使用admin-dashboard.js中的双Y轴图表
+// 如需渲染销售趋势图表，请使用window.renderSalesChart()函数
 
 // 渲染分类占比图表
 function renderCategoryChart(data) {

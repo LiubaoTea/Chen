@@ -14,6 +14,9 @@ console.log('admin-dashboard.js中的adminAPI:', adminAPI);
 // 当前选择的时间周期
 let currentPeriod = 'month';
 
+// 销售趋势图表实例
+let salesChart = null;
+
 // 确保Chart.js全局可用
 function initializeChart() {
     return new Promise((resolve) => {
@@ -78,18 +81,7 @@ async function loadDashboardData() {
         
         // 获取销售趋势数据
         const salesTrend = await adminAPI.getSalesTrend(currentPeriod, true);
-        // 确保在渲染图表前window.salesChart为null
-        if (window.salesChart) {
-            try {
-                if (window.salesChart instanceof Chart) {
-                    window.salesChart.destroy();
-                }
-            } catch (error) {
-                console.warn('销毁旧图表失败:', error);
-            } finally {
-                window.salesChart = null;
-            }
-        }
+        // 直接调用renderSalesChart函数，该函数内部会处理图表的销毁和重建
         renderSalesChart(salesTrend);
         
         // 获取分类占比数据
@@ -104,7 +96,14 @@ async function loadDashboardData() {
 
 // 导出为全局变量，供其他模块使用
 window.loadDashboardData = loadDashboardData;
-window.adminDashboard = { init: loadDashboardData, refresh: loadDashboardData };
+window.adminDashboard = { 
+    init: loadDashboardData, 
+    refresh: loadDashboardData,
+    renderSalesChart: renderSalesChart // 导出renderSalesChart函数
+};
+
+// 确保renderSalesChart函数全局可用
+window.renderSalesChart = renderSalesChart;
 
 // 更新仪表盘统计数据
 function updateDashboardStats(data) {
@@ -230,12 +229,9 @@ function initPeriodSelector() {
                 
                 // 获取新的销售趋势数据
                 const salesTrend = await adminAPI.getSalesTrend(currentPeriod);
-                if (typeof window.adminDashboard !== 'undefined' && typeof window.adminDashboard.renderSalesChart === 'function') {
-                    window.adminDashboard.renderSalesChart(salesTrend);
-                } else {
-                    console.warn('使用本地renderSalesChart函数');
-                    renderSalesChart(salesTrend);
-                }
+                
+                // 直接调用renderSalesChart函数，确保使用新版本的双Y轴图表
+                renderSalesChart(salesTrend);
                 
                 // 恢复正常显示
                 if (salesChartContainer) {
@@ -661,18 +657,18 @@ function renderSalesChart(data) {
         };
         
         // 销毁旧图表（如果存在）
-        if (window.salesChart instanceof Chart) {
+        if (salesChart instanceof Chart) {
             try {
-                window.salesChart.destroy();
+                salesChart.destroy();
             } catch (error) {
                 console.warn('销毁旧图表失败:', error);
             } finally {
-                window.salesChart = null;
+                salesChart = null;
             }
         }
         
         // 创建新图表
-        window.salesChart = new Chart(ctx, chartConfig);
+        salesChart = new Chart(ctx, chartConfig);
         console.log(`${periodText}销售趋势图表已渲染`);
     } catch (error) {
         console.error('渲染销售趋势图表失败:', error);
