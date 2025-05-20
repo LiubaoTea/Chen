@@ -466,8 +466,13 @@ async function loadDashboardData() {
         
         // 获取销售趋势数据
         try {
-            const salesTrend = await adminAPI.getSalesTrend('month');
-            renderSalesChart(salesTrend);
+            const salesTrend = await adminAPI.getSalesTrend(currentPeriod || 'month');
+            if (typeof window.adminDashboard !== 'undefined' && typeof window.adminDashboard.renderSalesChart === 'function') {
+                window.adminDashboard.renderSalesChart(salesTrend);
+            } else {
+                console.warn('使用本地renderSalesChart函数');
+                renderSalesChart(salesTrend);
+            }
         } catch (trendError) {
             console.error('获取销售趋势数据失败:', trendError);
         }

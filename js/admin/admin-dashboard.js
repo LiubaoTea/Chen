@@ -230,7 +230,12 @@ function initPeriodSelector() {
                 
                 // 获取新的销售趋势数据
                 const salesTrend = await adminAPI.getSalesTrend(currentPeriod);
-                renderSalesChart(salesTrend);
+                if (typeof window.adminDashboard !== 'undefined' && typeof window.adminDashboard.renderSalesChart === 'function') {
+                    window.adminDashboard.renderSalesChart(salesTrend);
+                } else {
+                    console.warn('使用本地renderSalesChart函数');
+                    renderSalesChart(salesTrend);
+                }
                 
                 // 恢复正常显示
                 if (salesChartContainer) {
