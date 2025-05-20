@@ -94,6 +94,447 @@ async function loadDashboardData() {
     }
 }
 
+// 渲染销售趋势图表
+function renderSalesChart(data) {
+    const salesChartContainer = document.getElementById('salesChart');
+    
+    // 确保图表容器存在并设置明确的高度
+    if (salesChartContainer) {
+        salesChartContainer.style.height = '400px'; // 增加高度以适应全宽显示
+        salesChartContainer.style.width = '100%';
+    } else {
+        console.error('销售趋势图表容器不存在');
+        return;
+    }
+    
+    const ctx = salesChartContainer.getContext('2d');
+    
+    // 检查Chart对象是否可用
+    if (typeof window.Chart === 'undefined') {
+        console.error('Chart对象未定义，请确保Chart.js已正确加载');
+        return;
+    }
+    
+    // 如果已存在销售图表实例，先销毁它
+    if (window.salesChart instanceof Chart) {
+        try {
+            window.salesChart.destroy();
+        } catch (error) {
+            console.warn('销毁旧的销售趋势图表失败:', error);
+        } finally {
+            window.salesChart = null;
+        }
+    }
+    
+    try {
+        console.log('开始处理销售趋势数据，原始数据:', data);
+        
+        // 检查数据是否有效
+        if (!data || (!Array.isArray(data) && (!data.labels || !Array.isArray(data.labels)))) {
+            console.warn('销售趋势数据格式不正确或为空');
+            data = { labels: [], sales: [], orders: [] };
+        }
+        
+        // 处理数据
+        let displayLabels = [];
+        let salesData = [];
+        let ordersData = [];
+        
+        // 根据数据格式处理
+        if (Array.isArray(data)) {
+            // 处理数组格式的数据
+            displayLabels = data.map(item => item.time_period);
+            salesData = data.map(item => parseFloat(item.sales_amount) || 0);
+            ordersData = data.map(item => parseInt(item.orders_count) || 0);
+        } else if (data.labels && Array.isArray(data.labels)) {
+            // 处理对象格式的数据
+            displayLabels = data.labels;
+            salesData = data.sales.map(val => parseFloat(val) || 0);
+            ordersData = data.orders.map(val => parseInt(val) || 0);
+        }
+        
+        // 过滤掉1970年的无效数据
+        const validDataIndices = displayLabels.map((label, index) => {
+            if (typeof label === 'string' && label.startsWith('1970')) {
+                return -1; // 标记为无效
+            }
+            return index; // 有效数据索引
+        }).filter(index => index !== -1);
+        
+        // 只保留有效数据
+        displayLabels = validDataIndices.map(index => displayLabels[index]);
+        salesData = validDataIndices.map(index => salesData[index]);
+        ordersData = validDataIndices.map(index => ordersData[index]);
+        
+        // 根据当前周期限制数据量并格式化显示标签
+        let periodText = '';
+        let xAxisTitle = '';
+        
+        // 根据不同的时间周期设置标题和格式化标签
+        switch(currentPeriod) {
+            case 'day':
+                // 日表显示最近24天数据
+                if (displayLabels.length > 24) {
+                    displayLabels = displayLabels.slice(-24);
+                    salesData = salesData.slice(-24);
+                    ordersData = ordersData.slice(-24);
+                }
+                periodText = '日';
+                xAxisTitle = '日期';
+                // 格式化日期显示
+                displayLabels = displayLabels.map(label => {
+                    try {
+                        const date = new Date(label);
+                        if (!isNaN(date.getTime())) {
+                            return (date.getMonth() + 1) + '月' + date.getDate() + '日';
+                        }
+                    } catch (error) {
+                        console.warn('日期格式化错误:', error, label);
+                    }
+                    return label;
+                });
+                break;
+            case 'week':
+                // 周表显示最近10周数据
+                if (displayLabels.length > 10) {
+                    displayLabels = displayLabels.slice(-10);
+                    salesData = salesData.slice(-10);
+                    ordersData = ordersData.slice(-10);
+                }
+                periodText = '周';
+                xAxisTitle = '周';
+                // 对于周视图，将ISO格式转换为更友好的显示
+                displayLabels = displayLabels.map(label => {
+                    try {
+                        // 尝试解析日期格式
+                        const date = new Date(label);
+                        if (!isNaN(date.getTime())) {
+                            // 计算周数
+                            const startOfYear = new Date(date.getFullYear(), 0, 1);
+                            const days = Math.floor((date - startOfYear) / (24 * 60 * 60 * 1000));
+                            const weekNumber = Math.ceil((days + startOfYear.getDay() + 1) / 7);
+                            return `${date.getFullYear()}年第${weekNumber}周`;
+                        }
+                    } catch (error) {
+                        console.warn('周数格式化错误:', error, label);
+                        // 尝试其他格式解析
+                        if (label.includes('week')) {
+                            const parts = label.split('-week-');
+                            return `${parts[0]}年第${parts[1]}周`;
+                        }
+                    }
+                    return label;
+                });
+                break;
+            case 'month':
+                // 月表显示当年12个月数据
+                // 获取当前年份
+                const currentYear = new Date().getFullYear();
+                // 过滤出当年的数据
+                const yearData = displayLabels.map((label, index) => {
+                    if (label.startsWith(currentYear.toString()) || label.includes(currentYear.toString() + '年')) {
+                        return index;
+                    }
+                    return -1;
+                }).filter(index => index !== -1);
+                
+                if (yearData.length > 0) {
+                    displayLabels = yearData.map(index => displayLabels[index]);
+                    salesData = yearData.map(index => salesData[index]);
+                    ordersData = yearData.map(index => ordersData[index]);
+                }
+                
+                periodText = '月';
+                xAxisTitle = '月份';
+                // 格式化月份显示
+                displayLabels = displayLabels.map(label => {
+                    if (label.includes('-')) {
+                        const parts = label.split('-');
+                        if (parts.length >= 2) {
+                            return parts[0] + '年' + parts[1] + '月';
+                        }
+                    }
+                    return label;
+                });
+                break;
+            case 'year':
+                // 年表显示最近5年数据
+                if (displayLabels.length > 5) {
+                    displayLabels = displayLabels.slice(-5);
+                    salesData = salesData.slice(-5);
+                    ordersData = ordersData.slice(-5);
+                }
+                periodText = '年';
+                xAxisTitle = '年份';
+                break;
+            default:
+                periodText = '';
+                xAxisTitle = '时间';
+        }
+        
+        // 确保数据长度一致
+        const maxLength = Math.max(displayLabels.length, salesData.length, ordersData.length);
+        while (displayLabels.length < maxLength) displayLabels.push('无数据');
+        while (salesData.length < maxLength) salesData.push(0);
+        while (ordersData.length < maxLength) ordersData.push(0);
+        
+        // 始终显示图表，无论是否有实际数据
+        const hasRealData = true;
+        
+        // 销售额和订单数量的最大值，用于设置Y轴刻度
+        const maxSales = Math.max(...salesData, 1); // 至少为1，避免全0数据时的刻度问题
+        const maxOrders = Math.max(...ordersData, 1); // 至少为1，避免全0数据时的刻度问题
+        
+        // 销售额Y轴的最大值（向上取整到最接近的整数）
+        const salesYAxisMax = Math.ceil(maxSales * 1.1);
+        // 订单数量Y轴的最大值（向上取整到最接近的整数）
+        const ordersYAxisMax = Math.ceil(maxOrders * 1.1);
+        
+        // 销售额Y轴的刻度步长
+        const salesYAxisStepSize = Math.ceil(salesYAxisMax / 5);
+        // 订单数量Y轴的刻度步长
+        const ordersYAxisStepSize = Math.ceil(ordersYAxisMax / 5);
+        
+        // 销售额格式化函数
+        const salesFormatter = value => `¥${value.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        // 订单数量格式化函数
+        const ordersFormatter = value => value.toLocaleString('zh-CN');
+        
+        // 销售额图表配置
+        const chartConfig = {
+            type: 'line',
+            data: {
+                labels: displayLabels,
+                datasets: [
+                    {
+                        label: `${periodText}销售额`,
+                        data: salesData,
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        yAxisID: 'y',
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        fill: true,
+                        pointBackgroundColor: 'rgba(75, 192, 192, 1)',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2
+                    },
+                    {
+                        label: `${periodText}订单数`,
+                        data: ordersData,
+                        backgroundColor: 'rgba(255, 159, 64, 0.2)',
+                        borderColor: 'rgba(255, 159, 64, 1)',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        yAxisID: 'y1',
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        fill: true,
+                        pointBackgroundColor: 'rgba(255, 159, 64, 1)',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: {
+                    duration: 1000,
+                    easing: 'easeInOutQuart'
+                },
+                layout: {
+                    padding: {
+                        top: 20,
+                        right: 20,
+                        bottom: 20,
+                        left: 20
+                    }
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: `${periodText}销售趋势图表`,
+                        font: {
+                            size: 20,
+                            weight: 'bold',
+                            family: '"Microsoft YaHei", sans-serif'
+                        },
+                        padding: {
+                            top: 20,
+                            bottom: 20
+                        },
+                        color: '#333'
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                        titleColor: '#333',
+                        bodyColor: '#666',
+                        borderColor: 'rgba(0, 0, 0, 0.1)',
+                        borderWidth: 1,
+                        padding: 12,
+                        cornerRadius: 6,
+                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    if (context.datasetIndex === 0) {
+                                        label += salesFormatter(context.parsed.y);
+                                    } else {
+                                        label += ordersFormatter(context.parsed.y) + ' 单';
+                                    }
+                                }
+                                return label;
+                            }
+                        }
+                    },
+                    legend: {
+                        position: 'top',
+                        align: 'center',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 20,
+                            font: {
+                                size: 14,
+                                family: '"Microsoft YaHei", sans-serif'
+                            },
+                            color: '#666'
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: xAxisTitle,
+                            font: {
+                                size: 14,
+                                weight: 'bold',
+                                family: '"Microsoft YaHei", sans-serif'
+                            },
+                            padding: {top: 15, bottom: 5},
+                            color: '#666'
+                        },
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 0,
+                            autoSkip: true,
+                            maxTicksLimit: displayLabels.length > 12 ? 12 : displayLabels.length,
+                            font: {
+                                size: 12,
+                                family: '"Microsoft YaHei", sans-serif'
+                            },
+                            color: '#666'
+                        },
+                        grid: {
+                            display: true,
+                            drawBorder: true,
+                            drawOnChartArea: true,
+                            drawTicks: true,
+                            color: 'rgba(0, 0, 0, 0.05)',
+                            borderDash: [5, 5]
+                        }
+                    },
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: '销售额 (¥)',
+                            font: {
+                                size: 14,
+                                weight: 'bold',
+                                family: '"Microsoft YaHei", sans-serif'
+                            },
+                            color: '#666'
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return salesFormatter(value);
+                            },
+                            stepSize: salesYAxisStepSize,
+                            font: {
+                                size: 12,
+                                family: '"Microsoft YaHei", sans-serif'
+                            },
+                            color: '#666',
+                            padding: 8
+                        },
+                        min: 0,
+                        max: salesYAxisMax,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)',
+                            borderDash: [5, 5]
+                        }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: '订单数量 (单)',
+                            font: {
+                                size: 14,
+                                weight: 'bold',
+                                family: '"Microsoft YaHei", sans-serif'
+                            },
+                            color: '#666'
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return ordersFormatter(value);
+                            },
+                            stepSize: ordersYAxisStepSize,
+                            font: {
+                                size: 12,
+                                family: '"Microsoft YaHei", sans-serif'
+                            },
+                            color: '#666',
+                            padding: 8
+                        },
+                        min: 0,
+                        max: ordersYAxisMax,
+                        grid: {
+                            drawOnChartArea: false,
+                            color: 'rgba(0, 0, 0, 0.05)',
+                            borderDash: [5, 5]
+                        }
+                    }
+                }
+            }
+        };
+        
+        // 销毁旧图表（如果存在）
+        if (salesChart instanceof Chart) {
+            try {
+                salesChart.destroy();
+            } catch (error) {
+                console.warn('销毁旧图表失败:', error);
+            } finally {
+                salesChart = null;
+            }
+        }
+        
+        // 创建新图表并保存到全局变量
+        window.salesChart = new Chart(ctx, chartConfig);
+        console.log(`${periodText}销售趋势图表已渲染`);
+    } catch (error) {
+        console.error('渲染销售趋势图表失败:', error);
+    }
+}
+
 // 导出为全局变量，供其他模块使用
 window.loadDashboardData = loadDashboardData;
 window.adminDashboard = { 
