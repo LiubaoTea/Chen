@@ -609,9 +609,15 @@ function renderCategoryChart(data) {
     const categoryChartCanvas = document.getElementById('categoryChart');
     if (!categoryChartCanvas) return;
     
-    // 检查是否已存在Chart实例
-    if (window.categoryChart) {
-        window.categoryChart.destroy();
+    // 检查是否已存在Chart实例，并且是Chart类型
+    if (window.categoryChart && typeof window.categoryChart.destroy === 'function') {
+        try {
+            window.categoryChart.destroy();
+        } catch (error) {
+            console.warn('销毁分类图表失败:', error);
+        } finally {
+            window.categoryChart = null;
+        }
     }
     
     // 检查数据格式，确保数据是数组

@@ -126,6 +126,17 @@ function renderSalesChart(data) {
         }
     }
     
+    // 如果已存在本地salesChart实例，也需要销毁
+    if (salesChart instanceof Chart) {
+        try {
+            salesChart.destroy();
+        } catch (error) {
+            console.warn('销毁本地销售趋势图表失败:', error);
+        } finally {
+            salesChart = null;
+        }
+    }
+    
     try {
         console.log('开始处理销售趋势数据，原始数据:', data);
         
@@ -1229,6 +1240,17 @@ function renderCategoryChart(data) {
         return;
     }
     
+    // 如果已存在全局categoryChart实例，先销毁它
+    if (window.categoryChart && typeof window.categoryChart.destroy === 'function') {
+        try {
+            window.categoryChart.destroy();
+        } catch (error) {
+            console.warn('销毁旧的分类占比图表失败:', error);
+        } finally {
+            window.categoryChart = null;
+        }
+    }
+    
     try {
         console.log('开始处理分类占比数据，原始数据:', data);
         
@@ -1465,12 +1487,41 @@ function adjustChartLayout() {
     // 修改容器样式为占满整行
     salesChartCard.className = 'col-12 mb-4';
     categoryChartCard.className = 'col-12 mb-4';
-    
-    // 确保销售趋势图在上，商品销售占比图在下
-    if (parentRow.contains(salesChartCard) && parentRow.contains(categoryChartCard)) {
-        parentRow.insertBefore(salesChartCard, categoryChartCard);
-    }
 }
+
+// 将关键函数导出到全局作用域，使其在其他模块中可用
+window.loadDashboardData = loadDashboardData;
+window.renderSalesChart = renderSalesChart;
+window.renderCategoryChart = renderCategoryChart;
+window.updateDashboardStats = updateDashboardStats;
+window.updateRecentOrders = updateRecentOrders;
+window.updateTopProducts = updateTopProducts;
+window.getOrderStatusClass = getOrderStatusClass;
+window.getOrderStatusText = getOrderStatusText;
+
+// 页面加载完成后执行初始化
+document.addEventListener('DOMContentLoaded', () => {
+    // 如果用户已登录，加载仪表盘数据
+    if (adminAuth.check()) {
+        loadDashboardData();
+    }
+});
+
+// 导出模块
+export {
+    loadDashboardData,
+    renderSalesChart,
+    renderCategoryChart,
+    updateDashboardStats,
+    updateRecentOrders,
+    updateTopProducts,
+    getOrderStatusClass,
+    getOrderStatusText
+};
+
+        parentRow.insertBefore(salesChartCard, categoryChartCard);
+    
+
 
 // 设置全局函数，供admin-main.js调用
 window.loadDashboardData = loadDashboardData;
