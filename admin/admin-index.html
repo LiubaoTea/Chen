@@ -8,11 +8,16 @@
     <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/bootstrap-icons/1.11.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="../css/admin/admin.css">
     <!-- 引入Chart.js用于图表展示 -->
-    <script src="../js/lib/chart.min.js"></script>
+    <script type="text/javascript" src="../js/lib/chart.min.js"></script>
     <!-- 确保Chart全局可用 -->
-    <script>
-        window.Chart = Chart;
-        console.log('Chart.js已加载，Chart全局对象:', window.Chart);
+    <script type="text/javascript">
+        // 确保Chart对象可用于全局
+        if (typeof Chart !== 'undefined') {
+            window.Chart = Chart;
+            console.log('Chart.js已加载，Chart全局对象:', window.Chart);
+        } else {
+            console.warn('Chart.js未正确加载，将在页面加载后尝试动态加载');
+        }
     </script>
     <!-- 引入工具函数 -->
     <script type="module" src="../js/admin/admin-utils.js"></script>

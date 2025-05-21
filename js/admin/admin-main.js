@@ -33,10 +33,15 @@ document.addEventListener('DOMContentLoaded', () => {
             console.warn('Chart.js未加载，尝试加载Chart.js');
             const chartScript = document.createElement('script');
             
+            // 明确设置为普通脚本，而非ES模块
+            chartScript.type = 'text/javascript';
+            
             // 本地文件路径
             const localPath = '../js/lib/chart.min.js';
             // CDN源
             const cdnPath = 'https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js';
+            // 备用CDN源
+            const fallbackCDN = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js';
             
             // 首先尝试加载本地文件
             console.log('尝试加载本地Chart.js文件:', localPath);
@@ -44,20 +49,60 @@ document.addEventListener('DOMContentLoaded', () => {
             
             chartScript.onload = () => {
                 console.log('本地Chart.js文件加载成功');
-                window.Chart = Chart;
-                console.log('Chart.js已加载，Chart全局对象:', window.Chart);
-                initDashboard();
+                // 确保Chart对象可用于全局
+                if (typeof Chart !== 'undefined') {
+                    window.Chart = Chart;
+                    console.log('Chart.js已加载，Chart全局对象:', window.Chart);
+                    initDashboard();
+                } else {
+                    console.error('Chart.js加载成功但Chart对象未定义');
+                    loadChartFromCDN();
+                }
             };
             
             chartScript.onerror = () => {
                 console.warn('本地Chart.js文件加载失败，尝试CDN');
+                loadChartFromCDN();
+            };
+            
+            // 从CDN加载Chart.js的函数
+            function loadChartFromCDN() {
                 chartScript.src = cdnPath;
                 
                 chartScript.onload = () => {
                     console.log('CDN Chart.js加载成功');
-                    window.Chart = Chart;
-                    console.log('Chart.js已加载，Chart全局对象:', window.Chart);
-                    initDashboard();
+                    if (typeof Chart !== 'undefined') {
+                        window.Chart = Chart;
+                        console.log('Chart.js已加载，Chart全局对象:', window.Chart);
+                        initDashboard();
+                    } else {
+                        console.error('CDN Chart.js加载成功但Chart对象未定义');
+                        loadChartFromFallbackCDN();
+                    }
+                };
+                
+                chartScript.onerror = () => {
+                    console.warn('主CDN加载失败，尝试备用CDN');
+                    loadChartFromFallbackCDN();
+                };
+            }
+            
+            // 从备用CDN加载Chart.js的函数
+            function loadChartFromFallbackCDN() {
+                chartScript.src = fallbackCDN;
+                
+                chartScript.onload = () => {
+                    console.log('备用CDN Chart.js加载成功');
+                    if (typeof Chart !== 'undefined') {
+                        window.Chart = Chart;
+                        console.log('Chart.js已加载，Chart全局对象:', window.Chart);
+                        initDashboard();
+                    } else {
+                        console.error('所有Chart.js源加载失败');
+                        showErrorToast('图表库加载失败，部分功能可能无法正常工作');
+                        // 尝试继续初始化仪表盘，即使没有Chart.js
+                        initDashboard();
+                    }
                 };
                 
                 chartScript.onerror = () => {
@@ -66,7 +111,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     // 尝试继续初始化仪表盘，即使没有Chart.js
                     initDashboard();
                 };
-            };
+            }
             
             document.head.appendChild(chartScript);
         } else {
