@@ -161,25 +161,25 @@ function renderSalesChart(data) {
         }
         
         // 处理数据
-        let displayLabels = [];
-        let salesData = [];
-        let ordersData = [];
+        let originalLabels = [];
+        let originalSalesData = [];
+        let originalOrdersData = [];
         
         // 根据数据格式处理
         if (Array.isArray(data)) {
             // 处理数组格式的数据
-            displayLabels = data.map(item => item.time_period);
-            salesData = data.map(item => parseFloat(item.sales_amount) || 0);
-            ordersData = data.map(item => parseInt(item.orders_count) || 0);
+            originalLabels = data.map(item => item.time_period);
+            originalSalesData = data.map(item => parseFloat(item.sales_amount) || 0);
+            originalOrdersData = data.map(item => parseInt(item.orders_count) || 0);
         } else if (data.labels && Array.isArray(data.labels)) {
             // 处理对象格式的数据
-            displayLabels = data.labels;
-            salesData = data.sales.map(val => parseFloat(val) || 0);
-            ordersData = data.orders.map(val => parseInt(val) || 0);
+            originalLabels = data.labels;
+            originalSalesData = data.sales.map(val => parseFloat(val) || 0);
+            originalOrdersData = data.orders.map(val => parseInt(val) || 0);
         }
         
         // 过滤掉1970年的无效数据
-        const validDataIndices = displayLabels.map((label, index) => {
+        const validDataIndices = originalLabels.map((label, index) => {
             if (typeof label === 'string' && label.startsWith('1970')) {
                 return -1; // 标记为无效
             }
@@ -187,114 +187,282 @@ function renderSalesChart(data) {
         }).filter(index => index !== -1);
         
         // 只保留有效数据
-        displayLabels = validDataIndices.map(index => displayLabels[index]);
-        salesData = validDataIndices.map(index => salesData[index]);
-        ordersData = validDataIndices.map(index => ordersData[index]);
+        originalLabels = validDataIndices.map(index => originalLabels[index]);
+        originalSalesData = validDataIndices.map(index => originalSalesData[index]);
+        originalOrdersData = validDataIndices.map(index => originalOrdersData[index]);
         
         // 根据当前周期限制数据量并格式化显示标签
         let periodText = '';
         let xAxisTitle = '';
         
-        // 根据不同的时间周期设置标题和格式化标签
+        // 生成完整的日期序列和对应的数据
+        let displayLabels = [];
+        let salesData = [];
+        let ordersData = [];
+        
+        // 根据不同的时间周期生成完整的日期序列
         switch(currentPeriod) {
             case 'day':
-                // 日表显示最近24天数据
-                if (displayLabels.length > 24) {
-                    displayLabels = displayLabels.slice(-24);
-                    salesData = salesData.slice(-24);
-                    ordersData = ordersData.slice(-24);
-                }
+                // 日表显示最近24天的完整日期序列
                 periodText = '日';
                 xAxisTitle = '日期';
-                // 格式化日期显示
-                displayLabels = displayLabels.map(label => {
-                    try {
-                        const date = new Date(label);
-                        if (!isNaN(date.getTime())) {
-                            return (date.getMonth() + 1) + '月' + date.getDate() + '日';
-                        }
-                    } catch (error) {
-                        console.warn('日期格式化错误:', error, label);
+                
+                // 生成最近24天的完整日期序列
+                const today = new Date();
+                const dayLabels = [];
+                
+                // 如果有原始数据，找出最早和最晚的日期
+                let earliestDate = today;
+                let latestDate = today;
+                
+                if (originalLabels.length > 0) {
+                    // 解析所有有效日期
+                    const validDates = originalLabels
+                        .map(label => new Date(label))
+                        .filter(date => !isNaN(date.getTime()));
+                    
+                    if (validDates.length > 0) {
+                        // 找出最早和最晚的日期
+                        earliestDate = new Date(Math.min(...validDates.map(d => d.getTime())));
+                        latestDate = new Date(Math.max(...validDates.map(d => d.getTime())));
                     }
-                    return label;
+                }
+                
+                // 确保至少显示24天的数据
+                const dayRange = Math.max(
+                    Math.ceil((latestDate - earliestDate) / (24 * 60 * 60 * 1000)) + 1,
+                    24
+                );
+                
+                // 生成完整的日期序列
+                for (let i = 0; i < dayRange; i++) {
+                    const date = new Date(latestDate);
+                    date.setDate(date.getDate() - i);
+                    const dateStr = date.toISOString().split('T')[0]; // YYYY-MM-DD格式
+                    dayLabels.unshift(dateStr);
+                }
+                
+                // 只保留最近24天
+                if (dayLabels.length > 24) {
+                    dayLabels.splice(0, dayLabels.length - 24);
+                }
+                
+                // 为每个日期填充销售数据
+                displayLabels = dayLabels.map(dateStr => {
+                    const index = originalLabels.findIndex(label => label === dateStr);
+                    if (index !== -1) {
+                        salesData.push(originalSalesData[index]);
+                        ordersData.push(originalOrdersData[index]);
+                    } else {
+                        salesData.push(0);
+                        ordersData.push(0);
+                    }
+                    
+                    // 格式化日期显示
+                    try {
+                        const date = new Date(dateStr);
+                        return (date.getMonth() + 1) + '月' + date.getDate() + '日';
+                    } catch (error) {
+                        console.warn('日期格式化错误:', error, dateStr);
+                        return dateStr;
+                    }
                 });
                 break;
+                
             case 'week':
-                // 周表显示最近10周数据
-                if (displayLabels.length > 10) {
-                    displayLabels = displayLabels.slice(-10);
-                    salesData = salesData.slice(-10);
-                    ordersData = ordersData.slice(-10);
-                }
+                // 周表显示最近10周的完整周序列
                 periodText = '周';
                 xAxisTitle = '周';
-                // 对于周视图，将ISO格式转换为更友好的显示
-                displayLabels = displayLabels.map(label => {
-                    try {
-                        // 尝试解析日期格式
-                        const date = new Date(label);
-                        if (!isNaN(date.getTime())) {
-                            // 计算周数
-                            const startOfYear = new Date(date.getFullYear(), 0, 1);
-                            const days = Math.floor((date - startOfYear) / (24 * 60 * 60 * 1000));
-                            const weekNumber = Math.ceil((days + startOfYear.getDay() + 1) / 7);
-                            return `${date.getFullYear()}年第${weekNumber}周`;
-                        }
-                    } catch (error) {
-                        console.warn('周数格式化错误:', error, label);
-                        // 尝试其他格式解析
-                        if (label.includes('week')) {
-                            const parts = label.split('-week-');
-                            return `${parts[0]}年第${parts[1]}周`;
-                        }
-                    }
-                    return label;
-                });
-                break;
-            case 'month':
-                // 月表显示当年12个月数据
-                // 获取当前年份
-                const currentYear = new Date().getFullYear();
-                // 过滤出当年的数据
-                const yearData = displayLabels.map((label, index) => {
-                    if (label.startsWith(currentYear.toString()) || label.includes(currentYear.toString() + '年')) {
-                        return index;
-                    }
-                    return -1;
-                }).filter(index => index !== -1);
                 
-                if (yearData.length > 0) {
-                    displayLabels = yearData.map(index => displayLabels[index]);
-                    salesData = yearData.map(index => salesData[index]);
-                    ordersData = yearData.map(index => ordersData[index]);
+                // 如果有原始数据，找出最早和最晚的日期
+                let earliestWeekDate = new Date();
+                let latestWeekDate = new Date();
+                
+                if (originalLabels.length > 0) {
+                    // 尝试解析所有有效日期
+                    const validDates = originalLabels
+                        .map(label => {
+                            try {
+                                return new Date(label);
+                            } catch (e) {
+                                // 尝试解析 YYYY-week-WW 格式
+                                if (label.includes('week')) {
+                                    const parts = label.split('-week-');
+                                    const year = parseInt(parts[0]);
+                                    const week = parseInt(parts[1]);
+                                    // 简单估算该周的日期（不精确但足够用于排序）
+                                    const date = new Date(year, 0, 1);
+                                    date.setDate(date.getDate() + (week - 1) * 7);
+                                    return date;
+                                }
+                                return null;
+                            }
+                        })
+                        .filter(date => date && !isNaN(date.getTime()));
+                    
+                    if (validDates.length > 0) {
+                        // 找出最早和最晚的日期
+                        earliestWeekDate = new Date(Math.min(...validDates.map(d => d.getTime())));
+                        latestWeekDate = new Date(Math.max(...validDates.map(d => d.getTime())));
+                    }
                 }
                 
+                // 确保至少显示10周的数据
+                const weekRange = Math.max(
+                    Math.ceil((latestWeekDate - earliestWeekDate) / (7 * 24 * 60 * 60 * 1000)) + 1,
+                    10
+                );
+                
+                // 生成完整的周序列
+                const weekLabels = [];
+                for (let i = 0; i < weekRange; i++) {
+                    const date = new Date(latestWeekDate);
+                    date.setDate(date.getDate() - (i * 7));
+                    
+                    // 计算周数
+                    const startOfYear = new Date(date.getFullYear(), 0, 1);
+                    const days = Math.floor((date - startOfYear) / (24 * 60 * 60 * 1000));
+                    const weekNumber = Math.ceil((days + startOfYear.getDay() + 1) / 7);
+                    
+                    // 使用标准格式存储，便于后续查找
+                    const weekStr = `${date.getFullYear()}-week-${weekNumber}`;
+                    weekLabels.unshift(weekStr);
+                }
+                
+                // 只保留最近10周
+                if (weekLabels.length > 10) {
+                    weekLabels.splice(0, weekLabels.length - 10);
+                }
+                
+                // 为每个周填充销售数据
+                displayLabels = weekLabels.map(weekStr => {
+                    // 查找原始数据中是否有匹配的周
+                    const index = originalLabels.findIndex(label => {
+                        // 尝试多种匹配方式
+                        if (label === weekStr) return true;
+                        
+                        try {
+                            // 尝试将原始标签解析为日期，然后计算周数进行比较
+                            const date = new Date(label);
+                            if (!isNaN(date.getTime())) {
+                                const startOfYear = new Date(date.getFullYear(), 0, 1);
+                                const days = Math.floor((date - startOfYear) / (24 * 60 * 60 * 1000));
+                                const weekNumber = Math.ceil((days + startOfYear.getDay() + 1) / 7);
+                                const compareWeekStr = `${date.getFullYear()}-week-${weekNumber}`;
+                                return compareWeekStr === weekStr;
+                            }
+                        } catch (e) {}
+                        
+                        return false;
+                    });
+                    
+                    if (index !== -1) {
+                        salesData.push(originalSalesData[index]);
+                        ordersData.push(originalOrdersData[index]);
+                    } else {
+                        salesData.push(0);
+                        ordersData.push(0);
+                    }
+                    
+                    // 格式化周显示
+                    const parts = weekStr.split('-week-');
+                    return `${parts[0]}年第${parts[1]}周`;
+                });
+                break;
+                
+            case 'month':
+                // 月表显示当年12个月的完整月份序列
                 periodText = '月';
                 xAxisTitle = '月份';
-                // 格式化月份显示
-                displayLabels = displayLabels.map(label => {
-                    if (label.includes('-')) {
-                        const parts = label.split('-');
-                        if (parts.length >= 2) {
-                            return parts[0] + '年' + parts[1] + '月';
-                        }
+                
+                // 获取当前年份
+                const currentYear = new Date().getFullYear();
+                
+                // 生成当年12个月的完整月份序列
+                const monthLabels = [];
+                for (let month = 1; month <= 12; month++) {
+                    monthLabels.push(`${currentYear}-${month.toString().padStart(2, '0')}`);
+                }
+                
+                // 为每个月份填充销售数据
+                displayLabels = monthLabels.map(monthStr => {
+                    // 查找原始数据中是否有匹配的月份
+                    const index = originalLabels.findIndex(label => {
+                        // 尝试多种匹配方式
+                        if (label === monthStr) return true;
+                        
+                        // 检查是否为YYYY-MM格式
+                        if (label.startsWith(monthStr.substring(0, 7))) return true;
+                        
+                        // 检查是否为YYYY-MM-DD格式
+                        if (label.startsWith(monthStr.substring(0, 7) + '-')) return true;
+                        
+                        // 检查是否为YYYY年MM月格式
+                        const yearMonth = monthStr.split('-');
+                        if (label.includes(`${yearMonth[0]}年${parseInt(yearMonth[1])}月`)) return true;
+                        
+                        return false;
+                    });
+                    
+                    if (index !== -1) {
+                        salesData.push(originalSalesData[index]);
+                        ordersData.push(originalOrdersData[index]);
+                    } else {
+                        salesData.push(0);
+                        ordersData.push(0);
                     }
-                    return label;
+                    
+                    // 格式化月份显示
+                    const parts = monthStr.split('-');
+                    return `${parts[0]}年${parseInt(parts[1])}月`;
                 });
                 break;
+                
             case 'year':
-                // 年表显示最近5年数据
-                if (displayLabels.length > 5) {
-                    displayLabels = displayLabels.slice(-5);
-                    salesData = salesData.slice(-5);
-                    ordersData = ordersData.slice(-5);
-                }
+                // 年表显示最近5年的完整年份序列
                 periodText = '年';
                 xAxisTitle = '年份';
+                
+                // 获取当前年份
+                const thisYear = new Date().getFullYear();
+                
+                // 生成最近5年的完整年份序列
+                const yearLabels = [];
+                for (let i = 0; i < 5; i++) {
+                    yearLabels.push(`${thisYear - 4 + i}`);
+                }
+                
+                // 为每个年份填充销售数据
+                displayLabels = yearLabels.map(yearStr => {
+                    // 查找原始数据中是否有匹配的年份
+                    const index = originalLabels.findIndex(label => {
+                        // 尝试多种匹配方式
+                        if (label === yearStr) return true;
+                        if (label.startsWith(yearStr + '-')) return true;
+                        if (label.includes(yearStr + '年')) return true;
+                        return false;
+                    });
+                    
+                    if (index !== -1) {
+                        salesData.push(originalSalesData[index]);
+                        ordersData.push(originalOrdersData[index]);
+                    } else {
+                        salesData.push(0);
+                        ordersData.push(0);
+                    }
+                    
+                    // 年份显示不需要特殊格式化
+                    return yearStr + '年';
+                });
                 break;
+                
             default:
                 periodText = '';
                 xAxisTitle = '时间';
+                // 使用原始数据
+                displayLabels = originalLabels;
+                salesData = originalSalesData;
+                ordersData = originalOrdersData;
         }
         
         // 确保数据长度一致
