@@ -115,8 +115,7 @@ async function loadDashboardData() {
         initPeriodSelector();
         
         // 获取销售趋势数据
-        // 移除startDate=true参数，使用与手动点击月份按钮相同的调用方式
-        const salesTrend = await adminAPI.getSalesTrend(currentPeriod);
+        const salesTrend = await adminAPI.getSalesTrend(currentPeriod, true);
         // 直接调用renderSalesChart函数，该函数内部会处理图表的销毁和重建
         renderSalesChart(salesTrend);
         
@@ -479,20 +478,15 @@ function renderSalesChart(data) {
         const maxSales = Math.max(...salesData, 1); // 至少为1，避免全0数据时的刻度问题
         const maxOrders = Math.max(...ordersData, 1); // 至少为1，避免全0数据时的刻度问题
         
-        // 销售额Y轴的最大值（向上取整到合适的值）
-        let salesYAxisMax = Math.ceil(maxSales * 1.2); // 增加20%的空间
-        // 确保销售额Y轴最大值至少为100，以避免刻度过小
-        salesYAxisMax = Math.max(salesYAxisMax, 100);
-        
-        // 订单数量Y轴的最大值（向上取整到合适的值）
-        let ordersYAxisMax = Math.ceil(maxOrders * 1.2); // 增加20%的空间
-        // 确保订单数量Y轴最大值至少为10，以避免刻度过小
-        ordersYAxisMax = Math.max(ordersYAxisMax, 10);
+        // 销售额Y轴的最大值（向上取整到最接近的整数）
+        const salesYAxisMax = Math.ceil(maxSales * 1.1);
+        // 订单数量Y轴的最大值（向上取整到最接近的整数）
+        const ordersYAxisMax = Math.ceil(maxOrders * 1.1);
         
         // 销售额Y轴的刻度步长
-        const salesYAxisStepSize = Math.max(1, Math.ceil(salesYAxisMax / 5));
+        const salesYAxisStepSize = Math.ceil(salesYAxisMax / 5);
         // 订单数量Y轴的刻度步长
-        const ordersYAxisStepSize = Math.max(1, Math.ceil(ordersYAxisMax / 5));
+        const ordersYAxisStepSize = Math.ceil(ordersYAxisMax / 5);
         
         // 销售额格式化函数
         const salesFormatter = value => `¥${value.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
