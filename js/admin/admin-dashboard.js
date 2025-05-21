@@ -94,158 +94,8 @@ async function loadDashboardData() {
     }
 }
 
-// 导出为全局变量，供其他模块使用
-window.loadDashboardData = loadDashboardData;
-window.adminDashboard = { 
-    init: loadDashboardData, 
-    refresh: loadDashboardData,
-    renderSalesChart: renderSalesChart // 导出renderSalesChart函数
-};
-
-// 确保renderSalesChart函数全局可用
-window.renderSalesChart = renderSalesChart;
-
-// 更新仪表盘统计数据
-function updateDashboardStats(data) {
-    // 更新总订单数
-    document.getElementById('totalOrders').textContent = data.totalOrders.toLocaleString();
-    
-    // 更新总销售额
-    document.getElementById('totalSales').textContent = `¥${data.totalSales.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-    
-    // 更新用户总数
-    document.getElementById('totalUsers').textContent = data.totalUsers.toLocaleString();
-    
-    // 更新商品总数
-    document.getElementById('totalProducts').textContent = data.totalProducts.toLocaleString();
-}
-
-// 更新最近订单列表
-function updateRecentOrders(orders) {
-    const recentOrdersList = document.getElementById('recentOrdersList');
-    recentOrdersList.innerHTML = '';
-    
-    if (orders.length === 0) {
-        recentOrdersList.innerHTML = '<tr><td colspan="5" class="text-center">暂无订单数据</td></tr>';
-        return;
-    }
-    
-    orders.forEach(order => {
-        // 格式化日期
-        const orderDate = new Date(order.created_at * 1000).toLocaleDateString('zh-CN');
-        
-        // 创建状态标签
-        const statusClass = getOrderStatusClass(order.status);
-        const statusText = getOrderStatusText(order.status);
-        
-        // 创建行
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${order.order_id.substring(0, 8)}...</td>
-            <td>${order.username}</td>
-            <td>¥${order.total_amount.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-            <td><span class="status-badge ${statusClass}">${statusText}</span></td>
-            <td>${orderDate}</td>
-        `;
-        
-        recentOrdersList.appendChild(row);
-    });
-}
-
-// 更新热销商品列表
-function updateTopProducts(products) {
-    const topProductsList = document.getElementById('topProductsList');
-    topProductsList.innerHTML = '';
-    
-    if (products.length === 0) {
-        topProductsList.innerHTML = '<tr><td colspan="4" class="text-center">暂无商品数据</td></tr>';
-        return;
-    }
-    
-    products.forEach(product => {
-        const row = document.createElement('tr');
-        // 确保sales_count和stock属性存在，如果不存在则使用默认值
-        const salesCount = product.sales_count || product.sold_count || 0;
-        const stockCount = product.stock || product.inventory || 0;
-        
-        row.innerHTML = `
-            <td>${product.name}</td>
-            <td>¥${product.price.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-            <td>${salesCount}</td>
-            <td>${stockCount}</td>
-        `;
-        
-        topProductsList.appendChild(row);
-    });
-}
-
-// 初始化时间周期选择器
-function initPeriodSelector() {
-    // 检查是否已经初始化
-    if (document.getElementById('periodSelector')) {
-        return;
-    }
-    
-    // 获取销售趋势图表容器的父元素
-    const salesChartCard = document.getElementById('salesChart').closest('.card');
-    if (!salesChartCard) return;
-    
-    // 获取卡片头部
-    const cardHeader = salesChartCard.querySelector('.card-header');
-    if (!cardHeader) return;
-    
-    // 创建时间周期选择器
-    const periodSelector = document.createElement('div');
-    periodSelector.id = 'periodSelector';
-    periodSelector.className = 'btn-group btn-group-sm float-end';
-    periodSelector.innerHTML = `
-        <button type="button" class="btn btn-outline-primary period-btn" data-period="day">日</button>
-        <button type="button" class="btn btn-outline-primary period-btn" data-period="week">周</button>
-        <button type="button" class="btn btn-outline-primary period-btn active" data-period="month">月</button>
-        <button type="button" class="btn btn-outline-primary period-btn" data-period="year">年</button>
-    `;
-    
-    // 添加到卡片头部
-    cardHeader.appendChild(periodSelector);
-    
-    // 添加事件监听器
-    const periodButtons = periodSelector.querySelectorAll('.period-btn');
-    periodButtons.forEach(button => {
-        button.addEventListener('click', async function() {
-            // 移除所有按钮的active类
-            periodButtons.forEach(btn => btn.classList.remove('active'));
-            // 添加当前按钮的active类
-            this.classList.add('active');
-            
-            // 更新当前周期
-            currentPeriod = this.dataset.period;
-            
-            try {
-                // 显示加载状态
-                const salesChartContainer = document.getElementById('salesChart');
-                if (salesChartContainer) {
-                    salesChartContainer.style.opacity = '0.5';
-                }
-                
-                // 获取新的销售趋势数据
-                const salesTrend = await adminAPI.getSalesTrend(currentPeriod);
-                
-                // 直接调用renderSalesChart函数，确保使用新版本的双Y轴图表
-                renderSalesChart(salesTrend);
-                
-                // 恢复正常显示
-                if (salesChartContainer) {
-                    salesChartContainer.style.opacity = '1';
-                }
-            } catch (error) {
-                console.error('获取销售趋势数据失败:', error);
-                showErrorToast('获取销售趋势数据失败，请稍后重试');
-            }
-        });
-    });
-}
-
-// 渲染销售趋势图表
+// 渲染销售趋势图表函数的声明提前到这里
+// 这样可以确保在引用之前已经定义
 function renderSalesChart(data) {
     const salesChartContainer = document.getElementById('salesChart');
     
@@ -674,6 +524,160 @@ function renderSalesChart(data) {
         console.error('渲染销售趋势图表失败:', error);
     }
 }
+
+// 导出为全局变量，供其他模块使用
+window.loadDashboardData = loadDashboardData;
+window.adminDashboard = { 
+    init: loadDashboardData, 
+    refresh: loadDashboardData,
+    renderSalesChart: renderSalesChart // 导出renderSalesChart函数
+};
+
+// 确保renderSalesChart函数全局可用
+window.renderSalesChart = renderSalesChart;
+
+// 更新仪表盘统计数据
+function updateDashboardStats(data) {
+    // 更新总订单数
+    document.getElementById('totalOrders').textContent = data.totalOrders.toLocaleString();
+    
+    // 更新总销售额
+    document.getElementById('totalSales').textContent = `¥${data.totalSales.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    
+    // 更新用户总数
+    document.getElementById('totalUsers').textContent = data.totalUsers.toLocaleString();
+    
+    // 更新商品总数
+    document.getElementById('totalProducts').textContent = data.totalProducts.toLocaleString();
+}
+
+// 更新最近订单列表
+function updateRecentOrders(orders) {
+    const recentOrdersList = document.getElementById('recentOrdersList');
+    recentOrdersList.innerHTML = '';
+    
+    if (orders.length === 0) {
+        recentOrdersList.innerHTML = '<tr><td colspan="5" class="text-center">暂无订单数据</td></tr>';
+        return;
+    }
+    
+    orders.forEach(order => {
+        // 格式化日期
+        const orderDate = new Date(order.created_at * 1000).toLocaleDateString('zh-CN');
+        
+        // 创建状态标签
+        const statusClass = getOrderStatusClass(order.status);
+        const statusText = getOrderStatusText(order.status);
+        
+        // 创建行
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${order.order_id.substring(0, 8)}...</td>
+            <td>${order.username}</td>
+            <td>¥${order.total_amount.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+            <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+            <td>${orderDate}</td>
+        `;
+        
+        recentOrdersList.appendChild(row);
+    });
+}
+
+// 更新热销商品列表
+function updateTopProducts(products) {
+    const topProductsList = document.getElementById('topProductsList');
+    topProductsList.innerHTML = '';
+    
+    if (products.length === 0) {
+        topProductsList.innerHTML = '<tr><td colspan="4" class="text-center">暂无商品数据</td></tr>';
+        return;
+    }
+    
+    products.forEach(product => {
+        const row = document.createElement('tr');
+        // 确保sales_count和stock属性存在，如果不存在则使用默认值
+        const salesCount = product.sales_count || product.sold_count || 0;
+        const stockCount = product.stock || product.inventory || 0;
+        
+        row.innerHTML = `
+            <td>${product.name}</td>
+            <td>¥${product.price.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+            <td>${salesCount}</td>
+            <td>${stockCount}</td>
+        `;
+        
+        topProductsList.appendChild(row);
+    });
+}
+
+// 初始化时间周期选择器
+function initPeriodSelector() {
+    // 检查是否已经初始化
+    if (document.getElementById('periodSelector')) {
+        return;
+    }
+    
+    // 获取销售趋势图表容器的父元素
+    const salesChartCard = document.getElementById('salesChart').closest('.card');
+    if (!salesChartCard) return;
+    
+    // 获取卡片头部
+    const cardHeader = salesChartCard.querySelector('.card-header');
+    if (!cardHeader) return;
+    
+    // 创建时间周期选择器
+    const periodSelector = document.createElement('div');
+    periodSelector.id = 'periodSelector';
+    periodSelector.className = 'btn-group btn-group-sm float-end';
+    periodSelector.innerHTML = `
+        <button type="button" class="btn btn-outline-primary period-btn" data-period="day">日</button>
+        <button type="button" class="btn btn-outline-primary period-btn" data-period="week">周</button>
+        <button type="button" class="btn btn-outline-primary period-btn active" data-period="month">月</button>
+        <button type="button" class="btn btn-outline-primary period-btn" data-period="year">年</button>
+    `;
+    
+    // 添加到卡片头部
+    cardHeader.appendChild(periodSelector);
+    
+    // 添加事件监听器
+    const periodButtons = periodSelector.querySelectorAll('.period-btn');
+    periodButtons.forEach(button => {
+        button.addEventListener('click', async function() {
+            // 移除所有按钮的active类
+            periodButtons.forEach(btn => btn.classList.remove('active'));
+            // 添加当前按钮的active类
+            this.classList.add('active');
+            
+            // 更新当前周期
+            currentPeriod = this.dataset.period;
+            
+            try {
+                // 显示加载状态
+                const salesChartContainer = document.getElementById('salesChart');
+                if (salesChartContainer) {
+                    salesChartContainer.style.opacity = '0.5';
+                }
+                
+                // 获取新的销售趋势数据
+                const salesTrend = await adminAPI.getSalesTrend(currentPeriod);
+                
+                // 直接调用renderSalesChart函数，确保使用新版本的双Y轴图表
+                renderSalesChart(salesTrend);
+                
+                // 恢复正常显示
+                if (salesChartContainer) {
+                    salesChartContainer.style.opacity = '1';
+                }
+            } catch (error) {
+                console.error('获取销售趋势数据失败:', error);
+                showErrorToast('获取销售趋势数据失败，请稍后重试');
+            }
+        });
+    });
+}
+
+// 渲染销售趋势图表函数已移至文件顶部
+// 此处不再需要重复定义
 
 // 根据时间周期格式化标签
 function formatLabelsForPeriod(labels, period) {
