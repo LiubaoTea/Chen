@@ -36,12 +36,14 @@ document.addEventListener('DOMContentLoaded', () => {
             // 明确设置为普通脚本，而非ES模块
             chartScript.type = 'text/javascript';
             
-            // 本地文件路径
-            const localPath = '../js/lib/chart.min.js';
-            // CDN源
-            const cdnPath = 'https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js';
-            // 备用CDN源
-            const fallbackCDN = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js';
+            // 本地文件路径 (使用UMD版本)
+            const localPath = '../js/lib/chart.umd.js';
+            // CDN源 (使用UMD版本)
+            const cdnPath = 'https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.umd.min.js';
+            // 备用CDN源 (使用UMD版本)
+            const fallbackCDN = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.umd.min.js';
+            // 第二备用CDN源
+            const secondFallbackCDN = 'https://unpkg.com/chart.js@3.9.1/dist/chart.umd.min.js';
             
             // 首先尝试加载本地文件
             console.log('尝试加载本地Chart.js文件:', localPath);
@@ -106,10 +108,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 };
                 
                 chartScript.onerror = () => {
-                    console.error('所有Chart.js源加载失败');
-                    showErrorToast('图表库加载失败，部分功能可能无法正常工作');
-                    // 尝试继续初始化仪表盘，即使没有Chart.js
-                    initDashboard();
+                    console.warn('备用CDN加载失败，尝试第二备用CDN');
+                    chartScript.src = secondFallbackCDN;
+                    
+                    chartScript.onload = () => {
+                        console.log('第二备用CDN Chart.js加载成功');
+                        if (typeof Chart !== 'undefined') {
+                            window.Chart = Chart;
+                            console.log('Chart.js已加载，Chart全局对象:', window.Chart);
+                            initDashboard();
+                        } else {
+                            console.error('所有Chart.js源加载失败');
+                            showErrorToast('图表库加载失败，部分功能可能无法正常工作');
+                            // 尝试继续初始化仪表盘，即使没有Chart.js
+                            initDashboard();
+                        }
+                    };
+                    
+                    chartScript.onerror = () => {
+                        console.error('所有Chart.js源加载失败');
+                        showErrorToast('图表库加载失败，部分功能可能无法正常工作');
+                        // 尝试继续初始化仪表盘，即使没有Chart.js
+                        initDashboard();
+                    };
                 };
             }
             

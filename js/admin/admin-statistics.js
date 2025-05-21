@@ -19,12 +19,14 @@ function initializeChart() {
         // 如果Chart对象不可用，创建并加载Chart.js脚本
         const chartScript = document.createElement('script');
         
-        // 本地文件路径
-        const localPath = '../js/lib/chart.min.js';
-        // 主CDN源
-        const primaryCDN = 'https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js';
-        // 备用CDN源
-        const fallbackCDN = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js';
+        // 本地文件路径 (使用UMD版本)
+        const localPath = '../js/lib/chart.umd.js';
+        // 主CDN源 (使用UMD版本)
+        const primaryCDN = 'https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.umd.min.js';
+        // 备用CDN源 (使用UMD版本)
+        const fallbackCDN = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.umd.min.js';
+        // 第二备用CDN源
+        const secondFallbackCDN = 'https://unpkg.com/chart.js@3.9.1/dist/chart.umd.min.js';
         
         // 首先尝试加载本地文件
         console.log('尝试加载本地Chart.js文件:', localPath);
@@ -57,8 +59,19 @@ function initializeChart() {
                 };
                 
                 chartScript.onerror = () => {
-                    console.error('所有Chart.js源加载失败');
-                    reject(new Error('无法加载Chart.js库'));
+                    console.warn('备用CDN加载失败，尝试第二备用CDN');
+                    chartScript.src = secondFallbackCDN;
+                    
+                    chartScript.onload = () => {
+                        console.log('第二备用CDN Chart.js加载成功');
+                        window.Chart = Chart;
+                        resolve(window.Chart);
+                    };
+                    
+                    chartScript.onerror = () => {
+                        console.error('所有Chart.js源加载失败');
+                        reject(new Error('无法加载Chart.js库'));
+                    };
                 };
             };
         };
