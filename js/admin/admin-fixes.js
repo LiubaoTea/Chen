@@ -4,9 +4,31 @@
  */
 
 // 确保Chart.js全局可用
-if (typeof window.Chart === 'undefined' && typeof Chart !== 'undefined') {
-    window.Chart = Chart;
-    console.log('Chart.js全局对象已修复');
+if (typeof window.Chart === 'undefined') {
+    if (typeof Chart !== 'undefined') {
+        window.Chart = Chart;
+        console.log('Chart.js全局对象已修复');
+    } else {
+        // 尝试加载本地Chart.js文件
+        console.log('尝试在admin-fixes.js中加载Chart.js');
+        const chartScript = document.createElement('script');
+        
+        // 本地文件路径
+        const localPath = '../js/lib/chart.min.js';
+        
+        chartScript.src = localPath;
+        chartScript.onload = () => {
+            console.log('本地Chart.js文件加载成功');
+            window.Chart = Chart;
+            console.log('Chart.js全局对象已设置');
+        };
+        
+        chartScript.onerror = () => {
+            console.warn('本地Chart.js文件加载失败，图表功能可能无法正常工作');
+        };
+        
+        document.head.appendChild(chartScript);
+    }
 }
 
 // 导入API模块

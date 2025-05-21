@@ -19,7 +19,7 @@ let salesChart = null;
 
 // 确保Chart.js全局可用
 function initializeChart() {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
         // 检查Chart对象是否已经可用
         if (typeof window.Chart !== 'undefined') {
             resolve(window.Chart);
@@ -29,25 +29,47 @@ function initializeChart() {
         // 如果Chart对象不可用，创建并加载Chart.js脚本
         const chartScript = document.createElement('script');
         
+        // 本地文件路径
+        const localPath = '../js/lib/chart.min.js';
         // 主CDN源
         const primaryCDN = 'https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js';
         // 备用CDN源
         const fallbackCDN = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js';
         
-        chartScript.src = primaryCDN;
+        // 首先尝试加载本地文件
+        console.log('尝试加载本地Chart.js文件:', localPath);
+        chartScript.src = localPath;
         
         chartScript.onload = () => {
+            console.log('本地Chart.js文件加载成功');
             window.Chart = Chart;
             resolve(window.Chart);
         };
         
         chartScript.onerror = () => {
-            console.log('主CDN加载失败，尝试备用CDN');
-            chartScript.src = fallbackCDN;
+            console.warn('本地Chart.js文件加载失败，尝试主CDN');
+            chartScript.src = primaryCDN;
+            
+            chartScript.onload = () => {
+                console.log('主CDN Chart.js加载成功');
+                window.Chart = Chart;
+                resolve(window.Chart);
+            };
             
             chartScript.onerror = () => {
-                console.error('所有CDN源加载失败');
-                reject(new Error('无法加载Chart.js库'));
+                console.warn('主CDN加载失败，尝试备用CDN');
+                chartScript.src = fallbackCDN;
+                
+                chartScript.onload = () => {
+                    console.log('备用CDN Chart.js加载成功');
+                    window.Chart = Chart;
+                    resolve(window.Chart);
+                };
+                
+                chartScript.onerror = () => {
+                    console.error('所有Chart.js源加载失败');
+                    reject(new Error('无法加载Chart.js库'));
+                };
             };
         };
         
