@@ -289,6 +289,8 @@ function navigateToPage(pageName) {
                     window.loadDashboardData();
                 } else {
                     console.warn('仪表盘刷新函数未找到');
+                    // 重新加载仪表盘数据
+                    loadDashboardData();
                 }
                 
                 if (window.categoryChart instanceof Chart) {
@@ -300,9 +302,6 @@ function navigateToPage(pageName) {
                         window.categoryChart = null;
                     }
                 }
-                
-                // 重新加载仪表盘数据
-                loadDashboardData();
                 break;
             case 'products':
                 loadProductsPage();
@@ -536,6 +535,234 @@ async function loadDashboardData() {
             return;
         }
         
+        // 确保Chart.js已加载
+        if (typeof window.Chart === 'undefined') {
+            console.error('Chart.js未加载，无法渲染图表');
+            return;
+        }
+        
+        // 获取仪表盘统计数据
+        const statsData = await adminAPI.getDashboardStats();
+        updateDashboardStats(statsData);
+        
+        // 获取最近订单
+        const recentOrders = await adminAPI.getRecentOrders(5);
+        updateRecentOrders(recentOrders);
+        
+        // 获取热销商品
+        const topProducts = await adminAPI.getTopProducts(5);
+        updateTopProducts(topProducts);
+        
+        // 初始化时间周期选择器
+        initPeriodSelector();
+        
+        // 获取销售趋势数据
+        const salesTrend = await adminAPI.getSalesTrend('month', true);
+        
+        // 确保使用window.renderSalesChart函数渲染双Y轴图表
+        if (typeof window.renderSalesChart === 'function') {
+            window.renderSalesChart(salesTrend);
+        } else {
+            console.error('renderSalesChart函数未找到，无法渲染销售趋势图表');
+        }
+        
+        // 获取分类占比数据
+        const categoryDistribution = await adminAPI.getCategoryDistribution();
+        renderCategoryChart(categoryDistribution);
+    } catch (error) {
+        console.error('加载仪表盘数据失败:', error);
+        // 显示错误提示
+        showErrorToast('加载仪表盘数据失败，请稍后重试');
+    }
+}
+
+// 更新仪表盘统计数据
+function updateDashboardStats(data) {
+    // 更新总订单数
+    document.getElementById('totalOrders').textContent = data.totalOrders.toLocaleString();
+    
+    // 更新总销售额
+    document.getElementById('totalSales').textContent = `¥${data.totalSales.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    
+    // 更新用户总数
+    document.getElementById('totalUsers').textContent = data.totalUsers.toLocaleString();
+    
+    // 更新商品总数
+    document.getElementById('totalProducts').textContent = data.totalProducts.toLocaleString();
+}
+
+// 更新最近订单列表
+function updateRecentOrders(orders) {
+    const recentOrdersList = document.getElementById('recentOrdersList');
+    recentOrdersList.innerHTML = '';
+    
+    if (orders.length === 0) {
+        recentOrdersList.innerHTML = '<tr><td colspan="5" class="text-center">暂无订单数据</td></tr>';
+        return;
+    }
+    
+    orders.forEach(order => {
+        // 格式化日期
+        const orderDate = new Date(order.created_at * 1000).toLocaleDateString('zh-CN');
+        
+        // 创建状态标签
+        let statusClass = 'bg-secondary';
+        let statusText = '未知';
+        
+        switch(order.status) {
+            case 'pending':
+            case '待付款':
+                statusClass = 'bg-warning';
+                statusText = '待付款';
+                break;
+            case 'paid':
+            case '已付款':
+                statusClass = 'bg-info';
+                statusText = '已付款';
+                break;
+            case 'shipped':
+            case '已发货':
+                statusClass = 'bg-primary';
+                statusText = '已发货';
+                break;
+            case 'completed':
+            case '已完成':
+                statusClass = 'bg-success';
+                statusText = '已完成';
+                break;
+            case 'cancelled':
+            case '已取消':
+                statusClass = 'bg-danger';
+                statusText = '已取消';
+                break;
+        }
+        
+        // 创建行
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${order.order_id.substring(0, 8)}...</td>
+            <td>${order.username}</td>
+            <td>¥${order.total_amount.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+            <td><span class="badge ${statusClass}">${statusText}</span></td>
+            <td>${orderDate}</td>
+        `;
+        
+        recentOrdersList.appendChild(row);
+    });
+}
+
+// 更新热销商品列表
+function updateTopProducts(products) {
+    const topProductsList = document.getElementById('topProductsList');
+    topProductsList.innerHTML = '';
+    
+    if (products.length === 0) {
+        topProductsList.innerHTML = '<tr><td colspan="4" class="text-center">暂无商品数据</td></tr>';
+        return;
+    }
+    
+    products.forEach(product => {
+        const row = document.createElement('tr');
+        // 确保sales_count和stock属性存在，如果不存在则使用默认值
+        const salesCount = product.sales_count || product.sold_count || 0;
+        const stockCount = product.stock || product.inventory || 0;
+        
+        row.innerHTML = `
+            <td>${product.name}</td>
+            <td>¥${product.price.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+            <td>${salesCount}</td>
+            <td>${stockCount}</td>
+        `;
+        
+        topProductsList.appendChild(row);
+    });
+}
+
+// 初始化时间周期选择器
+function initPeriodSelector() {
+    // 检查是否已经初始化
+    if (document.getElementById('periodSelector')) {
+        return;
+    }
+    
+    // 获取销售趋势图表容器的父元素
+    const salesChartCard = document.getElementById('salesChart').closest('.card');
+    if (!salesChartCard) return;
+    
+    // 获取卡片头部
+    const cardHeader = salesChartCard.querySelector('.card-header');
+    if (!cardHeader) return;
+    
+    // 创建时间周期选择器
+    const periodSelector = document.createElement('div');
+    periodSelector.id = 'periodSelector';
+    periodSelector.className = 'btn-group btn-group-sm float-end';
+    periodSelector.innerHTML = `
+        <button type="button" class="btn btn-outline-primary period-btn" data-period="day">日</button>
+        <button type="button" class="btn btn-outline-primary period-btn" data-period="week">周</button>
+        <button type="button" class="btn btn-outline-primary period-btn active" data-period="month">月</button>
+        <button type="button" class="btn btn-outline-primary period-btn" data-period="year">年</button>
+    `;
+    
+    // 添加到卡片头部
+    cardHeader.appendChild(periodSelector);
+    
+    // 为时间周期按钮添加事件监听器
+    const periodButtons = periodSelector.querySelectorAll('.period-btn');
+    periodButtons.forEach(button => {
+        button.addEventListener('click', async function() {
+            // 移除所有按钮的active类
+            periodButtons.forEach(btn => btn.classList.remove('active'));
+            // 添加当前按钮的active类
+            this.classList.add('active');
+            
+            // 获取当前周期
+            const period = this.dataset.period;
+            
+            try {
+                // 显示加载状态
+                const salesChartContainer = document.getElementById('salesChart');
+                if (salesChartContainer) {
+                    salesChartContainer.style.opacity = '0.5';
+                }
+                
+                // 获取新的销售趋势数据
+                const salesTrend = await adminAPI.getSalesTrend(period, true);
+                
+                // 确保使用window.renderSalesChart函数渲染双Y轴图表
+                if (typeof window.renderSalesChart === 'function') {
+                    window.renderSalesChart(salesTrend);
+                } else {
+                    console.error('renderSalesChart函数未找到');
+                }
+                
+                // 恢复图表显示
+                if (salesChartContainer) {
+                    salesChartContainer.style.opacity = '1';
+                }
+            } catch (error) {
+                console.error('加载销售趋势数据失败:', error);
+                showErrorToast('加载销售趋势数据失败，请稍后重试');
+            }
+        });
+    });
+}
+
+// 本地实现的仪表盘数据加载函数
+// 当admin-dashboard.js中的全局函数未加载时使用
+async function loadDashboardData() {
+    // 检查是否已登录
+    if (!adminAuth.check()) return;
+    
+    try {
+        console.log('使用admin-main.js中的本地loadDashboardData函数');
+        
+        // 检查adminAPI是否可用
+        if (!adminAPI) {
+            console.error('adminAPI未定义，无法加载仪表盘数据');
+            return;
+        }
+        
         // 获取仪表盘统计数据
         const statsData = await adminAPI.getDashboardStats();
         console.log('仪表盘统计数据:', statsData);
@@ -562,7 +789,8 @@ async function loadDashboardData() {
         // 获取销售趋势数据
         try {
             // 使用默认值'month'，因为currentPeriod变量在admin-dashboard.js中定义
-            const salesTrend = await adminAPI.getSalesTrend('month');
+            // 设置include_all_status为true，确保获取所有状态的订单数据
+            const salesTrend = await adminAPI.getSalesTrend('month', true);
             if (typeof window.renderSalesChart === 'function') {
                 // 直接调用全局renderSalesChart函数，确保使用新版本的双Y轴图表
                 window.renderSalesChart(salesTrend);
@@ -584,6 +812,7 @@ async function loadDashboardData() {
         console.error('加载仪表盘数据失败:', error);
     }
 }
+
 
 // 更新仪表盘统计数据
 function updateDashboardStats(data) {
