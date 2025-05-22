@@ -978,8 +978,9 @@ function renderTopProductsList(products) {
     // 首先尝试获取统计页面中的热销商品列表元素
     let topProductsList = document.getElementById('topProductsList');
     console.log('查找热销商品列表元素:', topProductsList ? '找到元素' : '未找到元素');
+    console.log('热销商品列表元素详情:', topProductsList);
     
-    // 如果在统计页面中找不到，尝试创建表格结构
+    // 如果统计页面中找不到，尝试创建表格结构
     if (!topProductsList) {
         console.warn('未找到热销商品列表元素，尝试创建表格结构');
         const statisticsSection = document.getElementById('statistics');
@@ -1127,10 +1128,17 @@ function renderTopProductsList(products) {
         // 创建行元素
         const row = document.createElement('tr');
         
+        // 确保行可见 - 添加更明确的样式
+        row.style.display = 'table-row';
+        row.style.visibility = 'visible';
+        row.style.height = 'auto';
+        row.style.opacity = '1';
+        row.style.border = '1px solid #D2B48C';
+        
         // 设置行内容
         row.innerHTML = `
-            <td class="text-center">${index + 1}</td>
-            <td>
+            <td class="text-center" style="padding: 8px; visibility: visible;">${index + 1}</td>
+            <td style="padding: 8px; visibility: visible;">
                 <div style="display: flex; align-items: center;">
                     <img src="${productImage}" alt="${productName}" style="width: 40px; height: 40px; object-fit: cover; margin-right: 10px;">
                     <div>
@@ -1139,22 +1147,87 @@ function renderTopProductsList(products) {
                     </div>
                 </div>
             </td>
-            <td class="text-center">${productQuantity}</td>
-            <td class="text-right">¥${typeof productSales === 'number' ? productSales.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}</td>
-            <td class="text-center">${percentage}%</td>
+            <td class="text-center" style="padding: 8px; visibility: visible;">${productQuantity}</td>
+            <td class="text-right" style="padding: 8px; visibility: visible;">¥${typeof productSales === 'number' ? productSales.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}</td>
+            <td class="text-center" style="padding: 8px; visibility: visible;">${percentage}%</td>
         `;
         
         // 添加行到表格
         try {
             topProductsList.appendChild(row);
             console.log(`已添加第${index + 1}行商品数据:`, productName);
+            console.log(`第${index + 1}行DOM元素:`, row);
         } catch (error) {
             console.error(`添加第${index + 1}行时出错:`, error);
         }
     });
     
+    // 确保表格可见
+    const tableElement = topProductsList.closest('table');
+    if (tableElement) {
+        // 设置表格ID以便CSS选择器可以精确定位
+        tableElement.id = 'topProductsTable';
+        tableElement.style.display = 'table';
+        tableElement.style.visibility = 'visible';
+        tableElement.style.width = '100%';
+        tableElement.style.borderCollapse = 'separate';
+        tableElement.style.borderSpacing = '0';
+        tableElement.style.border = '1px solid #D2B48C';
+        tableElement.style.tableLayout = 'fixed';
+        
+        // 确保表头也可见
+        const thead = tableElement.querySelector('thead');
+        if (thead) {
+            thead.style.display = 'table-header-group';
+            thead.style.visibility = 'visible';
+            
+            const headerRows = thead.querySelectorAll('tr');
+            headerRows.forEach(row => {
+                row.style.display = 'table-row';
+                row.style.visibility = 'visible';
+                
+                const headerCells = row.querySelectorAll('th');
+                headerCells.forEach(cell => {
+                    cell.style.padding = '8px';
+                    cell.style.visibility = 'visible';
+                    cell.style.display = 'table-cell';
+                });
+            });
+        }
+        
+        console.log('设置表格可见性:', tableElement);
+    }
+    
+    // 确保表格容器可见
+    const tableResponsive = topProductsList.closest('.table-responsive');
+    if (tableResponsive) {
+        tableResponsive.style.display = 'block';
+        tableResponsive.style.visibility = 'visible';
+        tableResponsive.style.overflow = 'visible';
+        console.log('设置表格容器可见性:', tableResponsive);
+    }
+    
+    // 确保卡片内容可见
+    const cardBody = topProductsList.closest('.card-body');
+    if (cardBody) {
+        cardBody.style.display = 'block';
+        cardBody.style.visibility = 'visible';
+        console.log('设置卡片内容可见性:', cardBody);
+    }
+    
     console.log('热销商品列表渲染完成，共添加', products.length, '行数据');
-
+    console.log('表格内容:', topProductsList.innerHTML);
+    
+    // 强制重绘表格
+    setTimeout(() => {
+        if (tableElement) {
+            tableElement.style.display = 'none';
+            // 强制浏览器重绘
+            void tableElement.offsetHeight;
+            tableElement.style.display = 'table';
+            console.log('强制重绘表格以确保显示');
+        }
+    }, 100);
 }
 
 // 导出统计报表
@@ -1424,3 +1497,31 @@ function ensureStatisticsPageStructure() {
 // 设置全局函数，供admin-main.js调用
 window.initStatisticsPage = initStatisticsPage;
 window.refreshStatisticsData = refreshStatisticsData;
+
+// 在页面加载完成后添加自定义样式
+document.addEventListener('DOMContentLoaded', function() {
+    // 添加自定义样式以确保表格正确显示
+    const customStyle = document.createElement('style');
+    customStyle.textContent = `
+        #topProductsList tr {
+            display: table-row !important;
+            visibility: visible !important;
+        }
+        #topProductsList td {
+            display: table-cell !important;
+            visibility: visible !important;
+            padding: 8px !important;
+        }
+        .table-responsive {
+            overflow: visible !important;
+            display: block !important;
+        }
+        #topProductsTable {
+            display: table !important;
+            visibility: visible !important;
+            width: 100% !important;
+        }
+    `;
+    document.head.appendChild(customStyle);
+    console.log('添加自定义样式以确保表格正确显示');
+});
