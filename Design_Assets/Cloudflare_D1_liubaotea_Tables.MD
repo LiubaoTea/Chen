@@ -7,11 +7,12 @@ D1数据表的ID：440ba7f7-c29c-406c-95ba-ebb2b6aa98c
 
 ---
 
-1、users （用户信息表）
+**1、users （用户信息表）**
 
 -- 用户核心信息表
 CREATE TABLE users (
-  ----------------------------------------------------------------------------
+--------------------
+
   "user_id" INTEGER PRIMARY KEY                                              -- 用户ID（6位数字主键，排除数字4）
     CHECK (
       user_id BETWEEN 100000 AND 999999                                      -- 范围约束：100000~999999
@@ -27,9 +28,11 @@ CREATE TABLE users (
   "last_login" TIMESTAMP                                                     -- 最后登录时间（标准时间格式）
 );
 
-------------------------------------------
+---
+
 -- 高频查询字段索引
-------------------------------------------
+-------------------
+
 CREATE INDEX "idx_users_phone" ON users ("phone_number");      -- 电话号码索引（优化查询性能）
 CREATE INDEX "idx_users_email" ON users ("email");             -- 邮箱索引（优化唯一性校验）
 CREATE INDEX "idx_last_login" ON users ("last_login");         -- 最后登录时间索引（新增优化）
@@ -44,11 +47,15 @@ ALTER TABLE users ADD COLUMN "is_deleted" TEXT NOT NULL DEFAULT '否'
 
 -- 可选：添加复合约束（如果 status='删除'，则 is_deleted 必须为 '是'）
 -- ALTER TABLE users ADD CHECK (
---   (status = '删除' AND is_deleted = '是') OR 
+--   (status = '删除' AND is_deleted = '是') OR
 --   (status != '删除')
 -- );
 
-2、products：（商品数据表）
+---
+
+
+
+**2、products：（商品数据表）**
 
 -- 创建新表（整合状态字段）
 CREATE TABLE products (
@@ -71,6 +78,10 @@ CREATE INDEX idx_product_status ON products ("status");     -- 状态索引（�
 
 ALTER TABLE products ADD COLUMN "original_price" REAL NOT NULL DEFAULT 0.0;-- 添加原价列（支持小数点，默认值为0）
 
+---
+
+
+
 3、orders：（订单）
 -- 创建订单主表
 CREATE TABLE orders (
@@ -90,6 +101,10 @@ CREATE TABLE orders (
 CREATE INDEX idx_orders_user ON orders ("user_id");
 CREATE INDEX idx_orders_status ON orders ("status");
 
+---
+
+
+
 4、order_items：（订单明细）
 
 CREATE TABLE order_items (
@@ -106,6 +121,10 @@ CREATE TABLE order_items (
 
 -- 优化订单详情查询效率
 CREATE INDEX idx_order_items_order ON order_items ("order_id");
+
+---
+
+
 
 5、carts：（购物车）
 CREATE TABLE carts (
@@ -124,6 +143,8 @@ CREATE TABLE carts (
   FOREIGN KEY (product_id) REFERENCES products(product_id) ON DELETE CASCADE,
   FOREIGN KEY (session_id) REFERENCES shopping_sessions(session_id) ON DELETE SET NULL
 );
+
+
 6、user_addresses：（地址设置）
 CREATE TABLE user_addresses (
   address_id INTEGER PRIMARY KEY AUTOINCREMENT,                        -- 地址ID（自增主键）
@@ -142,6 +163,10 @@ CREATE TABLE user_addresses (
 CREATE INDEX idx_user_addresses_user ON user_addresses(user_id);
 CREATE INDEX idx_user_addresses_default ON user_addresses(is_default);
 
+---
+
+
+
 7、user_settings：（账户设置）
 
 CREATE TABLE user_settings (
@@ -156,6 +181,10 @@ CREATE TABLE user_settings (
 );
 
 CREATE INDEX idx_user_settings_user ON user_settings(user_id);
+
+---
+
+
 
 8、product_categories：（产品分类）
 CREATE TABLE product_categories (
@@ -174,6 +203,10 @@ CREATE TABLE product_categories (
 CREATE INDEX idx_categories_rule ON product_categories(rule_type, rule_value);
 CREATE INDEX idx_categories_parent ON product_categories(parent_category_id);
 
+---
+
+
+
 9、product_reviews：（产品评论）
 CREATE TABLE product_reviews (
   review_id INTEGER PRIMARY KEY AUTOINCREMENT,                                      --评价ID（自增主键）
@@ -190,6 +223,10 @@ CREATE TABLE product_reviews (
 
 CREATE INDEX idx_reviews_product ON product_reviews(product_id);
 CREATE INDEX idx_reviews_rating ON product_reviews(rating);
+
+---
+
+
 
 10、shopping_sessions：（购物会话）
 CREATE TABLE shopping_sessions (
@@ -209,6 +246,10 @@ CREATE INDEX idx_sessions_expiry ON shopping_sessions(expires_at);
 -- 删除旧表（操作前请备份数据）
 DROP TABLE IF EXISTS admins;
 
+---
+
+
+
 11、admins创建管理员表（独立账户体系）
 -- 创建管理员表（独立账户体系）
 CREATE TABLE admins (
@@ -224,6 +265,10 @@ CREATE TABLE admins (
 -- 高频查询索引
 CREATE INDEX idx_admins_role ON admins(role);       -- 按角色快速筛选
 CREATE INDEX idx_admins_username ON admins(username);  -- 登录优化
+
+---
+
+
 
 12、admin_settings：（系统设置）
 
@@ -242,6 +287,10 @@ CREATE TABLE admin_settings (
 -- 高频查询索引
 CREATE INDEX idx_settings_module ON admin_settings(module);
 CREATE INDEX idx_settings_key ON admin_settings(config_key);
+
+---
+
+
 
 13、admin_statistics：（统计表）
 
@@ -263,6 +312,10 @@ CREATE TABLE admin_statistics (
 
 -- 单独创建索引（不与 CREATE TABLE 语句合并）
 CREATE INDEX idx_stat_type_range ON admin_statistics(stat_type, start_date, end_date);
+
+---
+
+
 
 14、product_category_mapping：（商品-分类映射表）
 -- 创建商品-分类映射表
