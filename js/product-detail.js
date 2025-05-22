@@ -109,6 +109,45 @@ async function loadTeaCulture() {
     }
 }
 
+// 加载商品评价内容
+async function loadProductReviews(productId) {
+    try {
+        const response = await fetch('product-reviews.html');
+        const html = await response.text();
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        const reviewsContent = doc.querySelector('.reviews-container');
+        const reviewsFormContent = doc.querySelector('.review-form-container');
+        const reviewsModal = doc.querySelector('.review-image-modal');
+        const reviewsTab = document.getElementById('reviews');
+        
+        if (reviewsTab && reviewsContent && reviewsFormContent) {
+            reviewsTab.innerHTML = '';
+            reviewsTab.appendChild(reviewsContent.cloneNode(true));
+            reviewsTab.appendChild(reviewsFormContent.cloneNode(true));
+            document.body.appendChild(reviewsModal.cloneNode(true));
+            
+            // 初始化商品评价模块
+            if (typeof window.productReviews === 'undefined') {
+                // 动态导入商品评价模块
+                const reviewsModule = await import('./product-reviews.js');
+                window.productReviews = reviewsModule.default;
+            }
+            
+            // 初始化评价模块
+            if (window.productReviews && typeof window.productReviews.init === 'function') {
+                window.productReviews.init(productId);
+            } else {
+                console.warn('商品评价模块未正确加载');
+            }
+        } else {
+            console.warn('商品评价内容加载失败：找不到目标元素');
+        }
+    } catch (error) {
+        console.error('加载商品评价内容失败:', error);
+    }
+}
+
 // 获取相关推荐商品
 async function fetchRelatedProducts(currentProductId) {
     try {

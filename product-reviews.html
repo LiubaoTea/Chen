@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>商品评价 - 陳記六堡茶</title>
+    <link rel="stylesheet" href="./css/style.css">
+    <link rel="stylesheet" href="./css/responsive.css">
+    <link rel="stylesheet" href="./css/shop.css">
+    <link rel="stylesheet" href="./css/product-detail.css">
+    <link rel="stylesheet" href="./css/product-reviews.css">
+    <!-- 引入字体图标库 -->
+    <link rel="stylesheet" href="./src/Font Awesome 6.72/css/all.min.css" onerror="this.onerror=null;this.href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.72.0/css/all.min.css';">
+</head>
+<body>
+    <!-- 评价列表 -->
+    <div class="reviews-container">
+        <div class="reviews-header">
+            <h3>商品评价 <span class="review-count">(0)</span></h3>
+            <div class="rating-summary">
+                <div class="average-rating">0.0</div>
+                <div class="rating-stars"></div>
+                <div class="rating-distribution">
+                    <div class="rating-bar">
+                        <span class="rating-level">5星</span>
+                        <div class="progress">
+                            <div class="progress-bar" style="width: 0%"></div>
+                        </div>
+                        <span class="rating-percent">0%</span>
+                    </div>
+                    <div class="rating-bar">
+                        <span class="rating-level">4星</span>
+                        <div class="progress">
+                            <div class="progress-bar" style="width: 0%"></div>
+                        </div>
+                        <span class="rating-percent">0%</span>
+                    </div>
+                    <div class="rating-bar">
+                        <span class="rating-level">3星</span>
+                        <div class="progress">
+                            <div class="progress-bar" style="width: 0%"></div>
+                        </div>
+                        <span class="rating-percent">0%</span>
+                    </div>
+                    <div class="rating-bar">
+                        <span class="rating-level">2星</span>
+                        <div class="progress">
+                            <div class="progress-bar" style="width: 0%"></div>
+                        </div>
+                        <span class="rating-percent">0%</span>
+                    </div>
+                    <div class="rating-bar">
+                        <span class="rating-level">1星</span>
+                        <div class="progress">
+                            <div class="progress-bar" style="width: 0%"></div>
+                        </div>
+                        <span class="rating-percent">0%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="reviews-filter">
+            <button class="filter-btn active" data-filter="all">全部</button>
+            <button class="filter-btn" data-filter="5">5星</button>
+            <button class="filter-btn" data-filter="4">4星</button>
+            <button class="filter-btn" data-filter="3">3星</button>
+            <button class="filter-btn" data-filter="2">2星</button>
+            <button class="filter-btn" data-filter="1">1星</button>
+            <button class="filter-btn" data-filter="with-images">有图</button>
+        </div>
+        
+        <div class="reviews-list" id="reviewsList">
+            <!-- 评价内容将通过JavaScript动态加载 -->
+            <div class="no-reviews">暂无评价</div>
+        </div>
+        
+        <div class="reviews-pagination" id="reviewsPagination">
+            <!-- 分页控件将通过JavaScript动态生成 -->
+        </div>
+    </div>
+    
+    <!-- 评价表单 -->
+    <div class="review-form-container" id="reviewFormContainer">
+        <h3>发表评价</h3>
+        <form id="reviewForm">
+            <div class="rating-select">
+                <span>评分：</span>
+                <div class="star-rating">
+                    <i class="far fa-star" data-rating="1"></i>
+                    <i class="far fa-star" data-rating="2"></i>
+                    <i class="far fa-star" data-rating="3"></i>
+                    <i class="far fa-star" data-rating="4"></i>
+                    <i class="far fa-star" data-rating="5"></i>
+                </div>
+                <input type="hidden" id="ratingInput" name="rating" value="0">
+            </div>
+            
+            <div class="form-group">
+                <label for="reviewContent">评价内容：</label>
+                <textarea id="reviewContent" name="content" rows="4" placeholder="请分享您对这款产品的使用体验和感受..."></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label>上传图片（可选）：</label>
+                <div class="image-upload-container">
+                    <div class="image-upload-btn" id="imageUploadBtn">
+                        <i class="fas fa-plus"></i>
+                        <span>添加图片</span>
+                        <input type="file" id="imageUpload" multiple accept="image/*" style="display: none;">
+                    </div>
+                    <div class="image-preview-container" id="imagePreviewContainer"></div>
+                </div>
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary" id="submitReviewBtn">提交评价</button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- 评价图片查看模态框 -->
+    <div class="review-image-modal" id="reviewImageModal">
+        <span class="close-modal">&times;</span>
+        <img class="modal-content" id="reviewModalImage">
+    </div>
+    
+    <!-- JavaScript 文件 -->
+    <script type="module" src="./js/product-reviews.js"></script>
+</body>
+</html>

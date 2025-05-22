@@ -1032,6 +1032,123 @@ const adminAPIObject = {
         }
     },
     
+    // 获取评价详情
+    getReviewById: async (reviewId) => {
+        try {
+            const url = `${ADMIN_API_BASE_URL}/api/admin/reviews/${reviewId}`;
+            console.log('发送评价详情请求，URL:', url);
+            
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    ...adminAuth.getHeaders(),
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('评价详情API响应错误:', response.status, errorText);
+                throw new Error(`获取评价详情失败，HTTP状态码: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            console.log('成功获取评价详情:', data);
+            return data;
+        } catch (error) {
+            console.error('获取评价详情出错:', error);
+            throw error;
+        }
+    },
+    
+    // 审核通过评价
+    approveReview: async (reviewId) => {
+        try {
+            const url = `${ADMIN_API_BASE_URL}/api/admin/reviews/${reviewId}/approve`;
+            console.log('发送审核通过评价请求，URL:', url);
+            
+            const response = await fetch(url, {
+                method: 'PUT',
+                headers: {
+                    ...adminAuth.getHeaders(),
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('审核通过评价API响应错误:', response.status, errorText);
+                throw new Error(`审核通过评价失败，HTTP状态码: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            console.log('成功审核通过评价:', data);
+            return data;
+        } catch (error) {
+            console.error('审核通过评价出错:', error);
+            throw error;
+        }
+    },
+    
+    // 拒绝评价
+    rejectReview: async (reviewId) => {
+        try {
+            const url = `${ADMIN_API_BASE_URL}/api/admin/reviews/${reviewId}/reject`;
+            console.log('发送拒绝评价请求，URL:', url);
+            
+            const response = await fetch(url, {
+                method: 'PUT',
+                headers: {
+                    ...adminAuth.getHeaders(),
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('拒绝评价API响应错误:', response.status, errorText);
+                throw new Error(`拒绝评价失败，HTTP状态码: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            console.log('成功拒绝评价:', data);
+            return data;
+        } catch (error) {
+            console.error('拒绝评价出错:', error);
+            throw error;
+        }
+    },
+    
+    // 回复评价
+    replyReview: async (reviewId, content) => {
+        try {
+            const url = `${ADMIN_API_BASE_URL}/api/admin/reviews/${reviewId}/reply`;
+            console.log('发送回复评价请求，URL:', url);
+            
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    ...adminAuth.getHeaders(),
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ content })
+            });
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('回复评价API响应错误:', response.status, errorText);
+                throw new Error(`回复评价失败，HTTP状态码: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            console.log('成功回复评价:', data);
+            return data;
+        } catch (error) {
+            console.error('回复评价出错:', error);
+            throw error;
+        }
+    },
+    
     // 获取用户详情
     getUserDetails: async (userId) => {
         try {
