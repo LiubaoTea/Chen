@@ -327,7 +327,8 @@
     </div>
 
     <!-- 加载脚本 -->
-    <script src="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <!-- 优先使用本地Bootstrap JS资源，CDN作为备份 -->
+    <script src="../src/Bootstrap 5.3.0 CSS/css/bootstrap.bundle.min.js" onerror="this.onerror=null;this.src='https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/5.3.0/js/bootstrap.bundle.min.js';"></script>
     <script type="module" src="../js/config.js"></script>
     <script type="module" src="../js/admin/admin-auth.js"></script>
     <script type="module" src="../js/admin/admin-api.js"></script>
