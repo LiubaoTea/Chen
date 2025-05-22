@@ -6,10 +6,13 @@
     <title>陳記六堡茶 - 管理后台</title>
     <!-- 本地Chart.js库 (使用UMD版本) -->
     <script type="text/javascript" src="../js/lib/chart.umd.js"></script>
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/5.1.3/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- 优先使用本地Bootstrap CSS资源，CDN作为备份 -->
+    <link rel="stylesheet" href="../src/Bootstrap 5.3.0 CSS/css/bootstrap.min.css" onerror="this.onerror=null;this.href='https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/5.3.0/css/bootstrap.min.css';">
+    <!-- 优先使用本地Bootstrap Icons资源，CDN作为备份 -->
+    <link rel="stylesheet" href="../src/Bootstrap Icons 1.11.0/css/bootstrap-icons.css" onerror="this.onerror=null;this.href='https://cdn.bootcdn.net/ajax/libs/bootstrap-icons/1.11.0/font/bootstrap-icons.css';">
+    <!-- 优先使用本地Font Awesome资源，CDN作为备份 -->
+    <link rel="stylesheet" href="../src/Font Awesome 6.0.0-beta3/css/all.min.css" onerror="this.onerror=null;this.href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css';">
+
     <style>
         body {
             background-color: #f8f9fc;
