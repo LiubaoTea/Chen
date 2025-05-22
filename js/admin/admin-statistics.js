@@ -975,186 +975,163 @@ function renderOrderStatusChart(data) {
 
 // 渲染热销商品排行列表
 function renderTopProductsList(products) {
-    // 首先尝试获取统计页面中的热销商品列表元素
-    let topProductsList = document.getElementById('topProductsList');
-    console.log('查找热销商品列表元素:', topProductsList ? '找到元素' : '未找到元素');
+    console.log('开始渲染热销商品排行表');
     
-    // 如果在统计页面中找不到，尝试创建表格结构
-    if (!topProductsList) {
-        console.warn('未找到热销商品列表元素，尝试创建表格结构');
+    // 首先尝试获取或创建热销商品卡片容器
+    let topProductsCard = document.getElementById('topProductsCard');
+    if (!topProductsCard) {
+        console.log('创建热销商品卡片容器');
         const statisticsSection = document.getElementById('statistics');
-        console.log('统计部分元素:', statisticsSection ? '找到元素' : '未找到元素');
+        if (!statisticsSection) {
+            console.error('未找到统计部分容器，无法创建热销商品卡片');
+            return;
+        }
         
-        if (statisticsSection) {
-            // 检查是否已有热销商品卡片
-            let topProductsCard = statisticsSection.querySelector('#topProductsCard');
-            console.log('热销商品卡片:', topProductsCard ? '找到元素' : '未找到元素');
-            
-            if (!topProductsCard) {
-                // 创建热销商品卡片
-                console.log('创建热销商品卡片');
-                const cardHtml = `
-                    <div class="card mb-4" id="topProductsCard">
-                        <div class="card-header d-flex justify-content-between align-items-center">
-                            <h6 class="m-0 font-weight-bold text-primary">热销商品排行</h6>
-                        </div>
-                        <div class="card-body">
-                            <div class="table-responsive">
-                                <table class="table table-bordered" width="100%" cellspacing="0">
-                                    <thead>
-                                        <tr>
-                                            <th>排名</th>
-                                            <th>商品信息</th>
-                                            <th>销售数量</th>
-                                            <th>销售额</th>
-                                            <th>占比</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="topProductsList">
-                                        <!-- 热销商品数据将在这里动态加载 -->
-                                    </tbody>
-                                </table>
-                            </div>
+        // 创建新的卡片结构
+        const cardContainer = document.createElement('div');
+        cardContainer.className = 'row';
+        cardContainer.innerHTML = `
+            <div class="col-12">
+                <div class="card shadow mb-4" id="topProductsCard">
+                    <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                        <h6 class="m-0 font-weight-bold text-primary">热销商品排行榜</h6>
+                        <div class="card-tools">
+                            <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                <i class="fas fa-minus"></i>
+                            </button>
                         </div>
                     </div>
-                `;
-                
-                // 创建新行并添加到统计部分
-                const newRow = document.createElement('div');
-                newRow.className = 'row';
-                const col = document.createElement('div');
-                col.className = 'col-12';
-                col.innerHTML = cardHtml;
-                newRow.appendChild(col);
-                statisticsSection.appendChild(newRow);
-                
-                // 重新获取列表元素
-                topProductsList = document.getElementById('topProductsList');
-                console.log('创建后重新获取列表元素:', topProductsList ? '找到元素' : '未找到元素');
-            } else {
-                // 如果卡片存在但列表元素不存在，尝试获取或创建列表元素
-                topProductsList = topProductsCard.querySelector('#topProductsList');
-                console.log('从卡片中查找列表元素:', topProductsList ? '找到元素' : '未找到元素');
-                
-                if (!topProductsList) {
-                    console.log('在卡片中创建列表元素');
-                    const tableElement = topProductsCard.querySelector('table');
-                    console.log('表格元素:', tableElement ? '找到元素' : '未找到元素');
-                    
-                    if (tableElement) {
-                        const tbody = document.createElement('tbody');
-                        tbody.id = 'topProductsList';
-                        tableElement.appendChild(tbody);
-                        topProductsList = tbody;
-                        console.log('创建并添加tbody元素:', topProductsList ? '成功' : '失败');
-                    } else {
-                        // 如果没有找到表格，创建完整的表格结构
-                        console.log('创建完整表格结构');
-                        const cardBody = topProductsCard.querySelector('.card-body');
-                        if (cardBody) {
-                            cardBody.innerHTML = `
-                                <div class="table-responsive">
-                                    <table class="table table-bordered table-hover">
-                                        <thead>
-                                            <tr>
-                                                <th>排名</th>
-                                                <th>商品信息</th>
-                                                <th>销售数量</th>
-                                                <th>销售额</th>
-                                                <th>占比</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="topProductsList">
-                                            <!-- 热销商品数据将在这里动态加载 -->
-                                        </tbody>
-                                    </table>
-                                </div>
-                            `;
-                            topProductsList = cardBody.querySelector('#topProductsList');
-                            console.log('创建完整表格后获取列表元素:', topProductsList ? '找到元素' : '未找到元素');
-                        }
-                    }
-                }
-            }
-        }
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover" id="topProductsTable">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th class="text-center" style="width: 80px;">排名</th>
+                                        <th>商品信息</th>
+                                        <th class="text-center" style="width: 120px;">销售数量</th>
+                                        <th class="text-right" style="width: 150px;">销售金额</th>
+                                        <th class="text-center" style="width: 100px;">占比</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="topProductsList"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        statisticsSection.appendChild(cardContainer);
+        console.log('热销商品卡片创建完成');
+        topProductsCard = document.getElementById('topProductsCard');
     }
     
-    // 如果仍然找不到元素，记录错误并返回
+    // 获取商品列表容器
+    const topProductsList = document.getElementById('topProductsList');
     if (!topProductsList) {
-        console.error('无法找到或创建热销商品列表元素');
+        console.error('无法找到商品列表容器');
         return;
     }
     
-    // 检查数据格式是否正确
-    if (!products || !Array.isArray(products)) {
-        console.error('热销商品数据格式不正确:', products);
-        topProductsList.innerHTML = '<tr><td colspan="5" class="text-center">暂无热销商品数据</td></tr>';
+    // 验证数据格式
+    if (!Array.isArray(products)) {
+        console.error('商品数据格式无效:', products);
+        topProductsList.innerHTML = '<tr><td colspan="5" class="text-center text-muted">数据格式无效</td></tr>';
         return;
     }
     
-    // 清空表格内容
+    // 清空现有内容
     topProductsList.innerHTML = '';
-    console.log('已清空表格内容，准备添加新数据');
+    console.log('清空现有商品列表内容');
     
-    // 如果没有数据，显示提示信息
+    // 处理空数据情况
     if (products.length === 0) {
-        topProductsList.innerHTML = '<tr><td colspan="5" class="text-center">暂无热销商品数据</td></tr>';
-        console.log('没有商品数据，显示提示信息');
+        topProductsList.innerHTML = '<tr><td colspan="5" class="text-center text-muted">暂无热销商品数据</td></tr>';
+        console.log('无商品数据，显示提示信息');
         return;
     }
-    
-    console.log('渲染热销商品列表:', products);
     
     // 计算总销售额
     const totalSales = products.reduce((sum, product) => {
-        // 尝试从不同的属性获取销售额
         const sales = product.sales_amount || product.total_amount || product.totalSales || product.sales || product.total_sales || 0;
         return sum + (typeof sales === 'number' ? sales : 0);
     }, 0);
-    console.log('计算的总销售额:', totalSales);
+    console.log('计算总销售额:', totalSales);
     
-    // 添加商品行
+    // 渲染每个商品行
     products.forEach((product, index) => {
-        // 尝试从不同的属性获取数据
-        const productName = product.name || product.product_name || '未知商品';
-        const productId = product.id || product.product_id || '未知';
-        const productImage = product.image || product.product_image || '../image/Goods/Goods_1.png';
-        const productQuantity = product.sales_count || product.quantity || 0;
-        const productSales = product.sales_amount || product.total_amount || product.totalSales || product.sales || product.total_sales || 0;
+        console.log(`开始渲染第 ${index + 1} 个商品:`, product.name);
         
-        const percentage = totalSales > 0 ? (productSales / totalSales * 100).toFixed(2) : '0.00';
+        const {
+            name = '未知商品',
+            product_id = '未知',
+            description = '',
+            specifications = '',
+            aging_years = 0,
+            sales_count = 0,
+            sales_amount = 0
+        } = product;
         
-        // 创建行元素
+        const percentage = totalSales > 0 ? ((sales_amount / totalSales) * 100).toFixed(2) : '0.00';
+        
+        // 创建商品行
         const row = document.createElement('tr');
-        
-        // 设置行内容
+        row.className = 'product-row';
         row.innerHTML = `
-            <td class="text-center">${index + 1}</td>
-            <td>
-                <div style="display: flex; align-items: center;">
-                    <img src="${productImage}" alt="${productName}" style="width: 40px; height: 40px; object-fit: cover; margin-right: 10px;">
-                    <div>
-                        <div style="font-weight: bold;">${productName}</div>
-                        <small style="color: #6c757d;">ID: ${productId}</small>
+            <td class="text-center align-middle">
+                <span class="badge badge-${index < 3 ? 'primary' : 'secondary'} badge-pill">${index + 1}</span>
+            </td>
+            <td class="align-middle">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <img src="../image/Goods/Goods_${product_id}.png" 
+                             alt="${name}" 
+                             class="product-img"
+                             style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;">
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="mb-0 product-name">${name}</h6>
+                        <div class="small text-muted">
+                            <span class="me-2">规格: ${specifications}</span>
+                            <span>年份: ${aging_years}年</span>
+                        </div>
                     </div>
                 </div>
             </td>
-            <td class="text-center">${productQuantity}</td>
-            <td class="text-right">¥${typeof productSales === 'number' ? productSales.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}</td>
-            <td class="text-center">${percentage}%</td>
+            <td class="text-center align-middle">
+                <span class="badge badge-info">${sales_count} 件</span>
+            </td>
+            <td class="text-right align-middle">
+                <span class="text-primary">¥${sales_amount.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}</span>
+            </td>
+            <td class="text-center align-middle">
+                <div class="progress" style="height: 20px;">
+                    <div class="progress-bar bg-success" 
+                         role="progressbar" 
+                         style="width: ${percentage}%"
+                         aria-valuenow="${percentage}"
+                         aria-valuemin="0"
+                         aria-valuemax="100">
+                        ${percentage}%
+                    </div>
+                </div>
+            </td>
         `;
         
-        // 添加行到表格
-        try {
-            topProductsList.appendChild(row);
-            console.log(`已添加第${index + 1}行商品数据:`, productName);
-        } catch (error) {
-            console.error(`添加第${index + 1}行时出错:`, error);
-        }
+        // 添加鼠标悬停效果
+        row.addEventListener('mouseenter', () => {
+            row.style.backgroundColor = '#f8f9fa';
+        });
+        row.addEventListener('mouseleave', () => {
+            row.style.backgroundColor = '';
+        });
+        
+        // 将行添加到表格
+        topProductsList.appendChild(row);
+        console.log(`商品 ${name} 渲染完成`);
     });
     
-    console.log('热销商品列表渲染完成，共添加', products.length, '行数据');
-
+    console.log('热销商品排行表渲染完成，共渲染', products.length, '个商品');
 }
 
 // 导出统计报表
