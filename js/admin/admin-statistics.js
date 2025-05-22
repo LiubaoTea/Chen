@@ -975,8 +975,6 @@ function renderOrderStatusChart(data) {
 
 // 渲染热销商品排行列表
 function renderTopProductsList(products) {
-    console.log('渲染热销商品列表:', products);
-    
     // 首先尝试获取统计页面中的热销商品列表元素
     let topProductsList = document.getElementById('topProductsList');
     
@@ -1063,9 +1061,7 @@ function renderTopProductsList(products) {
         return;
     }
     
-    // 检查是否在仪表盘页面 - 仪表盘页面的表格结构与统计页面不同
-    const isDashboard = document.getElementById('dashboard') !== null;
-    console.log('当前页面是否为仪表盘页面:', isDashboard);
+    console.log('渲染热销商品列表:', products);
     
     // 计算总销售额
     const totalSales = products.reduce((sum, product) => {
@@ -1079,57 +1075,30 @@ function renderTopProductsList(products) {
         // 尝试从不同的属性获取数据
         const productName = product.name || product.product_name || '未知商品';
         const productId = product.id || product.product_id || '未知';
-        // 确保图片路径正确
-        const productImage = `../image/Goods/Goods_${productId}.png`;
-        const productPrice = product.price || product.unit_price || 0;
+        const productImage = product.image || product.product_image || '../image/Goods/Goods_1.png';
         const productQuantity = product.sales_count || product.quantity || 0;
-        const productStock = product.stock || product.inventory || 0;
         const productSales = product.sales_amount || product.total_amount || product.totalSales || product.sales || product.total_sales || 0;
         
         const percentage = totalSales > 0 ? (productSales / totalSales * 100).toFixed(2) : '0.00';
         
         const row = document.createElement('tr');
-        
-        // 根据不同页面使用不同的表格结构
-        if (isDashboard) {
-            // 仪表盘页面的表格结构：商品、价格、销量、库存
-            row.innerHTML = `
-                <td>
-                    <div class="d-flex align-items-center">
-                        <img src="${productImage}" alt="${productName}" class="me-2" style="width: 40px; height: 40px; object-fit: cover;">
-                        <div>
-                            <div class="fw-bold">${productName}</div>
-                            <small class="text-muted">ID: ${productId}</small>
-                        </div>
+        row.innerHTML = `
+            <td>${index + 1}</td>
+            <td>
+                <div class="d-flex align-items-center">
+                    <img src="${productImage}" alt="${productName}" class="me-2" style="width: 40px; height: 40px; object-fit: cover;">
+                    <div>
+                        <div class="fw-bold">${productName}</div>
+                        <small class="text-muted">ID: ${productId}</small>
                     </div>
-                </td>
-                <td>¥${typeof productPrice === 'number' ? productPrice.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}</td>
-                <td>${productQuantity}</td>
-                <td>${productStock}</td>
-            `;
-        } else {
-            // 统计页面的表格结构：排名、商品信息、销售数量、销售额、占比
-            row.innerHTML = `
-                <td>${index + 1}</td>
-                <td>
-                    <div class="d-flex align-items-center">
-                        <img src="${productImage}" alt="${productName}" class="me-2" style="width: 40px; height: 40px; object-fit: cover;">
-                        <div>
-                            <div class="fw-bold">${productName}</div>
-                            <small class="text-muted">ID: ${productId}</small>
-                        </div>
-                    </div>
-                </td>
-                <td>${productQuantity}</td>
-                <td>¥${typeof productSales === 'number' ? productSales.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}</td>
-                <td>${percentage}%</td>
-            `;
-        }
+                </div>
+            </td>
+            <td>${productQuantity}</td>
+            <td>¥${typeof productSales === 'number' ? productSales.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}</td>
+            <td>${percentage}%</td>
+        `;
         
-        console.log(`已创建第${index + 1}个商品行:`, row);
-        // 将行添加到表格
         topProductsList.appendChild(row);
-        console.log(`已添加第${index + 1}个商品行到表格`);
     });
     
     console.log('热销商品列表渲染完成');
