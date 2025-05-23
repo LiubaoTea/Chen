@@ -183,11 +183,18 @@ async function loadOrderAndProductInfo(orderId, productId, orderItemId) {
             specText = orderItem.specifications;
         } else if (productData && productData.specifications) {
             try {
-                const specs = JSON.parse(productData.specifications);
-                specText = Object.entries(specs)
-                    .map(([key, value]) => `${key}: ${value}`)
-                    .join(', ');
+                // 检查是否已经是字符串
+                if (typeof productData.specifications === 'string' && !productData.specifications.startsWith('{')) {
+                    specText = productData.specifications;
+                } else {
+                    // 尝试解析JSON
+                    const specs = JSON.parse(productData.specifications);
+                    specText = Object.entries(specs)
+                        .map(([key, value]) => `${key}: ${value}`)
+                        .join(', ');
+                }
             } catch (e) {
+                console.log('规格解析错误:', e);
                 specText = productData.specifications;
             }
         }
@@ -441,9 +448,46 @@ async function handleFormSubmit(event) {
         if (uploadedImages.length > 0) {
             console.log(`准备上传${uploadedImages.length}张图片`);
             
-            // 这里应该有图片上传的实际逻辑
-            // 由于当前没有实现图片上传API，暂时跳过图片上传步骤
-            console.log('图片上传功能暂未实现，跳过图片上传步骤');
+            // 上传图片到R2存储
+            for (let i = 0; i < uploadedImages.length; i++) {
+                const image = uploadedImages[i];
+                const file = image.file;
+                
+                // 创建唯一的文件名
+                const timestamp = new Date().getTime();
+                const randomStr = Math.random().toString(36).substring(2, 8);
+                const fileName = `review_${productId}_${timestamp}_${randomStr}.${file.name.split('.').pop()}`;
+                
+                // 创建FormData对象
+                const formData = new FormData();
+                formData.append('image', file);
+                formData.append('fileName', fileName);
+                formData.append('folder', 'Product-Reviews');
+                
+                try {
+                    // 调用上传API
+                    const uploadResponse = await fetch(`${API_BASE_URL}/api/upload-image`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('userToken')}`
+                        },
+                        body: formData
+                    });
+                    
+                    if (!uploadResponse.ok) {
+                        throw new Error(`图片上传失败: ${await uploadResponse.text()}`);
+                    }
+                    
+                    const uploadResult = await uploadResponse.json();
+                    const imageUrl = uploadResult.url || `https://r2liubaotea.liubaotea.online/image/Product-Reviews/${fileName}`;
+                    imageUrls.push(imageUrl);
+                    
+                    console.log(`图片 ${i+1}/${uploadedImages.length} 上传成功:`, imageUrl);
+                } catch (uploadError) {
+                    console.error(`图片 ${i+1}/${uploadedImages.length} 上传失败:`, uploadError);
+                    // 继续上传其他图片，不中断整个流程
+                }
+            }
         }
         
         // 提交评价数据
@@ -451,13 +495,9 @@ async function handleFormSubmit(event) {
             product_id: parseInt(productId),
             order_id: orderId,
             rating: parseInt(rating),
-            review_content: content  // 注意：后端API使用review_content而不是content
+            review_content: content,  // 注意：后端API使用review_content而不是content
+            images: imageUrls  // 添加图片URL数组
         };
-        
-        // 如果有图片URL，添加到请求数据中
-        if (imageUrls.length > 0) {
-            reviewData.images = imageUrls;
-        }
         
         console.log('准备提交评价数据:', reviewData);
         

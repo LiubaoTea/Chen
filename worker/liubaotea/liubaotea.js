@@ -3572,6 +3572,11 @@ const handleProductCategories = async (request, env) => {
 //                              处理商品评价的添加、查询和管理
 //==========================================================================
 const handleProductReviews = async (request, env) => {
+    // 处理OPTIONS预检请求
+    if (request.method === 'OPTIONS') {
+        return handleOptions(request);
+    }
+    
     const url = new URL(request.url);
     const path = url.pathname;
 
@@ -3591,14 +3596,14 @@ const handleProductReviews = async (request, env) => {
             const decoded = JSON.parse(atob(token));
             const userId = decoded.userId;
 
-            const { product_id, rating, review_content } = await request.json();
-            const timestamp = new Date().toISOString();
+            const { product_id, order_id, rating, review_content, images } = await request.json();
+            const timestamp = Math.floor(Date.now() / 1000); // Unix时间戳
 
             // 验证用户是否购买过该商品
             const orderItem = await env.DB.prepare(
                 `SELECT oi.* FROM order_items oi
                 JOIN orders o ON oi.order_id = o.order_id
-                WHERE o.user_id = ? AND oi.product_id = ? AND o.status = 'completed'`
+                WHERE o.user_id = ? AND oi.product_id = ? AND o.status IN ('delivered', 'completed')`
             ).bind(userId, product_id).first();
 
             if (!orderItem) {
@@ -3620,16 +3625,20 @@ const handleProductReviews = async (request, env) => {
                 });
             }
 
+            // 处理图片URL
+            const imagesJson = images && images.length > 0 ? JSON.stringify(images) : null;
+
             // 添加评价
             await env.DB.prepare(
-                'INSERT INTO product_reviews (user_id, product_id, rating, review_content, status, created_at) VALUES (?, ?, ?, ?, ?, ?)'
-            ).bind(userId, product_id, rating, review_content, 'published', timestamp).run();
+                'INSERT INTO product_reviews (user_id, product_id, order_id, rating, review_content, images, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+            ).bind(userId, product_id, order_id, rating, review_content, imagesJson, 'published', timestamp).run();
 
             return new Response(JSON.stringify({ message: '评价添加成功' }), {
                 status: 201,
                 headers: { 'Content-Type': 'application/json' }
             });
         } catch (error) {
+            console.error('添加评价失败:', error);
             return new Response(JSON.stringify({ error: '添加评价失败', details: error.message }), {
                 status: 500,
                 headers: { 'Content-Type': 'application/json' }
@@ -3913,6 +3922,66 @@ const handleShoppingSession = async (request, env) => {
 //                                处理各个函数的API相关请求
 //==========================================================================
 
+// 处理图片上传请求
+const handleImageUpload = async (request, env) => {
+    // 处理OPTIONS预检请求
+    if (request.method === 'OPTIONS') {
+        return handleOptions(request);
+    }
+
+    // 验证用户身份
+    const authHeader = request.headers.get('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return new Response(JSON.stringify({ error: '未授权访问' }), {
+            status: 401,
+            headers: { 'Content-Type': 'application/json' }
+        });
+    }
+
+    try {
+        // 解析multipart/form-data请求
+        const formData = await request.formData();
+        const imageFile = formData.get('image');
+        const fileName = formData.get('fileName');
+        const folder = formData.get('folder') || 'Product-Reviews';
+
+        if (!imageFile || !(imageFile instanceof File)) {
+            return new Response(JSON.stringify({ error: '未提供有效的图片文件' }), {
+                status: 400,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+
+        // 读取文件内容
+        const arrayBuffer = await imageFile.arrayBuffer();
+
+        // 上传到R2存储
+        const objectKey = `image/${folder}/${fileName}`;
+        await env.R2.put(objectKey, arrayBuffer, {
+            httpMetadata: {
+                contentType: imageFile.type,
+            },
+        });
+
+        // 返回图片URL
+        const imageUrl = `https://r2liubaotea.liubaotea.online/${objectKey}`;
+        return new Response(JSON.stringify({
+            success: true,
+            url: imageUrl,
+            fileName: fileName
+        }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' }
+        });
+    } catch (error) {
+        console.error('图片上传失败:', error);
+        return new Response(JSON.stringify({ error: '图片上传失败', details: error.message }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json' }
+        });
+    }
+};
+
 // 主函数：处理所有API请求
 const handleRequest = {
     async fetch(request, env, ctx) {
@@ -3963,6 +4032,11 @@ const handleRequest = {
             // 处理商品评价相关请求
             if (path.startsWith('/api/reviews') || path.match(/\/api\/products\/\d+\/reviews$/)) {
                 return handleProductReviews(request, env);
+            }
+
+            // 处理图片上传请求
+            if (path.startsWith('/api/upload-image')) {
+                return handleImageUpload(request, env);
             }
 
             // 处理购物会话相关请求
