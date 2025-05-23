@@ -434,7 +434,7 @@ window.viewOrderDetail = async function(orderId) {
             // 获取第一个商品ID作为评价对象
             const productId = orderDetail.items[0].product_id;
             orderDetailHTML += `
-                    <button class="review-now-btn" onclick="window.location.href='product-reviews.html?product_id=${productId}'">立即评价</button>
+                    <button class="review-now-btn" onclick="window.location.href='submit-review.html?order_id=${orderDetail.order_id}&product_id=${productId}'">立即评价</button>
             `;
         }
         
