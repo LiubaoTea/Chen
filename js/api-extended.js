@@ -208,7 +208,7 @@ async function addProductReview(reviewData) {
             throw new Error('未登录');
         }
 
-        const response = await fetch(`${API_BASE_URL}/api/product-reviews`, {
+        const response = await fetch(`${API_BASE_URL}/api/reviews`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

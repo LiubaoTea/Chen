@@ -267,8 +267,8 @@ async function loadOrderAndProductInfo(orderId, productId, orderItemId) {
         if (productData.image_url && productData.image_url.trim() !== '' && !productData.image_url.includes('undefined')) {
             imageUrl = productData.image_url;
         } else {
-            // 构建标准格式的商品图片URL
-            imageUrl = `https://r2liubaotea.liubaotea.online/image/Goods/Goods_${correctProductId}.png`;
+            // 构建商品图片URL，使用API_BASE_URL而不是直接使用R2链接
+            imageUrl = `${API_BASE_URL}/image/Goods/Goods_${correctProductId}.png`;
         }
         
         const productImage = document.getElementById('productImage');
@@ -278,7 +278,7 @@ async function loadOrderAndProductInfo(orderId, productId, orderItemId) {
         // 添加图片加载错误处理
         productImage.onerror = function() {
             console.warn('商品图片加载失败，尝试使用备用图片');
-            this.src = 'https://r2liubaotea.liubaotea.online/image/Design_Assets/product_placeholder.png';
+            this.src = `${API_BASE_URL}/image/Design_Assets/product_placeholder.png`;
             this.onerror = null; // 防止无限循环
         };
         
