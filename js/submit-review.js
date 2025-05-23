@@ -131,6 +131,13 @@ async function loadOrderAndProductInfo(orderId, productId, orderItemId) {
         
         console.log('开始加载订单信息:', orderId, '商品ID:', productId, '订单项ID:', orderItemId);
         
+        // 显示加载状态
+        document.getElementById('orderNumber').textContent = '加载中...';
+        document.getElementById('orderDate').textContent = '加载中...';
+        document.getElementById('productName').textContent = '加载中...';
+        document.getElementById('productPrice').textContent = '加载中...';
+        document.getElementById('productSpecs').textContent = '规格：加载中...';
+        
         // 获取订单信息
         const orderResponse = await fetch(`${API_BASE_URL}/api/orders/${orderId}`, {
             method: 'GET',
@@ -350,15 +357,17 @@ function setupEventListeners() {
     
     if (imageUploadBtn && imageUpload) {
         // 确保图片上传按钮点击事件正确触发文件选择
-        imageUploadBtn.onclick = function(e) {
+        imageUploadBtn.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
             console.log('点击了图片上传按钮');
-            document.getElementById('imageUpload').click();
-        };
+            imageUpload.click();
+        });
         
         // 确保文件选择变化事件正确处理
         imageUpload.addEventListener('change', handleImageUpload);
+        
+        console.log('图片上传事件监听器设置完成');
     } else {
         console.error('未找到图片上传元素');
     }
@@ -563,7 +572,7 @@ async function handleFormSubmit(event) {
             product_id: parseInt(productId),
             order_id: orderId,
             rating: parseInt(rating),
-            review_content: content,  // 注意：后端API使用review_content而不是content
+            content: content,  // 修改为content，与后端API保持一致
             images: imageUrls  // 添加图片URL数组
         };
         
@@ -576,8 +585,8 @@ async function handleFormSubmit(event) {
         }
         
         try {
-            // 调用API提交评价
-            const response = await fetch(`${API_BASE_URL}/api/reviews`, {
+            // 调用API提交评价 - 修正API路径
+            const response = await fetch(`${API_BASE_URL}/api/product-reviews`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -615,27 +624,25 @@ async function handleFormSubmit(event) {
                 // 如果响应不是JSON格式，创建一个基本的成功对象
                 result = { success: true, message: '评价提交成功' };
             }
+            
+            console.log('评价提交成功:', result);
+            
+            // 显示成功消息
+            showSuccessToast('评价提交成功！');
+            
+            // 延迟跳转回订单页面
+            setTimeout(() => {
+                // 获取存储的返回URL，如果没有则默认返回订单列表页
+                const returnUrl = localStorage.getItem('review_return_url') || 'user-orders.html';
+                window.location.href = returnUrl;
+            }, 2000);
         } catch (error) {
             console.error('评价提交请求失败:', error);
             throw error; // 重新抛出错误以便外层捕获
         }
         
-        console.log('评价提交成功:', result);
-        
-        // 显示成功消息
-        showSuccessMessage('评价提交成功！');
-        showSuccessToast('评价提交成功！');
-        
-        // 延迟跳转回订单页面
-        setTimeout(() => {
-            // 获取存储的返回URL，如果没有则默认返回订单列表页
-            const returnUrl = localStorage.getItem('review_return_url') || 'user-orders.html';
-            window.location.href = returnUrl;
-        }, 2000);
-        
     } catch (error) {
         console.error('提交评价失败:', error);
-        showErrorMessage(error.message || '提交失败，请稍后重试');
         showErrorToast(error.message || '提交失败，请稍后重试');
         
         // 恢复提交按钮
@@ -645,56 +652,5 @@ async function handleFormSubmit(event) {
     }
 }
 
-// 显示成功消息
-function showSuccessMessage(message) {
-    const messageModal = document.getElementById('messageModal');
-    const messageText = document.getElementById('messageText');
-    const successIcon = document.querySelector('.success-icon');
-    const errorIcon = document.querySelector('.error-icon');
-    
-    if (!messageModal || !messageText) {
-        console.error('消息模态框元素未找到');
-        return;
-    }
-    
-    messageText.textContent = message;
-    
-    if (successIcon) successIcon.style.display = 'block';
-    if (errorIcon) errorIcon.style.display = 'none';
-    
-    messageModal.style.display = 'block';
-    
-    setTimeout(() => {
-        messageModal.style.display = 'none';
-    }, 3000);
-    
-    console.log('显示成功消息:', message);
-}
-
-// 显示错误消息
-function showErrorMessage(message) {
-    const messageModal = document.getElementById('messageModal');
-    const messageText = document.getElementById('messageText');
-    const successIcon = document.querySelector('.success-icon');
-    const errorIcon = document.querySelector('.error-icon');
-    
-    if (!messageModal || !messageText) {
-        console.error('消息模态框元素未找到');
-        // 使用alert作为备选方案
-        alert(message);
-        return;
-    }
-    
-    messageText.textContent = message;
-    
-    if (successIcon) successIcon.style.display = 'none';
-    if (errorIcon) errorIcon.style.display = 'block';
-    
-    messageModal.style.display = 'block';
-    
-    setTimeout(() => {
-        messageModal.style.display = 'none';
-    }, 3000);
-    
-    console.log('显示错误消息:', message);
-}
+// 这里不再需要重复定义showSuccessMessage和showErrorMessage函数
+// 因为它们已经在文件顶部定义过，避免重复声明错误
