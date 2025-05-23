@@ -1,0 +1,342 @@
+/* 商品评价提交页面样式 */
+
+.submit-review-container {
+    max-width: 800px;
+    margin: 0 auto 2rem;
+    padding: 1.5rem;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.submit-review-container h2 {
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+    color: #333;
+    font-size: 1.8rem;
+    text-align: center;
+}
+
+/* 订单信息样式 */
+.order-info {
+    display: flex;
+    justify-content: space-between;
+    padding: 1rem;
+    background-color: #f9f9f9;
+    border-radius: 4px;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.order-number, .order-date {
+    color: #666;
+}
+
+/* 商品信息样式 */
+.product-info {
+    display: flex;
+    padding: 1rem;
+    border: 1px solid #eee;
+    border-radius: 4px;
+    margin-bottom: 1.5rem;
+    align-items: center;
+}
+
+.product-image-container {
+    width: 100px;
+    height: 100px;
+    margin-right: 1rem;
+    flex-shrink: 0;
+}
+
+.product-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 4px;
+}
+
+.product-details {
+    flex: 1;
+}
+
+.product-details h3 {
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+    font-size: 1.2rem;
+}
+
+.product-price {
+    color: #B87333;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+}
+
+.product-specs {
+    color: #666;
+    font-size: 0.9rem;
+}
+
+/* 评价表单样式 */
+.review-form-container {
+    padding: 1.5rem;
+    border: 1px solid #eee;
+    border-radius: 4px;
+}
+
+.rating-select {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.rating-select span {
+    margin-right: 1rem;
+    font-weight: bold;
+}
+
+.star-rating {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.star-rating i {
+    color: #B87333;
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+}
+
+.form-group textarea {
+    width: 100%;
+    padding: 0.8rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    resize: vertical;
+    font-family: inherit;
+}
+
+.error-message {
+    color: #e74c3c;
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+}
+
+/* 图片上传样式 */
+.image-upload-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 0.5rem;
+}
+
+.image-upload-btn {
+    width: 100px;
+    height: 100px;
+    border: 1px dashed #ddd;
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.image-upload-btn:hover {
+    border-color: #B87333;
+    color: #B87333;
+}
+
+.image-upload-btn i {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.image-preview-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.image-preview {
+    position: relative;
+    width: 100px;
+    height: 100px;
+}
+
+.image-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 4px;
+}
+
+.image-preview .remove-image {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    width: 24px;
+    height: 24px;
+    background-color: #e74c3c;
+    color: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.8rem;
+}
+
+.upload-tip {
+    font-size: 0.9rem;
+    color: #666;
+    margin-top: 0.5rem;
+}
+
+/* 表单操作按钮 */
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.btn {
+    padding: 0.8rem 1.5rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background-color: #B87333;
+    color: #fff;
+}
+
+.btn-primary:hover {
+    background-color: #a66520;
+}
+
+.btn-secondary {
+    background-color: #f0f0f0;
+    color: #333;
+}
+
+.btn-secondary:hover {
+    background-color: #e0e0e0;
+}
+
+/* 消息提示模态框 */
+.message-modal {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: #fff;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    text-align: center;
+    min-width: 300px;
+}
+
+.message-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.message-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+.success-icon {
+    color: #2ecc71;
+    display: none;
+}
+
+.error-icon {
+    color: #e74c3c;
+    display: none;
+}
+
+.message-text {
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+}
+
+/* 图片查看模态框 */
+.review-image-modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    padding-top: 100px;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.9);
+}
+
+.close-modal {
+    position: absolute;
+    top: 15px;
+    right: 35px;
+    color: #f1f1f1;
+    font-size: 40px;
+    font-weight: bold;
+    transition: 0.3s;
+    cursor: pointer;
+}
+
+.close-modal:hover,
+.close-modal:focus {
+    color: #bbb;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.modal-content {
+    margin: auto;
+    display: block;
+    width: 80%;
+    max-width: 700px;
+}
+
+/* 响应式样式 */
+@media (max-width: 768px) {
+    .product-info {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .product-image-container {
+        margin-right: 0;
+        margin-bottom: 1rem;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+    }
+    
+    .btn {
+        width: 100%;
+    }
+}

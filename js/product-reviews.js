@@ -240,184 +240,25 @@ function updateReviewsPagination(totalReviews) {
 
 // 设置事件监听器
 function setupReviewsEventListeners() {
-    // 筛选按钮
-    document.querySelectorAll('.filter-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
+    // 筛选按钮点击事件
+    const filterBtns = document.querySelectorAll('.filter-btn');
+    filterBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
             // 移除所有按钮的active类
-            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            filterBtns.forEach(b => b.classList.remove('active'));
             // 添加当前按钮的active类
-            e.currentTarget.classList.add('active');
+            btn.classList.add('active');
             
             // 获取筛选条件
-            const filter = e.currentTarget.getAttribute('data-filter');
-            // 重新加载评价
+            const filter = btn.getAttribute('data-filter');
+            // 重新加载评价列表
             loadProductReviews(currentProductId, 1, filter);
         });
     });
-    
-    // 评分选择
-    document.querySelectorAll('.star-rating i').forEach(star => {
-        star.addEventListener('click', (e) => {
-            const rating = parseInt(e.currentTarget.getAttribute('data-rating'));
-            document.getElementById('ratingInput').value = rating;
-            
-            // 更新星级显示
-            document.querySelectorAll('.star-rating i').forEach(s => {
-                const starRating = parseInt(s.getAttribute('data-rating'));
-                if (starRating <= rating) {
-                    s.className = 'fas fa-star';
-                } else {
-                    s.className = 'far fa-star';
-                }
-            });
-        });
-    });
-    
-    // 图片上传按钮
-    document.getElementById('imageUploadBtn').addEventListener('click', () => {
-        document.getElementById('imageUpload').click();
-    });
-    
-    // 图片上传处理
-    document.getElementById('imageUpload').addEventListener('change', handleImageUpload);
-    
-    // 评价表单提交
-    document.getElementById('reviewForm').addEventListener('submit', handleReviewSubmit);
 }
 
-// 处理图片上传
-function handleImageUpload(e) {
-    const files = e.target.files;
-    const previewContainer = document.getElementById('imagePreviewContainer');
-    
-    // 限制最多上传5张图片
-    const existingImages = previewContainer.querySelectorAll('.image-preview').length;
-    const maxImages = 5;
-    
-    if (existingImages + files.length > maxImages) {
-        showErrorToast(`最多只能上传${maxImages}张图片`);
-        return;
-    }
-    
-    // 处理每个选择的文件
-    for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        
-        // 检查文件类型
-        if (!file.type.startsWith('image/')) {
-            showErrorToast('请选择图片文件');
-            continue;
-        }
-        
-        // 检查文件大小（限制为2MB）
-        if (file.size > 2 * 1024 * 1024) {
-            showErrorToast('图片大小不能超过2MB');
-            continue;
-        }
-        
-        // 创建图片预览
-        const reader = new FileReader();
-        reader.onload = function(event) {
-            const imagePreview = document.createElement('div');
-            imagePreview.className = 'image-preview';
-            imagePreview.innerHTML = `
-                <img src="${event.target.result}" alt="预览图片">
-                <span class="remove-image">&times;</span>
-            `;
-            
-            // 添加删除按钮事件
-            imagePreview.querySelector('.remove-image').addEventListener('click', () => {
-                imagePreview.remove();
-            });
-            
-            // 将图片数据保存到元素上
-            imagePreview.dataset.imageData = event.target.result;
-            
-            previewContainer.appendChild(imagePreview);
-        };
-        
-        reader.readAsDataURL(file);
-    }
-    
-    // 清空文件输入，允许重复选择相同文件
-    e.target.value = '';
-}
-
-// 处理评价提交
-async function handleReviewSubmit(e) {
-    e.preventDefault();
-    
-    // 检查是否已登录
-    const token = localStorage.getItem('userToken');
-    if (!token) {
-        showErrorToast('请先登录后再评价');
-        return;
-    }
-    
-    // 获取表单数据
-    const rating = parseInt(document.getElementById('ratingInput').value);
-    const content = document.getElementById('reviewContent').value.trim();
-    
-    // 验证表单数据
-    if (rating === 0) {
-        showErrorToast('请选择评分');
-        return;
-    }
-    
-    if (!content) {
-        showErrorToast('请输入评价内容');
-        return;
-    }
-    
-    // 获取上传的图片
-    const imageElements = document.querySelectorAll('.image-preview');
-    const images = [];
-    imageElements.forEach(el => {
-        if (el.dataset.imageData) {
-            images.push(el.dataset.imageData);
-        }
-    });
-    
-    // 准备评价数据
-    const reviewData = {
-        product_id: currentProductId,
-        rating,
-        content,
-        images
-    };
-    
-    // 显示提交中状态
-    const submitBtn = document.getElementById('submitReviewBtn');
-    const originalBtnText = submitBtn.textContent;
-    submitBtn.textContent = '提交中...';
-    submitBtn.disabled = true;
-    
-    try {
-        // 提交评价
-        await addProductReview(reviewData);
-        
-        // 重置表单
-        document.getElementById('reviewForm').reset();
-        document.getElementById('ratingInput').value = 0;
-        document.getElementById('imagePreviewContainer').innerHTML = '';
-        document.querySelectorAll('.star-rating i').forEach(star => {
-            star.className = 'far fa-star';
-        });
-        
-        // 重新加载评价列表
-        await loadProductReviews(currentProductId, 1, 'all');
-        
-        // 显示成功提示
-        showSuccessToast('评价提交成功，感谢您的反馈！');
-    } catch (error) {
-        console.error('提交评价失败:', error);
-        showErrorToast('评价提交失败: ' + (error.message || '请稍后重试'));
-    } finally {
-        // 恢复按钮状态
-        submitBtn.textContent = originalBtnText;
-        submitBtn.disabled = false;
-    }
-}
+// 注意：图片上传和评价提交功能已移至submit-review.js
+// 这些函数在此文件中已不再需要
 
 // 处理评价图片点击
 function handleReviewImageClick(e) {
