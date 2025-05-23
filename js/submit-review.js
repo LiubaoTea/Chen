@@ -8,6 +8,48 @@ import { API_BASE_URL } from './config.js';
 import { addProductReview } from './api-extended.js';
 import { showSuccessToast, showErrorToast } from './utils.js';
 
+// 显示错误消息
+function showErrorMessage(message) {
+    const messageModal = document.getElementById('messageModal');
+    const messageText = document.getElementById('messageText');
+    
+    if (messageModal && messageText) {
+        messageText.textContent = message;
+        messageModal.classList.add('show');
+        messageModal.classList.add('error');
+        
+        // 自动关闭
+        setTimeout(() => {
+            messageModal.classList.remove('show');
+            messageModal.classList.remove('error');
+        }, 3000);
+    }
+    
+    // 同时使用Toast显示
+    showErrorToast(message);
+}
+
+// 显示成功消息
+function showSuccessMessage(message) {
+    const messageModal = document.getElementById('messageModal');
+    const messageText = document.getElementById('messageText');
+    
+    if (messageModal && messageText) {
+        messageText.textContent = message;
+        messageModal.classList.add('show');
+        messageModal.classList.add('success');
+        
+        // 自动关闭
+        setTimeout(() => {
+            messageModal.classList.remove('show');
+            messageModal.classList.remove('success');
+        }, 3000);
+    }
+    
+    // 同时使用Toast显示
+    showSuccessToast(message);
+}
+
 // 全局变量
 let uploadedImages = [];
 const MAX_IMAGES = 5;
@@ -180,29 +222,47 @@ async function loadOrderAndProductInfo(orderId, productId, orderItemId) {
         if (orderItem && orderItem.variant) {
             specText = orderItem.variant;
         } else if (orderItem && orderItem.specifications) {
-            specText = orderItem.specifications;
-        } else if (productData && productData.specifications) {
-            try {
-                // 检查是否已经是字符串
-                if (typeof productData.specifications === 'string' && !productData.specifications.startsWith('{')) {
-                    specText = productData.specifications;
-                } else {
-                    // 尝试解析JSON
-                    const specs = JSON.parse(productData.specifications);
-                    specText = Object.entries(specs)
+            // 检查是否为对象
+            if (typeof orderItem.specifications === 'object' && orderItem.specifications !== null) {
+                try {
+                    specText = Object.entries(orderItem.specifications)
                         .map(([key, value]) => `${key}: ${value}`)
                         .join(', ');
+                } catch (e) {
+                    console.log('订单项规格解析错误:', e);
+                    specText = String(orderItem.specifications);
                 }
-            } catch (e) {
-                console.log('规格解析错误:', e);
+            } else {
+                specText = String(orderItem.specifications);
+            }
+        } else if (productData && productData.specifications) {
+            // 直接使用商品规格，不需要解析
+            if (typeof productData.specifications === 'string') {
                 specText = productData.specifications;
+            } else if (typeof productData.specifications === 'object' && productData.specifications !== null) {
+                try {
+                    specText = Object.entries(productData.specifications)
+                        .map(([key, value]) => `${key}: ${value}`)
+                        .join(', ');
+                } catch (e) {
+                    console.log('商品规格解析错误:', e);
+                    specText = String(productData.specifications);
+                }
+            } else {
+                specText = String(productData.specifications);
             }
         }
         document.getElementById('productSpecs').textContent = `规格：${specText}`;
         
-        // 设置商品图片，使用与user-center.js相同的图片URL构建方式
-        // 构建商品图片URL - 使用R2存储中的图片
-        const imageUrl = `https://r2liubaotea.liubaotea.online/image/Goods/Goods_${correctProductId}.png`;
+        // 设置商品图片，确保正确构建URL
+        // 首先检查商品数据中是否有image_url字段
+        let imageUrl;
+        if (productData.image_url && productData.image_url.trim() !== '' && !productData.image_url.includes('undefined')) {
+            imageUrl = productData.image_url;
+        } else {
+            // 构建标准格式的商品图片URL
+            imageUrl = `https://r2liubaotea.liubaotea.online/image/Goods/Goods_${correctProductId}.png`;
+        }
         
         const productImage = document.getElementById('productImage');
         productImage.src = imageUrl;
@@ -465,6 +525,9 @@ async function handleFormSubmit(event) {
                 formData.append('folder', 'Product-Reviews');
                 
                 try {
+                    // 显示上传进度
+                    console.log(`正在上传图片 ${i+1}/${uploadedImages.length}...`);
+                    
                     // 调用上传API
                     const uploadResponse = await fetch(`${API_BASE_URL}/api/upload-image`, {
                         method: 'POST',
@@ -475,10 +538,15 @@ async function handleFormSubmit(event) {
                     });
                     
                     if (!uploadResponse.ok) {
-                        throw new Error(`图片上传失败: ${await uploadResponse.text()}`);
+                        const errorText = await uploadResponse.text();
+                        console.error(`图片上传API响应错误:`, errorText);
+                        throw new Error(`图片上传失败: ${errorText}`);
                     }
                     
                     const uploadResult = await uploadResponse.json();
+                    console.log('上传结果:', uploadResult);
+                    
+                    // 确保获取正确的URL
                     const imageUrl = uploadResult.url || `https://r2liubaotea.liubaotea.online/image/Product-Reviews/${fileName}`;
                     imageUrls.push(imageUrl);
                     
@@ -507,38 +575,49 @@ async function handleFormSubmit(event) {
             throw new Error('未登录状态，请先登录');
         }
         
-        // 调用API提交评价
-        const response = await fetch(`${API_BASE_URL}/api/reviews`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify(reviewData)
-        });
-        
-        console.log('评价提交API响应状态:', response.status);
-        
-        // 检查响应状态
-        if (!response.ok) {
-            let errorMessage = '提交评价失败';
-            try {
-                const errorData = await response.json();
-                errorMessage = errorData.error || errorMessage;
-            } catch (e) {
-                const errorText = await response.text();
-                errorMessage = errorText || errorMessage;
-            }
-            throw new Error(errorMessage);
-        }
-        
-        // 处理成功响应
-        let result;
         try {
-            result = await response.json();
-        } catch (e) {
-            // 如果响应不是JSON格式，创建一个基本的成功对象
-            result = { success: true, message: '评价提交成功' };
+            // 调用API提交评价
+            const response = await fetch(`${API_BASE_URL}/api/reviews`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(reviewData)
+            });
+            
+            console.log('评价提交API响应状态:', response.status);
+            
+            // 检查响应状态
+            if (!response.ok) {
+                let errorMessage = '提交评价失败';
+                const responseClone = response.clone(); // 克隆响应以便多次读取
+                
+                try {
+                    const errorData = await responseClone.json();
+                    errorMessage = errorData.error || errorMessage;
+                } catch (e) {
+                    try {
+                        const errorText = await response.text();
+                        errorMessage = errorText || errorMessage;
+                    } catch (textError) {
+                        console.error('无法读取错误响应:', textError);
+                    }
+                }
+                throw new Error(errorMessage);
+            }
+            
+            // 处理成功响应
+            let result;
+            try {
+                result = await response.json();
+            } catch (e) {
+                // 如果响应不是JSON格式，创建一个基本的成功对象
+                result = { success: true, message: '评价提交成功' };
+            }
+        } catch (error) {
+            console.error('评价提交请求失败:', error);
+            throw error; // 重新抛出错误以便外层捕获
         }
         
         console.log('评价提交成功:', result);

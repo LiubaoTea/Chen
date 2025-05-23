@@ -4170,6 +4170,10 @@ export default {
                 response = await handleUserAuth(request, env);
             } else if (url.pathname.startsWith('/api/admin')) {
                 response = await handleAdminAPI(request, env);
+            } else if (url.pathname.startsWith('/api/reviews')) {
+                response = await handleProductReviews(request, env);
+            } else if (url.pathname.startsWith('/api/upload-image')) {
+                response = await handleImageUpload(request, env);
             } else if (url.pathname.startsWith('/image/')) {
                 return await handleImageRequest(request, env);
             } else {
