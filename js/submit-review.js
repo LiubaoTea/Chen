@@ -49,6 +49,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const urlParams = new URLSearchParams(window.location.search);
     const orderId = urlParams.get('order_id');
     const productId = urlParams.get('product_id');
+    const orderItemId = urlParams.get('order_item_id'); // 获取订单项ID
+    const returnUrl = urlParams.get('return_url') || 'user-orders.html'; // 获取返回URL
     
     if (!orderId || !productId) {
         showErrorMessage('缺少必要的订单或商品信息');
@@ -62,15 +64,18 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('orderId').value = orderId;
     document.getElementById('productId').value = productId;
     
+    // 存储返回URL，用于取消按钮
+    localStorage.setItem('review_return_url', returnUrl);
+    
     // 加载订单和商品信息
-    loadOrderAndProductInfo(orderId, productId);
+    loadOrderAndProductInfo(orderId, productId, orderItemId);
     
     // 设置事件监听器
     setupEventListeners();
 });
 
 // 加载订单和商品信息
-async function loadOrderAndProductInfo(orderId, productId) {
+async function loadOrderAndProductInfo(orderId, productId, orderItemId) {
     try {
         // 获取用户令牌
         const token = localStorage.getItem('userToken');
@@ -101,14 +106,28 @@ async function loadOrderAndProductInfo(orderId, productId) {
         document.getElementById('orderDate').textContent = new Date(orderData.created_at * 1000).toLocaleString('zh-CN');
         
         // 查找当前要评价的商品
-        const orderItem = orderData.items.find(item => item.product_id === productId);
+        let orderItem;
+        
+        // 如果提供了orderItemId，优先使用它查找
+        if (orderItemId) {
+            orderItem = orderData.items.find(item => item.id === orderItemId);
+        }
+        
+        // 如果没找到，尝试使用productId查找
+        if (!orderItem) {
+            orderItem = orderData.items.find(item => item.product_id === productId || item.product_id === parseInt(productId));
+        }
         
         if (!orderItem) {
             throw new Error('未找到相关商品信息');
         }
         
+        // 确保productId是正确的
+        const correctProductId = orderItem.product_id;
+        document.getElementById('productId').value = correctProductId;
+        
         // 获取商品详细信息
-        const productResponse = await fetch(`${API_BASE_URL}/api/products/${productId}`);
+        const productResponse = await fetch(`${API_BASE_URL}/api/products/${correctProductId}`);
         
         if (!productResponse.ok) {
             throw new Error('获取商品信息失败');
@@ -120,7 +139,16 @@ async function loadOrderAndProductInfo(orderId, productId) {
         document.getElementById('productName').textContent = productData.name;
         document.getElementById('productPrice').textContent = orderItem.price.toFixed(2);
         document.getElementById('productSpecs').textContent = `规格：${orderItem.variant || '默认规格'}`;
-        document.getElementById('productImage').src = productData.image_url || 'https://r2liubaotea.liubaotea.online/image/Design_Assets/product-placeholder.png';
+        
+        // 设置商品图片，确保图片URL是完整的
+        let imageUrl = productData.image_url || '';
+        if (imageUrl && !imageUrl.startsWith('http')) {
+            imageUrl = `https://r2liubaotea.liubaotea.online/image/${imageUrl}`;
+        } else if (!imageUrl) {
+            imageUrl = 'https://r2liubaotea.liubaotea.online/image/Design_Assets/product-placeholder.png';
+        }
+        
+        document.getElementById('productImage').src = imageUrl;
         document.getElementById('productImage').alt = productData.name;
         
     } catch (error) {
@@ -195,12 +223,15 @@ function setupEventListeners() {
     const imageUpload = document.getElementById('imageUpload');
     
     if (imageUploadBtn && imageUpload) {
-        imageUploadBtn.addEventListener('click', (e) => {
+        // 确保图片上传按钮点击事件正确触发文件选择
+        imageUploadBtn.onclick = function(e) {
             e.preventDefault();
+            e.stopPropagation();
             console.log('点击了图片上传按钮');
-            imageUpload.click();
-        });
+            document.getElementById('imageUpload').click();
+        };
         
+        // 确保文件选择变化事件正确处理
         imageUpload.addEventListener('change', handleImageUpload);
     } else {
         console.error('未找到图片上传元素');
@@ -223,7 +254,9 @@ function setupEventListeners() {
         cancelBtn.addEventListener('click', (e) => {
             e.preventDefault();
             console.log('点击了取消按钮');
-            window.location.href = 'user-orders.html';
+            // 获取存储的返回URL，如果没有则默认返回订单列表页
+            const returnUrl = localStorage.getItem('review_return_url') || 'user-orders.html';
+            window.location.href = returnUrl;
         });
     } else {
         console.error('未找到取消按钮元素');
@@ -391,17 +424,26 @@ async function handleFormSubmit(event) {
         };
         
         console.log('提交评价数据:', reviewData);
-        const result = await addProductReview(reviewData);
-        console.log('评价提交结果:', result);
         
-        // 显示成功消息
-        showSuccessMessage('评价提交成功！');
-        showSuccessToast('评价提交成功！');
-        
-        // 延迟跳转回订单页面
-        setTimeout(() => {
-            window.location.href = 'user-orders.html';
-        }, 2000);
+        try {
+            const result = await addProductReview(reviewData);
+            console.log('评价提交结果:', result);
+            
+            // 显示成功消息
+            showSuccessMessage('评价提交成功！');
+            showSuccessToast('评价提交成功！');
+            
+            // 延迟跳转回订单页面
+            setTimeout(() => {
+                // 获取存储的返回URL，如果没有则默认返回订单列表页
+                const returnUrl = localStorage.getItem('review_return_url') || 'user-orders.html';
+                window.location.href = returnUrl;
+            }, 2000);
+        } catch (submitError) {
+            console.error('提交评价API错误:', submitError);
+            showErrorMessage(submitError.message || '提交失败，请稍后重试');
+            throw submitError; // 重新抛出错误，让外层catch捕获
+        }
         
     } catch (error) {
         console.error('提交评价失败:', error);

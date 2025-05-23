@@ -217,12 +217,29 @@ async function addProductReview(reviewData) {
             body: JSON.stringify(reviewData)
         });
 
-        const data = await response.json();
+        // 检查响应状态
         if (!response.ok) {
-            throw new Error(data.error || '添加评价失败');
+            // 尝试解析错误响应
+            let errorMessage = '添加评价失败';
+            try {
+                const errorData = await response.json();
+                errorMessage = errorData.error || errorMessage;
+            } catch (parseError) {
+                // 如果响应不是JSON格式，直接使用响应文本
+                const errorText = await response.text();
+                errorMessage = errorText || errorMessage;
+            }
+            throw new Error(errorMessage);
         }
 
-        return data;
+        // 尝试解析成功响应
+        try {
+            const data = await response.json();
+            return data;
+        } catch (parseError) {
+            // 如果响应不是JSON格式但状态码是成功的，返回一个基本成功对象
+            return { success: true, message: '评价提交成功' };
+        }
     } catch (error) {
         console.error('添加评价错误:', error);
         throw error;

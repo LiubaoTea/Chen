@@ -433,8 +433,9 @@ window.viewOrderDetail = async function(orderId) {
         if (orderDetail.status === 'delivered' && orderDetail.items && orderDetail.items.length > 0) {
             // 获取第一个商品ID作为评价对象
             const productId = orderDetail.items[0].product_id;
+            const orderItemId = orderDetail.items[0].id || '';
             orderDetailHTML += `
-                    <button class="review-now-btn" onclick="window.location.href='submit-review.html?order_id=${orderDetail.order_id}&product_id=${productId}'">立即评价</button>
+                    <button class="review-now-btn" onclick="window.location.href='submit-review.html?order_id=${orderDetail.order_id}&product_id=${productId}&order_item_id=${orderItemId}&return_url=user-center.html'">立即评价</button>
             `;
         }
         
