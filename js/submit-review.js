@@ -87,6 +87,8 @@ async function loadOrderAndProductInfo(orderId, productId, orderItemId) {
             return;
         }
         
+        console.log('开始加载订单信息:', orderId, '商品ID:', productId, '订单项ID:', orderItemId);
+        
         // 获取订单信息
         const orderResponse = await fetch(`${API_BASE_URL}/api/orders/${orderId}`, {
             method: 'GET',
@@ -96,10 +98,13 @@ async function loadOrderAndProductInfo(orderId, productId, orderItemId) {
         });
         
         if (!orderResponse.ok) {
-            throw new Error('获取订单信息失败');
+            const errorText = await orderResponse.text();
+            console.error('订单API响应错误:', errorText);
+            throw new Error(`获取订单信息失败: ${errorText}`);
         }
         
         const orderData = await orderResponse.json();
+        console.log('获取到订单数据:', orderData);
         
         // 显示订单信息
         document.getElementById('orderNumber').textContent = orderData.order_number || orderId;
@@ -108,48 +113,102 @@ async function loadOrderAndProductInfo(orderId, productId, orderItemId) {
         // 查找当前要评价的商品
         let orderItem;
         
+        // 确保orderData.items存在且是数组
+        if (!orderData.items || !Array.isArray(orderData.items)) {
+            console.error('订单数据中没有items数组:', orderData);
+            throw new Error('订单数据格式错误，未找到商品列表');
+        }
+        
+        console.log('订单中的商品列表:', orderData.items);
+        
         // 如果提供了orderItemId，优先使用它查找
         if (orderItemId) {
-            orderItem = orderData.items.find(item => item.id === orderItemId);
+            orderItem = orderData.items.find(item => item.id === orderItemId || item.item_id === orderItemId);
+            console.log('通过orderItemId查找结果:', orderItem);
         }
         
         // 如果没找到，尝试使用productId查找
         if (!orderItem) {
-            orderItem = orderData.items.find(item => item.product_id === productId || item.product_id === parseInt(productId));
+            // 确保进行数字比较
+            const productIdNum = parseInt(productId, 10);
+            orderItem = orderData.items.find(item => {
+                const itemProductId = parseInt(item.product_id, 10);
+                return itemProductId === productIdNum;
+            });
+            console.log('通过productId查找结果:', orderItem);
         }
         
         if (!orderItem) {
+            console.error('未找到匹配的商品，订单项:', orderData.items, '查找的商品ID:', productId);
             throw new Error('未找到相关商品信息');
         }
         
         // 确保productId是正确的
         const correctProductId = orderItem.product_id;
         document.getElementById('productId').value = correctProductId;
+        console.log('确认的商品ID:', correctProductId);
         
         // 获取商品详细信息
         const productResponse = await fetch(`${API_BASE_URL}/api/products/${correctProductId}`);
         
         if (!productResponse.ok) {
-            throw new Error('获取商品信息失败');
+            const errorText = await productResponse.text();
+            console.error('商品API响应错误:', errorText);
+            throw new Error(`获取商品信息失败: ${errorText}`);
         }
         
         const productData = await productResponse.json();
+        console.log('获取到商品数据:', productData);
         
         // 显示商品信息
         document.getElementById('productName').textContent = productData.name || '未知商品';
-        // 添加对price的空值检查
-        const price = orderItem && orderItem.price ? orderItem.price.toFixed(2) : '0.00';
+        
+        // 添加对price的空值检查，优先使用订单项中的价格
+        let price = '0.00';
+        if (orderItem && orderItem.unit_price) {
+            price = parseFloat(orderItem.unit_price).toFixed(2);
+        } else if (orderItem && orderItem.price) {
+            price = parseFloat(orderItem.price).toFixed(2);
+        } else if (productData && productData.price) {
+            price = parseFloat(productData.price).toFixed(2);
+        }
+        
         document.getElementById('productPrice').textContent = price;
-        document.getElementById('productSpecs').textContent = `规格：${orderItem && orderItem.variant ? orderItem.variant : '默认规格'}`;
+        
+        // 显示商品规格
+        let specText = '默认规格';
+        if (orderItem && orderItem.variant) {
+            specText = orderItem.variant;
+        } else if (orderItem && orderItem.specifications) {
+            specText = orderItem.specifications;
+        } else if (productData && productData.specifications) {
+            try {
+                const specs = JSON.parse(productData.specifications);
+                specText = Object.entries(specs)
+                    .map(([key, value]) => `${key}: ${value}`)
+                    .join(', ');
+            } catch (e) {
+                specText = productData.specifications;
+            }
+        }
+        document.getElementById('productSpecs').textContent = `规格：${specText}`;
         
         // 设置商品图片，使用与user-center.js相同的图片URL构建方式
         // 构建商品图片URL - 使用R2存储中的图片
         const imageUrl = `https://r2liubaotea.liubaotea.online/image/Goods/Goods_${correctProductId}.png`;
         
-        document.getElementById('productImage').src = imageUrl;
-        document.getElementById('productImage').alt = productData.name || '商品图片';
+        const productImage = document.getElementById('productImage');
+        productImage.src = imageUrl;
+        productImage.alt = productData.name || '商品图片';
         
-        console.log('加载商品图片:', imageUrl);
+        // 添加图片加载错误处理
+        productImage.onerror = function() {
+            console.warn('商品图片加载失败，尝试使用备用图片');
+            this.src = 'https://r2liubaotea.liubaotea.online/image/Design_Assets/product_placeholder.png';
+            this.onerror = null; // 防止无限循环
+        };
+        
+        console.log('商品信息加载完成，图片URL:', imageUrl);
         
     } catch (error) {
         console.error('加载订单和商品信息失败:', error);
@@ -374,79 +433,86 @@ async function handleFormSubmit(event) {
         submitBtn.disabled = true;
         submitBtn.textContent = '提交中...';
         
+        console.log('开始处理评价提交，商品ID:', productId, '订单ID:', orderId);
+        
         // 上传图片到R2存储
         const imageUrls = [];
         
         if (uploadedImages.length > 0) {
-            for (const image of uploadedImages) {
-                try {
-                    // 创建文件名
-                    const timestamp = new Date().getTime();
-                    const randomStr = Math.random().toString(36).substring(2, 8);
-                    const ext = image.file.name.split('.').pop();
-                    const fileName = `Product-Reviews/${timestamp}-${randomStr}.${ext}`;
-                    
-                    // 上传图片 - 修改为直接使用本地存储，避免API调用
-                    // 由于API端点返回404，这里模拟成功上传
-                    console.log('模拟图片上传:', fileName);
-                    
-                    // 创建一个模拟的成功响应
-                    const uploadResponse = {
-                        ok: true,
-                        json: () => Promise.resolve({ success: true, url: fileName })
-                    };
-                    
-                    // 记录上传信息
-                    console.log('图片上传模拟成功:', fileName);
-                    
-                    if (!uploadResponse.ok) {
-                        console.error('图片上传失败:', await uploadResponse.text());
-                        continue; // 跳过这张图片，继续上传其他图片
-                    }
-                    
-                    const uploadResult = await uploadResponse.json();
-                    imageUrls.push(`r2liubaotea.liubaotea.online/image/${fileName}`);
-                } catch (uploadError) {
-                    console.error('单张图片上传错误:', uploadError);
-                    // 继续上传其他图片
-                }
-            }
+            console.log(`准备上传${uploadedImages.length}张图片`);
+            
+            // 这里应该有图片上传的实际逻辑
+            // 由于当前没有实现图片上传API，暂时跳过图片上传步骤
+            console.log('图片上传功能暂未实现，跳过图片上传步骤');
         }
         
         // 提交评价数据
         const reviewData = {
-            product_id: productId,
+            product_id: parseInt(productId),
             order_id: orderId,
             rating: parseInt(rating),
-            content: content,
-            images: imageUrls
+            review_content: content  // 注意：后端API使用review_content而不是content
         };
         
-        console.log('提交评价数据:', reviewData);
-        
-        try {
-            // 由于API端点返回404，这里模拟评价提交成功
-            console.log('模拟评价提交:', reviewData);
-            
-            // 创建一个模拟的成功结果
-            const result = { success: true, message: '评价提交成功' };
-            console.log('评价提交模拟结果:', result);
-            
-            // 显示成功消息
-            showSuccessMessage('评价提交成功！');
-            showSuccessToast('评价提交成功！');
-            
-            // 延迟跳转回订单页面
-            setTimeout(() => {
-                // 获取存储的返回URL，如果没有则默认返回订单列表页
-                const returnUrl = localStorage.getItem('review_return_url') || 'user-orders.html';
-                window.location.href = returnUrl;
-            }, 2000);
-        } catch (submitError) {
-            console.error('提交评价API错误:', submitError);
-            showErrorMessage(submitError.message || '提交失败，请稍后重试');
-            throw submitError; // 重新抛出错误，让外层catch捕获
+        // 如果有图片URL，添加到请求数据中
+        if (imageUrls.length > 0) {
+            reviewData.images = imageUrls;
         }
+        
+        console.log('准备提交评价数据:', reviewData);
+        
+        // 获取用户令牌
+        const token = localStorage.getItem('userToken');
+        if (!token) {
+            throw new Error('未登录状态，请先登录');
+        }
+        
+        // 调用API提交评价
+        const response = await fetch(`${API_BASE_URL}/api/reviews`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(reviewData)
+        });
+        
+        console.log('评价提交API响应状态:', response.status);
+        
+        // 检查响应状态
+        if (!response.ok) {
+            let errorMessage = '提交评价失败';
+            try {
+                const errorData = await response.json();
+                errorMessage = errorData.error || errorMessage;
+            } catch (e) {
+                const errorText = await response.text();
+                errorMessage = errorText || errorMessage;
+            }
+            throw new Error(errorMessage);
+        }
+        
+        // 处理成功响应
+        let result;
+        try {
+            result = await response.json();
+        } catch (e) {
+            // 如果响应不是JSON格式，创建一个基本的成功对象
+            result = { success: true, message: '评价提交成功' };
+        }
+        
+        console.log('评价提交成功:', result);
+        
+        // 显示成功消息
+        showSuccessMessage('评价提交成功！');
+        showSuccessToast('评价提交成功！');
+        
+        // 延迟跳转回订单页面
+        setTimeout(() => {
+            // 获取存储的返回URL，如果没有则默认返回订单列表页
+            const returnUrl = localStorage.getItem('review_return_url') || 'user-orders.html';
+            window.location.href = returnUrl;
+        }, 2000);
         
     } catch (error) {
         console.error('提交评价失败:', error);
