@@ -136,9 +136,11 @@ async function loadOrderAndProductInfo(orderId, productId, orderItemId) {
         const productData = await productResponse.json();
         
         // 显示商品信息
-        document.getElementById('productName').textContent = productData.name;
-        document.getElementById('productPrice').textContent = orderItem.price.toFixed(2);
-        document.getElementById('productSpecs').textContent = `规格：${orderItem.variant || '默认规格'}`;
+        document.getElementById('productName').textContent = productData.name || '未知商品';
+        // 添加对price的空值检查
+        const price = orderItem && orderItem.price ? orderItem.price.toFixed(2) : '0.00';
+        document.getElementById('productPrice').textContent = price;
+        document.getElementById('productSpecs').textContent = `规格：${orderItem && orderItem.variant ? orderItem.variant : '默认规格'}`;
         
         // 设置商品图片，确保图片URL是完整的
         let imageUrl = productData.image_url || '';
