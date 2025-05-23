@@ -41,12 +41,13 @@
     border-radius: 4px;
     margin-bottom: 1.5rem;
     align-items: center;
+    flex-direction: row; /* 确保是水平排列 */
 }
 
 .product-image-container {
-    width: 100px;
-    height: 100px;
-    margin-right: 1rem;
+    width: 120px;
+    height: 120px;
+    margin-right: 1.5rem;
     flex-shrink: 0;
 }
 
@@ -55,10 +56,14 @@
     height: 100%;
     object-fit: cover;
     border-radius: 4px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
 .product-details {
     flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
 
 .product-details h3 {

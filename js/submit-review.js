@@ -13,6 +13,36 @@ let uploadedImages = [];
 const MAX_IMAGES = 5;
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
 
+// 添加CSS样式
+const style = document.createElement('style');
+style.textContent = `
+.toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 12px 20px;
+    border-radius: 4px;
+    color: white;
+    font-size: 14px;
+    z-index: 9999;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.toast.show {
+    opacity: 1;
+}
+
+.toast-success {
+    background-color: #28a745;
+}
+
+.toast-error {
+    background-color: #dc3545;
+}
+`;
+document.head.appendChild(style);
+
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', () => {
     // 从URL获取订单和商品信息
@@ -101,15 +131,27 @@ async function loadOrderAndProductInfo(orderId, productId) {
 
 // 设置事件监听器
 function setupEventListeners() {
+    console.log('设置事件监听器');
+    
     // 星级评分事件
     const starRating = document.querySelector('.star-rating');
+    if (!starRating) {
+        console.error('未找到星级评分元素');
+        return;
+    }
+    
     const stars = starRating.querySelectorAll('i');
     const ratingInput = document.getElementById('ratingInput');
     
+    // 设置默认评分为5星
+    if (ratingInput) ratingInput.value = 5;
+    
     stars.forEach(star => {
-        star.addEventListener('click', () => {
+        star.addEventListener('click', (e) => {
+            e.preventDefault();
             const rating = parseInt(star.getAttribute('data-rating'));
-            ratingInput.value = rating;
+            console.log('选择了', rating, '星评分');
+            if (ratingInput) ratingInput.value = rating;
             
             // 更新星星显示
             stars.forEach((s, index) => {
@@ -136,7 +178,7 @@ function setupEventListeners() {
     });
     
     starRating.addEventListener('mouseout', () => {
-        const rating = parseInt(ratingInput.value) || 5;
+        const rating = parseInt(ratingInput?.value) || 5;
         
         // 恢复选中的评分
         stars.forEach((s, index) => {
@@ -152,21 +194,42 @@ function setupEventListeners() {
     const imageUploadBtn = document.getElementById('imageUploadBtn');
     const imageUpload = document.getElementById('imageUpload');
     
-    imageUploadBtn.addEventListener('click', () => {
-        imageUpload.click();
-    });
-    
-    imageUpload.addEventListener('change', handleImageUpload);
+    if (imageUploadBtn && imageUpload) {
+        imageUploadBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            console.log('点击了图片上传按钮');
+            imageUpload.click();
+        });
+        
+        imageUpload.addEventListener('change', handleImageUpload);
+    } else {
+        console.error('未找到图片上传元素');
+    }
     
     // 表单提交事件
     const reviewForm = document.getElementById('reviewForm');
-    reviewForm.addEventListener('submit', handleFormSubmit);
+    if (reviewForm) {
+        reviewForm.addEventListener('submit', (e) => {
+            console.log('提交表单');
+            handleFormSubmit(e);
+        });
+    } else {
+        console.error('未找到评价表单元素');
+    }
     
     // 取消按钮事件
     const cancelBtn = document.getElementById('cancelBtn');
-    cancelBtn.addEventListener('click', () => {
-        window.location.href = 'user-orders.html';
-    });
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            console.log('点击了取消按钮');
+            window.location.href = 'user-orders.html';
+        });
+    } else {
+        console.error('未找到取消按钮元素');
+    }
+    
+    console.log('事件监听器设置完成');
 }
 
 // 处理图片上传
@@ -174,8 +237,16 @@ function handleImageUpload(event) {
     const files = event.target.files;
     const imagePreviewContainer = document.getElementById('imagePreviewContainer');
     
+    if (!files || files.length === 0) {
+        console.log('没有选择文件');
+        return;
+    }
+    
+    console.log('选择了', files.length, '个文件');
+    
     if (uploadedImages.length + files.length > MAX_IMAGES) {
         showErrorMessage(`最多只能上传${MAX_IMAGES}张图片`);
+        showErrorToast(`最多只能上传${MAX_IMAGES}张图片`);
         return;
     }
     
@@ -185,12 +256,14 @@ function handleImageUpload(event) {
         // 检查文件类型
         if (!file.type.startsWith('image/')) {
             showErrorMessage('请上传图片文件');
+            showErrorToast('请上传图片文件');
             continue;
         }
         
         // 检查文件大小
         if (file.size > MAX_IMAGE_SIZE) {
             showErrorMessage(`图片大小不能超过${MAX_IMAGE_SIZE / 1024 / 1024}MB`);
+            showErrorToast(`图片大小不能超过${MAX_IMAGE_SIZE / 1024 / 1024}MB`);
             continue;
         }
         
@@ -209,6 +282,13 @@ function handleImageUpload(event) {
                 file: file,
                 dataUrl: e.target.result
             });
+            
+            console.log('图片已添加到上传列表，当前共', uploadedImages.length, '张');
+        };
+        
+        reader.onerror = function(e) {
+            console.error('FileReader错误:', e);
+            showErrorToast('读取图片失败');
         };
         
         reader.readAsDataURL(file);
@@ -221,6 +301,7 @@ function handleImageUpload(event) {
             const index = uploadedImages.findIndex(img => img.dataUrl === reader.result);
             if (index !== -1) {
                 uploadedImages.splice(index, 1);
+                console.log('已从上传列表移除图片，剩余', uploadedImages.length, '张');
             }
             
             // 从预览中移除
@@ -243,7 +324,7 @@ async function handleFormSubmit(event) {
     // 获取表单数据
     const productId = document.getElementById('productId').value;
     const orderId = document.getElementById('orderId').value;
-    const rating = document.getElementById('ratingInput').value;
+    const rating = document.getElementById('ratingInput').value || 5; // 默认5星
     const content = document.getElementById('reviewContent').value;
     
     // 表单验证
@@ -265,32 +346,38 @@ async function handleFormSubmit(event) {
         
         if (uploadedImages.length > 0) {
             for (const image of uploadedImages) {
-                // 创建文件名
-                const timestamp = new Date().getTime();
-                const randomStr = Math.random().toString(36).substring(2, 8);
-                const ext = image.file.name.split('.').pop();
-                const fileName = `Product-Reviews/${timestamp}-${randomStr}.${ext}`;
-                
-                // 上传图片
-                const token = localStorage.getItem('userToken');
-                const formData = new FormData();
-                formData.append('file', image.file);
-                formData.append('path', fileName);
-                
-                const uploadResponse = await fetch(`${API_BASE_URL}/api/upload`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: formData
-                });
-                
-                if (!uploadResponse.ok) {
-                    throw new Error('图片上传失败');
+                try {
+                    // 创建文件名
+                    const timestamp = new Date().getTime();
+                    const randomStr = Math.random().toString(36).substring(2, 8);
+                    const ext = image.file.name.split('.').pop();
+                    const fileName = `Product-Reviews/${timestamp}-${randomStr}.${ext}`;
+                    
+                    // 上传图片
+                    const token = localStorage.getItem('userToken');
+                    const formData = new FormData();
+                    formData.append('file', image.file);
+                    formData.append('path', fileName);
+                    
+                    const uploadResponse = await fetch(`${API_BASE_URL}/api/upload`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: formData
+                    });
+                    
+                    if (!uploadResponse.ok) {
+                        console.error('图片上传失败:', await uploadResponse.text());
+                        continue; // 跳过这张图片，继续上传其他图片
+                    }
+                    
+                    const uploadResult = await uploadResponse.json();
+                    imageUrls.push(`r2liubaotea.liubaotea.online/image/${fileName}`);
+                } catch (uploadError) {
+                    console.error('单张图片上传错误:', uploadError);
+                    // 继续上传其他图片
                 }
-                
-                const uploadResult = await uploadResponse.json();
-                imageUrls.push(`r2liubaotea.liubaotea.online/image/${fileName}`);
             }
         }
         
@@ -303,10 +390,13 @@ async function handleFormSubmit(event) {
             images: imageUrls
         };
         
+        console.log('提交评价数据:', reviewData);
         const result = await addProductReview(reviewData);
+        console.log('评价提交结果:', result);
         
         // 显示成功消息
         showSuccessMessage('评价提交成功！');
+        showSuccessToast('评价提交成功！');
         
         // 延迟跳转回订单页面
         setTimeout(() => {
@@ -316,6 +406,7 @@ async function handleFormSubmit(event) {
     } catch (error) {
         console.error('提交评价失败:', error);
         showErrorMessage(error.message || '提交失败，请稍后重试');
+        showErrorToast(error.message || '提交失败，请稍后重试');
         
         // 恢复提交按钮
         const submitBtn = document.getElementById('submitReviewBtn');
@@ -331,14 +422,23 @@ function showSuccessMessage(message) {
     const successIcon = document.querySelector('.success-icon');
     const errorIcon = document.querySelector('.error-icon');
     
+    if (!messageModal || !messageText) {
+        console.error('消息模态框元素未找到');
+        return;
+    }
+    
     messageText.textContent = message;
-    successIcon.style.display = 'block';
-    errorIcon.style.display = 'none';
+    
+    if (successIcon) successIcon.style.display = 'block';
+    if (errorIcon) errorIcon.style.display = 'none';
+    
     messageModal.style.display = 'block';
     
     setTimeout(() => {
         messageModal.style.display = 'none';
     }, 3000);
+    
+    console.log('显示成功消息:', message);
 }
 
 // 显示错误消息
@@ -348,12 +448,23 @@ function showErrorMessage(message) {
     const successIcon = document.querySelector('.success-icon');
     const errorIcon = document.querySelector('.error-icon');
     
+    if (!messageModal || !messageText) {
+        console.error('消息模态框元素未找到');
+        // 使用alert作为备选方案
+        alert(message);
+        return;
+    }
+    
     messageText.textContent = message;
-    successIcon.style.display = 'none';
-    errorIcon.style.display = 'block';
+    
+    if (successIcon) successIcon.style.display = 'none';
+    if (errorIcon) errorIcon.style.display = 'block';
+    
     messageModal.style.display = 'block';
     
     setTimeout(() => {
         messageModal.style.display = 'none';
     }, 3000);
+    
+    console.log('显示错误消息:', message);
 }
