@@ -3597,7 +3597,7 @@ const handleProductReviews = async (request, env) => {
             const userId = decoded.userId;
 
             const requestData = await request.json();
-            const { product_id, order_id, rating, images } = requestData;
+            const { product_id, order_id, order_item_id, rating, images } = requestData;
             const review_content = requestData.review_content || requestData.content;
             const timestamp = Math.floor(Date.now() / 1000); // Unix时间戳
 
@@ -3631,17 +3631,87 @@ const handleProductReviews = async (request, env) => {
             const imagesJson = images && images.length > 0 ? JSON.stringify(images) : null;
 
             // 添加评价
-            await env.DB.prepare(
-                'INSERT INTO product_reviews (user_id, product_id, order_id, rating, review_content, images, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
-            ).bind(userId, product_id, order_id, rating, review_content, imagesJson, 'published', timestamp).run();
+            const result = await env.DB.prepare(
+                'INSERT INTO product_reviews (user_id, product_id, order_id, order_item_id, rating, review_content, images, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+            ).bind(userId, product_id, order_id, order_item_id, rating, review_content, imagesJson, 'published', timestamp).run();
+            
+            // 获取新插入的评价ID
+            const newReview = await env.DB.prepare(
+                'SELECT review_id FROM product_reviews WHERE user_id = ? AND product_id = ? ORDER BY created_at DESC LIMIT 1'
+            ).bind(userId, product_id).first();
 
-            return new Response(JSON.stringify({ message: '评价添加成功' }), {
+            return new Response(JSON.stringify({ 
+                message: '评价添加成功',
+                review_id: newReview ? newReview.review_id : null
+            }), {
                 status: 201,
                 headers: { 'Content-Type': 'application/json' }
             });
         } catch (error) {
             console.error('添加评价失败:', error);
             return new Response(JSON.stringify({ error: '添加评价失败', details: error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+
+    // 更新评价图片
+    if (path.match(/\/api\/reviews\/\d+\/images/) && request.method === 'POST') {
+        try {
+            // 验证用户身份
+            const authHeader = request.headers.get('Authorization');
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
+                    status: 401,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+
+            const token = authHeader.split(' ')[1];
+            const decoded = JSON.parse(atob(token));
+            const userId = decoded.userId;
+
+            // 获取评价ID
+            const reviewId = path.split('/')[3];
+            
+            // 验证评价所有权
+            const review = await env.DB.prepare(
+                'SELECT * FROM product_reviews WHERE review_id = ? AND user_id = ?'
+            ).bind(reviewId, userId).first();
+
+            if (!review) {
+                return new Response(JSON.stringify({ error: '评价不存在或无权限修改' }), {
+                    status: 403,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+
+            // 获取请求数据
+            const { images } = await request.json();
+            
+            if (!images || !Array.isArray(images)) {
+                return new Response(JSON.stringify({ error: '无效的图片数据' }), {
+                    status: 400,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+
+            // 更新评价图片
+            await env.DB.prepare(
+                'UPDATE product_reviews SET images = ? WHERE review_id = ?'
+            ).bind(JSON.stringify(images), reviewId).run();
+
+            return new Response(JSON.stringify({ 
+                message: '评价图片更新成功',
+                review_id: reviewId
+            }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            console.error('更新评价图片失败:', error);
+            return new Response(JSON.stringify({ error: '更新评价图片失败', details: error.message }), {
                 status: 500,
                 headers: { 'Content-Type': 'application/json' }
             });
@@ -3965,8 +4035,17 @@ const handleImageUpload = async (request, env) => {
             });
         }
 
-        // 上传到R2存储
-        const objectKey = `image/${folder}/${fileName}`;
+        // 确保文件夹路径正确
+        let objectKey;
+        if (folder === 'Product-Reviews') {
+            // 确保评价图片存储在正确的文件夹
+            objectKey = `image/Product-Reviews/${fileName}`;
+        } else {
+            objectKey = `image/${folder}/${fileName}`;
+        }
+        
+        console.log('上传图片到路径:', objectKey);
+        
         try {
             await env.R2.put(objectKey, arrayBuffer, {
                 httpMetadata: {
@@ -4053,7 +4132,7 @@ const handleRequest = {
             }
 
             // 处理图片上传请求
-            if (path.startsWith('/api/upload-image')) {
+            if (path.startsWith('/api/upload-image') || path.startsWith('/api/upload/image')) {
                 return handleImageUpload(request, env);
             }
 
@@ -4190,7 +4269,7 @@ export default {
                 response = await handleAdminAPI(request, env);
             } else if (url.pathname.startsWith('/api/reviews') || url.pathname.startsWith('/api/product-reviews')) {
                 response = await handleProductReviews(request, env);
-            } else if (url.pathname.startsWith('/api/upload-image')) {
+            } else if (url.pathname.startsWith('/api/upload-image') || url.pathname.startsWith('/api/upload/image')) {
                 response = await handleImageUpload(request, env);
             } else if (url.pathname.startsWith('/image/')) {
                 return await handleImageRequest(request, env);

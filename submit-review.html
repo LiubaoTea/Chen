@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>提交商品评价 - 陳記六堡茶</title>
+    <link rel="stylesheet" href="./css/style.css">
+    <link rel="stylesheet" href="./css/submit-review.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- 页面头部 -->
+    <header class="site-header">
+        <div class="container">
+            <div class="logo">
+                <a href="index.html">
+                    <img src="./image/liubaotea_logo.png" alt="陳記六堡茶">
+                </a>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="index.html">首页</a></li>
+                    <li><a href="shop.html">茶品商城</a></li>
+                    <li><a href="tea-culture.html">茶文化</a></li>
+                    <li><a href="brand-story.html">品牌故事</a></li>
+                    <li><a href="user-center.html">个人中心</a></li>
+                </ul>
+            </nav>
+            <div class="mobile-nav-toggle">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主要内容 -->
+    <main class="main-content">
+        <div class="container">
+            <div class="review-container">
+                <h1 class="page-title">商品评价</h1>
+                
+                <!-- 订单信息 -->
+                <div class="order-info">
+                    <h3>订单信息</h3>
+                    <div class="info-row">
+                        <span class="info-label">订单号：</span>
+                        <span id="orderNumber" class="info-value">加载中...</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">下单时间：</span>
+                        <span id="orderTime" class="info-value">加载中...</span>
+                    </div>
+                </div>
+                
+                <!-- 商品信息 -->
+                <div class="product-info">
+                    <h3>商品信息</h3>
+                    <div class="product-card">
+                        <div class="product-image">
+                            <img id="productImage" src="" alt="商品图片">
+                        </div>
+                        <div class="product-details">
+                            <h4 id="productName">加载中...</h4>
+                            <p id="productPrice">价格: ¥0.00</p>
+                            <p id="productQuantity">数量: 0</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 评价表单 -->
+                <form id="reviewForm" class="review-form">
+                    <h3>我的评价</h3>
+                    
+                    <!-- 评分系统 -->
+                    <div class="rating-section">
+                        <span class="rating-label">商品评分：</span>
+                        <div class="star-rating">
+                            <i class="fas fa-star" data-rating="1"></i>
+                            <i class="fas fa-star" data-rating="2"></i>
+                            <i class="fas fa-star" data-rating="3"></i>
+                            <i class="fas fa-star" data-rating="4"></i>
+                            <i class="fas fa-star" data-rating="5"></i>
+                        </div>
+                        <span class="rating-text">非常满意</span>
+                    </div>
+                    
+                    <!-- 评价内容 -->
+                    <div class="review-content-section">
+                        <label for="reviewContent">评价内容：</label>
+                        <textarea id="reviewContent" name="reviewContent" rows="5" placeholder="请分享您对这款商品的使用感受，帮助其他茶友更好地了解它..."></textarea>
+                    </div>
+                    
+                    <!-- 图片上传 -->
+                    <div class="image-upload-section">
+                        <label>上传图片（最多5张，每张不超过2MB）：</label>
+                        <div class="upload-area">
+                            <div class="upload-button">
+                                <i class="fas fa-plus"></i>
+                                <input type="file" id="imageUpload" accept="image/*" multiple>
+                            </div>
+                            <div id="imagePreviewContainer" class="image-preview-container"></div>
+                        </div>
+                        <div class="upload-tips">支持JPG、PNG格式，单张图片不超过2MB</div>
+                    </div>
+                    
+                    <!-- 提交按钮 -->
+                    <div class="form-actions">
+                        <button type="button" id="cancelButton" class="cancel-btn">取消</button>
+                        <button type="submit" id="submitButton" class="submit-btn">提交评价</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="site-footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-logo">
+                    <img src="./image/liubaotea_logo.png" alt="陳記六堡茶">
+                </div>
+                <div class="footer-info">
+                    <p>© 2023 陳記六堡茶 版权所有</p>
+                    <p>地址：广西梧州市六堡镇</p>
+                    <p>电话：400-123-4567</p>
+                </div>
+                <div class="footer-qrcode">
+                    <img src="./image/gongzhonghao_image.png" alt="微信公众号">
+                    <p>关注公众号</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- 脚本 -->
+    <script type="module" src="./js/submit-review.js"></script>
+</body>
+</html>
