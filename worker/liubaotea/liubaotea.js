@@ -3944,7 +3944,7 @@ const handleImageUpload = async (request, env) => {
         // 解析multipart/form-data请求
         const formData = await request.formData();
         const imageFile = formData.get('image');
-        const fileName = formData.get('fileName');
+        let fileName = formData.get('fileName');
         const folder = formData.get('folder') || 'Product-Reviews';
 
         if (!imageFile || !(imageFile instanceof File)) {
@@ -3952,6 +3952,14 @@ const handleImageUpload = async (request, env) => {
                 status: 400,
                 headers: { 'Content-Type': 'application/json' }
             });
+        }
+        
+        // 如果没有提供文件名，则自动生成一个
+        if (!fileName) {
+            const timestamp = Date.now();
+            const randomStr = Math.random().toString(36).substring(2, 8);
+            const fileExt = imageFile.name.split('.').pop() || 'jpg';
+            fileName = `review_${timestamp}_${randomStr}.${fileExt}`;
         }
 
         // 读取文件内容
@@ -3999,6 +4007,7 @@ const handleImageUpload = async (request, env) => {
         });
     }
 };
+
 
 // 主函数：处理所有API请求
 const handleRequest = {
