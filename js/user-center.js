@@ -429,14 +429,16 @@ window.viewOrderDetail = async function(orderId) {
             `;
         }
         
-        // 如果订单状态为已送达，添加立即评价按钮
+        // 如果订单状态为已送达，为每个商品添加立即评价按钮
         if (orderDetail.status === 'delivered' && orderDetail.items && orderDetail.items.length > 0) {
-            // 获取第一个商品ID作为评价对象
-            const productId = orderDetail.items[0].product_id;
-            const orderItemId = orderDetail.items[0].id || '';
-            orderDetailHTML += `
-                    <button class="review-now-btn" onclick="window.location.href='submit-review.html?order_id=${orderDetail.order_id}&product_id=${productId}&order_item_id=${orderItemId}&return_url=user-center.html'">立即评价</button>
-            `;
+            orderDetail.items.forEach(item => {
+                const productId = item.product_id;
+                const orderItemId = item.id || item.item_id || '';
+                orderDetailHTML += `
+                    <button class="review-now-btn" onclick="window.location.href='submit-review.html?order_id=${orderDetail.order_id}&product_id=${productId}&order_item_id=${orderItemId}&return_url=user-center.html'">评价商品</button>
+                `;
+            });
+            
         }
         
         orderDetailHTML += `
