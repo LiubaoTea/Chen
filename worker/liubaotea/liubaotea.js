@@ -3580,8 +3580,8 @@ const handleProductReviews = async (request, env) => {
     const url = new URL(request.url);
     const path = url.pathname;
 
-    // 添加商品评价
-    if (path === '/api/reviews' && request.method === 'POST') {
+    // 添加商品评价 - 支持两种API路径
+    if ((path === '/api/reviews' || path === '/api/product-reviews') && request.method === 'POST') {
         try {
             // 验证用户身份
             const authHeader = request.headers.get('Authorization');
@@ -3596,7 +3596,9 @@ const handleProductReviews = async (request, env) => {
             const decoded = JSON.parse(atob(token));
             const userId = decoded.userId;
 
-            const { product_id, order_id, rating, review_content, images } = await request.json();
+            const requestData = await request.json();
+            const { product_id, order_id, rating, images } = requestData;
+            const review_content = requestData.review_content || requestData.content;
             const timestamp = Math.floor(Date.now() / 1000); // Unix时间戳
 
             // 验证用户是否购买过该商品
@@ -3955,13 +3957,29 @@ const handleImageUpload = async (request, env) => {
         // 读取文件内容
         const arrayBuffer = await imageFile.arrayBuffer();
 
+        // 检查R2存储是否可用
+        if (!env.R2) {
+            return new Response(JSON.stringify({ error: '图片存储服务不可用' }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+
         // 上传到R2存储
         const objectKey = `image/${folder}/${fileName}`;
-        await env.R2.put(objectKey, arrayBuffer, {
-            httpMetadata: {
-                contentType: imageFile.type,
-            },
-        });
+        try {
+            await env.R2.put(objectKey, arrayBuffer, {
+                httpMetadata: {
+                    contentType: imageFile.type,
+                },
+            });
+        } catch (r2Error) {
+            console.error('R2存储上传失败:', r2Error);
+            return new Response(JSON.stringify({ error: '图片上传到存储失败', details: r2Error.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
 
         // 返回图片URL
         const imageUrl = `https://r2liubaotea.liubaotea.online/${objectKey}`;
@@ -4170,7 +4188,7 @@ export default {
                 response = await handleUserAuth(request, env);
             } else if (url.pathname.startsWith('/api/admin')) {
                 response = await handleAdminAPI(request, env);
-            } else if (url.pathname.startsWith('/api/reviews')) {
+            } else if (url.pathname.startsWith('/api/reviews') || url.pathname.startsWith('/api/product-reviews')) {
                 response = await handleProductReviews(request, env);
             } else if (url.pathname.startsWith('/api/upload-image')) {
                 response = await handleImageUpload(request, env);

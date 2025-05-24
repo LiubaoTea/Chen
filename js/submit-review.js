@@ -225,51 +225,108 @@ async function loadOrderAndProductInfo(orderId, productId, orderItemId) {
         document.getElementById('productPrice').textContent = price;
         
         // 显示商品规格
-        let specText = '默认规格';
+        let specText = '标准规格';
+        
+        console.log('开始解析规格信息');
+        console.log('订单项数据:', orderItem);
+        console.log('商品数据:', productData);
+        
+        // 优先使用订单项中的规格信息
         if (orderItem && orderItem.variant) {
             specText = orderItem.variant;
+            console.log('使用订单项variant:', specText);
         } else if (orderItem && orderItem.specifications) {
-            // 检查是否为对象
-            if (typeof orderItem.specifications === 'object' && orderItem.specifications !== null) {
+            console.log('订单项规格原始数据:', orderItem.specifications, '类型:', typeof orderItem.specifications);
+            
+            // 检查是否为字符串格式的JSON
+            if (typeof orderItem.specifications === 'string') {
+                try {
+                    const parsedSpecs = JSON.parse(orderItem.specifications);
+                    if (typeof parsedSpecs === 'object' && parsedSpecs !== null) {
+                        specText = Object.entries(parsedSpecs)
+                            .map(([key, value]) => `${key}: ${value}`)
+                            .join(', ');
+                    } else {
+                        specText = orderItem.specifications;
+                    }
+                } catch (e) {
+                    console.log('订单项规格JSON解析失败，使用原始字符串:', e);
+                    specText = orderItem.specifications;
+                }
+            } else if (typeof orderItem.specifications === 'object' && orderItem.specifications !== null) {
                 try {
                     specText = Object.entries(orderItem.specifications)
                         .map(([key, value]) => `${key}: ${value}`)
                         .join(', ');
                 } catch (e) {
-                    console.log('订单项规格解析错误:', e);
+                    console.log('订单项规格对象解析错误:', e);
                     specText = String(orderItem.specifications);
                 }
             } else {
                 specText = String(orderItem.specifications);
             }
+            console.log('解析后的订单项规格:', specText);
         } else if (productData && productData.specifications) {
-            // 直接使用商品规格，不需要解析
+            console.log('商品规格原始数据:', productData.specifications, '类型:', typeof productData.specifications);
+            
+            // 使用商品规格作为备选
             if (typeof productData.specifications === 'string') {
-                specText = productData.specifications;
+                try {
+                    const parsedSpecs = JSON.parse(productData.specifications);
+                    if (typeof parsedSpecs === 'object' && parsedSpecs !== null) {
+                        specText = Object.entries(parsedSpecs)
+                            .map(([key, value]) => `${key}: ${value}`)
+                            .join(', ');
+                    } else {
+                        specText = productData.specifications;
+                    }
+                } catch (e) {
+                    console.log('商品规格JSON解析失败，使用原始字符串:', e);
+                    specText = productData.specifications;
+                }
             } else if (typeof productData.specifications === 'object' && productData.specifications !== null) {
                 try {
                     specText = Object.entries(productData.specifications)
                         .map(([key, value]) => `${key}: ${value}`)
                         .join(', ');
                 } catch (e) {
-                    console.log('商品规格解析错误:', e);
+                    console.log('商品规格对象解析错误:', e);
                     specText = String(productData.specifications);
                 }
             } else {
                 specText = String(productData.specifications);
             }
+            console.log('解析后的商品规格:', specText);
+        } else {
+            // 如果都没有规格信息，根据商品名称推断
+            const productName = productData.name || '';
+            console.log('根据商品名称推断规格:', productName);
+            
+            if (productName.includes('传统')) {
+                specText = '传统工艺';
+            } else if (productName.includes('礼盒')) {
+                specText = '礼盒装';
+            } else if (productName.includes('散装')) {
+                specText = '散装';
+            } else if (productName.includes('袋装')) {
+                specText = '袋装';
+            } else {
+                specText = '标准规格';
+            }
         }
+        
+        // 确保规格文本不为空
+        if (!specText || specText.trim() === '' || specText === 'null' || specText === 'undefined') {
+            specText = '标准规格';
+        }
+        
+        console.log('最终规格文本:', specText);
+        
         document.getElementById('productSpecs').textContent = `规格：${specText}`;
         
         // 设置商品图片，确保正确构建URL
-        // 首先检查商品数据中是否有image_url字段
-        let imageUrl;
-        if (productData.image_url && productData.image_url.trim() !== '' && !productData.image_url.includes('undefined')) {
-            imageUrl = productData.image_url;
-        } else {
-            // 构建商品图片URL，使用API_BASE_URL而不是直接使用R2链接
-            imageUrl = `${API_BASE_URL}/image/Goods/Goods_${correctProductId}.png`;
-        }
+        // 构建商品图片URL
+        const imageUrl = `${API_BASE_URL}/image/Goods/Goods_${correctProductId}.png`;
         
         const productImage = document.getElementById('productImage');
         productImage.src = imageUrl;
@@ -562,6 +619,7 @@ async function handleFormSubmit(event) {
                     console.log(`图片 ${i+1}/${uploadedImages.length} 上传成功:`, imageUrl);
                 } catch (uploadError) {
                     console.error(`图片 ${i+1}/${uploadedImages.length} 上传失败:`, uploadError);
+                    showErrorToast(`图片 ${i+1} 上传失败，将跳过该图片`);
                     // 继续上传其他图片，不中断整个流程
                 }
             }
@@ -572,8 +630,8 @@ async function handleFormSubmit(event) {
             product_id: parseInt(productId),
             order_id: orderId,
             rating: parseInt(rating),
-            content: content,  // 修改为content，与后端API保持一致
-            images: imageUrls  // 添加图片URL数组
+            review_content: content.trim(),
+            images: imageUrls
         };
         
         console.log('准备提交评价数据:', reviewData);
@@ -585,8 +643,8 @@ async function handleFormSubmit(event) {
         }
         
         try {
-            // 调用API提交评价 - 修正API路径
-            const response = await fetch(`${API_BASE_URL}/api/product-reviews`, {
+            // 调用API提交评价（修正API路径）
+            const response = await fetch(`${API_BASE_URL}/api/reviews`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -647,8 +705,17 @@ async function handleFormSubmit(event) {
         
         // 恢复提交按钮
         const submitBtn = document.getElementById('submitReviewBtn');
-        submitBtn.disabled = false;
-        submitBtn.textContent = '提交评价';
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = '提交评价';
+        }
+    } finally {
+        // 确保无论成功还是失败都恢复按钮状态
+        const submitBtn = document.getElementById('submitReviewBtn');
+        if (submitBtn && submitBtn.disabled) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = '提交评价';
+        }
     }
 }
 
