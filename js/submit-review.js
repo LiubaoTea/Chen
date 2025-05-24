@@ -169,6 +169,10 @@ function initImageUpload() {
     function handleImageSelection(event) {
         const files = event.target.files;
         
+        if (!files || files.length === 0) {
+            return; // 没有选择文件，直接返回
+        }
+        
         // 检查已上传图片数量
         if (uploadedImages.length + files.length > 5) {
             showErrorMessage('最多只能上传5张图片');
@@ -215,14 +219,34 @@ function initImageUpload() {
             img.src = e.target.result;
             img.alt = '预览图片';
             
+            // 添加图片加载事件，确保图片正确加载
+            img.onload = function() {
+                // 图片加载成功
+                img.style.display = 'block';
+            };
+            
+            img.onerror = function() {
+                // 图片加载失败
+                console.error('图片加载失败');
+                img.src = 'data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22100%22%20height%3D%22100%22%3E%3Crect%20fill%3D%22%23f0f0f0%22%20width%3D%22100%22%20height%3D%22100%22%2F%3E%3Ctext%20fill%3D%22%23999%22%20font-family%3D%22sans-serif%22%20font-size%3D%2212%22%20text-anchor%3D%22middle%22%20x%3D%2250%22%20y%3D%2250%22%3E加载失败%3C%2Ftext%3E%3C%2Fsvg%3E';
+            };
+            
             const removeButton = document.createElement('div');
             removeButton.className = 'remove-image';
             removeButton.innerHTML = '<i class="fas fa-times"></i>';
-            removeButton.addEventListener('click', () => removeImage(index));
+            removeButton.addEventListener('click', (e) => {
+                e.stopPropagation(); // 阻止事件冒泡
+                removeImage(index);
+            });
             
             previewDiv.appendChild(img);
             previewDiv.appendChild(removeButton);
             imagePreviewContainer.appendChild(previewDiv);
+        };
+        
+        reader.onerror = function() {
+            console.error('FileReader 错误');
+            showErrorMessage('图片读取失败，请重试');
         };
         
         reader.readAsDataURL(file);
@@ -236,13 +260,19 @@ function initImageUpload() {
         // 移除预览
         const previews = imagePreviewContainer.querySelectorAll('.image-preview');
         previews.forEach(preview => {
-            if (parseInt(preview.dataset.index) === index) {
+            const previewIndex = parseInt(preview.dataset.index);
+            if (previewIndex === index) {
                 preview.remove();
-            } else if (parseInt(preview.dataset.index) > index) {
+            } else if (previewIndex > index) {
                 // 更新索引
-                preview.dataset.index = parseInt(preview.dataset.index) - 1;
+                preview.dataset.index = previewIndex - 1;
             }
         });
+        
+        // 如果没有图片了，重置上传按钮
+        if (uploadedImages.length === 0) {
+            imageUpload.value = '';
+        }
     }
 
     // 返回获取已上传图片的函数
@@ -353,6 +383,9 @@ function initFormSubmit(orderId, productId, orderItemId, returnUrl) {
 // 上传评价图片
 async function uploadReviewImages(images, reviewId, token) {
     try {
+        // 显示上传进度提示
+        showToast('正在上传图片...', 'info');
+        
         const uploadPromises = images.map(async (image, index) => {
             // 创建文件名：review_[reviewId]_[index].[扩展名]
             const fileExtension = image.name.split('.').pop();
@@ -364,20 +397,26 @@ async function uploadReviewImages(images, reviewId, token) {
             formData.append('fileName', fileName);
             formData.append('folder', 'Product-Reviews');
             
-            // 上传图片
-            const response = await fetch(`${API_BASE_URL}/api/upload/image`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                },
-                body: formData
-            });
-            
-            if (!response.ok) {
-                throw new Error('上传图片失败');
+            try {
+                // 上传图片
+                const response = await fetch(`${API_BASE_URL}/api/upload/image`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.error || '上传图片失败');
+                }
+                
+                return response.json();
+            } catch (uploadError) {
+                console.error(`上传第${index+1}张图片失败:`, uploadError);
+                throw uploadError;
             }
-            
-            return response.json();
         });
         
         // 等待所有图片上传完成
@@ -397,7 +436,8 @@ async function uploadReviewImages(images, reviewId, token) {
         });
         
         if (!updateResponse.ok) {
-            throw new Error('关联图片到评价失败');
+            const errorData = await updateResponse.json().catch(() => ({}));
+            throw new Error(errorData.error || '关联图片到评价失败');
         }
         
         return updateResponse.json();
@@ -428,7 +468,18 @@ function showToast(message, type) {
     // 创建新提示
     const toast = document.createElement('div');
     toast.className = `toast-message toast-${type}`;
-    toast.textContent = message;
+    
+    // 添加图标
+    let icon = '';
+    if (type === 'success') {
+        icon = '<i class="fas fa-check-circle"></i> ';
+    } else if (type === 'error') {
+        icon = '<i class="fas fa-exclamation-circle"></i> ';
+    } else if (type === 'info') {
+        icon = '<i class="fas fa-info-circle"></i> ';
+    }
+    
+    toast.innerHTML = icon + message;
     
     // 添加到页面
     document.body.appendChild(toast);
