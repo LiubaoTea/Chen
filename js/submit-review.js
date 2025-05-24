@@ -39,9 +39,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 验证必要参数
         if (!orderId || !productId) {
             showErrorToast('缺少必要参数，无法提交评价');
-            setTimeout(() => {
-                window.location.href = returnUrl;
-            }, 2000);
+            
+            // 添加返回按钮，而不是自动跳转
+            const container = document.querySelector('.review-container');
+            if (container) {
+                // 清空容器内容
+                container.innerHTML = '<div class="review-header"><h2>参数错误</h2><p>缺少必要的订单或商品信息，无法提交评价</p></div>';
+                
+                // 添加返回按钮
+                const returnButton = document.createElement('button');
+                returnButton.textContent = '返回订单页面';
+                returnButton.className = 'btn btn-primary mt-3';
+                returnButton.onclick = () => window.location.href = returnUrl;
+                container.appendChild(returnButton);
+            }
             return;
         }
 
@@ -84,32 +95,71 @@ async function loadOrderAndProductInfo() {
 
         const orderData = await orderResponse.json();
         
+        // 验证订单数据
+        if (!orderData || typeof orderData !== 'object') {
+            throw new Error('订单数据格式不正确');
+        }
+        
         // 更新订单信息
-        document.getElementById('orderId').textContent = orderData.order_id;
-        document.getElementById('orderTime').textContent = new Date(orderData.created_at * 1000).toLocaleString();
+        document.getElementById('orderId').textContent = orderData.order_id || orderId;
+        document.getElementById('orderTime').textContent = orderData.created_at ? new Date(orderData.created_at * 1000).toLocaleString() : '未知时间';
+        
+        // 确保items是数组
+        if (!Array.isArray(orderData.items)) {
+            console.warn('订单商品列表不是数组，将使用空数组');
+            orderData.items = [];
+        }
 
         // 查找对应的商品
-        const product = orderData.items.find(item => item.product_id == productId);
-        if (!product) {
-            throw new Error('未找到商品信息');
+        const product = orderData.items.find(item => item.product_id == productId) || {};
+        if (!product.product_id) {
+            console.warn('未找到完整的商品信息，将使用默认值');
+            // 继续执行，使用默认值显示，而不是抛出错误导致页面回退
         }
 
         // 更新商品信息
-        document.getElementById('productName').textContent = product.name;
-        document.getElementById('productPrice').textContent = `价格：¥${product.price.toFixed(2)}`;
-        document.getElementById('productQuantity').textContent = `数量：${product.quantity}`;
+        document.getElementById('productName').textContent = product.name || '未知商品';
+        // 确保price存在且为数字类型才调用toFixed
+        let priceDisplay = '0.00';
+        if (product.price !== undefined && product.price !== null) {
+            // 将price转换为数字类型，确保toFixed方法可用
+            const priceValue = Number(product.price);
+            if (!isNaN(priceValue)) {
+                priceDisplay = priceValue.toFixed(2);
+            }
+        }
+        document.getElementById('productPrice').textContent = `价格：¥${priceDisplay}`;
+        document.getElementById('productQuantity').textContent = `数量：${product.quantity || 1}`;
         
         // 设置商品图片
-        const imageUrl = product.image_url || `https://r2liubaotea.liubaotea.online/image/Goods/${product.image_filename}`;
+        let imageUrl = '/images/default-product.jpg'; // 默认图片
+        if (product.image_url) {
+            imageUrl = product.image_url;
+        } else if (product.image_filename) {
+            imageUrl = `https://r2liubaotea.liubaotea.online/image/Goods/${product.image_filename}`;
+        }
         document.getElementById('productImage').src = imageUrl;
-        document.getElementById('productImage').alt = product.name;
+        document.getElementById('productImage').alt = product.name || '商品图片';
 
     } catch (error) {
         console.error('加载订单和商品信息失败:', error);
-        showErrorToast('加载订单和商品信息失败');
-        setTimeout(() => {
-            window.location.href = returnUrl;
-        }, 2000);
+        // 显示更详细的错误信息
+        let errorMsg = '加载订单和商品信息失败';
+        if (error.message) {
+            errorMsg += `: ${error.message}`;
+        }
+        showErrorToast(errorMsg);
+        
+        // 添加一个返回按钮，而不是自动跳转
+        const returnButton = document.createElement('button');
+        returnButton.textContent = '返回订单页面';
+        returnButton.className = 'btn btn-primary mt-3';
+        returnButton.onclick = () => window.location.href = returnUrl;
+        
+        const container = document.querySelector('.review-container');
+        if (container) {
+            container.appendChild(returnButton);
+        }
     }
 }
 
