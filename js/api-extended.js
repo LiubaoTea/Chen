@@ -339,5 +339,89 @@ export {
     
     // 购物会话
     getShoppingSession,
-    updateShoppingSession
+    updateShoppingSession,
+    
+    // 图片上传
+    uploadImage
 };
+
+// 商品评价API
+async function getProductReviews(productId) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/products/${productId}/reviews`);
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.error || '获取商品评价失败');
+        }
+
+        return {
+            reviews: data,
+            total: data.length
+        };
+    } catch (error) {
+        console.error('获取商品评价错误:', error);
+        throw error;
+    }
+}
+
+async function addProductReview(reviewData) {
+    try {
+        const token = localStorage.getItem('userToken');
+        if (!token) {
+            throw new Error('未登录');
+        }
+
+        const response = await fetch(`${API_BASE_URL}/api/reviews`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(reviewData)
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.error || '提交评价失败');
+        }
+
+        return data;
+    } catch (error) {
+        console.error('提交评价错误:', error);
+        throw error;
+    }
+}
+
+// 图片上传API
+async function uploadImage(imageFile, fileName, folder = 'Product-Reviews') {
+    try {
+        const token = localStorage.getItem('userToken');
+        if (!token) {
+            throw new Error('未登录');
+        }
+
+        const formData = new FormData();
+        formData.append('image', imageFile);
+        formData.append('fileName', fileName);
+        formData.append('folder', folder);
+
+        const response = await fetch(`${API_BASE_URL}/api/upload-image`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            },
+            body: formData
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.error || '上传图片失败');
+        }
+
+        return data;
+    } catch (error) {
+        console.error('上传图片错误:', error);
+        throw error;
+    }
+}
