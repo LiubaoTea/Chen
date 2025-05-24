@@ -17,20 +17,6 @@
     text-align: center;
 }
 
-/* 导航栏水平排列 */
-.nav-horizontal {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-.nav-horizontal li {
-    margin: 0 10px;
-}
-
 /* 订单信息样式 */
 .order-info {
     display: flex;
@@ -59,11 +45,10 @@
 }
 
 .product-image-container {
-    width: 100px;
-    height: 100px;
+    width: 120px;
+    height: 120px;
     margin-right: 1.5rem;
     flex-shrink: 0;
-    overflow: hidden;
 }
 
 .product-image {
@@ -152,89 +137,47 @@
     margin-top: 0.5rem;
 }
 
-.image-upload-section {
-    margin-bottom: 1.5rem;
-    border: 1px solid #eee;
-    padding: 15px;
-    border-radius: 4px;
-    background-color: #fafafa;
-}
-
-.upload-area {
+/* 图片上传样式 */
+.image-upload-container {
     display: flex;
     flex-wrap: wrap;
     gap: 1rem;
     margin-top: 0.5rem;
 }
 
-.upload-button {
+.image-upload-btn {
     width: 100px;
     height: 100px;
     border: 1px dashed #ddd;
     border-radius: 4px;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     transition: all 0.3s ease;
-    background-color: #fff;
-    position: relative;
-    overflow: hidden;
 }
 
-.upload-button:hover {
+.image-upload-btn:hover {
     border-color: #B87333;
     color: #B87333;
-    background-color: #f9f5f0;
 }
 
-.upload-button i {
-    font-size: 2rem;
-    transition: transform 0.3s ease;
-}
-
-.upload-button:hover i {
-    transform: scale(1.1);
-}
-
-.upload-button input[type="file"] {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    top: 0;
-    left: 0;
-    opacity: 0;
-    cursor: pointer;
-    z-index: 2;
-}
-
-.upload-tips {
-    margin-top: 10px;
-    color: #666;
-    font-size: 0.85rem;
-    text-align: center;
+.image-upload-btn i {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
 }
 
 .image-preview-container {
     display: flex;
     flex-wrap: wrap;
     gap: 1rem;
-    margin-top: 10px;
 }
 
 .image-preview {
     position: relative;
     width: 100px;
     height: 100px;
-    border: 1px solid #eee;
-    border-radius: 4px;
-    overflow: hidden;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.image-preview:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
 }
 
 .image-preview img {
@@ -242,11 +185,6 @@
     height: 100%;
     object-fit: cover;
     border-radius: 4px;
-    transition: transform 0.3s ease;
-}
-
-.image-preview:hover img {
-    transform: scale(1.05);
 }
 
 .image-preview .remove-image {
@@ -255,7 +193,7 @@
     right: -8px;
     width: 24px;
     height: 24px;
-    background-color: #ff4d4f;
+    background-color: #e74c3c;
     color: #fff;
     border-radius: 50%;
     display: flex;
@@ -263,14 +201,12 @@
     justify-content: center;
     cursor: pointer;
     font-size: 0.8rem;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-    transition: transform 0.2s ease, background-color 0.2s ease;
-    z-index: 3;
 }
 
-.image-preview .remove-image:hover {
-    transform: scale(1.1);
-    background-color: #ff7875;
+.upload-tip {
+    font-size: 0.9rem;
+    color: #666;
+    margin-top: 0.5rem;
 }
 
 /* 表单操作按钮 */
@@ -350,41 +286,6 @@
     margin-bottom: 1rem;
 }
 
-/* Toast消息提示 */
-.toast-message {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    padding: 12px 20px;
-    border-radius: 4px;
-    color: white;
-    font-weight: bold;
-    z-index: 1000;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    max-width: 80%;
-    display: flex;
-    align-items: center;
-}
-
-.toast-message i {
-    margin-right: 8px;
-    font-size: 1.1rem;
-}
-
-.toast-success {
-    background-color: #2ecc71;
-}
-
-.toast-error {
-    background-color: #e74c3c;
-}
-
-.toast-info {
-    background-color: #3498db;
-}
-
 /* 图片查看模态框 */
 .review-image-modal {
     display: none;
@@ -424,23 +325,6 @@
     max-width: 700px;
 }
 
-/* 页脚样式优化 */
-.footer-logo-img {
-    max-width: 120px;
-    height: auto;
-    display: block;
-    margin-bottom: 10px;
-}
-
-.footer-qrcode-img {
-    max-width: 100px;
-    height: auto;
-    display: block;
-    margin: 0 auto 5px;
-    border-radius: 4px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
-
 /* 响应式样式 */
 @media (max-width: 768px) {
     .product-info {
@@ -454,17 +338,10 @@
     }
     
     .form-actions {
-        display: flex;
         flex-direction: column;
-        gap: 0.5rem;
     }
     
-    .form-actions button {
+    .btn {
         width: 100%;
-    }
-    
-    .nav-horizontal {
-        flex-wrap: wrap;
-        justify-content: center;
     }
 }
