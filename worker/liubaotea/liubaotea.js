@@ -901,10 +901,10 @@ if (path === '/api/register' && request.method === 'POST') {
             // 从请求头中获取token
             const authHeader = request.headers.get('Authorization');
             if (!authHeader || !authHeader.startsWith('Bearer ')) {
-                return addCorsToResponse(new Response(JSON.stringify({ error: '未授权访问' }), {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
                     status: 401,
                     headers: { 'Content-Type': 'application/json' }
-                }));
+                });
             }
 
             const token = authHeader.split(' ')[1];
@@ -940,10 +940,10 @@ if (path === '/api/register' && request.method === 'POST') {
         try {
             const authHeader = request.headers.get('Authorization');
             if (!authHeader || !authHeader.startsWith('Bearer ')) {
-                return addCorsToResponse(new Response(JSON.stringify({ error: '未授权访问' }), {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
                     status: 401,
                     headers: { 'Content-Type': 'application/json' }
-                }));
+                });
             }
 
             const token = authHeader.split(' ')[1];
@@ -974,10 +974,10 @@ if (path === '/api/register' && request.method === 'POST') {
         try {
             const authHeader = request.headers.get('Authorization');
             if (!authHeader || !authHeader.startsWith('Bearer ')) {
-                return addCorsToResponse(new Response(JSON.stringify({ error: '未授权访问' }), {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
                     status: 401,
                     headers: { 'Content-Type': 'application/json' }
-                }));
+                });
             }
 
             const token = authHeader.split(' ')[1];
@@ -1020,10 +1020,10 @@ if (path === '/api/register' && request.method === 'POST') {
         try {
             const authHeader = request.headers.get('Authorization');
             if (!authHeader || !authHeader.startsWith('Bearer ')) {
-                return addCorsToResponse(new Response(JSON.stringify({ error: '未授权访问' }), {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
                     status: 401,
                     headers: { 'Content-Type': 'application/json' }
-                }));
+                });
             }
 
             const token = authHeader.split(' ')[1];
@@ -1051,10 +1051,10 @@ if (path === '/api/register' && request.method === 'POST') {
         try {
             const authHeader = request.headers.get('Authorization');
             if (!authHeader || !authHeader.startsWith('Bearer ')) {
-                return addCorsToResponse(new Response(JSON.stringify({ error: '未授权访问' }), {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
                     status: 401,
                     headers: { 'Content-Type': 'application/json' }
-                }));
+                });
             }
 
             const token = authHeader.split(' ')[1];
@@ -1111,10 +1111,10 @@ const handleAddresses = async (request, env) => {
     // 验证用户身份
     const authHeader = request.headers.get('Authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return addCorsToResponse(new Response(JSON.stringify({ error: '未授权访问' }), {
+        return new Response(JSON.stringify({ error: '未授权访问' }), {
             status: 401,
             headers: { 'Content-Type': 'application/json' }
-        }));
+        });
     }
 
     const token = authHeader.split(' ')[1];
@@ -1450,10 +1450,10 @@ const handleProducts = async (request, env) => {
         try {
             const authHeader = request.headers.get('Authorization');
             if (!authHeader || !authHeader.startsWith('Bearer ')) {
-                return addCorsToResponse(new Response(JSON.stringify({ error: '未授权访问' }), {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
                     status: 401,
                     headers: { 'Content-Type': 'application/json' }
-                }));
+                });
             }
 
             const token = authHeader.split(' ')[1];
@@ -1481,10 +1481,10 @@ const handleProducts = async (request, env) => {
         try {
             const authHeader = request.headers.get('Authorization');
             if (!authHeader || !authHeader.startsWith('Bearer ')) {
-                return addCorsToResponse(new Response(JSON.stringify({ error: '未授权访问' }), {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
                     status: 401,
                     headers: { 'Content-Type': 'application/json' }
-                }));
+                });
             }
 
             const token = authHeader.split(' ')[1];
@@ -1846,10 +1846,10 @@ const handleCartOperations = async (request, env) => {
         try {
             const authHeader = request.headers.get('Authorization');
             if (!authHeader || !authHeader.startsWith('Bearer ')) {
-                return addCorsToResponse(new Response(JSON.stringify({ error: '未授权访问' }), {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
                     status: 401,
                     headers: { 'Content-Type': 'application/json' }
-                }));
+                });
             }
 
             const token = authHeader.split(' ')[1];
@@ -1877,10 +1877,10 @@ const handleCartOperations = async (request, env) => {
         try {
             const authHeader = request.headers.get('Authorization');
             if (!authHeader || !authHeader.startsWith('Bearer ')) {
-                return addCorsToResponse(new Response(JSON.stringify({ error: '未授权访问' }), {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
                     status: 401,
                     headers: { 'Content-Type': 'application/json' }
-                }));
+                });
             }
 
             const token = authHeader.split(' ')[1];
@@ -2180,10 +2180,10 @@ const handleOrderOperations = async (request, env) => {
         try {
             const authHeader = request.headers.get('Authorization');
             if (!authHeader || !authHeader.startsWith('Bearer ')) {
-                return addCorsToResponse(new Response(JSON.stringify({ error: '未授权访问' }), {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
                     status: 401,
                     headers: { 'Content-Type': 'application/json' }
-                }));
+                });
             }
 
             const token = authHeader.split(' ')[1];
@@ -2211,10 +2211,10 @@ const handleOrderOperations = async (request, env) => {
         try {
             const authHeader = request.headers.get('Authorization');
             if (!authHeader || !authHeader.startsWith('Bearer ')) {
-                return addCorsToResponse(new Response(JSON.stringify({ error: '未授权访问' }), {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
                     status: 401,
                     headers: { 'Content-Type': 'application/json' }
-                }));
+                });
             }
 
             const token = authHeader.split(' ')[1];
@@ -2514,10 +2514,10 @@ const handleUserCenter = async (request, env) => {
         try {
             const authHeader = request.headers.get('Authorization');
             if (!authHeader || !authHeader.startsWith('Bearer ')) {
-                return addCorsToResponse(new Response(JSON.stringify({ error: '未授权访问' }), {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
                     status: 401,
                     headers: { 'Content-Type': 'application/json' }
-                }));
+                });
             }
 
             const token = authHeader.split(' ')[1];
@@ -2545,10 +2545,10 @@ const handleUserCenter = async (request, env) => {
         try {
             const authHeader = request.headers.get('Authorization');
             if (!authHeader || !authHeader.startsWith('Bearer ')) {
-                return addCorsToResponse(new Response(JSON.stringify({ error: '未授权访问' }), {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
                     status: 401,
                     headers: { 'Content-Type': 'application/json' }
-                }));
+                });
             }
 
             const token = authHeader.split(' ')[1];
@@ -2608,10 +2608,10 @@ const handleOrders = async (request, env) => {
             // 从请求头中获取token
             const authHeader = request.headers.get('Authorization');
             if (!authHeader || !authHeader.startsWith('Bearer ')) {
-                return addCorsToResponse(new Response(JSON.stringify({ error: '未授权访问' }), {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
                     status: 401,
                     headers: { 'Content-Type': 'application/json' }
-                }));
+                });
             }
 
             const token = authHeader.split(' ')[1];
@@ -2666,10 +2666,10 @@ const handleOrders = async (request, env) => {
             // 从请求头中获取token
             const authHeader = request.headers.get('Authorization');
             if (!authHeader || !authHeader.startsWith('Bearer ')) {
-                return addCorsToResponse(new Response(JSON.stringify({ error: '未授权访问' }), {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
                     status: 401,
                     headers: { 'Content-Type': 'application/json' }
-                }));
+                });
             }
 
             const token = authHeader.split(' ')[1];
@@ -2699,10 +2699,10 @@ const handleOrders = async (request, env) => {
             // 从请求头中获取token
             const authHeader = request.headers.get('Authorization');
             if (!authHeader || !authHeader.startsWith('Bearer ')) {
-                return addCorsToResponse(new Response(JSON.stringify({ error: '未授权访问' }), {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
                     status: 401,
                     headers: { 'Content-Type': 'application/json' }
-                }));
+                });
             }
 
             const token = authHeader.split(' ')[1];
@@ -2725,7 +2725,7 @@ const handleOrders = async (request, env) => {
 
             // 获取订单项
             const orderItems = await env.DB.prepare(
-                `SELECT oi.*, p.name, p.price, p.image_url, p.image_filename, p.specifications 
+                `SELECT oi.*, p.name as product_name, p.specifications 
                 FROM order_items oi 
                 JOIN products p ON oi.product_id = p.product_id 
                 WHERE oi.order_id = ?`
@@ -2772,10 +2772,10 @@ const handleOrders = async (request, env) => {
             // 从请求头中获取token
             const authHeader = request.headers.get('Authorization');
             if (!authHeader || !authHeader.startsWith('Bearer ')) {
-                return addCorsToResponse(new Response(JSON.stringify({ error: '未授权访问' }), {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
                     status: 401,
                     headers: { 'Content-Type': 'application/json' }
-                }));
+                });
             }
 
             const token = authHeader.split(' ')[1];
@@ -2824,10 +2824,10 @@ const handleOrders = async (request, env) => {
         try {
             const authHeader = request.headers.get('Authorization');
             if (!authHeader || !authHeader.startsWith('Bearer ')) {
-                return addCorsToResponse(new Response(JSON.stringify({ error: '未授权访问' }), {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
                     status: 401,
                     headers: { 'Content-Type': 'application/json' }
-                }));
+                });
             }
 
             const token = authHeader.split(' ')[1];
@@ -2855,10 +2855,10 @@ const handleOrders = async (request, env) => {
         try {
             const authHeader = request.headers.get('Authorization');
             if (!authHeader || !authHeader.startsWith('Bearer ')) {
-                return addCorsToResponse(new Response(JSON.stringify({ error: '未授权访问' }), {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
                     status: 401,
                     headers: { 'Content-Type': 'application/json' }
-                }));
+                });
             }
 
             const token = authHeader.split(' ')[1];
@@ -2934,10 +2934,10 @@ const handleImageRequest = async (request, env) => {
         try {
             const authHeader = request.headers.get('Authorization');
             if (!authHeader || !authHeader.startsWith('Bearer ')) {
-                return addCorsToResponse(new Response(JSON.stringify({ error: '未授权访问' }), {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
                     status: 401,
                     headers: { 'Content-Type': 'application/json' }
-                }));
+                });
             }
 
             const token = authHeader.split(' ')[1];
@@ -2965,10 +2965,10 @@ const handleImageRequest = async (request, env) => {
         try {
             const authHeader = request.headers.get('Authorization');
             if (!authHeader || !authHeader.startsWith('Bearer ')) {
-                return addCorsToResponse(new Response(JSON.stringify({ error: '未授权访问' }), {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
                     status: 401,
                     headers: { 'Content-Type': 'application/json' }
-                }));
+                });
             }
 
             const token = authHeader.split(' ')[1];
@@ -3160,10 +3160,10 @@ const handleUserAddress = async (request, env) => {
         try {
             const authHeader = request.headers.get('Authorization');
             if (!authHeader || !authHeader.startsWith('Bearer ')) {
-                return addCorsToResponse(new Response(JSON.stringify({ error: '未授权访问' }), {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
                     status: 401,
                     headers: { 'Content-Type': 'application/json' }
-                }));
+                });
             }
 
             const token = authHeader.split(' ')[1];
@@ -3191,10 +3191,10 @@ const handleUserAddress = async (request, env) => {
         try {
             const authHeader = request.headers.get('Authorization');
             if (!authHeader || !authHeader.startsWith('Bearer ')) {
-                return addCorsToResponse(new Response(JSON.stringify({ error: '未授权访问' }), {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
                     status: 401,
                     headers: { 'Content-Type': 'application/json' }
-                }));
+                });
             }
 
             const token = authHeader.split(' ')[1];
@@ -3326,10 +3326,10 @@ const handleUserSettings = async (request, env) => {
         try {
             const authHeader = request.headers.get('Authorization');
             if (!authHeader || !authHeader.startsWith('Bearer ')) {
-                return addCorsToResponse(new Response(JSON.stringify({ error: '未授权访问' }), {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
                     status: 401,
                     headers: { 'Content-Type': 'application/json' }
-                }));
+                });
             }
 
             const token = authHeader.split(' ')[1];
@@ -3357,10 +3357,10 @@ const handleUserSettings = async (request, env) => {
         try {
             const authHeader = request.headers.get('Authorization');
             if (!authHeader || !authHeader.startsWith('Bearer ')) {
-                return addCorsToResponse(new Response(JSON.stringify({ error: '未授权访问' }), {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
                     status: 401,
                     headers: { 'Content-Type': 'application/json' }
-                }));
+                });
             }
 
             const token = authHeader.split(' ')[1];
@@ -3492,10 +3492,10 @@ const handleProductCategories = async (request, env) => {
         try {
             const authHeader = request.headers.get('Authorization');
             if (!authHeader || !authHeader.startsWith('Bearer ')) {
-                return addCorsToResponse(new Response(JSON.stringify({ error: '未授权访问' }), {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
                     status: 401,
                     headers: { 'Content-Type': 'application/json' }
-                }));
+                });
             }
 
             const token = authHeader.split(' ')[1];
@@ -3523,10 +3523,10 @@ const handleProductCategories = async (request, env) => {
         try {
             const authHeader = request.headers.get('Authorization');
             if (!authHeader || !authHeader.startsWith('Bearer ')) {
-                return addCorsToResponse(new Response(JSON.stringify({ error: '未授权访问' }), {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
                     status: 401,
                     headers: { 'Content-Type': 'application/json' }
-                }));
+                });
             }
 
             const token = authHeader.split(' ')[1];
@@ -3586,10 +3586,10 @@ const handleProductReviews = async (request, env) => {
             // 验证用户身份
             const authHeader = request.headers.get('Authorization');
             if (!authHeader || !authHeader.startsWith('Bearer ')) {
-                return addCorsToResponse(new Response(JSON.stringify({ error: '未授权访问' }), {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
                     status: 401,
                     headers: { 'Content-Type': 'application/json' }
-                }));
+                });
             }
 
             const token = authHeader.split(' ')[1];
@@ -3609,10 +3609,10 @@ const handleProductReviews = async (request, env) => {
             ).bind(userId, product_id).first();
 
             if (!orderItem) {
-                return addCorsToResponse(new Response(JSON.stringify({ error: '只有购买过的商品才能评价' }), {
+                return new Response(JSON.stringify({ error: '只有购买过的商品才能评价' }), {
                     status: 403,
                     headers: { 'Content-Type': 'application/json' }
-                }));
+                });
             }
 
             // 检查是否已经评价过
@@ -3621,10 +3621,10 @@ const handleProductReviews = async (request, env) => {
             ).bind(userId, product_id).first();
 
             if (existingReview) {
-                return addCorsToResponse(new Response(JSON.stringify({ error: '您已经评价过该商品' }), {
+                return new Response(JSON.stringify({ error: '您已经评价过该商品' }), {
                     status: 400,
                     headers: { 'Content-Type': 'application/json' }
-                }));
+                });
             }
 
             // 处理图片URL
@@ -3635,16 +3635,16 @@ const handleProductReviews = async (request, env) => {
                 'INSERT INTO product_reviews (user_id, product_id, order_id, rating, review_content, images, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
             ).bind(userId, product_id, order_id, rating, review_content, imagesJson, 'published', timestamp).run();
 
-            return addCorsToResponse(new Response(JSON.stringify({ message: '评价添加成功' }), {
+            return new Response(JSON.stringify({ message: '评价添加成功' }), {
                 status: 201,
                 headers: { 'Content-Type': 'application/json' }
-            }));
+            });
         } catch (error) {
             console.error('添加评价失败:', error);
-            return addCorsToResponse(new Response(JSON.stringify({ error: '添加评价失败', details: error.message }), {
+            return new Response(JSON.stringify({ error: '添加评价失败', details: error.message }), {
                 status: 500,
                 headers: { 'Content-Type': 'application/json' }
-            }));
+            });
         }
     }
 
@@ -3662,15 +3662,15 @@ const handleProductReviews = async (request, env) => {
                 ORDER BY pr.created_at DESC`
             ).bind(productId).all();
 
-            return addCorsToResponse(new Response(JSON.stringify(reviews.results), {
+            return new Response(JSON.stringify(reviews.results), {
                 status: 200,
                 headers: { 'Content-Type': 'application/json' }
-            }));
+            });
         } catch (error) {
-            return addCorsToResponse(new Response(JSON.stringify({ error: '获取评价列表失败', details: error.message }), {
+            return new Response(JSON.stringify({ error: '获取评价列表失败', details: error.message }), {
                 status: 500,
                 headers: { 'Content-Type': 'application/json' }
-            }));
+            });
         }
     }
 
@@ -3679,10 +3679,10 @@ const handleProductReviews = async (request, env) => {
         try {
             const authHeader = request.headers.get('Authorization');
             if (!authHeader || !authHeader.startsWith('Bearer ')) {
-                return addCorsToResponse(new Response(JSON.stringify({ error: '未授权访问' }), {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
                     status: 401,
                     headers: { 'Content-Type': 'application/json' }
-                }));
+                });
             }
 
             const token = authHeader.split(' ')[1];
@@ -3710,10 +3710,10 @@ const handleProductReviews = async (request, env) => {
         try {
             const authHeader = request.headers.get('Authorization');
             if (!authHeader || !authHeader.startsWith('Bearer ')) {
-                return addCorsToResponse(new Response(JSON.stringify({ error: '未授权访问' }), {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
                     status: 401,
                     headers: { 'Content-Type': 'application/json' }
-                }));
+                });
             }
 
             const token = authHeader.split(' ')[1];
@@ -3844,10 +3844,10 @@ const handleShoppingSession = async (request, env) => {
         try {
             const authHeader = request.headers.get('Authorization');
             if (!authHeader || !authHeader.startsWith('Bearer ')) {
-                return addCorsToResponse(new Response(JSON.stringify({ error: '未授权访问' }), {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
                     status: 401,
                     headers: { 'Content-Type': 'application/json' }
-                }));
+                });
             }
 
             const token = authHeader.split(' ')[1];
@@ -3875,10 +3875,10 @@ const handleShoppingSession = async (request, env) => {
         try {
             const authHeader = request.headers.get('Authorization');
             if (!authHeader || !authHeader.startsWith('Bearer ')) {
-                return addCorsToResponse(new Response(JSON.stringify({ error: '未授权访问' }), {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
                     status: 401,
                     headers: { 'Content-Type': 'application/json' }
-                }));
+                });
             }
 
             const token = authHeader.split(' ')[1];
@@ -3934,10 +3934,10 @@ const handleImageUpload = async (request, env) => {
     // 验证用户身份
     const authHeader = request.headers.get('Authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return addCorsToResponse(new Response(JSON.stringify({ error: '未授权访问' }), {
+        return new Response(JSON.stringify({ error: '未授权访问' }), {
             status: 401,
             headers: { 'Content-Type': 'application/json' }
-        }));
+        });
     }
 
     try {
@@ -3948,10 +3948,10 @@ const handleImageUpload = async (request, env) => {
         const folder = formData.get('folder') || 'Product-Reviews';
 
         if (!imageFile || !(imageFile instanceof File)) {
-            return addCorsToResponse(new Response(JSON.stringify({ error: '未提供有效的图片文件' }), {
+            return new Response(JSON.stringify({ error: '未提供有效的图片文件' }), {
                 status: 400,
                 headers: { 'Content-Type': 'application/json' }
-            }));
+            });
         }
 
         // 如果没有提供文件名，自动生成一个
@@ -3967,10 +3967,10 @@ const handleImageUpload = async (request, env) => {
 
         // 检查R2存储是否可用
         if (!env.R2) {
-            return addCorsToResponse(new Response(JSON.stringify({ error: '图片存储服务不可用' }), {
+            return new Response(JSON.stringify({ error: '图片存储服务不可用' }), {
                 status: 500,
                 headers: { 'Content-Type': 'application/json' }
-            }));
+            });
         }
 
         // 上传到R2存储
@@ -3983,28 +3983,28 @@ const handleImageUpload = async (request, env) => {
             });
         } catch (r2Error) {
             console.error('R2存储上传失败:', r2Error);
-            return addCorsToResponse(new Response(JSON.stringify({ error: '图片上传到存储失败', details: r2Error.message }), {
+            return new Response(JSON.stringify({ error: '图片上传到存储失败', details: r2Error.message }), {
                 status: 500,
                 headers: { 'Content-Type': 'application/json' }
-            }));
+            });
         }
 
         // 返回图片URL
         const imageUrl = `https://r2liubaotea.liubaotea.online/${objectKey}`;
-        return addCorsToResponse(new Response(JSON.stringify({
+        return new Response(JSON.stringify({
             success: true,
             url: imageUrl,
             fileName: fileName
         }), {
             status: 200,
             headers: { 'Content-Type': 'application/json' }
-        }));
+        });
     } catch (error) {
         console.error('图片上传失败:', error);
-        return addCorsToResponse(new Response(JSON.stringify({ error: '图片上传失败', details: error.message }), {
+        return new Response(JSON.stringify({ error: '图片上传失败', details: error.message }), {
             status: 500,
             headers: { 'Content-Type': 'application/json' }
-        }));
+        });
     }
 };
 
@@ -4075,10 +4075,10 @@ const handleRequest = {
         try {
             const authHeader = request.headers.get('Authorization');
             if (!authHeader || !authHeader.startsWith('Bearer ')) {
-                return addCorsToResponse(new Response(JSON.stringify({ error: '未授权访问' }), {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
                     status: 401,
                     headers: { 'Content-Type': 'application/json' }
-                }));
+                });
             }
 
             const token = authHeader.split(' ')[1];
@@ -4106,10 +4106,10 @@ const handleRequest = {
         try {
             const authHeader = request.headers.get('Authorization');
             if (!authHeader || !authHeader.startsWith('Bearer ')) {
-                return addCorsToResponse(new Response(JSON.stringify({ error: '未授权访问' }), {
+                return new Response(JSON.stringify({ error: '未授权访问' }), {
                     status: 401,
                     headers: { 'Content-Type': 'application/json' }
-                }));
+                });
             }
 
             const token = authHeader.split(' ')[1];
