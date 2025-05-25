@@ -111,19 +111,20 @@ async function loadOrderAndProductInfo() {
         }
 
         // 查找对应的商品
-        const product = orderData.items.find(item => item.product_id == productId) || {};
-        if (!product.product_id) {
-            console.warn('未找到完整的商品信息，将使用默认值');
-            // 继续执行，使用默认值显示，而不是抛出错误导致页面回退
+        const product = orderData.items.find(item => item.product_id == productId);
+        if (!product) {
+            throw new Error('未找到对应的商品信息');
         }
 
-        // 更新商品信息
-        document.getElementById('productName').textContent = product.name || '未知商品';
-        // 确保price存在且为数字类型才调用toFixed
+        // 更新商品信息 - 优先使用商品详细信息，其次使用订单项信息
+        const productName = product.product_name || product.name || '商品名称未知';
+        document.getElementById('productName').textContent = productName;
+        
+        // 显示商品价格 - 优先使用订单项中的价格，其次使用商品表中的价格
         let priceDisplay = '0.00';
-        if (product.price !== undefined && product.price !== null) {
-            // 将price转换为数字类型，确保toFixed方法可用
-            const priceValue = Number(product.price);
+        const orderPrice = product.unit_price || product.price || product.product_price;
+        if (orderPrice !== undefined && orderPrice !== null) {
+            const priceValue = Number(orderPrice);
             if (!isNaN(priceValue)) {
                 priceDisplay = priceValue.toFixed(2);
             }
@@ -131,15 +132,22 @@ async function loadOrderAndProductInfo() {
         document.getElementById('productPrice').textContent = `价格：¥${priceDisplay}`;
         document.getElementById('productQuantity').textContent = `数量：${product.quantity || 1}`;
         
-        // 设置商品图片
-        let imageUrl = '/images/default-product.jpg'; // 默认图片
-        if (product.image_url) {
+        // 设置商品图片 - 优先使用商品详细信息中的图片
+        let imageUrl = 'https://r2liubaotea.liubaotea.online/image/Design_Assets/liubaotea_logo.png'; // 默认图片
+        
+        // 检查多种可能的图片字段
+        if (product.product_image_url) {
+            imageUrl = product.product_image_url;
+        } else if (product.image_url) {
             imageUrl = product.image_url;
+        } else if (product.product_image_filename) {
+            imageUrl = `https://r2liubaotea.liubaotea.online/image/Goods/${product.product_image_filename}`;
         } else if (product.image_filename) {
             imageUrl = `https://r2liubaotea.liubaotea.online/image/Goods/${product.image_filename}`;
         }
+        
         document.getElementById('productImage').src = imageUrl;
-        document.getElementById('productImage').alt = product.name || '商品图片';
+        document.getElementById('productImage').alt = productName;
 
     } catch (error) {
         console.error('加载订单和商品信息失败:', error);
