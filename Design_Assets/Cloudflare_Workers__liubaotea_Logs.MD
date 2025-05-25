@@ -1,24 +1,185 @@
-管理后台日志：
-初始化商品管理页面...
-admin-products.js:47 正在从D1数据库加载商品分类...
-admin-api.js:338 发送分类请求，URL: https://adminsystemworkers.liubaotea.online/api/admin/categories?page=1&pageSize=10
-admin-api.js:355 成功获取分类数据: (18) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
-admin-products.js:59 成功加载分类数据: (18) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
-admin-products.js:103 正在从D1数据库加载商品数据...
-admin-products.js:104 筛选条件 - 页码: 1 分类ID:  搜索关键词: 
-admin-api.js:36 发送商品请求，URL: https://adminsystemworkers.liubaotea.online/api/admin/products?page=1&pageSize=10&include_category_mappings=true
-admin-api.js:53 成功获取商品数据: {products: Array(10), pagination: {…}}
-admin-api.js:95 发送商品分类映射请求，URL: https://adminsystemworkers.liubaotea.online/api/admin/product-category-mappings?product_ids=19,19,19,20,20,20,21,21,21,22
-admin-api.js:112 成功获取商品分类映射数据: (12) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
-admin-products.js:130 分页信息: {currentPage: 1, totalPages: 4, totalItems: 34}
-admin-products.js:173 获取商品分类映射失败: TypeError: adminAPI.getProductCategoryMappings is not a function
-    at loadProducts (admin-products.js:146:49)
-    at async Object.initProductsPage [as init] (admin-products.js:30:9)
-loadProducts @ admin-products.js:173
-await in loadProducts
-initProductsPage @ admin-products.js:30
-await in initProductsPage
-loadProductsPage @ admin-main.js:230
-navigateToPage @ admin-main.js:153
-(anonymous) @ admin-main.js:42Understand this warning
-admin-products.js:194 成功加载商品数据: (10) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+日志1：
+{
+  "source": {
+    "level": "error",
+    "message": "R2存储服务不可用",
+    "$cloudflare": {
+      "$metadata": {
+        "id": "01JW40TZD1FX0RNV0CEG969RD9",
+        "type": "cf-worker",
+        "error": "R2存储服务不可用"
+      }
+    }
+  },
+  "dataset": "",
+  "timestamp": "2025-05-25T15:26:31.329Z",
+  "$workers": {
+    "event": {
+      "request": {
+        "url": "https://workers.liubaotea.online/api/upload-image",
+        "method": "POST",
+        "path": "/api/upload-image"
+      }
+    },
+    "outcome": "ok",
+    "scriptName": "liubaotea",
+    "eventType": "fetch",
+    "executionModel": "stateless",
+    "scriptVersion": {
+      "id": "e4bddf64-eabe-4b88-8e8a-9597c18ec119"
+    },
+    "truncated": false,
+    "requestId": "94560d2c0b29703b"
+  },
+  "$metadata": {
+    "id": "01JW40TZD1FX0RNV0CEG969RD9",
+    "requestId": "94560d2c0b29703b",
+    "trigger": "POST /api/upload-image",
+    "service": "liubaotea",
+    "level": "error",
+    "statusCode": 500,
+    "error": "R2存储服务不可用",
+    "message": "R2存储服务不可用",
+    "url": "https://workers.liubaotea.online/api/upload-image",
+    "account": "a57fe1f5969031591b3c22307b96bf03",
+    "provider": "cloudflare",
+    "type": "cf-worker",
+    "fingerprint": "57e0e51d5c75eca6ec32e3e9179450d2",
+    "origin": "fetch",
+    "now": null
+  },
+  "links": []
+}
+日志2：
+{
+  "source": {
+    "level": "error",
+    "message": "POST https://workers.liubaotea.online/api/upload-image",
+    "$cloudflare": {
+      "$metadata": {
+        "id": "01JW40TZCYH68JTN0PDRJ7NXNM",
+        "type": "cf-worker-event",
+        "error": "POST https://workers.liubaotea.online/api/upload-image",
+        "errorPattern": "POST <URL>",
+        "messagePattern": "POST <URL>"
+      }
+    }
+  },
+  "dataset": "",
+  "timestamp": "2025-05-25T15:26:31.326Z",
+  "$workers": {
+    "event": {
+      "request": {
+        "url": "https://workers.liubaotea.online/api/upload-image",
+        "method": "POST",
+        "headers": {
+          "accept": "*/*",
+          "accept-encoding": "gzip, br",
+          "accept-language": "zh-CN,zh;q=0.9",
+          "authorization": "********",
+          "cf-connecting-ip": "2409:8a5c:5060:d20:c42c:7ff1:cb88:eddb",
+          "cf-ipcountry": "CN",
+          "cf-ray": "94560d2c0b29703b",
+          "cf-visitor": "{\"scheme\":\"https\"}",
+          "connection": "Keep-Alive",
+          "content-length": "320322",
+          "content-type": "multipart/form-data; boundary=----WebKitFormBoundaryMPhghHa896itXiv7",
+          "host": "workers.liubaotea.online",
+          "origin": "https://www.liubaotea.online",
+          "referer": "https://www.liubaotea.online/",
+          "sec-ch-ua": "\"Chromium\";v=\"122\", \"Not(A:Brand\";v=\"24\", \"Google Chrome\";v=\"122\"",
+          "sec-ch-ua-mobile": "?0",
+          "sec-ch-ua-platform": "\"Windows\"",
+          "sec-fetch-dest": "empty",
+          "sec-fetch-mode": "cors",
+          "sec-fetch-site": "same-site",
+          "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.6261.95 Safari/537.36",
+          "x-forwarded-proto": "https",
+          "x-real-ip": "2409:8a5c:5060:d20:c42c:7ff1:cb88:eddb"
+        },
+        "cf": {
+          "requestHeaderNames": {},
+          "httpProtocol": "HTTP/3",
+          "tlsCipher": "AEAD-AES128-GCM-SHA256",
+          "continent": "AS",
+          "asn": 9808,
+          "clientAcceptEncoding": "gzip, deflate, br",
+          "verifiedBotCategory": "",
+          "country": "CN",
+          "region": "Guangxi",
+          "tlsClientCiphersSha1": "",
+          "tlsClientAuth": {
+            "certIssuerDNLegacy": "",
+            "certIssuerSKI": "",
+            "certSubjectDNRFC2253": "",
+            "certSubjectDNLegacy": "",
+            "certFingerprintSHA256": "",
+            "certNotBefore": "",
+            "certSKI": "",
+            "certSerial": "",
+            "certIssuerDN": "",
+            "certVerified": "NONE",
+            "certNotAfter": "",
+            "certSubjectDN": "",
+            "certPresented": "0",
+            "certRevoked": "0",
+            "certIssuerSerial": "",
+            "certIssuerDNRFC2253": "",
+            "certFingerprintSHA1": ""
+          },
+          "tlsClientRandom": "e3xvoCbyeGrq0cIv0hd04Zf7E5iQFholQHckFOW22Hk=",
+          "tlsClientHelloLength": "531",
+          "colo": "SEA",
+          "timezone": "Asia/Shanghai",
+          "longitude": "108.31680",
+          "latitude": "22.81110",
+          "edgeRequestKeepAliveStatus": 1,
+          "requestPriority": "",
+          "city": "Nanning",
+          "tlsVersion": "TLSv1.3",
+          "regionCode": "GX",
+          "asOrganization": "China Mobile",
+          "tlsClientExtensionsSha1Le": "",
+          "tlsClientExtensionsSha1": "RU3I/XtGppUX063xa5NW/VAjHzk="
+        },
+        "path": "/api/upload-image"
+      },
+      "response": {
+        "status": 500
+      },
+      "rayId": "94560d2c0b29703b",
+      "executionModel": "stateless"
+    },
+    "scriptName": "liubaotea",
+    "outcome": "ok",
+    "eventType": "fetch",
+    "diagnosticsChannelEvents": [],
+    "scriptVersion": {
+      "id": "e4bddf64-eabe-4b88-8e8a-9597c18ec119"
+    },
+    "truncated": false,
+    "requestId": "94560d2c0b29703b",
+    "cpuTimeMs": 1,
+    "wallTimeMs": 3
+  },
+  "$metadata": {
+    "id": "01JW40TZCYH68JTN0PDRJ7NXNM",
+    "requestId": "94560d2c0b29703b",
+    "trigger": "POST /api/upload-image",
+    "service": "liubaotea",
+    "level": "error",
+    "statusCode": 500,
+    "error": "POST https://workers.liubaotea.online/api/upload-image",
+    "message": "POST https://workers.liubaotea.online/api/upload-image",
+    "url": "https://workers.liubaotea.online/api/upload-image",
+    "account": "a57fe1f5969031591b3c22307b96bf03",
+    "provider": "cloudflare",
+    "type": "cf-worker-event",
+    "fingerprint": "97f3cfd6f316459de244559c6e962e7c",
+    "origin": "fetch",
+    "messageTemplate": "POST <URL>",
+    "errorTemplate": "POST <URL>",
+    "now": null
+  },
+  "links": []
+}

@@ -3998,16 +3998,21 @@ const handleImageUpload = async (request, env) => {
         // 读取文件内容
         const arrayBuffer = await imageFile.arrayBuffer();
 
-        // 检查R2存储是否可用
-        if (!env.R2) {
-            console.error('R2存储服务不可用');
+        try {
+            // 检查R2存储是否可用
+            if (!env.R2) {
+                console.error('R2存储服务不可用');
+                throw new Error('R2存储服务不可用');
+            }
+            
+            console.log('R2存储服务可用，准备上传图片');
+        } catch (error) {
+            console.error('R2存储服务检查失败:', error);
             return new Response(JSON.stringify({ error: '图片存储服务不可用' }), {
                 status: 500,
                 headers: { 'Content-Type': 'application/json' }
             });
         }
-        
-        console.log('R2存储服务可用，准备上传图片');
 
         // 上传到R2存储
         const objectKey = `image/${folder}/${fileName}`;
