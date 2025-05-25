@@ -8,6 +8,20 @@ import { API_BASE_URL } from './config.js';
 import { checkAuthStatus } from './auth.js';
 import { showSuccessToast, showErrorToast } from './utils.js';
 
+// 添加页面样式
+const style = document.createElement('style');
+style.textContent = `
+    .review-container {
+        max-width: 800px;
+        margin: 40px auto;
+        padding: 20px;
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+`;
+document.head.appendChild(style);
+
 // 全局变量
 let currentRating = 5; // 默认5星评分
 let uploadedImages = []; // 已上传图片数组
@@ -111,35 +125,47 @@ async function loadOrderAndProductInfo() {
         }
 
         // 查找对应的商品
-        const product = orderData.items.find(item => item.product_id == productId) || {};
-        if (!product.product_id) {
-            console.warn('未找到完整的商品信息，将使用默认值');
-            // 继续执行，使用默认值显示，而不是抛出错误导致页面回退
+        const product = orderData.items.find(item => item.product_id == productId);
+        if (!product) {
+            throw new Error('未找到商品信息');
         }
 
         // 更新商品信息
-        document.getElementById('productName').textContent = product.name || '未知商品';
-        // 确保price存在且为数字类型才调用toFixed
+        document.getElementById('productName').textContent = product.name || product.product_name || '未知商品';
+        
+        // 处理价格显示 - 优先使用unit_price，然后是price
         let priceDisplay = '0.00';
-        if (product.price !== undefined && product.price !== null) {
-            // 将price转换为数字类型，确保toFixed方法可用
-            const priceValue = Number(product.price);
-            if (!isNaN(priceValue)) {
-                priceDisplay = priceValue.toFixed(2);
-            }
+        let priceValue = null;
+        
+        if (product.unit_price !== undefined && product.unit_price !== null) {
+            priceValue = Number(product.unit_price);
+        } else if (product.price !== undefined && product.price !== null) {
+            priceValue = Number(product.price);
         }
+        
+        if (!isNaN(priceValue)) {
+            priceDisplay = priceValue.toFixed(2);
+        }
+        
         document.getElementById('productPrice').textContent = `价格：¥${priceDisplay}`;
         document.getElementById('productQuantity').textContent = `数量：${product.quantity || 1}`;
         
-        // 设置商品图片
+        // 设置商品图片 - 使用与订单详情页相同的逻辑
         let imageUrl = '/images/default-product.jpg'; // 默认图片
+        
         if (product.image_url) {
+            // 如果商品对象中直接包含完整的图片URL
             imageUrl = product.image_url;
         } else if (product.image_filename) {
+            // 如果有图片文件名，构建完整URL
             imageUrl = `https://r2liubaotea.liubaotea.online/image/Goods/${product.image_filename}`;
+        } else {
+            // 尝试使用商品ID构建图片URL
+            imageUrl = `${API_BASE_URL}/image/Goods/Goods_${product.product_id}.png`;
         }
+        
         document.getElementById('productImage').src = imageUrl;
-        document.getElementById('productImage').alt = product.name || '商品图片';
+        document.getElementById('productImage').alt = product.name || product.product_name || '商品图片';
 
     } catch (error) {
         console.error('加载订单和商品信息失败:', error);
@@ -318,6 +344,7 @@ function initImageUpload() {
             previewItem.innerHTML = '<div class="loading-spinner"></div>';
             imagePreview.appendChild(previewItem);
 
+            console.log('开始上传图片到:', `${API_BASE_URL}/api/upload-image`);
             // 上传图片
             const response = await fetch(`${API_BASE_URL}/api/upload-image`, {
                 method: 'POST',
@@ -328,10 +355,13 @@ function initImageUpload() {
             });
 
             if (!response.ok) {
-                throw new Error('图片上传失败');
+                const errorData = await response.json();
+                console.error('图片上传服务器响应错误:', errorData);
+                throw new Error(errorData.error || '图片上传失败');
             }
 
             const result = await response.json();
+            console.log('图片上传成功，响应:', result);
 
             // 移除加载中的预览
             imagePreview.removeChild(previewItem);
@@ -345,6 +375,10 @@ function initImageUpload() {
         } catch (error) {
             console.error('上传图片失败:', error);
             uploadError.textContent = '上传图片失败，请重试';
+            
+            // 移除所有加载中的预览
+            const loadingPreviews = imagePreview.querySelectorAll('.preview-item.loading');
+            loadingPreviews.forEach(item => imagePreview.removeChild(item));
         }
     }
 
@@ -388,15 +422,23 @@ function initButtons() {
             if (!token) {
                 throw new Error('未登录');
             }
+            
+            // 验证评分和评价内容
+            if (reviewContent.value.trim() === '') {
+                throw new Error('请填写评价内容');
+            }
 
             // 准备评价数据
             const reviewData = {
                 product_id: productId,
                 order_id: orderId,
+                order_item_id: orderItemId,
                 rating: currentRating,
                 review_content: reviewContent.value.trim(),
                 images: uploadedImages
             };
+            
+            console.log('提交评价数据:', reviewData);
 
             // 发送评价请求
             const response = await fetch(`${API_BASE_URL}/api/reviews`, {
@@ -410,18 +452,18 @@ function initButtons() {
 
             if (!response.ok) {
                 const errorData = await response.json();
+                console.error('评价提交服务器响应错误:', errorData);
                 throw new Error(errorData.error || '提交评价失败');
             }
 
+            const result = await response.json();
+            console.log('评价提交成功，响应:', result);
+
             // 显示成功消息
-            const successMessage = document.createElement('div');
-            successMessage.className = 'success-message';
-            successMessage.textContent = '评价提交成功！';
-            document.body.appendChild(successMessage);
+            showSuccessToast('评价提交成功！');
 
             // 3秒后跳转回订单页面
             setTimeout(() => {
-                document.body.removeChild(successMessage);
                 window.location.href = returnUrl;
             }, 3000);
 

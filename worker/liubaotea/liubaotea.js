@@ -4019,6 +4019,16 @@ const handleRequest = {
             if (path.startsWith('/image/')) {
                 return handleImageRequest(request, env);
             }
+            
+            // 处理图片上传
+            if (path === '/api/upload-image') {
+                return handleImageUpload(request, env);
+            }
+            
+            // 处理商品评价
+            if (path === '/api/reviews' || path === '/api/product-reviews') {
+                return handleProductReviews(request, env);
+            }
 
             // 处理用户认证相关请求
             if (path.startsWith('/api/register') || path.startsWith('/api/login') || path.startsWith('/api/user')) {
