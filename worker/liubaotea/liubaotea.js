@@ -3610,6 +3610,7 @@ const handleProductReviews = async (request, env) => {
                     headers: { 'Content-Type': 'application/json' }
                 });
             }
+            console.log('商品ID验证通过:', product_id);
             
             // 验证评分
             if (!rating) {
@@ -3619,6 +3620,7 @@ const handleProductReviews = async (request, env) => {
                     headers: { 'Content-Type': 'application/json' }
                 });
             }
+            console.log('评分验证通过:', rating);
             
             // 验证评分范围
             if (rating < 1 || rating > 5) {
@@ -3628,7 +3630,8 @@ const handleProductReviews = async (request, env) => {
                 });
             }
             
-            console.log('接收到评价数据:', { product_id, rating, review_content, images });
+            // 移除对不存在的images变量的引用
+            console.log('接收到评价数据:', { product_id, rating, review_content });
             
             const timestamp = Math.floor(Date.now() / 1000); // Unix时间戳
 

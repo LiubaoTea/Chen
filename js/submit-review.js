@@ -382,7 +382,7 @@ function initImageUpload() {
             uploadedImages.push(responseData.url);
 
             // 创建图片预览
-            createImagePreview(errorData.url);
+            createImagePreview(responseData.url);
 
         } catch (error) {
             console.error('上传图片失败:', error);
