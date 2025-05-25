@@ -354,23 +354,29 @@ function initImageUpload() {
                 body: formData
             });
 
+            let errorData;
+            try {
+                errorData = await response.json();
+            } catch (parseError) {
+                console.error('解析响应失败:', parseError);
+                throw new Error('服务器响应格式错误');
+            }
+
             if (!response.ok) {
-                const errorData = await response.json();
                 console.error('图片上传服务器响应错误:', errorData);
                 throw new Error(errorData.error || '图片上传失败');
             }
 
-            const result = await response.json();
-            console.log('图片上传成功，响应:', result);
+            console.log('图片上传成功，响应:', errorData);
 
             // 移除加载中的预览
             imagePreview.removeChild(previewItem);
 
             // 添加到已上传图片数组
-            uploadedImages.push(result.url);
+            uploadedImages.push(errorData.url);
 
             // 创建图片预览
-            createImagePreview(result.url);
+            createImagePreview(errorData.url);
 
         } catch (error) {
             console.error('上传图片失败:', error);
@@ -424,15 +430,18 @@ function initButtons() {
             }
             
             // 验证评分和评价内容
+            if (currentRating < 1) {
+                throw new Error('请选择评分');
+            }
+            
             if (reviewContent.value.trim() === '') {
                 throw new Error('请填写评价内容');
             }
 
-            // 准备评价数据
+            // 准备评价数据 - 移除order_id字段，确保包含order_item_id
             const reviewData = {
                 product_id: productId,
-                order_id: orderId,
-                order_item_id: orderItemId,
+                order_item_id: orderItemId || '',  // 确保有值，即使是空字符串
                 rating: currentRating,
                 review_content: reviewContent.value.trim(),
                 images: uploadedImages
@@ -450,14 +459,20 @@ function initButtons() {
                 body: JSON.stringify(reviewData)
             });
 
+            let errorData;
+            try {
+                errorData = await response.json();
+            } catch (parseError) {
+                console.error('解析响应失败:', parseError);
+                throw new Error('服务器响应格式错误');
+            }
+
             if (!response.ok) {
-                const errorData = await response.json();
                 console.error('评价提交服务器响应错误:', errorData);
                 throw new Error(errorData.error || '提交评价失败');
             }
 
-            const result = await response.json();
-            console.log('评价提交成功，响应:', result);
+            console.log('评价提交成功，响应:', errorData);
 
             // 显示成功消息
             showSuccessToast('评价提交成功！');

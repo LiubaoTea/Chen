@@ -3597,8 +3597,34 @@ const handleProductReviews = async (request, env) => {
             const userId = decoded.userId;
 
             const requestData = await request.json();
-            const { product_id, order_id, rating, images } = requestData;
+            const { product_id, order_item_id, rating, images } = requestData;
             const review_content = requestData.review_content || requestData.content;
+            
+            // 验证必填字段
+            if (!product_id) {
+                return new Response(JSON.stringify({ error: '商品ID不能为空' }), {
+                    status: 400,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+            
+            if (!rating) {
+                return new Response(JSON.stringify({ error: '评分不能为空' }), {
+                    status: 400,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+            
+            // 验证评分范围
+            if (rating < 1 || rating > 5) {
+                return new Response(JSON.stringify({ error: '评分必须在1-5之间' }), {
+                    status: 400,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+            
+            console.log('接收到评价数据:', { product_id, rating, review_content, images });
+            
             const timestamp = Math.floor(Date.now() / 1000); // Unix时间戳
 
             // 验证用户是否购买过该商品
@@ -3630,10 +3656,10 @@ const handleProductReviews = async (request, env) => {
             // 处理图片URL
             const imagesJson = images && images.length > 0 ? JSON.stringify(images) : null;
 
-            // 添加评价
+            // 添加评价 - 根据表结构调整字段
             await env.DB.prepare(
-                'INSERT INTO product_reviews (user_id, product_id, order_id, rating, review_content, images, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
-            ).bind(userId, product_id, order_id, rating, review_content, imagesJson, 'published', timestamp).run();
+                'INSERT INTO product_reviews (user_id, product_id, rating, review_content, images, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
+            ).bind(userId, product_id, rating, review_content, imagesJson, 'approved', timestamp).run();
 
             return new Response(JSON.stringify({ message: '评价添加成功' }), {
                 status: 201,
@@ -3967,6 +3993,7 @@ const handleImageUpload = async (request, env) => {
 
         // 检查R2存储是否可用
         if (!env.R2) {
+            console.error('R2存储服务不可用');
             return new Response(JSON.stringify({ error: '图片存储服务不可用' }), {
                 status: 500,
                 headers: { 'Content-Type': 'application/json' }
@@ -3991,6 +4018,7 @@ const handleImageUpload = async (request, env) => {
 
         // 返回图片URL
         const imageUrl = `https://r2liubaotea.liubaotea.online/${objectKey}`;
+        console.log('图片上传成功，URL:', imageUrl);
         return new Response(JSON.stringify({
             success: true,
             url: imageUrl,
