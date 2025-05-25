@@ -3597,18 +3597,23 @@ const handleProductReviews = async (request, env) => {
             const userId = decoded.userId;
 
             const requestData = await request.json();
-            const { product_id, order_item_id, rating, images } = requestData;
+            const { product_id, order_item_id, rating } = requestData;
             const review_content = requestData.review_content || requestData.content;
             
-            // 验证必填字段
+            console.log('接收到评价数据:', { product_id, rating, review_content });
+            
+            // 验证商品ID
             if (!product_id) {
+                console.log('验证失败: 商品ID不能为空');
                 return new Response(JSON.stringify({ error: '商品ID不能为空' }), {
                     status: 400,
                     headers: { 'Content-Type': 'application/json' }
                 });
             }
             
+            // 验证评分
             if (!rating) {
+                console.log('验证失败: 评分不能为空');
                 return new Response(JSON.stringify({ error: '评分不能为空' }), {
                     status: 400,
                     headers: { 'Content-Type': 'application/json' }
@@ -3653,13 +3658,12 @@ const handleProductReviews = async (request, env) => {
                 });
             }
 
-            // 处理图片URL
-            const imagesJson = images && images.length > 0 ? JSON.stringify(images) : null;
-
-            // 添加评价 - 根据表结构调整字段
+            // 添加评价 - 根据表结构调整字段，移除images字段（表中不存在）
             await env.DB.prepare(
-                'INSERT INTO product_reviews (user_id, product_id, rating, review_content, images, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
-            ).bind(userId, product_id, rating, review_content, imagesJson, 'approved', timestamp).run();
+                'INSERT INTO product_reviews (user_id, product_id, rating, review_content, status, created_at) VALUES (?, ?, ?, ?, ?, ?)'
+            ).bind(userId, product_id, rating, review_content, 'approved', timestamp).run();
+            
+            // 如果需要保存图片URL，可以考虑创建一个单独的表来存储评价图片
 
             return new Response(JSON.stringify({ message: '评价添加成功' }), {
                 status: 201,

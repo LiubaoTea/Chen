@@ -354,26 +354,32 @@ function initImageUpload() {
                 body: formData
             });
 
-            let errorData;
+            let responseData;
             try {
-                errorData = await response.json();
+                responseData = await response.json();
             } catch (parseError) {
                 console.error('解析响应失败:', parseError);
                 throw new Error('服务器响应格式错误');
             }
 
             if (!response.ok) {
-                console.error('图片上传服务器响应错误:', errorData);
-                throw new Error(errorData.error || '图片上传失败');
+                console.error('图片上传服务器响应错误:', responseData);
+                throw new Error(responseData.error || '图片上传失败');
             }
 
-            console.log('图片上传成功，响应:', errorData);
+            console.log('图片上传成功，响应:', responseData);
 
             // 移除加载中的预览
             imagePreview.removeChild(previewItem);
 
+            // 确保responseData.url存在
+            if (!responseData.url) {
+                console.error('服务器响应中缺少图片URL');
+                throw new Error('图片上传成功但未返回URL');
+            }
+            
             // 添加到已上传图片数组
-            uploadedImages.push(errorData.url);
+            uploadedImages.push(responseData.url);
 
             // 创建图片预览
             createImagePreview(errorData.url);
@@ -429,22 +435,24 @@ function initButtons() {
                 throw new Error('未登录');
             }
             
-            // 验证评分和评价内容
+            // 验证评分
             if (currentRating < 1) {
                 throw new Error('请选择评分');
             }
             
+            // 验证评价内容
             if (reviewContent.value.trim() === '') {
                 throw new Error('请填写评价内容');
             }
 
-            // 准备评价数据 - 移除order_id字段，确保包含order_item_id
+            // 准备评价数据 - 移除order_id字段和images字段
+            // images字段在product_reviews表中不存在，不应该包含在请求中
             const reviewData = {
                 product_id: productId,
                 order_item_id: orderItemId || '',  // 确保有值，即使是空字符串
                 rating: currentRating,
-                review_content: reviewContent.value.trim(),
-                images: uploadedImages
+                review_content: reviewContent.value.trim()
+                // 移除images字段，因为数据库表中不存在该字段
             };
             
             console.log('提交评价数据:', reviewData);
@@ -459,20 +467,20 @@ function initButtons() {
                 body: JSON.stringify(reviewData)
             });
 
-            let errorData;
+            let responseData;
             try {
-                errorData = await response.json();
+                responseData = await response.json();
             } catch (parseError) {
                 console.error('解析响应失败:', parseError);
                 throw new Error('服务器响应格式错误');
             }
 
             if (!response.ok) {
-                console.error('评价提交服务器响应错误:', errorData);
-                throw new Error(errorData.error || '提交评价失败');
+                console.error('评价提交服务器响应错误:', responseData);
+                throw new Error(responseData.error || '提交评价失败');
             }
 
-            console.log('评价提交成功，响应:', errorData);
+            console.log('评价提交成功，响应:', responseData);
 
             // 显示成功消息
             showSuccessToast('评价提交成功！');
