@@ -357,6 +357,11 @@ function initImageUpload() {
             let responseData;
             try {
                 responseData = await response.json();
+                // 验证responseData是否为对象
+                if (typeof responseData !== 'object' || responseData === null) {
+                    console.error('服务器响应格式无效:', responseData);
+                    throw new Error('服务器响应格式错误');
+                }
             } catch (parseError) {
                 console.error('解析响应失败:', parseError);
                 throw new Error('服务器响应格式错误');
@@ -470,6 +475,11 @@ function initButtons() {
             let responseData;
             try {
                 responseData = await response.json();
+                // 验证responseData是否为对象
+                if (typeof responseData !== 'object' || responseData === null) {
+                    console.error('服务器响应格式无效:', responseData);
+                    throw new Error('服务器响应格式错误');
+                }
             } catch (parseError) {
                 console.error('解析响应失败:', parseError);
                 throw new Error('服务器响应格式错误');

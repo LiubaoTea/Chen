@@ -4006,15 +4006,19 @@ const handleImageUpload = async (request, env) => {
                 headers: { 'Content-Type': 'application/json' }
             });
         }
+        
+        console.log('R2存储服务可用，准备上传图片');
 
         // 上传到R2存储
         const objectKey = `image/${folder}/${fileName}`;
+        console.log('准备上传图片到R2存储路径:', objectKey);
         try {
             await env.R2.put(objectKey, arrayBuffer, {
                 httpMetadata: {
                     contentType: imageFile.type,
                 },
             });
+            console.log('图片成功上传到R2存储');
         } catch (r2Error) {
             console.error('R2存储上传失败:', r2Error);
             return new Response(JSON.stringify({ error: '图片上传到存储失败', details: r2Error.message }), {
