@@ -135,12 +135,19 @@ async function loadProductReviews(productId) {
             
             // 动态导入商品评价模块并初始化
             try {
-                const { initProductReviews } = await import('./product-reviews.js');
-                if (typeof initProductReviews === 'function') {
-                    await initProductReviews(productId);
+                // 导入模块，使用默认导出或命名导出
+                const reviewsModule = await import('./product-reviews.js');
+                
+                // 尝试获取initProductReviews函数
+                const initFunction = reviewsModule.initProductReviews || 
+                                    (reviewsModule.default && reviewsModule.default.init);
+                
+                if (typeof initFunction === 'function') {
+                    await initFunction(productId);
                     console.log('商品评价模块初始化成功');
                 } else {
                     console.warn('商品评价初始化函数未找到');
+                    console.log('可用的导出:', Object.keys(reviewsModule));
                 }
             } catch (importError) {
                 console.error('导入商品评价模块失败:', importError);
@@ -472,6 +479,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         await loadTeaCulture();
         
         // 加载商品评价内容
+        console.log('开始加载商品评价，商品ID:', productId);
         await loadProductReviews(productId);
 
         // 获取相关推荐商品

@@ -316,5 +316,5 @@ export default {
     init: initProductReviews
 };
 
-// 直接导出initProductReviews函数，便于直接导入
-export { initProductReviews };
+// 注意：已经在上面通过export async function initProductReviews导出了，不需要重复导出
+// export { initProductReviews };

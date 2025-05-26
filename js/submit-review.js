@@ -340,6 +340,7 @@ function initImageUpload() {
             // 添加订单号作为前缀
             if (orderId) {
                 formData.append('orderNumber', orderId);
+                console.log('添加订单号作为图片前缀:', orderId);
             }
 
             // 显示上传中的预览
