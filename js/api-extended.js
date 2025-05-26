@@ -248,14 +248,44 @@ async function addProductReview(reviewData) {
 
 async function getProductReviews(productId) {
     try {
+        console.log(`正在调用API: ${API_BASE_URL}/api/products/${productId}/reviews`);
         const response = await fetch(`${API_BASE_URL}/api/products/${productId}/reviews`);
-        const data = await response.json();
+        
+        // 记录原始响应信息
+        console.log('API响应状态:', response.status, response.statusText);
+        
+        // 获取响应文本并尝试解析
+        const responseText = await response.text();
+        console.log('API响应原始文本:', responseText);
+        
+        let data;
+        try {
+            data = JSON.parse(responseText);
+            console.log('API响应解析后数据:', data);
+        } catch (parseError) {
+            console.error('API响应解析失败:', parseError);
+            throw new Error('API返回的数据格式无效');
+        }
         
         if (!response.ok) {
             throw new Error(data.error || '获取评价列表失败');
         }
 
-        return data;
+        // 检查数据结构
+        if (!Array.isArray(data)) {
+            console.warn('API返回的数据不是数组格式，尝试适配...');
+            // 尝试从不同可能的字段获取评价列表
+            const reviews = data.reviews || data.data || data.items || [];
+            return {
+                reviews: Array.isArray(reviews) ? reviews : [],
+                total: Array.isArray(reviews) ? reviews.length : 0
+            };
+        }
+
+        return {
+            reviews: data,
+            total: data.length
+        };
     } catch (error) {
         console.error('获取评价列表错误:', error);
         throw error;
@@ -345,25 +375,7 @@ export {
     uploadImage
 };
 
-// 商品评价API
-async function getProductReviews(productId) {
-    try {
-        const response = await fetch(`${API_BASE_URL}/api/products/${productId}/reviews`);
-        const data = await response.json();
-        
-        if (!response.ok) {
-            throw new Error(data.error || '获取商品评价失败');
-        }
-
-        return {
-            reviews: data,
-            total: data.length
-        };
-    } catch (error) {
-        console.error('获取商品评价错误:', error);
-        throw error;
-    }
-}
+// 商品评价API已在上方定义
 
 async function addProductReview(reviewData) {
     try {
