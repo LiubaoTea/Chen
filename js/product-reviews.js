@@ -109,7 +109,15 @@ function updateReviewsList(reviews) {
         
         // 评价图片
         const imagesHtml = review.images && review.images.length > 0 ? 
-            `<div class="review-images">${review.images.map((img, index) => `<img src="${img}" class="review-image" data-index="${index}" data-review-id="${review.id}">`).join('')}</div>` : '';
+            `<div class="review-images">${review.images.map((img, index) => {
+                // 确保图片URL是完整的
+                let imgUrl = img;
+                if (!imgUrl.startsWith('http')) {
+                    // 如果不是完整URL，添加R2存储域名前缀
+                    imgUrl = `https://r2liubaotea.liubaotea.online/image/Product-Reviews/${imgUrl}`;
+                }
+                return `<img src="${imgUrl}" class="review-image" data-index="${index}" data-review-id="${review.id}">`;
+            }).join('')}</div>` : '';
         
         // 商家回复
         const replyHtml = review.reply ? 
@@ -312,9 +320,9 @@ function getStarRating(rating) {
 }
 
 // 导出模块函数
-export default {
-    init: initProductReviews
-};
+export { initProductReviews };
 
-// 注意：已经在上面通过export async function initProductReviews导出了，不需要重复导出
-// export { initProductReviews };
+// 为了兼容性，也提供默认导出
+export default {
+    initProductReviews: initProductReviews
+};

@@ -326,22 +326,27 @@ function initImageUpload() {
                 throw new Error('未登录');
             }
 
-            // 创建唯一文件名
+            // 创建唯一文件名，如果有订单号则添加为前缀
             const timestamp = new Date().getTime();
             const randomStr = Math.random().toString(36).substring(2, 8);
             const fileExt = file.name.split('.').pop();
-            const fileName = `review_${timestamp}_${randomStr}.${fileExt}`;
-
+            let fileName;
+            
             // 创建FormData对象
             const formData = new FormData();
             formData.append('image', file);
-            formData.append('fileName', fileName);
             formData.append('folder', 'Product-Reviews');
+            
             // 添加订单号作为前缀
             if (orderId) {
+                fileName = `${orderId}_review_${timestamp}_${randomStr}.${fileExt}`;
                 formData.append('orderNumber', orderId);
                 console.log('添加订单号作为图片前缀:', orderId);
+            } else {
+                fileName = `review_${timestamp}_${randomStr}.${fileExt}`;
             }
+            
+            formData.append('fileName', fileName);
 
             // 显示上传中的预览
             const previewItem = document.createElement('div');
