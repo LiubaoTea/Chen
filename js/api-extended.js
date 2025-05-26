@@ -377,33 +377,7 @@ export {
 
 // 商品评价API已在上方定义
 
-async function addProductReview(reviewData) {
-    try {
-        const token = localStorage.getItem('userToken');
-        if (!token) {
-            throw new Error('未登录');
-        }
-
-        const response = await fetch(`${API_BASE_URL}/api/reviews`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify(reviewData)
-        });
-
-        const data = await response.json();
-        if (!response.ok) {
-            throw new Error(data.error || '提交评价失败');
-        }
-
-        return data;
-    } catch (error) {
-        console.error('提交评价错误:', error);
-        throw error;
-    }
-}
+// 删除重复的addProductReview函数声明
 
 // 图片上传API
 async function uploadImage(imageFile, fileName, folder = 'Product-Reviews') {

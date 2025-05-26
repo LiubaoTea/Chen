@@ -3691,7 +3691,7 @@ const handleProductReviews = async (request, env) => {
                 `SELECT pr.*, u.username 
                 FROM product_reviews pr
                 JOIN users u ON pr.user_id = u.user_id
-                WHERE pr.product_id = ? AND pr.status = 'published'
+                WHERE pr.product_id = ? AND pr.status = 'approved'
                 ORDER BY pr.created_at DESC`
             ).bind(productId).all();
 

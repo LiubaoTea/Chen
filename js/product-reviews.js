@@ -56,19 +56,42 @@ async function loadProductReviews(productId, page = 1, filter = 'all') {
             return;
         }
         
+        // 处理可能的数据结构差异
+        let reviews = [];
+        if (result.reviews && Array.isArray(result.reviews)) {
+            reviews = result.reviews;
+        } else if (Array.isArray(result)) {
+            reviews = result;
+        } else if (typeof result === 'object') {
+            // 尝试从对象中提取评价数组
+            const possibleArrays = Object.values(result).filter(val => Array.isArray(val));
+            if (possibleArrays.length > 0) {
+                // 使用最长的数组作为评价数据
+                reviews = possibleArrays.reduce((longest, current) => 
+                    current.length > longest.length ? current : longest, []);
+            }
+        }
+        
+        // 过滤评价状态
+        reviews = reviews.filter(review => {
+            // 检查状态字段，可能是status或review_status
+            const status = review.status || review.review_status;
+            // 接受approved或published状态的评价
+            return status === 'approved' || status === 'published';
+        });
+        
         // 如果没有评价数据
-        if (!result.reviews || !Array.isArray(result.reviews) || result.reviews.length === 0) {
+        if (reviews.length === 0) {
             console.log('没有找到评价数据或数据格式不正确');
-            console.log('reviews字段:', result.reviews);
             document.getElementById('reviewsList').innerHTML = '<div class="no-reviews">暂无评价</div>';
             updateReviewsSummary(0, {});
             return;
         }
         
-        console.log('评价数据数量:', result.reviews.length);
-        console.log('第一条评价数据示例:', result.reviews[0]);
+        console.log('评价数据数量:', reviews.length);
+        console.log('第一条评价数据示例:', reviews[0]);
         
-        reviewsData = result.reviews;
+        reviewsData = reviews;
         reviewsTotalPages = Math.ceil(reviewsData.length / reviewsPageSize);
         
         // 根据筛选条件过滤评价
@@ -153,7 +176,7 @@ function updateReviewsList(reviews) {
         // 评价图片 - 处理可能的字段名差异和缺失情况
         let imagesHtml = '';
         // 尝试从不同可能的字段获取图片数据
-        const reviewImages = review.images || review.review_images || '';
+        let reviewImages = review.images || review.review_images || '';
         
         if (reviewImages) {
             console.log('评论图片数据:', reviewImages);
@@ -163,36 +186,50 @@ function updateReviewsList(reviews) {
                     // 尝试解析JSON字符串
                     const parsedImages = JSON.parse(reviewImages);
                     if (Array.isArray(parsedImages) && parsedImages.length > 0) {
-                        imagesHtml = `<div class="review-images">${parsedImages.map((img, index) => {
-                            // 确保图片URL是完整的
-                            let imgUrl = img;
-                            if (!imgUrl.startsWith('http')) {
-                                // 如果不是完整URL，添加R2存储域名前缀
-                                imgUrl = `https://r2liubaotea.liubaotea.online/image/Product-Reviews/${imgUrl}`;
-                            }
-                            return `<img src="${imgUrl}" class="review-image" data-index="${index}" data-review-id="${review.review_id || review.id}">`;
-                        }).join('')}</div>`;
+                        reviewImages = parsedImages;
+                    } else if (typeof parsedImages === 'string') {
+                        // 如果解析出来是单个字符串
+                        reviewImages = [parsedImages];
+                    } else if (parsedImages && typeof parsedImages === 'object') {
+                        // 如果解析出来是对象，尝试提取图片URL
+                        reviewImages = Object.values(parsedImages).filter(val => typeof val === 'string');
                     }
                 } catch (e) {
                     // 如果不是有效的JSON，可能是单个图片文件名
                     console.log('评论图片不是有效的JSON:', e);
-                    let imgUrl = reviewImages;
-                    if (!imgUrl.startsWith('http')) {
-                        imgUrl = `https://r2liubaotea.liubaotea.online/image/Product-Reviews/${imgUrl}`;
-                    }
-                    imagesHtml = `<div class="review-images"><img src="${imgUrl}" class="review-image" data-index="0" data-review-id="${review.review_id || review.id}"></div>`;
+                    reviewImages = [reviewImages];
                 }
-            } else if (Array.isArray(reviewImages) && reviewImages.length > 0) {
-                // 已经是数组
+            }
+            
+            // 确保reviewImages是数组
+            if (!Array.isArray(reviewImages)) {
+                reviewImages = [reviewImages];
+            }
+            
+            // 过滤掉空值
+            reviewImages = reviewImages.filter(img => img);
+            
+            if (reviewImages.length > 0) {
                 imagesHtml = `<div class="review-images">${reviewImages.map((img, index) => {
                     // 确保图片URL是完整的
                     let imgUrl = img;
+                    if (typeof imgUrl !== 'string') {
+                        console.warn('图片URL不是字符串:', imgUrl);
+                        return '';
+                    }
+                    
+                    // 清理URL
+                    imgUrl = imgUrl.trim();
+                    if (!imgUrl) return '';
+                    
                     if (!imgUrl.startsWith('http')) {
                         // 如果不是完整URL，添加R2存储域名前缀
                         imgUrl = `https://r2liubaotea.liubaotea.online/image/Product-Reviews/${imgUrl}`;
                     }
-                    return `<img src="${imgUrl}" class="review-image" data-index="${index}" data-review-id="${review.review_id || review.id}">`;
-                }).join('')}</div>`;
+                    
+                    console.log(`处理图片 ${index}:`, imgUrl);
+                    return `<img src="${imgUrl}" class="review-image" data-index="${index}" data-review-id="${review.review_id || review.id || ''}" onerror="this.onerror=null;this.src='./images/image-placeholder.png';">`;
+                }).filter(html => html).join('')}</div>`;
             }
         }
         
@@ -332,6 +369,13 @@ function updateReviewsSummary(totalReviews, ratingDistribution) {
         console.log('评分条DOM结构:', firstBar.outerHTML);
     }
     
+    // 确保每个评分都有一个默认值
+    for (let i = 1; i <= 5; i++) {
+        if (ratingDistribution[i] === undefined) {
+            ratingDistribution[i] = 0;
+        }
+    }
+    
     for (let i = 0; i < 5; i++) {
         const rating = 5 - i;
         const count = ratingDistribution[rating] || 0;
@@ -345,34 +389,25 @@ function updateReviewsSummary(totalReviews, ratingDistribution) {
             continue;
         }
         
-        // 尝试不同的选择器来查找进度条元素
-        let progressBar = ratingBars[i].querySelector('.progress-bar');
-        if (!progressBar) {
-            progressBar = ratingBars[i].querySelector('.rating-bar-fill');
-        }
-        
-        // 尝试不同的选择器来查找百分比文本元素
-        let percentText = ratingBars[i].querySelector('.rating-percent');
-        if (!percentText) {
-            percentText = ratingBars[i].querySelector('.rating-percentage');
-        }
+        // 获取进度条元素
+        const progressBar = ratingBars[i].querySelector('.progress-bar');
+        // 获取百分比文本元素
+        const percentText = ratingBars[i].querySelector('.rating-percent');
         
         if (progressBar) {
-            progressBar.style.width = `${percent}%`;
+            // 设置最小宽度，确保即使是0%也能看到一点进度条
+            const displayWidth = percent === 0 ? '0%' : `${Math.max(percent, 3)}%`;
+            progressBar.style.width = displayWidth;
+            console.log(`设置${rating}星评分条宽度:`, displayWidth);
         } else {
             console.warn(`未找到${rating}星评分的进度条元素`);
         }
         
         if (percentText) {
             percentText.textContent = `${percent}%`;
+            console.log(`设置${rating}星评分百分比:`, `${percent}%`);
         } else {
             console.warn(`未找到${rating}星评分的百分比元素`);
-        }
-        
-        // 尝试更新评分数量
-        const countElement = ratingBars[i].querySelector('.rating-count');
-        if (countElement) {
-            countElement.textContent = count;
         }
     }
 }
