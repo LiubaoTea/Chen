@@ -3979,6 +3979,7 @@ const handleImageUpload = async (request, env) => {
         const imageFile = formData.get('image');
         let fileName = formData.get('fileName');
         const folder = formData.get('folder') || 'Product-Reviews';
+        const orderNumber = formData.get('orderNumber') || ''; // 获取订单号
 
         if (!imageFile || !(imageFile instanceof File)) {
             return new Response(JSON.stringify({ error: '未提供有效的图片文件' }), {
@@ -3992,7 +3993,12 @@ const handleImageUpload = async (request, env) => {
             const timestamp = new Date().getTime();
             const randomStr = Math.random().toString(36).substring(2, 8);
             const fileExt = imageFile.name.split('.').pop() || 'jpg';
-            fileName = `auto_${timestamp}_${randomStr}.${fileExt}`;
+            // 如果有订单号，添加到文件名前缀
+            if (orderNumber) {
+                fileName = `${orderNumber}_review_${timestamp}_${randomStr}.${fileExt}`;
+            } else {
+                fileName = `review_${timestamp}_${randomStr}.${fileExt}`;
+            }
         }
 
         // 读取文件内容

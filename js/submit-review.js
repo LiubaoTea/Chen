@@ -337,6 +337,10 @@ function initImageUpload() {
             formData.append('image', file);
             formData.append('fileName', fileName);
             formData.append('folder', 'Product-Reviews');
+            // 添加订单号作为前缀
+            if (orderId) {
+                formData.append('orderNumber', orderId);
+            }
 
             // 显示上传中的预览
             const previewItem = document.createElement('div');

@@ -117,28 +117,33 @@ async function loadProductReviews(productId) {
         const parser = new DOMParser();
         const doc = parser.parseFromString(html, 'text/html');
         const reviewsContent = doc.querySelector('.reviews-container');
-        const reviewsFormContent = doc.querySelector('.review-form-container');
         const reviewsModal = doc.querySelector('.review-image-modal');
         const reviewsTab = document.getElementById('reviews');
         
-        if (reviewsTab && reviewsContent && reviewsFormContent) {
+        if (reviewsTab && reviewsContent) {
             reviewsTab.innerHTML = '';
             reviewsTab.appendChild(reviewsContent.cloneNode(true));
-            reviewsTab.appendChild(reviewsFormContent.cloneNode(true));
-            document.body.appendChild(reviewsModal.cloneNode(true));
             
-            // 初始化商品评价模块
-            if (typeof window.productReviews === 'undefined') {
-                // 动态导入商品评价模块
-                const reviewsModule = await import('./product-reviews.js');
-                window.productReviews = reviewsModule.default;
+            // 如果存在模态框，添加到body
+            if (reviewsModal) {
+                // 检查是否已存在相同ID的模态框
+                const existingModal = document.getElementById('reviewImageModal');
+                if (!existingModal) {
+                    document.body.appendChild(reviewsModal.cloneNode(true));
+                }
             }
             
-            // 初始化评价模块
-            if (window.productReviews && typeof window.productReviews.init === 'function') {
-                window.productReviews.init(productId);
-            } else {
-                console.warn('商品评价模块未正确加载');
+            // 动态导入商品评价模块并初始化
+            try {
+                const { initProductReviews } = await import('./product-reviews.js');
+                if (typeof initProductReviews === 'function') {
+                    await initProductReviews(productId);
+                    console.log('商品评价模块初始化成功');
+                } else {
+                    console.warn('商品评价初始化函数未找到');
+                }
+            } catch (importError) {
+                console.error('导入商品评价模块失败:', importError);
             }
         } else {
             console.warn('商品评价内容加载失败：找不到目标元素');
@@ -465,6 +470,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // 加载茶文化内容
         await loadTeaCulture();
+        
+        // 加载商品评价内容
+        await loadProductReviews(productId);
 
         // 获取相关推荐商品
         await fetchRelatedProducts(productId);
@@ -498,24 +506,4 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.error('初始化商品详情页失败:', error);
         alert('加载商品详情失败，请刷新页面重试');
     }
-
-    // 获取并显示商品详情
-    const product = await fetchProductDetail(productId);
-    if (product) {
-        updateProductDetail(product);
-        
-        // 初始化页面功能
-        initQuantityControl();
-        initTabs();
-        initAddToCart();
-        initBuyNow();
-        
-        // 加载茶文化内容
-        loadTeaCulture();
-        
-        // 获取相关推荐
-        fetchRelatedProducts(productId);
-    } else {
-        window.location.href = '/shop.html';
-    }
-});
+}); // 删除了重复的初始化代码
