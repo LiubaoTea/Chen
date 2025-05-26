@@ -4000,7 +4000,7 @@ const handleImageUpload = async (request, env) => {
 
         try {
             // 检查R2存储是否可用
-            if (!env.R2) {
+            if (!env.BUCKET) {
                 console.error('R2存储服务不可用');
                 throw new Error('R2存储服务不可用');
             }
@@ -4018,7 +4018,7 @@ const handleImageUpload = async (request, env) => {
         const objectKey = `image/${folder}/${fileName}`;
         console.log('准备上传图片到R2存储路径:', objectKey);
         try {
-            await env.R2.put(objectKey, arrayBuffer, {
+            await env.BUCKET.put(objectKey, arrayBuffer, {
                 httpMetadata: {
                     contentType: imageFile.type,
                 },
