@@ -17,7 +17,7 @@ let reviewsPageSize = 5;
 let reviewsSelectedFilter = 'all';
 
 // 初始化评价模块
-export async function initProductReviews(productId) {
+async function initProductReviews(productId) {
     if (!productId) return;
     
     currentProductId = productId;

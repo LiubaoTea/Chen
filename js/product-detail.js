@@ -135,19 +135,28 @@ async function loadProductReviews(productId) {
             
             // 动态导入商品评价模块并初始化
             try {
-                // 导入模块，使用默认导出或命名导出
+                // 导入模块，使用默认导出
                 const reviewsModule = await import('./product-reviews.js');
                 
-                // 尝试获取initProductReviews函数
-                const initFunction = reviewsModule.initProductReviews || 
-                                    (reviewsModule.default && reviewsModule.default.init);
+                console.log('商品评价模块导入成功，可用导出:', Object.keys(reviewsModule));
                 
-                if (typeof initFunction === 'function') {
+                // 尝试获取初始化函数 - 优先使用默认导出的init方法
+                let initFunction = null;
+                
+                if (reviewsModule.default && typeof reviewsModule.default.init === 'function') {
+                    console.log('使用默认导出的init方法初始化评价模块');
+                    initFunction = reviewsModule.default.init;
+                } else if (typeof reviewsModule.initProductReviews === 'function') {
+                    console.log('使用命名导出的initProductReviews方法初始化评价模块');
+                    initFunction = reviewsModule.initProductReviews;
+                }
+                
+                if (initFunction) {
                     await initFunction(productId);
                     console.log('商品评价模块初始化成功');
                 } else {
                     console.warn('商品评价初始化函数未找到');
-                    console.log('可用的导出:', Object.keys(reviewsModule));
+                    console.log('模块内容:', reviewsModule);
                 }
             } catch (importError) {
                 console.error('导入商品评价模块失败:', importError);
