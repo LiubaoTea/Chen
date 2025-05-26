@@ -225,6 +225,7 @@ function updateReviewsList(reviews) {
                     if (!imgUrl.startsWith('http')) {
                         // 如果不是完整URL，添加R2存储域名前缀
                         imgUrl = `https://r2liubaotea.liubaotea.online/image/Product-Reviews/${imgUrl}`;
+                        console.log('构建的图片URL:', imgUrl);
                     }
                     
                     console.log(`处理图片 ${index}:`, imgUrl);
@@ -355,6 +356,14 @@ function updateReviewsSummary(totalReviews, ratingDistribution) {
     console.log('更新评分分布，总评价数:', totalReviews);
     console.log('评分分布详情:', ratingDistribution);
     
+    // 确保每个评分都有一个默认值
+    for (let i = 1; i <= 5; i++) {
+        if (ratingDistribution[i] === undefined) {
+            ratingDistribution[i] = 0;
+        }
+    }
+    
+    // 直接使用选择器获取所有评分条
     const ratingBars = document.querySelectorAll('.rating-bar');
     if (!ratingBars || ratingBars.length === 0) {
         console.warn('未找到评分分布元素 .rating-bar');
@@ -369,15 +378,9 @@ function updateReviewsSummary(totalReviews, ratingDistribution) {
         console.log('评分条DOM结构:', firstBar.outerHTML);
     }
     
-    // 确保每个评分都有一个默认值
-    for (let i = 1; i <= 5; i++) {
-        if (ratingDistribution[i] === undefined) {
-            ratingDistribution[i] = 0;
-        }
-    }
-    
+    // 遍历所有评分条
     for (let i = 0; i < 5; i++) {
-        const rating = 5 - i;
+        const rating = 5 - i; // 5星在最上面，所以是5-i
         const count = ratingDistribution[rating] || 0;
         const percent = totalReviews > 0 ? Math.round((count / totalReviews) * 100) : 0;
         
@@ -389,14 +392,13 @@ function updateReviewsSummary(totalReviews, ratingDistribution) {
             continue;
         }
         
-        // 获取进度条元素
+        // 获取当前评分条的进度条和百分比文本元素
         const progressBar = ratingBars[i].querySelector('.progress-bar');
-        // 获取百分比文本元素
         const percentText = ratingBars[i].querySelector('.rating-percent');
         
         if (progressBar) {
             // 设置最小宽度，确保即使是0%也能看到一点进度条
-            const displayWidth = percent === 0 ? '0%' : `${Math.max(percent, 3)}%`;
+            const displayWidth = percent === 0 ? '3%' : `${Math.max(percent, 3)}%`;
             progressBar.style.width = displayWidth;
             console.log(`设置${rating}星评分条宽度:`, displayWidth);
         } else {

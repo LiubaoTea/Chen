@@ -35,9 +35,10 @@
 
 .rating-left {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
     min-width: 120px;
+    gap: 1rem;
 }
 
 .average-rating {
@@ -85,7 +86,7 @@
     background-color: #B87333;
     border-radius: 6px;
     transition: width 0.5s ease-in-out;
-    min-width: 5px;
+    min-width: 3px;
 }
 
 .rating-percent {

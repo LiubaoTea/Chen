@@ -3685,6 +3685,7 @@ const handleProductReviews = async (request, env) => {
     if (path.match(/\/api\/products\/\d+\/reviews$/) && request.method === 'GET') {
         try {
             const productId = path.split('/')[3];
+            console.log('获取商品评价，商品ID:', productId);
 
             // 获取评价列表
             const reviews = await env.DB.prepare(
@@ -3695,9 +3696,10 @@ const handleProductReviews = async (request, env) => {
                 ORDER BY pr.created_at DESC`
             ).bind(productId).all();
 
-            return new Response(JSON.stringify(reviews.results), {
+            console.log('查询到的评价数据:', reviews);
+            return new Response(JSON.stringify(reviews.results || []), {
                 status: 200,
-                headers: { 'Content-Type': 'application/json' }
+                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
             });
         } catch (error) {
             return new Response(JSON.stringify({ error: '获取评价列表失败', details: error.message }), {
