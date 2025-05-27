@@ -49,13 +49,13 @@
 }
 
 .stars-container i {
-    color: #ffc107;
+    color: #ffc107; /* 黄色星星 */
     font-size: 1.2rem;
     margin: 0 2px;
 }
 
 .stars-container i.far {
-    color: #e0e0e0;
+    color: #e0e0e0; /* 未选中的星星颜色 */
 }
 
 .rating-count {
@@ -188,13 +188,13 @@
 }
 
 .review-rating i {
-    color: #ffc107;
+    color: #ffc107; /* 黄色星星 */
     font-size: 1rem;
     margin-right: 2px;
 }
 
 .review-rating i.far {
-    color: #e0e0e0;
+    color: #e0e0e0; /* 未选中的星星颜色 */
 }
 
 .review-content {

@@ -9,7 +9,7 @@ import { getProductReviews } from './api-extended.js';
 const config = {
     pageSize: 5,         // 每页显示评价数量
     imageBasePath: 'https://r2liubaotea.liubaotea.online/image/Product-Reviews/', // R2存储图片路径
-    defaultAvatar: '/images/default-avatar.png', // 默认用户头像
+    defaultAvatar: './assets/avatars/test_avatars.png', // 默认用户头像，使用项目中的图片
     ratingTexts: ['很差', '较差', '一般', '不错', '很好'] // 评分对应文本
 };
 
