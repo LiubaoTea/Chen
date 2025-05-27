@@ -3687,10 +3687,9 @@ const handleProductReviews = async (request, env) => {
             const productId = path.split('/')[3];
             console.log('获取商品评价，商品ID:', productId);
 
-            // 获取评价列表
+            // 获取评价列表 - 移除对不存在的review_images表的查询
             const reviews = await env.DB.prepare(
-                `SELECT pr.*, u.username, 
-                (SELECT GROUP_CONCAT(image_url, ',') FROM review_images WHERE review_id = pr.review_id) as review_images
+                `SELECT pr.*, u.username
                 FROM product_reviews pr
                 JOIN users u ON pr.user_id = u.user_id
                 WHERE pr.product_id = ? AND pr.status = 'approved'
@@ -3701,19 +3700,10 @@ const handleProductReviews = async (request, env) => {
             // 确保返回的是数组格式，即使没有评价也返回空数组
             const reviewsData = reviews.results || [];
             
-            // 处理评价图片
+            // 处理评价图片 - 由于没有review_images表，所有评价都没有图片
             reviewsData.forEach(review => {
-                if (review.review_images) {
-                    try {
-                        // 尝试将逗号分隔的图片URL字符串转换为数组
-                        review.images = review.review_images.split(',');
-                    } catch (e) {
-                        console.error('处理评价图片失败:', e);
-                        review.images = [];
-                    }
-                } else {
-                    review.images = [];
-                }
+                // 设置空图片数组，确保前端代码不会出错
+                review.images = [];
             });
             
             console.log('处理后的评价数据:', reviewsData);
