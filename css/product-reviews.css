@@ -25,9 +25,9 @@
 
 .rating-summary {
     display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: nowrap;
     width: 100%;
     margin-top: 1rem;
     gap: 2rem;
@@ -39,6 +39,34 @@
     align-items: center;
     min-width: 120px;
     margin-right: 1rem;
+}
+
+.rating-distribution {
+    flex: 1;
+    min-width: 250px;
+    max-width: 500px;
+    width: 100%;
+}
+
+.progress {
+    flex: 1;
+    height: 12px;
+    background-color: #f0f0f0;
+    border-radius: 6px;
+    margin: 0 0.5rem;
+    overflow: hidden;
+    position: relative;
+}
+
+.progress-bar {
+    height: 100%;
+    background-color: #f0ad4e;
+    border-radius: 4px;
+    min-width: 5%; /* 设置最小宽度，确保即使为0也有显示 */
+    transition: width 0.3s ease;
+    position: absolute;
+    top: 0;
+    left: 0;
 }
 
 .average-rating {

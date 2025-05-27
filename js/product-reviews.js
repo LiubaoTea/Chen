@@ -231,8 +231,8 @@ function updateReviewsList(reviews) {
                         // 如果不是完整URL，添加R2存储域名前缀
                         console.log('原始图片URL:', imgUrl);
                         
-                        // 检查是否是以订单号开头的图片命名格式（如LB202505116968_review_1748255231266_ld5ckm.jpg）
-                        if (imgUrl.match(/^LB[0-9]+_review_/) || imgUrl.match(/^[0-9]{10,}_review_/)) {
+                        // 检查是否是以订单号开头的图片命名格式
+                        if (imgUrl.match(/^LB[0-9]+_review_/) || imgUrl.match(/^[0-9]+_review_/)) {
                             // 符合命名规则，直接添加完整路径
                             imgUrl = `https://r2liubaotea.liubaotea.online/image/Product-Reviews/${imgUrl}`;
                         }

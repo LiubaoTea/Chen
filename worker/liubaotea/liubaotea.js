@@ -4291,7 +4291,10 @@ export default {
             // 路由分发
             let response;
 
-            if (url.pathname.startsWith('/api/products')) {
+            // 检查是否是商品评价API路径
+            if (url.pathname.match(/\/api\/products\/[^/]+\/reviews/)) {
+                response = await handleProductReviews(request, env);
+            } else if (url.pathname.startsWith('/api/products')) {
                 response = await handleProducts(request, env);
             } else if (url.pathname.startsWith('/api/cart')) {
                 response = await handleCartOperations(request, env);

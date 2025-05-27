@@ -53,8 +53,6 @@ ALTER TABLE users ADD COLUMN "is_deleted" TEXT NOT NULL DEFAULT '否'
 
 ---
 
-
-
 **2、products：（商品数据表）**
 
 -- 创建新表（整合状态字段）
@@ -80,8 +78,6 @@ ALTER TABLE products ADD COLUMN "original_price" REAL NOT NULL DEFAULT 0.0;-- �
 
 ---
 
-
-
 3、orders：（订单）
 -- 创建订单主表
 CREATE TABLE orders (
@@ -103,8 +99,6 @@ CREATE INDEX idx_orders_status ON orders ("status");
 
 ---
 
-
-
 4、order_items：（订单明细）
 
 CREATE TABLE order_items (
@@ -124,8 +118,6 @@ CREATE INDEX idx_order_items_order ON order_items ("order_id");
 
 ---
 
-
-
 5、carts：（购物车）
 CREATE TABLE carts (
   cart_id INTEGER PRIMARY KEY AUTOINCREMENT,  -- 购物车项ID（自增主键）
@@ -143,7 +135,6 @@ CREATE TABLE carts (
   FOREIGN KEY (product_id) REFERENCES products(product_id) ON DELETE CASCADE,
   FOREIGN KEY (session_id) REFERENCES shopping_sessions(session_id) ON DELETE SET NULL
 );
-
 
 6、user_addresses：（地址设置）
 CREATE TABLE user_addresses (
@@ -165,8 +156,6 @@ CREATE INDEX idx_user_addresses_default ON user_addresses(is_default);
 
 ---
 
-
-
 7、user_settings：（账户设置）
 
 CREATE TABLE user_settings (
@@ -183,8 +172,6 @@ CREATE TABLE user_settings (
 CREATE INDEX idx_user_settings_user ON user_settings(user_id);
 
 ---
-
-
 
 8、product_categories：（产品分类）
 CREATE TABLE product_categories (
@@ -205,15 +192,13 @@ CREATE INDEX idx_categories_parent ON product_categories(parent_category_id);
 
 ---
 
-
-
 9、product_reviews：（产品评论）
 CREATE TABLE product_reviews (
   review_id INTEGER PRIMARY KEY AUTOINCREMENT,                                      --评价ID（自增主键）
   user_id INTEGER NOT NULL,                                                         --关联用户表的user_id
   product_id INTEGER NOT NULL,                                                      --关联商品表的product_id
   rating INTEGER NOT NULL CHECK(rating BETWEEN 1 AND 5),                            --评分（1-5分）
-  review_content TEXT,评价内容（可选）
+  review_content TEXT,                                                                               --评价内容（可选）
   status TEXT DEFAULT 'pending' CHECK(status IN ('pending','approved','rejected')), --审核状态
   created_at INTEGER DEFAULT (CAST(strftime('%s','now') AS INTEGER)),               --评价时间
 
@@ -225,8 +210,6 @@ CREATE INDEX idx_reviews_product ON product_reviews(product_id);
 CREATE INDEX idx_reviews_rating ON product_reviews(rating);
 
 ---
-
-
 
 10、shopping_sessions：（购物会话）
 CREATE TABLE shopping_sessions (
@@ -248,8 +231,6 @@ DROP TABLE IF EXISTS admins;
 
 ---
 
-
-
 11、admins创建管理员表（独立账户体系）
 -- 创建管理员表（独立账户体系）
 CREATE TABLE admins (
@@ -267,8 +248,6 @@ CREATE INDEX idx_admins_role ON admins(role);       -- 按角色快速筛选
 CREATE INDEX idx_admins_username ON admins(username);  -- 登录优化
 
 ---
-
-
 
 12、admin_settings：（系统设置）
 
@@ -289,8 +268,6 @@ CREATE INDEX idx_settings_module ON admin_settings(module);
 CREATE INDEX idx_settings_key ON admin_settings(config_key);
 
 ---
-
-
 
 13、admin_statistics：（统计表）
 
@@ -314,8 +291,6 @@ CREATE TABLE admin_statistics (
 CREATE INDEX idx_stat_type_range ON admin_statistics(stat_type, start_date, end_date);
 
 ---
-
-
 
 14、product_category_mapping：（商品-分类映射表）
 -- 创建商品-分类映射表
