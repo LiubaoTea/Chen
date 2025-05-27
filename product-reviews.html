@@ -1,0 +1,93 @@
+<!-- 商品评价模块 -->
+<div class="reviews-container">
+    <div class="reviews-header">
+        <h3>商品评价</h3>
+        <div class="rating-summary">
+            <div class="average-rating">
+                <span class="rating-value">0.0</span>
+                <div class="stars-container">
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                </div>
+                <span class="rating-count">(0条评价)</span>
+            </div>
+            <div class="rating-distribution">
+                <div class="rating-bar">
+                    <span class="rating-level">5星</span>
+                    <div class="progress">
+                        <div class="progress-bar" style="width: 5%;"></div>
+                    </div>
+                    <span class="rating-percent">0%</span>
+                </div>
+                <div class="rating-bar">
+                    <span class="rating-level">4星</span>
+                    <div class="progress">
+                        <div class="progress-bar" style="width: 5%;"></div>
+                    </div>
+                    <span class="rating-percent">0%</span>
+                </div>
+                <div class="rating-bar">
+                    <span class="rating-level">3星</span>
+                    <div class="progress">
+                        <div class="progress-bar" style="width: 5%;"></div>
+                    </div>
+                    <span class="rating-percent">0%</span>
+                </div>
+                <div class="rating-bar">
+                    <span class="rating-level">2星</span>
+                    <div class="progress">
+                        <div class="progress-bar" style="width: 5%;"></div>
+                    </div>
+                    <span class="rating-percent">0%</span>
+                </div>
+                <div class="rating-bar">
+                    <span class="rating-level">1星</span>
+                    <div class="progress">
+                        <div class="progress-bar" style="width: 5%;"></div>
+                    </div>
+                    <span class="rating-percent">0%</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="reviews-filter">
+        <div class="filter-options">
+            <button class="filter-btn active" data-filter="all">全部</button>
+            <button class="filter-btn" data-filter="5">5星</button>
+            <button class="filter-btn" data-filter="4">4星</button>
+            <button class="filter-btn" data-filter="3">3星</button>
+            <button class="filter-btn" data-filter="2">2星</button>
+            <button class="filter-btn" data-filter="1">1星</button>
+            <button class="filter-btn" data-filter="has-image">有图</button>
+        </div>
+    </div>
+    
+    <div class="reviews-list">
+        <!-- 评价列表将通过JavaScript动态加载 -->
+        <div class="loading-reviews">
+            <div class="spinner"></div>
+            <p>正在加载评价...</p>
+        </div>
+    </div>
+    
+    <div class="reviews-pagination">
+        <!-- 分页控件将通过JavaScript动态生成 -->
+    </div>
+</div>
+
+<!-- 评价图片查看模态框 -->
+<div class="review-image-modal" id="reviewImageModal">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+        <span class="close-modal">&times;</span>
+        <img src="" alt="评价图片" id="modalImage">
+        <div class="modal-navigation">
+            <button class="nav-btn prev-btn">&lt;</button>
+            <button class="nav-btn next-btn">&gt;</button>
+        </div>
+    </div>
+</div>
