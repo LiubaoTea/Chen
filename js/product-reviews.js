@@ -224,7 +224,12 @@ function updateReviewsList(reviews) {
                     
                     if (!imgUrl.startsWith('http')) {
                         // 如果不是完整URL，添加R2存储域名前缀
-                        imgUrl = `https://r2liubaotea.liubaotea.online/image/Product-Reviews/${imgUrl}`;
+                        // 检查是否已经包含完整路径
+                        if (!imgUrl.includes('Product-Reviews')) {
+                            imgUrl = `https://r2liubaotea.liubaotea.online/image/Product-Reviews/${imgUrl}`;
+                        } else {
+                            imgUrl = `https://r2liubaotea.liubaotea.online/image/${imgUrl}`;
+                        }
                         console.log('构建的图片URL:', imgUrl);
                     }
                     
@@ -398,7 +403,8 @@ function updateReviewsSummary(totalReviews, ratingDistribution) {
         
         if (progressBar) {
             // 设置最小宽度，确保即使是0%也能看到一点进度条
-            const displayWidth = percent === 0 ? '3%' : `${Math.max(percent, 3)}%`;
+            // 使用3%作为最小宽度，确保视觉上可见
+            const displayWidth = `${Math.max(percent, 3)}%`;
             progressBar.style.width = displayWidth;
             console.log(`设置${rating}星评分条宽度:`, displayWidth);
         } else {

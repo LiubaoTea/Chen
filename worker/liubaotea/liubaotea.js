@@ -3697,14 +3697,27 @@ const handleProductReviews = async (request, env) => {
             ).bind(productId).all();
 
             console.log('查询到的评价数据:', reviews);
-            return new Response(JSON.stringify(reviews.results || []), {
+            // 确保返回的是数组格式，即使没有评价也返回空数组
+            const reviewsData = reviews.results || [];
+            console.log('返回的评价数据:', reviewsData);
+            
+            return new Response(JSON.stringify(reviewsData), {
                 status: 200,
-                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+                headers: { 
+                    'Content-Type': 'application/json', 
+                    'Access-Control-Allow-Origin': '*',
+                    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+                    'Access-Control-Allow-Headers': 'Content-Type'
+                }
             });
         } catch (error) {
+            console.error('获取评价列表失败:', error);
             return new Response(JSON.stringify({ error: '获取评价列表失败', details: error.message }), {
                 status: 500,
-                headers: { 'Content-Type': 'application/json' }
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                }
             });
         }
     }
