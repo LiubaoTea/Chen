@@ -51,8 +51,9 @@ async function loadProductReviews(productId, page = 1, filter = 'all') {
         // 检查API返回的数据结构
         if (!result) {
             console.error('API返回的数据为空');
-            document.getElementById('reviewsList').innerHTML = '<div class="no-reviews">加载评价失败，请稍后重试</div>';
-            updateReviewsSummary(0, {});
+            document.getElementById('reviewsList').innerHTML = '<div class="no-reviews">暂无评价</div>';
+            // 即使没有评价数据，也显示评分分布
+            updateReviewsSummary(0, {1: 0, 2: 0, 3: 0, 4: 0, 5: 0});
             return;
         }
         
@@ -132,14 +133,17 @@ async function loadProductReviews(productId, page = 1, filter = 'all') {
         // 更新评价列表
         updateReviewsList(pageReviews);
         
-        // 更新评价摘要
-        updateReviewsSummary(reviewsData.length, calculateRatingDistribution(reviewsData));
+        // 更新评价摘要 - 确保即使没有评价也显示评分分布
+        const ratingDistribution = reviewsData.length > 0 ? calculateRatingDistribution(reviewsData) : {1: 0, 2: 0, 3: 0, 4: 0, 5: 0};
+        updateReviewsSummary(reviewsData.length, ratingDistribution);
         
         // 更新分页控件
         updateReviewsPagination(filteredReviews.length);
     } catch (error) {
         console.error('加载商品评价失败:', error);
-        document.getElementById('reviewsList').innerHTML = '<div class="no-reviews">加载评价失败，请稍后重试</div>';
+        document.getElementById('reviewsList').innerHTML = '<div class="no-reviews">暂无评价</div>';
+        // 即使加载失败，也显示评分分布
+        updateReviewsSummary(0, {1: 0, 2: 0, 3: 0, 4: 0, 5: 0});
     }
 }
 
@@ -153,8 +157,8 @@ function updateReviewsList(reviews) {
     
     if (reviews.length === 0) {
         console.log('评价列表为空');
-        reviewsList.innerHTML = '<div class="no-reviews">没有符合条件的评价</div>';
-        return;
+        reviewsList.innerHTML = '<div class="no-reviews">暂无评价</div>';
+        // 不要立即返回，继续执行以确保评分分布显示
     }
     
     reviews.forEach(review => {
@@ -176,7 +180,8 @@ function updateReviewsList(reviews) {
         // 评价图片 - 处理可能的字段名差异和缺失情况
         let imagesHtml = '';
         // 尝试从不同可能的字段获取图片数据
-        let reviewImages = review.images || review.review_images || '';
+        let reviewImages = review.images || review.review_images || [];
+        console.log('原始评论图片数据类型:', typeof reviewImages, reviewImages);
         
         if (reviewImages) {
             console.log('评论图片数据:', reviewImages);
@@ -224,12 +229,20 @@ function updateReviewsList(reviews) {
                     
                     if (!imgUrl.startsWith('http')) {
                         // 如果不是完整URL，添加R2存储域名前缀
-                        // 检查是否已经包含完整路径
-                        if (!imgUrl.includes('Product-Reviews')) {
-                            imgUrl = `https://r2liubaotea.liubaotea.online/image/Product-Reviews/${imgUrl}`;
-                        } else {
+                        console.log('原始图片URL:', imgUrl);
+                        
+                        // 清理路径中可能的重复部分
+                        if (imgUrl.includes('image/') && imgUrl.includes('Product-Reviews/')) {
+                            // 已经包含完整路径，只需添加域名
+                            imgUrl = `https://r2liubaotea.liubaotea.online/${imgUrl}`;
+                        } else if (imgUrl.includes('Product-Reviews/')) {
+                            // 包含Product-Reviews路径但没有image前缀
                             imgUrl = `https://r2liubaotea.liubaotea.online/image/${imgUrl}`;
+                        } else {
+                            // 只有文件名，添加完整路径
+                            imgUrl = `https://r2liubaotea.liubaotea.online/image/Product-Reviews/${imgUrl}`;
                         }
+                        
                         console.log('构建的图片URL:', imgUrl);
                     }
                     
@@ -400,6 +413,7 @@ function updateReviewsSummary(totalReviews, ratingDistribution) {
         // 获取当前评分条的进度条和百分比文本元素
         const progressBar = ratingBars[i].querySelector('.progress-bar');
         const percentText = ratingBars[i].querySelector('.rating-percent');
+        const countElement = ratingBars[i].querySelector('.rating-count');
         
         if (progressBar) {
             // 设置最小宽度，确保即使是0%也能看到一点进度条
@@ -407,6 +421,9 @@ function updateReviewsSummary(totalReviews, ratingDistribution) {
             const displayWidth = `${Math.max(percent, 3)}%`;
             progressBar.style.width = displayWidth;
             console.log(`设置${rating}星评分条宽度:`, displayWidth);
+            
+            // 确保进度条可见
+            progressBar.style.display = 'block';
         } else {
             console.warn(`未找到${rating}星评分的进度条元素`);
         }
@@ -417,6 +434,16 @@ function updateReviewsSummary(totalReviews, ratingDistribution) {
         } else {
             console.warn(`未找到${rating}星评分的百分比元素`);
         }
+        
+        if (countElement) {
+            countElement.textContent = count;
+            console.log(`设置${rating}星评分数量:`, count);
+        } else {
+            console.warn(`未找到${rating}星评分的数量元素`);
+        }
+        
+        // 确保评分行可见
+        ratingBars[i].style.display = 'flex';
     }
 }
 

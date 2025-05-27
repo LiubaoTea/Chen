@@ -25,19 +25,21 @@
 
 .rating-summary {
     display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
+    align-items: center;
+    justify-content: flex-start;
     flex-wrap: wrap;
     width: 100%;
     margin-top: 1rem;
+    gap: 2rem;
 }
 
 .rating-left {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
     min-width: 120px;
-    margin-right: 2rem;
+    margin-right: 1rem;
+    gap: 1rem;
 }
 
 .average-rating {
@@ -56,6 +58,8 @@
     flex: 1;
     min-width: 250px;
     max-width: 500px;
+    margin-top: 15px;
+    width: 100%;
 }
 
 .rating-bar {
@@ -82,10 +86,10 @@
 
 .progress-bar {
     height: 100%;
-    background-color: #B87333;
-    border-radius: 6px;
-    transition: width 0.5s ease-in-out;
+    background-color: #f0ad4e;
+    border-radius: 4px;
     min-width: 3%;
+    transition: width 0.3s ease;
 }
 
 .rating-percent {

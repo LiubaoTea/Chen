@@ -3689,7 +3689,8 @@ const handleProductReviews = async (request, env) => {
 
             // 获取评价列表
             const reviews = await env.DB.prepare(
-                `SELECT pr.*, u.username 
+                `SELECT pr.*, u.username, 
+                (SELECT GROUP_CONCAT(image_url, ',') FROM review_images WHERE review_id = pr.review_id) as review_images
                 FROM product_reviews pr
                 JOIN users u ON pr.user_id = u.user_id
                 WHERE pr.product_id = ? AND pr.status = 'approved'
@@ -3699,24 +3700,57 @@ const handleProductReviews = async (request, env) => {
             console.log('查询到的评价数据:', reviews);
             // 确保返回的是数组格式，即使没有评价也返回空数组
             const reviewsData = reviews.results || [];
-            console.log('返回的评价数据:', reviewsData);
             
-            return new Response(JSON.stringify(reviewsData), {
+            // 处理评价图片
+            reviewsData.forEach(review => {
+                if (review.review_images) {
+                    try {
+                        // 尝试将逗号分隔的图片URL字符串转换为数组
+                        review.images = review.review_images.split(',');
+                    } catch (e) {
+                        console.error('处理评价图片失败:', e);
+                        review.images = [];
+                    }
+                } else {
+                    review.images = [];
+                }
+            });
+            
+            console.log('处理后的评价数据:', reviewsData);
+            
+            // 返回标准格式的数据结构，包含reviews数组和total字段
+            const responseData = {
+                reviews: reviewsData,
+                total: reviewsData.length
+            };
+            
+            console.log('返回的标准格式评价数据:', responseData);
+            
+            return new Response(JSON.stringify(responseData), {
                 status: 200,
                 headers: { 
                     'Content-Type': 'application/json', 
                     'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-                    'Access-Control-Allow-Headers': 'Content-Type'
+                    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+                    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With'
                 }
             });
         } catch (error) {
             console.error('获取评价列表失败:', error);
-            return new Response(JSON.stringify({ error: '获取评价列表失败', details: error.message }), {
+            console.error('获取评价列表详细错误:', error);
+            // 即使出错也返回标准格式的空数据
+            return new Response(JSON.stringify({
+                reviews: [],
+                total: 0,
+                error: '获取评价列表失败',
+                details: error.message
+            }), {
                 status: 500,
                 headers: { 
                     'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*'
+                    'Access-Control-Allow-Origin': '*',
+                    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+                    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With'
                 }
             });
         }
