@@ -232,7 +232,7 @@ function updateReviewsList(reviews) {
                         console.log('原始图片URL:', imgUrl);
                         
                         // 检查是否是以订单号开头的图片命名格式（如LB202505116968_review_1748255231266_ld5ckm.jpg）
-                        if (imgUrl.match(/^LB[0-9]+_review_/)) {
+                        if (imgUrl.match(/^LB[0-9]+_review_/) || imgUrl.match(/^[0-9]{10,}_review_/)) {
                             // 符合命名规则，直接添加完整路径
                             imgUrl = `https://r2liubaotea.liubaotea.online/image/Product-Reviews/${imgUrl}`;
                         }
@@ -243,6 +243,9 @@ function updateReviewsList(reviews) {
                         } else if (imgUrl.includes('Product-Reviews/')) {
                             // 包含Product-Reviews路径但没有image前缀
                             imgUrl = `https://r2liubaotea.liubaotea.online/image/${imgUrl}`;
+                        } else if (imgUrl.includes('review_')) {
+                            // 包含review_关键字，可能是评价图片
+                            imgUrl = `https://r2liubaotea.liubaotea.online/image/Product-Reviews/${imgUrl}`;
                         } else {
                             // 只有文件名，添加完整路径
                             imgUrl = `https://r2liubaotea.liubaotea.online/image/Product-Reviews/${imgUrl}`;

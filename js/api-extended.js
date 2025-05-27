@@ -254,9 +254,29 @@ async function getProductReviews(productId) {
         // 记录原始响应信息
         console.log('API响应状态:', response.status, response.statusText);
         
+        // 检查响应状态，如果不是200 OK，直接返回标准格式的空数据
+        if (!response.ok) {
+            console.warn(`API返回非成功状态码: ${response.status}`);
+            return {
+                reviews: [],
+                total: 0,
+                error: `API返回状态码 ${response.status}`
+            };
+        }
+        
         // 获取响应文本并尝试解析
         const responseText = await response.text();
         console.log('API响应原始文本:', responseText);
+        
+        // 如果响应文本为空或者是"Not Found"等错误信息，返回标准格式的空数据
+        if (!responseText || responseText.trim() === 'Not Found' || responseText.includes('error')) {
+            console.warn('API返回的响应文本无效:', responseText);
+            return {
+                reviews: [],
+                total: 0,
+                error: 'API返回的响应文本无效'
+            };
+        }
         
         let data;
         try {
