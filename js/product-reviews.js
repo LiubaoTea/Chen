@@ -231,8 +231,13 @@ function updateReviewsList(reviews) {
                         // 如果不是完整URL，添加R2存储域名前缀
                         console.log('原始图片URL:', imgUrl);
                         
+                        // 检查是否是以订单号开头的图片命名格式（如LB202505116968_review_1748255231266_ld5ckm.jpg）
+                        if (imgUrl.match(/^LB[0-9]+_review_/)) {
+                            // 符合命名规则，直接添加完整路径
+                            imgUrl = `https://r2liubaotea.liubaotea.online/image/Product-Reviews/${imgUrl}`;
+                        }
                         // 清理路径中可能的重复部分
-                        if (imgUrl.includes('image/') && imgUrl.includes('Product-Reviews/')) {
+                        else if (imgUrl.includes('image/') && imgUrl.includes('Product-Reviews/')) {
                             // 已经包含完整路径，只需添加域名
                             imgUrl = `https://r2liubaotea.liubaotea.online/${imgUrl}`;
                         } else if (imgUrl.includes('Product-Reviews/')) {
@@ -416,9 +421,8 @@ function updateReviewsSummary(totalReviews, ratingDistribution) {
         const countElement = ratingBars[i].querySelector('.rating-count');
         
         if (progressBar) {
-            // 设置最小宽度，确保即使是0%也能看到一点进度条
-            // 使用3%作为最小宽度，确保视觉上可见
-            const displayWidth = `${Math.max(percent, 3)}%`;
+            // 设置实际百分比宽度
+            const displayWidth = `${percent}%`;
             progressBar.style.width = displayWidth;
             console.log(`设置${rating}星评分条宽度:`, displayWidth);
             

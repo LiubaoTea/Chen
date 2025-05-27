@@ -3682,7 +3682,7 @@ const handleProductReviews = async (request, env) => {
     }
 
     // 获取商品评价列表
-    if (path.match(/\/api\/products\/\d+\/reviews$/) && request.method === 'GET') {
+    if ((path.match(/\/api\/products\/\d+\/reviews$/) || path.match(/\/api\/products\/[^/]+\/reviews$/)) && request.method === 'GET') {
         try {
             const productId = path.split('/')[3];
             console.log('获取商品评价，商品ID:', productId);

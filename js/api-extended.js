@@ -264,11 +264,12 @@ async function getProductReviews(productId) {
             console.log('API响应解析后数据:', data);
         } catch (parseError) {
             console.error('API响应解析失败:', parseError);
-            throw new Error('API返回的数据格式无效');
-        }
-        
-        if (!response.ok) {
-            throw new Error(data.error || '获取评价列表失败');
+            // 解析失败时返回标准格式的空数据
+            return {
+                reviews: [],
+                total: 0,
+                error: 'API返回的数据格式无效'
+            };
         }
 
         // 检查数据结构
@@ -288,7 +289,12 @@ async function getProductReviews(productId) {
         };
     } catch (error) {
         console.error('获取评价列表错误:', error);
-        throw error;
+        // 捕获到异常时返回标准格式的空数据，而不是抛出异常
+        return {
+            reviews: [],
+            total: 0,
+            error: error.message || '获取评价列表失败'
+        };
     }
 }
 
