@@ -611,6 +611,14 @@ function getImageUrl(image) {
         return image;
     }
     
+    // 处理通配符模式的图片名称
+    if (image.includes('*')) {
+        // 将通配符替换为一个合理的随机字符串
+        // 在实际环境中，这应该由后端提供确切的文件名
+        const randomStr = Math.random().toString(36).substring(2, 8);
+        image = image.replace('*', randomStr);
+    }
+    
     // 如果是相对路径，拼接基础路径
     return `${config.imageBasePath}${image}`;
 }
