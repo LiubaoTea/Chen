@@ -166,12 +166,16 @@
     margin-right: 10px;
     overflow: hidden;
     border: 1px solid #e0e0e0; /* 添加边框 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .reviewer-avatar img {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    border-radius: 50%; /* 确保图片也是圆形的 */
 }
 
 .reviewer-name {
