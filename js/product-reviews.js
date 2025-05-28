@@ -243,74 +243,74 @@ function applyFilter(filter) {
  * 渲染评价列表
  */
 function renderReviewsList() {
-    const reviewsListEl = document.querySelector('.reviews-list');
-    if (!reviewsListEl) return;
+    const reviewsContainer = document.querySelector('.reviews-list');
+    reviewsContainer.innerHTML = '';
     
-    // 清空现有内容
-    reviewsListEl.innerHTML = '';
-    
-    // 如果没有评价
-    if (state.filteredReviews.length === 0) {
-        reviewsListEl.innerHTML = `
-            <div class="no-reviews">
-                <p>暂无${state.currentFilter === 'all' ? '' : '符合条件的'}评价</p>
-            </div>
-        `;
-        return;
-    }
-    
-    // 计算当前页的评价
+    // 获取当前页的评价数据
     const startIndex = (state.currentPage - 1) * config.pageSize;
     const endIndex = Math.min(startIndex + config.pageSize, state.filteredReviews.length);
     const currentPageReviews = state.filteredReviews.slice(startIndex, endIndex);
     
-    // 创建评价列表HTML
-    const reviewsHTML = currentPageReviews.map(review => {
-        // 格式化日期
+    if (currentPageReviews.length === 0) {
+        showNoReviews();
+        return;
+    }
+    
+    // 渲染每条评价
+    currentPageReviews.forEach(review => {
+        const reviewElement = document.createElement('div');
+        reviewElement.className = 'review-item';
+        
+        // 用户头像处理
+        const avatarUrl = review.avatar_url || config.defaultAvatar;
+        
+        // 评价日期格式化
         const reviewDate = formatDate(review.created_at);
         
-        // 处理评价图片
-        const imagesHTML = review.images && review.images.length > 0 
-            ? `
-                <div class="review-images">
-                    ${review.images.map((image, index) => `
-                        <div class="review-image" data-index="${index}">
-                            <img src="${getImageUrl(image)}" alt="评价图片" loading="lazy">
-                        </div>
-                    `).join('')}
-                </div>
-            ` 
-            : '';
+        // 评价星级HTML
+        const starsHtml = generateStarsHTML(review.rating);
         
-        // 创建评价项HTML
-        return `
-            <div class="review-item" data-review-id="${review.review_id}">
-                <div class="review-header">
-                    <div class="reviewer-info">
-                        <div class="reviewer-avatar">
-                            <img src="${review.avatar_url || config.defaultAvatar}" alt="用户头像" loading="lazy">
-                        </div>
-                        <div>
-                            <div class="reviewer-name">${review.username || '匿名用户'}</div>
-                            <div class="review-date">${reviewDate}</div>
-                        </div>
+        // 评价图片HTML
+        let imagesHtml = '';
+        if (review.images && review.images.length > 0) {
+            imagesHtml = '<div class="review-images">';
+            review.images.forEach(image => {
+                const imageUrl = getImageUrl(image);
+                imagesHtml += `
+                    <div class="review-image">
+                        <img src="${imageUrl}" alt="评价图片" loading="lazy">
+                    </div>
+                `;
+            });
+            imagesHtml += '</div>';
+        }
+        
+        // 构建评价HTML
+        reviewElement.innerHTML = `
+            <div class="review-header">
+                <div class="reviewer-info">
+                    <div class="reviewer-avatar">
+                        <img src="${avatarUrl}" alt="用户头像" loading="lazy">
+                    </div>
+                    <div>
+                        <div class="reviewer-name">${review.username || '匿名用户'}</div>
+                        <div class="review-date">${reviewDate}</div>
                     </div>
                 </div>
-                <div class="review-rating">
-                    ${generateStarsHTML(review.rating)}
-                    <span class="rating-text">${getRatingText(review.rating)}</span>
-                </div>
-                <div class="review-content">${review.review_content || ''}</div>
-                ${imagesHTML}
             </div>
+            <div class="review-rating">${starsHtml}</div>
+            <div class="review-content">${review.review_content || ''}</div>
+            ${imagesHtml}
         `;
-    }).join('');
-    
-    // 更新DOM
-    reviewsListEl.innerHTML = reviewsHTML;
+        
+        reviewsContainer.appendChild(reviewElement);
+    });
     
     // 添加图片点击事件
     addImageClickHandlers();
+    
+    // 渲染分页
+    renderPagination();
 }
 
 /**
@@ -451,47 +451,53 @@ function scrollToReviews() {
  * 添加图片点击事件处理
  */
 function addImageClickHandlers() {
-    const reviewImages = document.querySelectorAll('.review-image');
-    reviewImages.forEach(imageContainer => {
-        imageContainer.addEventListener('click', () => {
-            const reviewItem = imageContainer.closest('.review-item');
-            const reviewId = reviewItem.dataset.reviewId;
-            const imageIndex = parseInt(imageContainer.dataset.index);
+    const reviewImages = document.querySelectorAll('.review-image img');
+    
+    // 为每个图片添加点击事件
+    reviewImages.forEach((img, index) => {
+        img.addEventListener('click', function() {
+            // 获取当前点击的图片URL
+            const imageUrl = this.src;
             
-            // 查找对应的评价
-            const review = state.filteredReviews.find(r => r.review_id == reviewId);
-            if (review && review.images && review.images.length > 0) {
-                openImageModal(review.images, imageIndex);
-            }
+            // 获取当前评价中的所有图片
+            const reviewItem = this.closest('.review-item');
+            const allImages = Array.from(reviewItem.querySelectorAll('.review-image img'));
+            
+            // 打开模态框并显示图片
+            openImageModal(imageUrl, index, allImages);
         });
     });
 }
 
 /**
  * 打开图片模态框
- * @param {Array} images - 图片数组
+ * @param {string} imageUrl - 当前点击的图片URL
  * @param {number} index - 当前图片索引
+ * @param {Array} allImages - 当前评价中的所有图片元素
  */
-function openImageModal(images, index) {
+function openImageModal(imageUrl, index, allImages) {
     const modal = document.getElementById('reviewImageModal');
     const modalImage = document.getElementById('modalImage');
     
     if (!modal || !modalImage) return;
     
+    // 获取所有图片的URL
+    const imageUrls = allImages.map(img => img.src);
+    
     // 设置当前图片数据
     modal.dataset.currentIndex = index;
-    modal.dataset.totalImages = images.length;
-    modal.dataset.images = JSON.stringify(images);
+    modal.dataset.totalImages = imageUrls.length;
+    modal.dataset.images = JSON.stringify(imageUrls);
     
     // 显示当前图片
-    modalImage.src = getImageUrl(images[index]);
+    modalImage.src = imageUrl;
     
     // 显示模态框
     modal.style.display = 'block';
     document.body.style.overflow = 'hidden'; // 防止背景滚动
     
     // 更新导航按钮状态
-    updateModalNavigation(index, images.length);
+    updateModalNavigation(index, imageUrls.length);
 }
 
 /**
@@ -520,7 +526,7 @@ function showPreviousImage() {
     if (currentIndex > 0) {
         const newIndex = currentIndex - 1;
         modal.dataset.currentIndex = newIndex;
-        modalImage.src = getImageUrl(images[newIndex]);
+        modalImage.src = images[newIndex];
         
         // 更新导航按钮状态
         updateModalNavigation(newIndex, images.length);
@@ -542,7 +548,7 @@ function showNextImage() {
     if (currentIndex < images.length - 1) {
         const newIndex = currentIndex + 1;
         modal.dataset.currentIndex = newIndex;
-        modalImage.src = getImageUrl(images[newIndex]);
+        modalImage.src = images[newIndex];
         
         // 更新导航按钮状态
         updateModalNavigation(newIndex, images.length);
@@ -602,25 +608,47 @@ function getRatingText(rating) {
 
 /**
  * 获取图片URL
- * @param {string} image - 图片路径或完整URL
- * @returns {string} 完整图片URL
+ * @param {string} imagePath - 图片路径
  */
-function getImageUrl(image) {
-    // 如果已经是完整URL，直接返回
-    if (image.startsWith('http://') || image.startsWith('https://')) {
-        return image;
+function getImageUrl(imagePath) {
+    // 检查是否已经是完整URL
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+        return imagePath;
     }
     
-    // 处理通配符模式的图片名称
-    if (image.includes('*')) {
-        // 将通配符替换为一个合理的随机字符串
-        // 在实际环境中，这应该由后端提供确切的文件名
-        const randomStr = Math.random().toString(36).substring(2, 8);
-        image = image.replace('*', randomStr);
+    // 处理评论图片路径
+    // 如果图片名称包含通配符*，则保留原样，前端会处理
+    if (imagePath.includes('*')) {
+        // 直接使用配置中的R2图片基础路径
+        return `${config.imageBasePath}${imagePath}`;
     }
     
-    // 如果是相对路径，拼接基础路径
-    return `${config.imageBasePath}${image}`;
+    // 处理订单号开头的图片名称格式 (LB202505116968_review_1748255231266_ld5ckm.jpg)
+    if (imagePath.startsWith('LB') || imagePath.includes('_review_')) {
+        return `${config.imageBasePath}${imagePath}`;
+    }
+    
+    // 处理旧格式的图片名称 (review_7_1748255247.jpg)
+    // 尝试从旧格式中提取review_id和created_at
+    const oldFormatMatch = imagePath.match(/review_(\d+)_(\d+)\.jpg/);
+    if (oldFormatMatch) {
+        const reviewId = oldFormatMatch[1];
+        const createdAt = oldFormatMatch[2];
+        
+        // 查找当前评论列表中匹配的评论
+        const matchingReview = state.reviews.find(r => 
+            r.review_id.toString() === reviewId && 
+            r.created_at.toString() === createdAt
+        );
+        
+        // 如果找到匹配的评论且有订单号，构建新的图片路径
+        if (matchingReview && matchingReview.order_number) {
+            return `${config.imageBasePath}${matchingReview.order_number}_review_${createdAt}_*.jpg`;
+        }
+    }
+    
+    // 默认返回完整路径
+    return `${config.imageBasePath}${imagePath}`;
 }
 
 /**

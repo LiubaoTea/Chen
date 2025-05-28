@@ -165,6 +165,7 @@
     background-color: #f5f5f5;
     margin-right: 10px;
     overflow: hidden;
+    border: 1px solid #e0e0e0; /* 添加边框 */
 }
 
 .reviewer-avatar img {
