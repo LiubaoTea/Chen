@@ -466,22 +466,8 @@ function addImageClickHandlers() {
             // 获取当前图片在评价中的索引
             const currentIndex = allImages.findIndex(image => image.src === imageUrl);
             
-            // 确保图片已经加载完成
-            if (this.complete && this.naturalWidth > 0) {
-                // 打开模态框并显示图片
-                openImageModal(imageUrl, currentIndex, allImages);
-            } else {
-                // 如果图片未加载完成，等待加载完成后再打开模态框
-                this.onload = () => {
-                    openImageModal(imageUrl, currentIndex, allImages);
-                };
-                
-                // 如果图片加载失败，显示错误信息
-                this.onerror = () => {
-                    console.error('图片加载失败:', imageUrl);
-                    alert('图片加载失败，请稍后再试');
-                };
-            }
+            // 打开模态框并显示图片
+            openImageModal(imageUrl, currentIndex, allImages);
         });
     });
 }
@@ -633,14 +619,6 @@ function getImageUrl(imagePath) {
         return imagePath;
     }
     
-    // 处理包含通配符*的图片名称格式，这通常是后端API返回的格式
-    // 例如：LB202505116968_review_1748255247_*.jpg
-    if (imagePath.includes('*')) {
-        // 直接使用R2基础路径，保留通配符格式
-        // 在R2存储中，通配符可以匹配到实际的图片文件
-        return `${config.imageBasePath}${imagePath}`;
-    }
-    
     // 处理旧格式的图片名称 (review_7_1748255247.jpg)
     // 尝试从旧格式中提取review_id和created_at
     const oldFormatMatch = imagePath.match(/review_(\d+)_(\d+)\.jpg/);
@@ -656,17 +634,21 @@ function getImageUrl(imagePath) {
         
         // 如果找到匹配的评论且有订单号，构建新的图片路径
         if (matchingReview && matchingReview.order_number) {
-            // 使用订单号构建图片路径，添加通配符匹配随机字符串部分
             return `${config.imageBasePath}${matchingReview.order_number}_review_${createdAt}_*.jpg`;
         }
         
-        // 如果没有找到匹配的评论或没有订单号，尝试使用LB前缀的通配符格式
-        // 这样可以在R2存储中匹配到以LB开头的订单号相关图片
+        // 如果没有找到匹配的评论或没有订单号，直接使用新的命名格式
+        // 这里假设所有旧格式的图片都已经按照新格式重命名并上传到R2
         return `${config.imageBasePath}LB*_review_${createdAt}_*.jpg`;
     }
     
     // 处理订单号开头的图片名称格式 (LB202505116968_review_1748255231266_ld5ckm.jpg)
     if (imagePath.startsWith('LB') || imagePath.includes('_review_')) {
+        return `${config.imageBasePath}${imagePath}`;
+    }
+    
+    // 如果图片名称包含通配符*，则保留原样
+    if (imagePath.includes('*')) {
         return `${config.imageBasePath}${imagePath}`;
     }
     

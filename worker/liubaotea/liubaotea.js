@@ -3719,66 +3719,20 @@ const handleProductReviews = async (request, env) => {
                     review.images = [];
                     
                     if (orderItem && orderItem.order_number) {
-                        // 构建基于订单号的图片名称前缀
-                        // 格式：{orderNumber}_review_{timestamp}
-                        const imagePrefix = `image/Product-Reviews/${orderItem.order_number}_review_${timestamp}`;
+                        // 构建基于订单号的图片名称模式
+                        // 格式：{orderNumber}_review_{timestamp}_{randomStr}.jpg
+                        // 由于我们无法知道随机字符串，使用通配符模式
+                        const imagePattern = `${orderItem.order_number}_review_${timestamp}`;
                         
-                        try {
-                            // 使用R2的list方法查找匹配前缀的图片
-                            const listed = await env.BUCKET.list({
-                                prefix: imagePrefix,
-                                limit: 10, // 限制返回数量
-                            });
-                            
-                            if (listed.objects && listed.objects.length > 0) {
-                                // 找到了匹配的图片，使用实际的图片名称
-                                review.images = listed.objects.map(obj => {
-                                    // 从完整路径中提取文件名
-                                    const fileName = obj.key.split('/').pop();
-                                    return fileName;
-                                });
-                                console.log('为评价ID:', reviewId, '找到实际图片:', review.images);
-                            } else {
-                                // 没有找到匹配的图片，使用通配符格式
-                                review.images = [`${orderItem.order_number}_review_${timestamp}_*.jpg`];
-                                console.log('为评价ID:', reviewId, '未找到实际图片，使用通配符格式:', review.images[0]);
-                            }
-                        } catch (listError) {
-                            console.error('R2列表查询失败:', listError);
-                            // 查询失败时使用通配符格式
-                            review.images = [`${orderItem.order_number}_review_${timestamp}_*.jpg`];
-                            console.log('为评价ID:', reviewId, 'R2查询失败，使用通配符格式:', review.images[0]);
-                        }
+                        // 这里我们假设图片存在，让前端尝试加载
+                        // 实际生产环境中，应该检查R2存储中是否存在该图片
+                        review.images = [`${imagePattern}_*.jpg`];
+                        console.log('为评价ID:', reviewId, '设置基于订单号的图片模式:', review.images[0]);
                     } else {
-                        // 如果没有找到订单号，尝试使用通用格式查找图片
-                        const genericPrefix = `image/Product-Reviews/review_${review.review_id}_${review.created_at}`;
-                        
-                        try {
-                            // 使用R2的list方法查找匹配前缀的图片
-                            const listed = await env.BUCKET.list({
-                                prefix: genericPrefix,
-                                limit: 10, // 限制返回数量
-                            });
-                            
-                            if (listed.objects && listed.objects.length > 0) {
-                                // 找到了匹配的图片，使用实际的图片名称
-                                review.images = listed.objects.map(obj => {
-                                    // 从完整路径中提取文件名
-                                    const fileName = obj.key.split('/').pop();
-                                    return fileName;
-                                });
-                                console.log('为评价ID:', reviewId, '找到通用格式图片:', review.images);
-                            } else {
-                                // 没有找到匹配的图片，使用通配符格式
-                                review.images = [`review_${review.review_id}_${review.created_at}.jpg`];
-                                console.log('为评价ID:', reviewId, '未找到通用格式图片，使用默认格式:', review.images[0]);
-                            }
-                        } catch (listError) {
-                            console.error('R2列表查询失败:', listError);
-                            // 查询失败时使用默认格式
-                            review.images = [`review_${review.review_id}_${review.created_at}.jpg`];
-                            console.log('为评价ID:', reviewId, 'R2查询失败，使用默认格式:', review.images[0]);
-                        }
+                        // 如果没有找到订单号，使用通用格式
+                        // 格式：review_{review_id}_{timestamp}.jpg
+                        review.images = [`review_${review.review_id}_${review.created_at}.jpg`];
+                        console.log('为评价ID:', reviewId, '设置通用图片名称:', review.images[0]);
                     }
                 } catch (error) {
                     console.error('处理评价图片失败:', error);
