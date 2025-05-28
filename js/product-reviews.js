@@ -13,8 +13,6 @@ const config = {
     ratingTexts: ['很差', '较差', '一般', '不错', '很好'] // 评分对应文本
 };
 
-console.log('商品评价模块配置:', config);
-
 // 当前状态
 let state = {
     productId: null,      // 当前商品ID
@@ -92,26 +90,16 @@ function initEventListeners() {
  * 加载商品评价数据
  */
 async function loadReviews() {
-    console.log('开始加载评价数据，商品ID:', state.productId);
-    
     try {
         // 显示加载状态
         showLoading(true);
         
         // 调用API获取评价数据
         const response = await getProductReviews(state.productId);
-        console.log('API返回的评价数据:', response);
         
         if (response && response.reviews) {
             state.reviews = response.reviews;
             state.ratingStats.total = response.total || state.reviews.length;
-            
-            console.log(`成功加载${state.reviews.length}条评价，总评价数:`, state.ratingStats.total);
-            
-            // 检查评价图片
-            state.reviews.forEach((review, index) => {
-                console.log(`评价${index+1}(ID:${review.review_id})的图片:`, review.images);
-            });
             
             // 计算评分统计
             calculateRatingStats();
@@ -256,11 +244,6 @@ function applyFilter(filter) {
  */
 function renderReviewsList() {
     const reviewsContainer = document.querySelector('.reviews-list');
-    if (!reviewsContainer) {
-        console.error('找不到评价列表容器元素');
-        return;
-    }
-    
     reviewsContainer.innerHTML = '';
     
     // 获取当前页的评价数据
@@ -268,24 +251,18 @@ function renderReviewsList() {
     const endIndex = Math.min(startIndex + config.pageSize, state.filteredReviews.length);
     const currentPageReviews = state.filteredReviews.slice(startIndex, endIndex);
     
-    console.log('开始渲染评价列表，评价数量:', currentPageReviews.length);
-    
     if (currentPageReviews.length === 0) {
         showNoReviews();
         return;
     }
     
     // 渲染每条评价
-    currentPageReviews.forEach((review, index) => {
-        console.log(`渲染第${index+1}条评价:`, review.review_id);
-        
+    currentPageReviews.forEach(review => {
         const reviewElement = document.createElement('div');
         reviewElement.className = 'review-item';
-        reviewElement.dataset.reviewId = review.review_id;
         
         // 用户头像处理
         const avatarUrl = review.avatar_url || config.defaultAvatar;
-        console.log(`评价${review.review_id}的头像URL:`, avatarUrl);
         
         // 评价日期格式化
         const reviewDate = formatDate(review.created_at);
@@ -296,22 +273,16 @@ function renderReviewsList() {
         // 评价图片HTML
         let imagesHtml = '';
         if (review.images && review.images.length > 0) {
-            console.log(`评价${review.review_id}有${review.images.length}张图片:`, review.images);
-            
             imagesHtml = '<div class="review-images">';
-            review.images.forEach((image, imgIndex) => {
+            review.images.forEach(image => {
                 const imageUrl = getImageUrl(image);
-                console.log(`评价${review.review_id}的图片${imgIndex+1}:`, image, '→', imageUrl);
-                
                 imagesHtml += `
                     <div class="review-image">
-                        <img src="${imageUrl}" alt="评价图片${imgIndex+1}" loading="lazy" onerror="this.src='./assets/images/image-not-found.png';console.error('图片加载失败:${imageUrl}');">
+                        <img src="${imageUrl}" alt="评价图片" loading="lazy">
                     </div>
                 `;
             });
             imagesHtml += '</div>';
-        } else {
-            console.log(`评价${review.review_id}没有图片`);
         }
         
         // 构建评价HTML
@@ -319,7 +290,7 @@ function renderReviewsList() {
             <div class="review-header">
                 <div class="reviewer-info">
                     <div class="reviewer-avatar">
-                        <img src="${avatarUrl}" alt="用户头像" loading="lazy" onerror="this.src='${config.defaultAvatar}';">
+                        <img src="${avatarUrl}" alt="用户头像" loading="lazy">
                     </div>
                     <div>
                         <div class="reviewer-name">${review.username || '匿名用户'}</div>
@@ -335,7 +306,6 @@ function renderReviewsList() {
         reviewsContainer.appendChild(reviewElement);
     });
     
-    console.log('评价列表渲染完成，添加图片点击事件');
     // 添加图片点击事件
     addImageClickHandlers();
     
@@ -482,26 +452,36 @@ function scrollToReviews() {
  */
 function addImageClickHandlers() {
     const reviewImages = document.querySelectorAll('.review-image img');
-    console.log('找到评论图片元素数量:', reviewImages.length);
     
     // 为每个图片添加点击事件
     reviewImages.forEach((img, index) => {
         img.addEventListener('click', function() {
             // 获取当前点击的图片URL
             const imageUrl = this.src;
-            console.log('点击的图片URL:', imageUrl);
             
             // 获取当前评价中的所有图片
             const reviewItem = this.closest('.review-item');
             const allImages = Array.from(reviewItem.querySelectorAll('.review-image img'));
-            console.log('当前评价中的图片数量:', allImages.length);
             
             // 获取当前图片在评价中的索引
             const currentIndex = allImages.findIndex(image => image.src === imageUrl);
-            console.log('当前图片索引:', currentIndex);
             
-            // 打开模态框并显示图片
-            openImageModal(imageUrl, currentIndex, allImages);
+            // 确保图片已经加载完成
+            if (this.complete && this.naturalWidth > 0) {
+                // 打开模态框并显示图片
+                openImageModal(imageUrl, currentIndex, allImages);
+            } else {
+                // 如果图片未加载完成，等待加载完成后再打开模态框
+                this.onload = () => {
+                    openImageModal(imageUrl, currentIndex, allImages);
+                };
+                
+                // 如果图片加载失败，显示错误信息
+                this.onerror = () => {
+                    console.error('图片加载失败:', imageUrl);
+                    alert('图片加载失败，请稍后再试');
+                };
+            }
         });
     });
 }
@@ -516,16 +496,10 @@ function openImageModal(imageUrl, index, allImages) {
     const modal = document.getElementById('reviewImageModal');
     const modalImage = document.getElementById('modalImage');
     
-    if (!modal || !modalImage) {
-        console.error('模态框或图片元素不存在');
-        return;
-    }
-    
-    console.log('打开模态框，显示图片:', imageUrl);
+    if (!modal || !modalImage) return;
     
     // 获取所有图片的URL
     const imageUrls = allImages.map(img => img.src);
-    console.log('所有图片URL:', imageUrls);
     
     // 设置当前图片数据
     modal.dataset.currentIndex = index;
@@ -534,10 +508,6 @@ function openImageModal(imageUrl, index, allImages) {
     
     // 显示当前图片
     modalImage.src = imageUrl;
-    modalImage.onerror = function() {
-        console.error('图片加载失败:', imageUrl);
-        this.src = './assets/images/image-not-found.png'; // 设置一个默认的错误图片
-    };
     
     // 显示模态框
     modal.style.display = 'block';
@@ -563,37 +533,20 @@ function closeImageModal() {
  */
 function showPreviousImage() {
     const modal = document.getElementById('reviewImageModal');
-    if (!modal) {
-        console.error('找不到模态框元素');
-        return;
-    }
+    const modalImage = document.getElementById('modalImage');
+    
+    if (!modal || !modalImage) return;
     
     const currentIndex = parseInt(modal.dataset.currentIndex);
     const images = JSON.parse(modal.dataset.images);
     
-    console.log('显示上一张图片，当前索引:', currentIndex, '总图片数:', images.length);
-    
     if (currentIndex > 0) {
         const newIndex = currentIndex - 1;
-        const imageUrl = images[newIndex];
-        
-        console.log('切换到上一张图片，新索引:', newIndex, '图片URL:', imageUrl);
-        
-        // 更新图片
-        const modalImage = document.getElementById('modalImage');
-        modalImage.src = imageUrl;
-        modalImage.onerror = function() {
-            console.error('模态框图片加载失败:', imageUrl);
-            this.src = './assets/images/image-not-found.png';
-        };
-        
-        // 更新索引
         modal.dataset.currentIndex = newIndex;
+        modalImage.src = images[newIndex];
         
         // 更新导航按钮状态
         updateModalNavigation(newIndex, images.length);
-    } else {
-        console.log('已经是第一张图片');
     }
 }
 
@@ -602,37 +555,20 @@ function showPreviousImage() {
  */
 function showNextImage() {
     const modal = document.getElementById('reviewImageModal');
-    if (!modal) {
-        console.error('找不到模态框元素');
-        return;
-    }
+    const modalImage = document.getElementById('modalImage');
+    
+    if (!modal || !modalImage) return;
     
     const currentIndex = parseInt(modal.dataset.currentIndex);
     const images = JSON.parse(modal.dataset.images);
     
-    console.log('显示下一张图片，当前索引:', currentIndex, '总图片数:', images.length);
-    
     if (currentIndex < images.length - 1) {
         const newIndex = currentIndex + 1;
-        const imageUrl = images[newIndex];
-        
-        console.log('切换到下一张图片，新索引:', newIndex, '图片URL:', imageUrl);
-        
-        // 更新图片
-        const modalImage = document.getElementById('modalImage');
-        modalImage.src = imageUrl;
-        modalImage.onerror = function() {
-            console.error('模态框图片加载失败:', imageUrl);
-            this.src = './assets/images/image-not-found.png';
-        };
-        
-        // 更新索引
         modal.dataset.currentIndex = newIndex;
+        modalImage.src = images[newIndex];
         
         // 更新导航按钮状态
         updateModalNavigation(newIndex, images.length);
-    } else {
-        console.log('已经是最后一张图片');
     }
 }
 
@@ -662,26 +598,16 @@ function updateModalNavigation(currentIndex, totalImages) {
  * @returns {string} 星级HTML
  */
 function generateStarsHTML(rating) {
-    console.log('生成星星HTML，评分:', rating);
-    
     let starsHTML = '';
-    const fullStars = Math.floor(rating);
-    const halfStar = rating % 1 >= 0.5;
     
-    // 添加实心星星
-    for (let i = 0; i < fullStars; i++) {
-        starsHTML += '<i class="fas fa-star" style="color: #ffc107;"></i>';
-    }
-    
-    // 添加半星（如果有）
-    if (halfStar) {
-        starsHTML += '<i class="fas fa-star-half-alt" style="color: #ffc107;"></i>';
-    }
-    
-    // 添加空心星星
-    const emptyStars = 5 - fullStars - (halfStar ? 1 : 0);
-    for (let i = 0; i < emptyStars; i++) {
-        starsHTML += '<i class="far fa-star" style="color: #e0e0e0;"></i>';
+    for (let i = 1; i <= 5; i++) {
+        if (i <= rating) {
+            starsHTML += '<i class="fas fa-star"></i>'; // 实心星
+        } else if (i - 0.5 <= rating) {
+            starsHTML += '<i class="fas fa-star-half-alt"></i>'; // 半星
+        } else {
+            starsHTML += '<i class="far fa-star"></i>'; // 空心星
+        }
     }
     
     return starsHTML;
@@ -700,64 +626,52 @@ function getRatingText(rating) {
 /**
  * 获取图片URL
  * @param {string} imagePath - 图片路径
- * @returns {string} 完整的图片URL
  */
 function getImageUrl(imagePath) {
-    console.log('处理图片名称:', imagePath);
-    
     // 检查是否已经是完整URL
     if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-        console.log('已是完整URL，直接返回:', imagePath);
         return imagePath;
     }
     
-    // 处理API返回的通用格式图片名称 (review_123_timestamp.jpg)
-    // 这种格式是后端在找不到订单号时使用的
-    if (imagePath.startsWith('review_')) {
-        // 尝试从图片名称中提取评论ID和时间戳
-        const match = imagePath.match(/review_(\d+)_(\d+)\.\w+$/);
-        if (match) {
-            const reviewId = match[1];
-            const createdAt = match[2];
-            
-            // 构建R2存储中的实际图片路径
-            // 使用通配符匹配可能的订单号前缀
-            // 格式：LB*_review_时间戳_*.jpg
-            const newImagePath = `${config.imageBasePath}LB*_review_${createdAt}_*.jpg`;
-            console.log('转换API返回的通用格式图片名称:', imagePath, '→', newImagePath);
-            return newImagePath;
-        }
-    }
-    
-    // 处理API返回的基于订单号的图片名称模式 (LB202505116968_review_1748255231266_*.jpg)
-    if (imagePath.startsWith('LB') || (imagePath.includes('_review_') && !imagePath.startsWith('review_'))) {
-        // 如果已经包含完整路径，直接返回
-        if (imagePath.includes(config.imageBasePath)) {
-            return imagePath;
-        }
-        
-        const fullPath = `${config.imageBasePath}${imagePath}`;
-        console.log('处理基于订单号的图片名称:', fullPath);
-        return fullPath;
-    }
-    
-    // 处理包含通配符的图片路径
+    // 处理包含通配符*的图片名称格式，这通常是后端API返回的格式
+    // 例如：LB202505116968_review_1748255247_*.jpg
     if (imagePath.includes('*')) {
-        // 如果已经包含完整路径，直接返回
-        if (imagePath.includes(config.imageBasePath)) {
-            return imagePath;
-        }
-        
-        const fullPath = `${config.imageBasePath}${imagePath}`;
-        console.log('处理包含通配符的图片:', fullPath);
-        return fullPath;
+        // 直接使用R2基础路径，保留通配符格式
+        // 在R2存储中，通配符可以匹配到实际的图片文件
+        return `${config.imageBasePath}${imagePath}`;
     }
     
-    // 默认情况：尝试构建一个可能的路径
-    // 如果是简单的文件名，假设它可能是R2中的图片
-    const fullPath = `${config.imageBasePath}${imagePath}`;
-    console.log('使用默认路径:', fullPath);
-    return fullPath;
+    // 处理旧格式的图片名称 (review_7_1748255247.jpg)
+    // 尝试从旧格式中提取review_id和created_at
+    const oldFormatMatch = imagePath.match(/review_(\d+)_(\d+)\.jpg/);
+    if (oldFormatMatch) {
+        const reviewId = oldFormatMatch[1];
+        const createdAt = oldFormatMatch[2];
+        
+        // 查找当前评论列表中匹配的评论
+        const matchingReview = state.reviews.find(r => 
+            r.review_id.toString() === reviewId && 
+            r.created_at.toString() === createdAt
+        );
+        
+        // 如果找到匹配的评论且有订单号，构建新的图片路径
+        if (matchingReview && matchingReview.order_number) {
+            // 使用订单号构建图片路径，添加通配符匹配随机字符串部分
+            return `${config.imageBasePath}${matchingReview.order_number}_review_${createdAt}_*.jpg`;
+        }
+        
+        // 如果没有找到匹配的评论或没有订单号，尝试使用LB前缀的通配符格式
+        // 这样可以在R2存储中匹配到以LB开头的订单号相关图片
+        return `${config.imageBasePath}LB*_review_${createdAt}_*.jpg`;
+    }
+    
+    // 处理订单号开头的图片名称格式 (LB202505116968_review_1748255231266_ld5ckm.jpg)
+    if (imagePath.startsWith('LB') || imagePath.includes('_review_')) {
+        return `${config.imageBasePath}${imagePath}`;
+    }
+    
+    // 默认返回完整路径
+    return `${config.imageBasePath}${imagePath}`;
 }
 
 /**
