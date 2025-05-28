@@ -463,8 +463,11 @@ function addImageClickHandlers() {
             const reviewItem = this.closest('.review-item');
             const allImages = Array.from(reviewItem.querySelectorAll('.review-image img'));
             
+            // 获取当前图片在评价中的索引
+            const currentIndex = allImages.findIndex(image => image.src === imageUrl);
+            
             // 打开模态框并显示图片
-            openImageModal(imageUrl, index, allImages);
+            openImageModal(imageUrl, currentIndex, allImages);
         });
     });
 }
@@ -616,18 +619,6 @@ function getImageUrl(imagePath) {
         return imagePath;
     }
     
-    // 处理评论图片路径
-    // 如果图片名称包含通配符*，则保留原样，前端会处理
-    if (imagePath.includes('*')) {
-        // 直接使用配置中的R2图片基础路径
-        return `${config.imageBasePath}${imagePath}`;
-    }
-    
-    // 处理订单号开头的图片名称格式 (LB202505116968_review_1748255231266_ld5ckm.jpg)
-    if (imagePath.startsWith('LB') || imagePath.includes('_review_')) {
-        return `${config.imageBasePath}${imagePath}`;
-    }
-    
     // 处理旧格式的图片名称 (review_7_1748255247.jpg)
     // 尝试从旧格式中提取review_id和created_at
     const oldFormatMatch = imagePath.match(/review_(\d+)_(\d+)\.jpg/);
@@ -645,6 +636,20 @@ function getImageUrl(imagePath) {
         if (matchingReview && matchingReview.order_number) {
             return `${config.imageBasePath}${matchingReview.order_number}_review_${createdAt}_*.jpg`;
         }
+        
+        // 如果没有找到匹配的评论或没有订单号，直接使用新的命名格式
+        // 这里假设所有旧格式的图片都已经按照新格式重命名并上传到R2
+        return `${config.imageBasePath}LB*_review_${createdAt}_*.jpg`;
+    }
+    
+    // 处理订单号开头的图片名称格式 (LB202505116968_review_1748255231266_ld5ckm.jpg)
+    if (imagePath.startsWith('LB') || imagePath.includes('_review_')) {
+        return `${config.imageBasePath}${imagePath}`;
+    }
+    
+    // 如果图片名称包含通配符*，则保留原样
+    if (imagePath.includes('*')) {
+        return `${config.imageBasePath}${imagePath}`;
     }
     
     // 默认返回完整路径
