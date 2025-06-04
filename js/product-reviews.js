@@ -252,129 +252,132 @@ function applyFilter(filter) {
     // 计算总页数
     state.totalPages = Math.ceil(state.filteredReviews.length / config.pageSize);
     
-    /**
-     * 渲染评价列表
-     */
-    function renderReviewsList() {
-        const reviewsListEl = document.querySelector('.reviews-list');
-        if (!reviewsListEl) return;
-        
-        // 清空列表
-        reviewsListEl.innerHTML = '';
-        
-        // 获取当前页的评价
-        const startIndex = (state.currentPage - 1) * config.pageSize;
-        const endIndex = Math.min(startIndex + config.pageSize, state.filteredReviews.length);
-        const currentPageReviews = state.filteredReviews.slice(startIndex, endIndex);
-        
-        // 如果没有评价，显示提示
-        if (currentPageReviews.length === 0) {
-            showNoReviews();
-            return;
-        }
-        
-        // 渲染每条评价
-        currentPageReviews.forEach(review => {
-            // 创建评价项容器
-            const reviewItem = document.createElement('div');
-            reviewItem.className = 'review-item';
-            
-            // 评价头部（用户信息和日期）
-            const reviewHeader = document.createElement('div');
-            reviewHeader.className = 'review-header';
-            
-            // 用户信息（头像和名称）
-            const reviewerInfo = document.createElement('div');
-            reviewerInfo.className = 'reviewer-info';
-            
-            // 用户头像
-            const avatarContainer = document.createElement('div');
-            avatarContainer.className = 'reviewer-avatar';
-            
-            const avatarImg = document.createElement('img');
-            // 使用用户头像或默认头像
-            avatarImg.src = review.avatar_url || config.defaultAvatar;
-            avatarImg.alt = '用户头像';
-            avatarImg.onerror = function() {
-                // 头像加载失败时使用默认头像
-                this.src = config.defaultAvatar;
-                // 防止循环触发错误
-                this.onerror = null;
-            };
-            
-            avatarContainer.appendChild(avatarImg);
-            reviewerInfo.appendChild(avatarContainer);
-            
-            // 用户名称
-            const reviewerName = document.createElement('div');
-            reviewerName.className = 'reviewer-name';
-            reviewerName.textContent = review.username || '匿名用户';
-            reviewerInfo.appendChild(reviewerName);
-            
-            reviewHeader.appendChild(reviewerInfo);
-            
-            // 评价日期
-            const reviewDate = document.createElement('div');
-            reviewDate.className = 'review-date';
-            reviewDate.textContent = formatDate(review.created_at);
-            reviewHeader.appendChild(reviewDate);
-            
-            reviewItem.appendChild(reviewHeader);
-            
-            // 评价星级
-            const reviewRating = document.createElement('div');
-            reviewRating.className = 'review-rating';
-            reviewRating.innerHTML = generateStarsHTML(review.rating);
-            reviewItem.appendChild(reviewRating);
-            
-            // 评价内容
-            const reviewContent = document.createElement('div');
-            reviewContent.className = 'review-content';
-            reviewContent.textContent = review.review_content;
-            reviewItem.appendChild(reviewContent);
-            
-            // 评价图片
-            if (review.images && review.images.length > 0) {
-                const reviewImages = document.createElement('div');
-                reviewImages.className = 'review-images';
-                
-                review.images.forEach(image => {
-                    const imageContainer = document.createElement('div');
-                    imageContainer.className = 'review-image';
-                    
-                    const img = document.createElement('img');
-                    img.src = getImageUrl(image);
-                    img.alt = '评价图片';
-                    img.loading = 'lazy'; // 延迟加载
-                    
-                    // 添加图片加载错误处理
-                    img.onerror = function() {
-                        console.error(`图片加载失败: ${img.src}`);
-                        // 可以在这里设置一个默认的占位图
-                        // this.src = '默认占位图URL';
-                        // 或者隐藏图片容器
-                        imageContainer.style.display = 'none';
-                    };
-                    
-                    imageContainer.appendChild(img);
-                    reviewImages.appendChild(imageContainer);
-                });
-                
-                reviewItem.appendChild(reviewImages);
-            }
-            
-            reviewsListEl.appendChild(reviewItem);
-        });
-        
-        // 渲染分页
-        renderPagination();
-        
-        // 添加图片点击事件
-        addImageClickHandlers();
-    }
+    // 渲染评价列表
+    renderReviewsList();
     
     // 渲染分页
     renderPagination();
+}
+
+/**
+ * 渲染评价列表
+ */
+function renderReviewsList() {
+    const reviewsListEl = document.querySelector('.reviews-list');
+    if (!reviewsListEl) return;
+    
+    // 清空列表
+    reviewsListEl.innerHTML = '';
+    
+    // 获取当前页的评价
+    const startIndex = (state.currentPage - 1) * config.pageSize;
+    const endIndex = Math.min(startIndex + config.pageSize, state.filteredReviews.length);
+    const currentPageReviews = state.filteredReviews.slice(startIndex, endIndex);
+    
+    // 如果没有评价，显示提示
+    if (currentPageReviews.length === 0) {
+        showNoReviews();
+        return;
+    }
+    
+    // 渲染每条评价
+    currentPageReviews.forEach(review => {
+        // 创建评价项容器
+        const reviewItem = document.createElement('div');
+        reviewItem.className = 'review-item';
+        
+        // 评价头部（用户信息和日期）
+        const reviewHeader = document.createElement('div');
+        reviewHeader.className = 'review-header';
+        
+        // 用户信息（头像和名称）
+        const reviewerInfo = document.createElement('div');
+        reviewerInfo.className = 'reviewer-info';
+        
+        // 用户头像
+        const avatarContainer = document.createElement('div');
+        avatarContainer.className = 'reviewer-avatar';
+        
+        const avatarImg = document.createElement('img');
+        // 使用用户头像或默认头像
+        avatarImg.src = review.avatar_url || config.defaultAvatar;
+        avatarImg.alt = '用户头像';
+        avatarImg.onerror = function() {
+            // 头像加载失败时使用默认头像
+            this.src = config.defaultAvatar;
+            // 防止循环触发错误
+            this.onerror = null;
+        };
+        
+        avatarContainer.appendChild(avatarImg);
+        reviewerInfo.appendChild(avatarContainer);
+        
+        // 用户名称
+        const reviewerName = document.createElement('div');
+        reviewerName.className = 'reviewer-name';
+        reviewerName.textContent = review.username || '匿名用户';
+        reviewerInfo.appendChild(reviewerName);
+        
+        reviewHeader.appendChild(reviewerInfo);
+        
+        // 评价日期
+        const reviewDate = document.createElement('div');
+        reviewDate.className = 'review-date';
+        reviewDate.textContent = formatDate(review.created_at);
+        reviewHeader.appendChild(reviewDate);
+        
+        reviewItem.appendChild(reviewHeader);
+        
+        // 评价星级
+        const reviewRating = document.createElement('div');
+        reviewRating.className = 'review-rating';
+        reviewRating.innerHTML = generateStarsHTML(review.rating);
+        reviewItem.appendChild(reviewRating);
+        
+        // 评价内容
+        const reviewContent = document.createElement('div');
+        reviewContent.className = 'review-content';
+        reviewContent.textContent = review.review_content;
+        reviewItem.appendChild(reviewContent);
+        
+        // 评价图片
+        if (review.images && review.images.length > 0) {
+            const reviewImages = document.createElement('div');
+            reviewImages.className = 'review-images';
+            
+            review.images.forEach(image => {
+                const imageContainer = document.createElement('div');
+                imageContainer.className = 'review-image';
+                
+                const img = document.createElement('img');
+                img.src = getImageUrl(image);
+                img.alt = '评价图片';
+                img.loading = 'lazy'; // 延迟加载
+                
+                // 添加图片加载错误处理
+                img.onerror = function() {
+                    console.error(`图片加载失败: ${img.src}`);
+                    // 可以在这里设置一个默认的占位图
+                    // this.src = '默认占位图URL';
+                    // 或者隐藏图片容器
+                    imageContainer.style.display = 'none';
+                };
+                
+                imageContainer.appendChild(img);
+                reviewImages.appendChild(imageContainer);
+            });
+            
+            reviewItem.appendChild(reviewImages);
+        }
+        
+        reviewsListEl.appendChild(reviewItem);
+    });
+    
+    // 渲染分页
+    renderPagination();
+    
+    // 添加图片点击事件
+    addImageClickHandlers();
 }
 
 /**
@@ -733,23 +736,33 @@ function getImageUrl(imagePath) {
         return imagePath;
     }
     
-    // 检查是否是以订单号开头的新格式图片名称（例如：LB202505116968_review_1748255231266_ld5ckm.jpg）
+    // 检查是否是以订单号开头的新格式图片名称前缀（例如：LB202505116968_review_1748255231266）
     if (imagePath.startsWith('LB')) {
-        const fullUrl = `${config.r2ImagePath}${imagePath}`;
-        console.log(`处理订单号开头的图片: ${fullUrl}`);
-        return fullUrl;
+        // 检查是否已经包含文件扩展名
+        if (!imagePath.endsWith('.jpg') && !imagePath.endsWith('.jpeg') && !imagePath.endsWith('.png')) {
+            // 尝试在R2中查找匹配的文件
+            // 添加通配符和扩展名
+            const fullUrl = `${config.imageBasePath}${imagePath}_*.jpg`;
+            console.log(`处理订单号开头的图片前缀: ${fullUrl}`);
+            return fullUrl;
+        } else {
+            // 已经包含扩展名，直接使用
+            const fullUrl = `${config.imageBasePath}${imagePath}`;
+            console.log(`处理订单号开头的完整图片名: ${fullUrl}`);
+            return fullUrl;
+        }
     }
     
-    // 处理旧格式图片名称（例如：review_7_1748255247.jpg）
-    const oldFormatMatch = imagePath.match(/review_(\d+)_(\d+)\.jpg/);
+    // 处理旧格式图片名称前缀（例如：review_7_1748255247）
+    const oldFormatMatch = imagePath.match(/review_(\d+)_(\d+)/);
     if (oldFormatMatch) {
         const reviewId = oldFormatMatch[1];
         const timestamp = oldFormatMatch[2];
         
-        console.log(`检测到旧格式图片: ${imagePath}, reviewId: ${reviewId}, timestamp: ${timestamp}`);
+        console.log(`检测到旧格式图片前缀: ${imagePath}, reviewId: ${reviewId}, timestamp: ${timestamp}`);
         
         // 尝试找到匹配的评论
-        const matchingReview = state.reviews.find(r => r.review_id.toString() === reviewId);
+        const matchingReview = state.reviews.find(r => r.review_id && r.review_id.toString() === reviewId);
         
         if (matchingReview) {
             // 从评论中获取订单号（如果有的话）
@@ -758,7 +771,7 @@ function getImageUrl(imagePath) {
             if (orderId && orderId.startsWith('LB')) {
                 // 构建新格式的图片路径
                 const newImagePath = `${orderId}_review_${timestamp}_${generateRandomString(6)}.jpg`;
-                const fullUrl = `${config.r2ImagePath}${newImagePath}`;
+                const fullUrl = `${config.imageBasePath}${newImagePath}`;
                 console.log(`转换为新格式图片路径: ${fullUrl}`);
                 return fullUrl;
             }
@@ -767,13 +780,21 @@ function getImageUrl(imagePath) {
         // 如果找不到匹配的评论或没有订单号，尝试在R2中查找通配符匹配
         // 例如：*_review_1748255247_*.jpg
         const wildcardPath = `*_review_${timestamp}_*.jpg`;
-        const fullUrl = `${config.r2ImagePath}${wildcardPath}`;
+        const fullUrl = `${config.imageBasePath}${wildcardPath}`;
         console.log(`使用通配符路径: ${fullUrl}`);
         return fullUrl;
     }
     
+    // 检查是否已经包含文件扩展名
+    if (!imagePath.endsWith('.jpg') && !imagePath.endsWith('.jpeg') && !imagePath.endsWith('.png')) {
+        // 添加默认扩展名
+        const fullUrl = `${config.imageBasePath}${imagePath}.jpg`;
+        console.log(`添加默认扩展名: ${fullUrl}`);
+        return fullUrl;
+    }
+    
     // 默认情况下，直接拼接R2路径
-    const fullUrl = `${config.r2ImagePath}${imagePath}`;
+    const fullUrl = `${config.imageBasePath}${imagePath}`;
     console.log(`使用默认路径: ${fullUrl}`);
     return fullUrl;
 }
