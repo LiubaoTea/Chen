@@ -53,37 +53,57 @@ export async function initProductReviews(productId) {
  */
 function initEventListeners() {
     // 筛选按钮点击事件
-    const filterButtons = document.querySelectorAll('.filter-btn');
-    filterButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            const filter = button.dataset.filter;
-            applyFilter(filter);
+    const filterBtns = document.querySelectorAll('.filter-btn');
+    filterBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const filter = this.dataset.filter;
             
-            // 更新激活状态
-            filterButtons.forEach(btn => btn.classList.remove('active'));
-            button.classList.add('active');
+            // 更新活跃状态
+            filterBtns.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            
+            // 应用筛选
+            applyFilter(filter);
         });
     });
     
-    // 模态框关闭按钮
-    const closeModal = document.querySelector('.close-modal');
-    if (closeModal) {
-        closeModal.addEventListener('click', closeImageModal);
+    // 模态框关闭按钮点击事件
+    const closeModalBtn = document.querySelector('.close-modal');
+    if (closeModalBtn) {
+        closeModalBtn.addEventListener('click', closeImageModal);
     }
     
-    // 模态框背景点击关闭
+    // 模态框背景点击事件
     const modalOverlay = document.querySelector('.modal-overlay');
     if (modalOverlay) {
         modalOverlay.addEventListener('click', closeImageModal);
     }
     
-    // 图片导航按钮
+    // 模态框导航按钮点击事件
     const prevBtn = document.querySelector('.prev-btn');
     const nextBtn = document.querySelector('.next-btn');
-    if (prevBtn && nextBtn) {
+    
+    if (prevBtn) {
         prevBtn.addEventListener('click', showPreviousImage);
+    }
+    
+    if (nextBtn) {
         nextBtn.addEventListener('click', showNextImage);
     }
+    
+    // 键盘事件监听（用于模态框导航）
+    document.addEventListener('keydown', function(e) {
+        const modal = document.getElementById('reviewImageModal');
+        if (modal && modal.style.display === 'block') {
+            if (e.key === 'ArrowLeft') {
+                showPreviousImage();
+            } else if (e.key === 'ArrowRight') {
+                showNextImage();
+            } else if (e.key === 'Escape') {
+                closeImageModal();
+            }
+        }
+    });
 }
 
 /**
@@ -210,11 +230,10 @@ function updateStarsDisplay(container, rating) {
  */
 function applyFilter(filter) {
     state.currentFilter = filter;
-    state.currentPage = 1; // 重置页码
     
     // 根据筛选条件过滤评价
     if (filter === 'all') {
-        state.filteredReviews = [...state.reviews];
+        state.filteredReviews = state.reviews;
     } else if (filter === 'has-image') {
         state.filteredReviews = state.reviews.filter(review => 
             review.images && review.images.length > 0
@@ -222,92 +241,137 @@ function applyFilter(filter) {
     } else {
         // 按星级筛选
         const rating = parseInt(filter);
-        if (rating >= 1 && rating <= 5) {
-            state.filteredReviews = state.reviews.filter(review => 
-                review.rating === rating
-            );
-        }
+        state.filteredReviews = state.reviews.filter(review => 
+            review.rating === rating
+        );
     }
     
-    // 更新总页数
+    // 重置页码
+    state.currentPage = 1;
+    
+    // 计算总页数
     state.totalPages = Math.ceil(state.filteredReviews.length / config.pageSize);
     
-    // 渲染评价列表
-    renderReviewsList();
-    
-    // 渲染分页
-    renderPagination();
-}
-
-/**
- * 渲染评价列表
- */
-function renderReviewsList() {
-    const reviewsContainer = document.querySelector('.reviews-list');
-    reviewsContainer.innerHTML = '';
-    
-    // 获取当前页的评价数据
-    const startIndex = (state.currentPage - 1) * config.pageSize;
-    const endIndex = Math.min(startIndex + config.pageSize, state.filteredReviews.length);
-    const currentPageReviews = state.filteredReviews.slice(startIndex, endIndex);
-    
-    if (currentPageReviews.length === 0) {
-        showNoReviews();
-        return;
-    }
-    
-    // 渲染每条评价
-    currentPageReviews.forEach(review => {
-        const reviewElement = document.createElement('div');
-        reviewElement.className = 'review-item';
+    /**
+     * 渲染评价列表
+     */
+    function renderReviewsList() {
+        const reviewsListEl = document.querySelector('.reviews-list');
+        if (!reviewsListEl) return;
         
-        // 用户头像处理
-        const avatarUrl = review.avatar_url || config.defaultAvatar;
+        // 清空列表
+        reviewsListEl.innerHTML = '';
         
-        // 评价日期格式化
-        const reviewDate = formatDate(review.created_at);
+        // 获取当前页的评价
+        const startIndex = (state.currentPage - 1) * config.pageSize;
+        const endIndex = Math.min(startIndex + config.pageSize, state.filteredReviews.length);
+        const currentPageReviews = state.filteredReviews.slice(startIndex, endIndex);
         
-        // 评价星级HTML
-        const starsHtml = generateStarsHTML(review.rating);
-        
-        // 评价图片HTML
-        let imagesHtml = '';
-        if (review.images && review.images.length > 0) {
-            imagesHtml = '<div class="review-images">';
-            review.images.forEach(image => {
-                const imageUrl = getImageUrl(image);
-                imagesHtml += `
-                    <div class="review-image">
-                        <img src="${imageUrl}" alt="评价图片" loading="lazy">
-                    </div>
-                `;
-            });
-            imagesHtml += '</div>';
+        // 如果没有评价，显示提示
+        if (currentPageReviews.length === 0) {
+            showNoReviews();
+            return;
         }
         
-        // 构建评价HTML
-        reviewElement.innerHTML = `
-            <div class="review-header">
-                <div class="reviewer-info">
-                    <div class="reviewer-avatar">
-                        <img src="${avatarUrl}" alt="用户头像" loading="lazy">
-                    </div>
-                    <div>
-                        <div class="reviewer-name">${review.username || '匿名用户'}</div>
-                        <div class="review-date">${reviewDate}</div>
-                    </div>
-                </div>
-            </div>
-            <div class="review-rating">${starsHtml}</div>
-            <div class="review-content">${review.review_content || ''}</div>
-            ${imagesHtml}
-        `;
+        // 渲染每条评价
+        currentPageReviews.forEach(review => {
+            // 创建评价项容器
+            const reviewItem = document.createElement('div');
+            reviewItem.className = 'review-item';
+            
+            // 评价头部（用户信息和日期）
+            const reviewHeader = document.createElement('div');
+            reviewHeader.className = 'review-header';
+            
+            // 用户信息（头像和名称）
+            const reviewerInfo = document.createElement('div');
+            reviewerInfo.className = 'reviewer-info';
+            
+            // 用户头像
+            const avatarContainer = document.createElement('div');
+            avatarContainer.className = 'reviewer-avatar';
+            
+            const avatarImg = document.createElement('img');
+            // 使用用户头像或默认头像
+            avatarImg.src = review.avatar_url || config.defaultAvatar;
+            avatarImg.alt = '用户头像';
+            avatarImg.onerror = function() {
+                // 头像加载失败时使用默认头像
+                this.src = config.defaultAvatar;
+                // 防止循环触发错误
+                this.onerror = null;
+            };
+            
+            avatarContainer.appendChild(avatarImg);
+            reviewerInfo.appendChild(avatarContainer);
+            
+            // 用户名称
+            const reviewerName = document.createElement('div');
+            reviewerName.className = 'reviewer-name';
+            reviewerName.textContent = review.username || '匿名用户';
+            reviewerInfo.appendChild(reviewerName);
+            
+            reviewHeader.appendChild(reviewerInfo);
+            
+            // 评价日期
+            const reviewDate = document.createElement('div');
+            reviewDate.className = 'review-date';
+            reviewDate.textContent = formatDate(review.created_at);
+            reviewHeader.appendChild(reviewDate);
+            
+            reviewItem.appendChild(reviewHeader);
+            
+            // 评价星级
+            const reviewRating = document.createElement('div');
+            reviewRating.className = 'review-rating';
+            reviewRating.innerHTML = generateStarsHTML(review.rating);
+            reviewItem.appendChild(reviewRating);
+            
+            // 评价内容
+            const reviewContent = document.createElement('div');
+            reviewContent.className = 'review-content';
+            reviewContent.textContent = review.review_content;
+            reviewItem.appendChild(reviewContent);
+            
+            // 评价图片
+            if (review.images && review.images.length > 0) {
+                const reviewImages = document.createElement('div');
+                reviewImages.className = 'review-images';
+                
+                review.images.forEach(image => {
+                    const imageContainer = document.createElement('div');
+                    imageContainer.className = 'review-image';
+                    
+                    const img = document.createElement('img');
+                    img.src = getImageUrl(image);
+                    img.alt = '评价图片';
+                    img.loading = 'lazy'; // 延迟加载
+                    
+                    // 添加图片加载错误处理
+                    img.onerror = function() {
+                        console.error(`图片加载失败: ${img.src}`);
+                        // 可以在这里设置一个默认的占位图
+                        // this.src = '默认占位图URL';
+                        // 或者隐藏图片容器
+                        imageContainer.style.display = 'none';
+                    };
+                    
+                    imageContainer.appendChild(img);
+                    reviewImages.appendChild(imageContainer);
+                });
+                
+                reviewItem.appendChild(reviewImages);
+            }
+            
+            reviewsListEl.appendChild(reviewItem);
+        });
         
-        reviewsContainer.appendChild(reviewElement);
-    });
-    
-    // 添加图片点击事件
-    addImageClickHandlers();
+        // 渲染分页
+        renderPagination();
+        
+        // 添加图片点击事件
+        addImageClickHandlers();
+    }
     
     // 渲染分页
     renderPagination();
@@ -448,59 +512,161 @@ function scrollToReviews() {
 }
 
 /**
- * 添加图片点击事件处理
+ * 为评论图片添加点击事件
  */
 function addImageClickHandlers() {
     const reviewImages = document.querySelectorAll('.review-image img');
     
-    // 为每个图片添加点击事件
-    reviewImages.forEach((img, index) => {
+    reviewImages.forEach(img => {
         img.addEventListener('click', function() {
             // 获取当前点击的图片URL
-            const imageUrl = this.src;
+            const currentImageUrl = this.src;
+            console.log(`点击了图片: ${currentImageUrl}`);
             
             // 获取当前评价中的所有图片
             const reviewItem = this.closest('.review-item');
-            const allImages = Array.from(reviewItem.querySelectorAll('.review-image img'));
+            const allImagesInReview = Array.from(reviewItem.querySelectorAll('.review-image img'));
+            const allImageUrls = allImagesInReview.map(img => img.src);
             
             // 获取当前图片在评价中的索引
-            const currentIndex = allImages.findIndex(image => image.src === imageUrl);
+            const currentIndex = allImageUrls.indexOf(currentImageUrl);
             
-            // 打开模态框并显示图片
-            openImageModal(imageUrl, currentIndex, allImages);
+            console.log(`当前评价共有 ${allImageUrls.length} 张图片，当前点击的是第 ${currentIndex + 1} 张`);
+            
+            // 打开图片模态框
+            openImageModal(allImageUrls, currentIndex);
         });
     });
 }
 
 /**
  * 打开图片模态框
- * @param {string} imageUrl - 当前点击的图片URL
- * @param {number} index - 当前图片索引
- * @param {Array} allImages - 当前评价中的所有图片元素
+ * @param {Array} images - 图片URL数组
+ * @param {number} currentIndex - 当前图片索引
  */
-function openImageModal(imageUrl, index, allImages) {
+function openImageModal(images, currentIndex) {
+    // 获取模态框元素
     const modal = document.getElementById('reviewImageModal');
-    const modalImage = document.getElementById('modalImage');
+    const modalImg = document.getElementById('modalImage');
+    const prevBtn = document.querySelector('.prev-btn');
+    const nextBtn = document.querySelector('.next-btn');
     
-    if (!modal || !modalImage) return;
+    if (!modal || !modalImg) {
+        console.error('模态框元素未找到');
+        return;
+    }
     
-    // 获取所有图片的URL
-    const imageUrls = allImages.map(img => img.src);
-    
-    // 设置当前图片数据
-    modal.dataset.currentIndex = index;
-    modal.dataset.totalImages = imageUrls.length;
-    modal.dataset.images = JSON.stringify(imageUrls);
+    // 设置模态框数据
+    modal.dataset.images = JSON.stringify(images);
+    modal.dataset.currentIndex = currentIndex;
     
     // 显示当前图片
-    modalImage.src = imageUrl;
+    const imageUrl = images[currentIndex];
+    console.log(`显示模态框图片: ${imageUrl}`);
+    
+    // 添加图片加载状态处理
+    modalImg.src = '';
+    modalImg.classList.add('loading');
+    
+    // 设置图片源并添加加载事件
+    modalImg.onload = function() {
+        modalImg.classList.remove('loading');
+        console.log(`模态框图片加载成功: ${imageUrl}`);
+    };
+    
+    modalImg.onerror = function() {
+        modalImg.classList.remove('loading');
+        modalImg.classList.add('error');
+        console.error(`模态框图片加载失败: ${imageUrl}`);
+    };
+    
+    modalImg.src = imageUrl;
+    
+    // 更新计数器
+    const modalCounter = document.createElement('div');
+    modalCounter.className = 'modal-counter';
+    modalCounter.textContent = `${currentIndex + 1} / ${images.length}`;
+    
+    // 添加计数器到模态框
+    const modalContent = modal.querySelector('.modal-content');
+    const existingCounter = modalContent.querySelector('.modal-counter');
+    if (existingCounter) {
+        existingCounter.textContent = `${currentIndex + 1} / ${images.length}`;
+    } else {
+        modalContent.appendChild(modalCounter);
+    }
+    
+    // 更新导航按钮状态
+    updateModalNavigation(images, currentIndex);
     
     // 显示模态框
     modal.style.display = 'block';
     document.body.style.overflow = 'hidden'; // 防止背景滚动
+}
+
+/**
+ * 更新模态框导航按钮状态
+ * @param {Array} images - 图片URL数组
+ * @param {number} currentIndex - 当前图片索引
+ */
+function updateModalNavigation(images, currentIndex) {
+    const prevBtn = document.querySelector('.prev-btn');
+    const nextBtn = document.querySelector('.next-btn');
     
-    // 更新导航按钮状态
-    updateModalNavigation(index, imageUrls.length);
+    if (!prevBtn || !nextBtn) {
+        console.error('模态框导航按钮未找到');
+        return;
+    }
+    
+    // 更新上一张按钮状态
+    if (currentIndex <= 0) {
+        prevBtn.classList.add('disabled');
+        prevBtn.disabled = true;
+    } else {
+        prevBtn.classList.remove('disabled');
+        prevBtn.disabled = false;
+    }
+    
+    // 更新下一张按钮状态
+    if (currentIndex >= images.length - 1) {
+        nextBtn.classList.add('disabled');
+        nextBtn.disabled = true;
+    } else {
+        nextBtn.classList.remove('disabled');
+        nextBtn.disabled = false;
+    }
+}
+
+/**
+ * 显示上一张图片
+ */
+function showPreviousImage() {
+    const modal = document.getElementById('reviewImageModal');
+    if (!modal) return;
+    
+    const images = JSON.parse(modal.dataset.images || '[]');
+    let currentIndex = parseInt(modal.dataset.currentIndex || '0');
+    
+    if (currentIndex > 0) {
+        currentIndex--;
+        openImageModal(images, currentIndex);
+    }
+}
+
+/**
+ * 显示下一张图片
+ */
+function showNextImage() {
+    const modal = document.getElementById('reviewImageModal');
+    if (!modal) return;
+    
+    const images = JSON.parse(modal.dataset.images || '[]');
+    let currentIndex = parseInt(modal.dataset.currentIndex || '0');
+    
+    if (currentIndex < images.length - 1) {
+        currentIndex++;
+        openImageModal(images, currentIndex);
+    }
 }
 
 /**
@@ -512,69 +678,16 @@ function closeImageModal() {
     
     modal.style.display = 'none';
     document.body.style.overflow = ''; // 恢复背景滚动
-}
-
-/**
- * 显示上一张图片
- */
-function showPreviousImage() {
-    const modal = document.getElementById('reviewImageModal');
-    const modalImage = document.getElementById('modalImage');
     
-    if (!modal || !modalImage) return;
+    // 清除模态框数据
+    modal.dataset.images = '[]';
+    modal.dataset.currentIndex = '0';
     
-    const currentIndex = parseInt(modal.dataset.currentIndex);
-    const images = JSON.parse(modal.dataset.images);
-    
-    if (currentIndex > 0) {
-        const newIndex = currentIndex - 1;
-        modal.dataset.currentIndex = newIndex;
-        modalImage.src = images[newIndex];
-        
-        // 更新导航按钮状态
-        updateModalNavigation(newIndex, images.length);
-    }
-}
-
-/**
- * 显示下一张图片
- */
-function showNextImage() {
-    const modal = document.getElementById('reviewImageModal');
-    const modalImage = document.getElementById('modalImage');
-    
-    if (!modal || !modalImage) return;
-    
-    const currentIndex = parseInt(modal.dataset.currentIndex);
-    const images = JSON.parse(modal.dataset.images);
-    
-    if (currentIndex < images.length - 1) {
-        const newIndex = currentIndex + 1;
-        modal.dataset.currentIndex = newIndex;
-        modalImage.src = images[newIndex];
-        
-        // 更新导航按钮状态
-        updateModalNavigation(newIndex, images.length);
-    }
-}
-
-/**
- * 更新模态框导航按钮状态
- * @param {number} currentIndex - 当前图片索引
- * @param {number} totalImages - 图片总数
- */
-function updateModalNavigation(currentIndex, totalImages) {
-    const prevBtn = document.querySelector('.prev-btn');
-    const nextBtn = document.querySelector('.next-btn');
-    
-    if (prevBtn) {
-        prevBtn.disabled = currentIndex === 0;
-        prevBtn.style.opacity = currentIndex === 0 ? '0.5' : '1';
-    }
-    
-    if (nextBtn) {
-        nextBtn.disabled = currentIndex === totalImages - 1;
-        nextBtn.style.opacity = currentIndex === totalImages - 1 ? '0.5' : '1';
+    // 清除图片
+    const modalImg = document.getElementById('modalImage');
+    if (modalImg) {
+        modalImg.src = '';
+        modalImg.classList.remove('loading', 'error');
     }
 }
 
@@ -614,46 +727,68 @@ function getRatingText(rating) {
  * @param {string} imagePath - 图片路径
  */
 function getImageUrl(imagePath) {
-    // 检查是否已经是完整URL
+    // 如果已经是完整URL，直接返回
     if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+        console.log(`使用完整URL: ${imagePath}`);
         return imagePath;
     }
     
-    // 处理旧格式的图片名称 (review_7_1748255247.jpg)
-    // 尝试从旧格式中提取review_id和created_at
+    // 检查是否是以订单号开头的新格式图片名称（例如：LB202505116968_review_1748255231266_ld5ckm.jpg）
+    if (imagePath.startsWith('LB')) {
+        const fullUrl = `${config.r2ImagePath}${imagePath}`;
+        console.log(`处理订单号开头的图片: ${fullUrl}`);
+        return fullUrl;
+    }
+    
+    // 处理旧格式图片名称（例如：review_7_1748255247.jpg）
     const oldFormatMatch = imagePath.match(/review_(\d+)_(\d+)\.jpg/);
     if (oldFormatMatch) {
         const reviewId = oldFormatMatch[1];
-        const createdAt = oldFormatMatch[2];
+        const timestamp = oldFormatMatch[2];
         
-        // 查找当前评论列表中匹配的评论
-        const matchingReview = state.reviews.find(r => 
-            r.review_id.toString() === reviewId && 
-            r.created_at.toString() === createdAt
-        );
+        console.log(`检测到旧格式图片: ${imagePath}, reviewId: ${reviewId}, timestamp: ${timestamp}`);
         
-        // 如果找到匹配的评论且有订单号，构建新的图片路径
-        if (matchingReview && matchingReview.order_number) {
-            return `${config.imageBasePath}${matchingReview.order_number}_review_${createdAt}_*.jpg`;
+        // 尝试找到匹配的评论
+        const matchingReview = state.reviews.find(r => r.review_id.toString() === reviewId);
+        
+        if (matchingReview) {
+            // 从评论中获取订单号（如果有的话）
+            const orderId = matchingReview.order_id || '';
+            
+            if (orderId && orderId.startsWith('LB')) {
+                // 构建新格式的图片路径
+                const newImagePath = `${orderId}_review_${timestamp}_${generateRandomString(6)}.jpg`;
+                const fullUrl = `${config.r2ImagePath}${newImagePath}`;
+                console.log(`转换为新格式图片路径: ${fullUrl}`);
+                return fullUrl;
+            }
         }
         
-        // 如果没有找到匹配的评论或没有订单号，直接使用新的命名格式
-        // 这里假设所有旧格式的图片都已经按照新格式重命名并上传到R2
-        return `${config.imageBasePath}LB*_review_${createdAt}_*.jpg`;
+        // 如果找不到匹配的评论或没有订单号，尝试在R2中查找通配符匹配
+        // 例如：*_review_1748255247_*.jpg
+        const wildcardPath = `*_review_${timestamp}_*.jpg`;
+        const fullUrl = `${config.r2ImagePath}${wildcardPath}`;
+        console.log(`使用通配符路径: ${fullUrl}`);
+        return fullUrl;
     }
     
-    // 处理订单号开头的图片名称格式 (LB202505116968_review_1748255231266_ld5ckm.jpg)
-    if (imagePath.startsWith('LB') || imagePath.includes('_review_')) {
-        return `${config.imageBasePath}${imagePath}`;
+    // 默认情况下，直接拼接R2路径
+    const fullUrl = `${config.r2ImagePath}${imagePath}`;
+    console.log(`使用默认路径: ${fullUrl}`);
+    return fullUrl;
+}
+
+/**
+ * 生成随机字符串
+ * @param {number} length - 字符串长度
+ */
+function generateRandomString(length) {
+    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    for (let i = 0; i < length; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
     }
-    
-    // 如果图片名称包含通配符*，则保留原样
-    if (imagePath.includes('*')) {
-        return `${config.imageBasePath}${imagePath}`;
-    }
-    
-    // 默认返回完整路径
-    return `${config.imageBasePath}${imagePath}`;
+    return result;
 }
 
 /**
