@@ -2814,7 +2814,6 @@ const handleAdminAPI = async (request, env) => {
                     r.*,
                     r.review_content as content,
                     p.name as product_name, 
-                    p.image_url as product_image,
                     u.username,
                     (SELECT COUNT(*) FROM admin_review_replies WHERE review_id = r.review_id AND status = 'published') as has_reply
                 FROM product_reviews r
@@ -2892,7 +2891,6 @@ const handleAdminAPI = async (request, env) => {
                     r.review_content as content, 
                     p.name as product_name, 
                     p.product_id,
-                    p.image_url as product_image,
                     u.username, 
                     u.email
                 FROM product_reviews r
