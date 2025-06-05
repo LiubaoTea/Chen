@@ -3720,25 +3720,27 @@ const handleProductReviews = async (request, env) => {
                     
                     if (orderItem && orderItem.order_number) {
                         // 构建与R2存储中实际文件名匹配的图片名称
-                        // 格式：{orderNumber}_review_{timestamp}_{randomString}.jpg
+                        // 格式：LB{orderNumber}_review_{timestamp}_{randomString}.jpg
                         // 由于随机字符串在上传时生成，这里使用通配符格式
-                        const imagePattern = `${orderItem.order_number}_review_${timestamp}`;
+                        // 实际R2存储中的图片名称格式：LB202505116968_review_1748255231266_ld5ckm.jpg
+                        const imagePattern = `LB${orderItem.order_number}_review_${timestamp}`;
                         
                         // 返回完整的图片名称，包括通配符和扩展名
                         review.images = [`${imagePattern}_*.jpg`];
                         console.log('为评价ID:', reviewId, '设置基于订单号的图片名称:', review.images[0]);
                     } else {
                         // 如果没有找到订单号，使用通用格式
-                        // 格式：*_review_{timestamp}_*.jpg
+                        // 格式：LB*_review_{timestamp}_*.jpg
                         // 使用通配符匹配任何前缀和随机字符串
-                        // 不要使用 review_{reviewId}_{timestamp} 格式，这与R2存储中的实际文件名不匹配
-                        review.images = [`*_review_${timestamp}_*.jpg`];
+                        // 实际R2存储中的图片名称格式：LB202505116968_review_1748255231266_ld5ckm.jpg
+                        review.images = [`LB*_review_${timestamp}_*.jpg`];
                         console.log('为评价ID:', reviewId, '设置通用图片名称:', review.images[0]);
                     }
                 } catch (error) {
                     console.error('处理评价图片失败:', error);
                     // 使用通用格式作为后备，包含通配符和扩展名
-                    review.images = [`*_review_${timestamp}_*.jpg`];
+                    // 确保使用LB前缀，与R2存储中的实际文件名格式匹配
+                    review.images = [`LB*_review_${timestamp}_*.jpg`];
                     console.log('为评价ID:', reviewId, '设置通用后备图片名称:', review.images[0]);
                 }
                 

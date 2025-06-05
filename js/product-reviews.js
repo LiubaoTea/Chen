@@ -9,7 +9,7 @@ import { getProductReviews } from './api-extended.js';
 const config = {
     pageSize: 5,         // 每页显示评价数量
     imageBasePath: 'https://r2liubaotea.liubaotea.online/image/Product-Reviews/', // R2存储图片路径
-    defaultAvatar: '/assets/avatars/test_avatars.png', // 默认用户头像，使用绝对路径
+    defaultAvatar: './assets/avatars/test_avatars.png', // 默认用户头像，使用相对路径
     ratingTexts: ['很差', '较差', '一般', '不错', '很好'] // 评分对应文本
 };
 
@@ -745,7 +745,7 @@ function getImageUrl(imagePath) {
         return fullUrl;
     }
     
-    // 处理订单号开头的图片名称（例如：LB202505116968_review_1748255231266_*.jpg）
+    // 处理LB开头的订单号图片名称（例如：LB202505116968_review_1748255231266_*.jpg）
     if (imagePath.startsWith('LB')) {
         // 检查是否已经包含文件扩展名
         if (imagePath.endsWith('.jpg') || imagePath.endsWith('.png') || imagePath.endsWith('.jpeg') || 
@@ -759,18 +759,20 @@ function getImageUrl(imagePath) {
         }
     }
     
-    // 处理旧格式图片名称（例如：review_7_1748255247_*.jpg）
-    const oldFormatMatch = imagePath.match(/review_(\d+)_(\d+)/);
-    if (oldFormatMatch) {
-        const reviewId = oldFormatMatch[1];
-        const timestamp = oldFormatMatch[2];
+    // 处理旧格式图片名称（例如：review_7_1748255247_*.jpg 或 *_review_1748255247_*.jpg）
+    const reviewMatch = imagePath.match(/review_(\d+)_(\d+)/) || imagePath.match(/_review_(\d+)_/);
+    if (reviewMatch) {
+        // 如果是旧格式但没有LB前缀，添加LB前缀
+        if (!imagePath.startsWith('LB') && imagePath.includes('review_')) {
+            imagePath = 'LB' + imagePath;
+        }
         
-        console.log(`检测到旧格式图片名称: ${imagePath}, reviewId: ${reviewId}, timestamp: ${timestamp}`);
+        console.log(`处理评价图片名称: ${imagePath}`);
         
         // 如果已经包含通配符和扩展名，直接使用
         if (imagePath.includes('*') && imagePath.endsWith('.jpg')) {
             const fullUrl = `${config.imageBasePath}${imagePath}`;
-            console.log(`使用完整的旧格式图片路径: ${fullUrl}`);
+            console.log(`使用完整的评价图片路径: ${fullUrl}`);
             return fullUrl;
         }
         
