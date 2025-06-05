@@ -292,7 +292,37 @@ CREATE INDEX idx_stat_type_range ON admin_statistics(stat_type, start_date, end_
 
 ---
 
-14、product_category_mapping：（商品-分类映射表）
+14、product_review_images
+-- 创建商品评价图片表
+CREATE TABLE product_review_images (
+  "image_id" INTEGER PRIMARY KEY AUTOINCREMENT,                     -- 图片ID（自增主键）
+  "review_id" INTEGER NOT NULL,                                     -- 关联评价ID（必填）
+  "user_id" INTEGER NOT NULL,                                       -- 上传用户ID（必填）
+  "product_id" INTEGER NOT NULL,                                    -- 关联商品ID（必填）
+  "object_key" TEXT NOT NULL UNIQUE,                                -- R2对象键（唯一）
+  "file_name" TEXT NOT NULL,                                        -- 原始文件名
+  "file_size" INTEGER NOT NULL,                                     -- 文件大小（字节）
+  "mime_type" TEXT NOT NULL,                                        -- 文件类型（MIME）
+  "status" TEXT NOT NULL DEFAULT 'pending'                          -- 图片状态（默认待审核）
+    CHECK (status IN ('pending', 'approved', 'rejected')),          -- 状态约束
+  "created_at" INTEGER DEFAULT (CAST(strftime('%s','now') AS INTEGER)), -- 上传时间（Unix时间戳）
+
+  -- 外键约束（确保关联数据存在）
+  FOREIGN KEY ("review_id") REFERENCES product_reviews("review_id") ON DELETE CASCADE,
+  FOREIGN KEY ("user_id") REFERENCES users("user_id") ON DELETE CASCADE,
+  FOREIGN KEY ("product_id") REFERENCES products("product_id") ON DELETE CASCADE
+);
+
+-- 创建索引优化查询性能
+CREATE INDEX "idx_review_image_review" ON product_review_images ("review_id");
+CREATE INDEX "idx_review_image_user" ON product_review_images ("user_id");
+CREATE INDEX "idx_review_image_product" ON product_review_images ("product_id");
+CREATE INDEX "idx_review_image_status" ON product_review_images ("status");
+
+
+
+
+15、product_category_mapping：（商品-分类映射表）
 -- 创建商品-分类映射表
 CREATE TABLE product_category_mapping (
   product_id INTEGER NOT NULL,

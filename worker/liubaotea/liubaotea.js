@@ -3630,7 +3630,6 @@ const handleProductReviews = async (request, env) => {
                 });
             }
             
-            // 移除对不存在的images变量的引用
             console.log('接收到评价数据:', { product_id, rating, review_content });
             
             const timestamp = Math.floor(Date.now() / 1000); // Unix时间戳
@@ -3661,14 +3660,28 @@ const handleProductReviews = async (request, env) => {
                 });
             }
 
-            // 添加评价 - 根据表结构调整字段，移除images字段（表中不存在）
-            await env.DB.prepare(
+            // 添加评价
+            const result = await env.DB.prepare(
                 'INSERT INTO product_reviews (user_id, product_id, rating, review_content, status, created_at) VALUES (?, ?, ?, ?, ?, ?)'
             ).bind(userId, product_id, rating, review_content, 'approved', timestamp).run();
             
-            // 如果需要保存图片URL，可以考虑创建一个单独的表来存储评价图片
+            // 获取新创建的评价ID
+            const reviewId = result.lastRowId || result.meta?.last_row_id;
+            
+            if (!reviewId) {
+                console.error('无法获取评价ID');
+                return new Response(JSON.stringify({ error: '评价提交失败，无法获取评价ID' }), {
+                    status: 500,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+            
+            console.log('成功创建评价，ID:', reviewId);
 
-            return new Response(JSON.stringify({ message: '评价添加成功' }), {
+            return new Response(JSON.stringify({ 
+                message: '评价添加成功',
+                review_id: reviewId 
+            }), {
                 status: 201,
                 headers: { 'Content-Type': 'application/json' }
             });
@@ -3687,7 +3700,7 @@ const handleProductReviews = async (request, env) => {
             const productId = path.split('/')[3];
             console.log('获取商品评价，商品ID:', productId);
 
-            // 获取评价列表 - 移除对不存在的review_images表的查询
+            // 获取评价列表
             const reviews = await env.DB.prepare(
                 `SELECT pr.*, u.username
                 FROM product_reviews pr
@@ -3700,49 +3713,33 @@ const handleProductReviews = async (request, env) => {
             // 确保返回的是数组格式，即使没有评价也返回空数组
             const reviewsData = reviews.results || [];
             
-            // 处理评价图片 - 从R2对象存储中获取图片
+            // 处理评价图片 - 从数据库获取关联的评价图片记录
             const reviewPromises = reviewsData.map(async review => {
-                // 根据订单号构建图片名称
-                // 实际R2存储中的图片名称格式：LB202505116968_review_1748255231266_ld5ckm.jpg
                 const reviewId = review.review_id;
                 
                 try {
-                    // 查找与该评价关联的订单
-                    const orderItem = await env.DB.prepare(
-                        `SELECT o.order_number FROM order_items oi
-                        JOIN orders o ON oi.order_id = o.order_id
-                        WHERE o.user_id = ? AND oi.product_id = ?`
-                    ).bind(review.user_id, review.product_id).first();
+                    // 查询该评价关联的所有图片
+                    const imageRecords = await env.DB.prepare(
+                        `SELECT * FROM product_review_images
+                        WHERE review_id = ? AND status = 'approved'
+                        ORDER BY created_at ASC`
+                    ).bind(reviewId).all();
                     
                     // 设置默认图片数组
                     review.images = [];
                     
-                    // 不再使用评价创建时间作为图片名称的时间戳
-                    // 而是直接使用通配符匹配所有可能的时间戳
-                    // 这样可以匹配到用户上传图片时生成的实际时间戳
-                    
-                    if (orderItem && orderItem.order_number) {
-                        // 构建与R2存储中实际文件名匹配的图片名称
-                        // 格式：LB{orderNumber}_review_*_*.jpg
-                        // 使用通配符匹配任何时间戳和随机字符串
-                        const imagePattern = `LB${orderItem.order_number}_review_`;
-                        
-                        // 返回完整的图片名称，包括通配符和扩展名
-                        review.images = [`${imagePattern}*_*.jpg`];
-                        console.log('为评价ID:', reviewId, '设置基于订单号的通配符图片名称:', review.images[0]);
+                    if (imageRecords && imageRecords.results && imageRecords.results.length > 0) {
+                        // 为每个图片记录构建完整的URL
+                        review.images = imageRecords.results.map(img => {
+                            return `https://r2liubaotea.liubaotea.online/${img.object_key}`;
+                        });
+                        console.log('为评价ID:', reviewId, '找到', review.images.length, '张图片');
                     } else {
-                        // 如果没有找到订单号，使用更通用的格式
-                        // 格式：LB*_review_*_*.jpg
-                        // 使用通配符匹配任何前缀、时间戳和随机字符串
-                        review.images = [`LB*_review_*_*.jpg`];
-                        console.log('为评价ID:', reviewId, '设置完全通用的图片名称:', review.images[0]);
+                        console.log('评价ID:', reviewId, '没有关联图片');
                     }
                 } catch (error) {
-                    console.error('处理评价图片失败:', error);
-                    // 使用通用格式作为后备，包含通配符和扩展名
-                    // 确保使用LB前缀，与R2存储中的实际文件名格式匹配
-                    review.images = [`LB*_review_*_*.jpg`];
-                    console.log('为评价ID:', reviewId, '设置通用后备图片名称:', review.images[0]);
+                    console.error('获取评价图片记录失败:', error);
+                    review.images = [];
                 }
                 
                 return review;
@@ -4058,12 +4055,38 @@ const handleImageUpload = async (request, env) => {
     }
 
     try {
+        // 解析JWT令牌获取用户ID
+        const token = authHeader.split(' ')[1];
+        const decoded = JSON.parse(atob(token));
+        const userId = decoded.userId;
+        
+        if (!userId) {
+            return new Response(JSON.stringify({ error: '无法获取用户ID' }), {
+                status: 401,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+
         // 解析multipart/form-data请求
         const formData = await request.formData();
         const imageFile = formData.get('image');
-        let fileName = formData.get('fileName');
-        const folder = formData.get('folder') || 'Product-Reviews';
-        const orderNumber = formData.get('orderNumber') || ''; // 获取订单号
+        const reviewId = formData.get('review_id');
+        const productId = formData.get('product_id');
+        
+        // 验证必须的参数
+        if (!reviewId) {
+            return new Response(JSON.stringify({ error: '缺少评价ID' }), {
+                status: 400,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+        
+        if (!productId) {
+            return new Response(JSON.stringify({ error: '缺少商品ID' }), {
+                status: 400,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
 
         if (!imageFile || !(imageFile instanceof File)) {
             return new Response(JSON.stringify({ error: '未提供有效的图片文件' }), {
@@ -4072,21 +4095,47 @@ const handleImageUpload = async (request, env) => {
             });
         }
 
-        // 如果没有提供文件名，自动生成一个
-        if (!fileName) {
-            const timestamp = new Date().getTime();
-            const randomStr = Math.random().toString(36).substring(2, 8);
-            const fileExt = imageFile.name.split('.').pop() || 'jpg';
-            // 如果有订单号，添加到文件名前缀
-            if (orderNumber) {
-                fileName = `${orderNumber}_review_${timestamp}_${randomStr}.${fileExt}`;
-            } else {
-                fileName = `review_${timestamp}_${randomStr}.${fileExt}`;
-            }
+        // 生成唯一文件名
+        const timestamp = new Date().getTime();
+        const randomStr = Math.random().toString(36).substring(2, 10);
+        const fileExt = imageFile.name.split('.').pop() || 'jpg';
+        const fileName = `${timestamp}_${randomStr}.${fileExt}`;
+        
+        // 验证评价存在且属于当前用户
+        const review = await env.DB.prepare(
+            'SELECT 1 FROM product_reviews WHERE review_id = ? AND user_id = ? AND product_id = ?'
+        ).bind(reviewId, userId, productId).first();
+        
+        if (!review) {
+            return new Response(JSON.stringify({ error: '评价不存在或无权限上传图片' }), {
+                status: 403,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+        
+        // 验证该评价下的图片数量不超过5张
+        const imageCount = await env.DB.prepare(
+            'SELECT COUNT(*) as count FROM product_review_images WHERE review_id = ?'
+        ).bind(reviewId).first();
+        
+        if (imageCount && imageCount.count >= 5) {
+            return new Response(JSON.stringify({ error: '每条评价最多只能上传5张图片' }), {
+                status: 400,
+                headers: { 'Content-Type': 'application/json' }
+            });
         }
 
         // 读取文件内容
         const arrayBuffer = await imageFile.arrayBuffer();
+        const fileSize = arrayBuffer.byteLength;
+        
+        // 验证文件大小（最大2MB）
+        if (fileSize > 2 * 1024 * 1024) {
+            return new Response(JSON.stringify({ error: '图片大小不能超过2MB' }), {
+                status: 400,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
 
         try {
             // 检查R2存储是否可用
@@ -4104,19 +4153,11 @@ const handleImageUpload = async (request, env) => {
             });
         }
 
-        // 上传到R2存储
-        // 确保文件名以LB开头
-        if (!fileName.startsWith('LB') && orderNumber) {
-            fileName = `LB${fileName}`;
-        } else if (!fileName.startsWith('LB')) {
-            fileName = `LB${fileName}`;
-        }
-        
-        // 记录上传时间戳，用于后续评价图片匹配
-        console.log('图片上传时间戳:', new Date().getTime(), '文件名:', fileName);
-        
-        const objectKey = `image/${folder}/${fileName}`;
+        // 构建R2对象键（存储路径）- 按新规则: image/Product-Reviews/{review_id}/filename
+        const objectKey = `image/Product-Reviews/${reviewId}/${fileName}`;
         console.log('准备上传图片到R2存储路径:', objectKey);
+        
+        // 上传到R2存储
         try {
             await env.BUCKET.put(objectKey, arrayBuffer, {
                 httpMetadata: {
@@ -4132,13 +4173,49 @@ const handleImageUpload = async (request, env) => {
             });
         }
 
+        // 保存图片记录到数据库
+        try {
+            await env.DB.prepare(
+                `INSERT INTO product_review_images 
+                (review_id, user_id, product_id, object_key, file_name, file_size, mime_type, status, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+            ).bind(
+                reviewId,
+                userId,
+                productId,
+                objectKey,
+                imageFile.name,
+                fileSize,
+                imageFile.type,
+                'approved', // 默认设置为已批准状态
+                Math.floor(Date.now() / 1000) // Unix时间戳
+            ).run();
+            
+            console.log('已保存图片记录到数据库');
+        } catch (dbError) {
+            console.error('保存图片记录失败:', dbError);
+            // 尝试从R2删除已上传的图片
+            try {
+                await env.BUCKET.delete(objectKey);
+                console.log('已从R2删除图片');
+            } catch (deleteError) {
+                console.error('删除R2图片失败:', deleteError);
+            }
+            
+            return new Response(JSON.stringify({ error: '保存图片记录失败', details: dbError.message }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+
         // 返回图片URL
         const imageUrl = `https://r2liubaotea.liubaotea.online/${objectKey}`;
         console.log('图片上传成功，URL:', imageUrl);
         return new Response(JSON.stringify({
             success: true,
             url: imageUrl,
-            fileName: fileName
+            object_key: objectKey,
+            file_name: fileName
         }), {
             status: 200,
             headers: { 'Content-Type': 'application/json' }

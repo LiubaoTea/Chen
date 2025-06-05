@@ -24,7 +24,8 @@ document.head.appendChild(style);
 
 // 全局变量
 let currentRating = 5; // 默认5星评分
-let uploadedImages = []; // 已上传图片数组
+// 临时存储用户选择的图片文件，等待评价提交成功后再上传
+let selectedImageFiles = []; // 存储File对象
 let orderId = null;
 let productId = null;
 let orderItemId = null;
@@ -290,8 +291,8 @@ function initImageUpload() {
     function handleFiles(files) {
         uploadError.textContent = '';
         
-        // 检查已上传图片数量
-        if (uploadedImages.length + files.length > 5) {
+        // 检查已选择图片数量
+        if (selectedImageFiles.length + files.length > 5) {
             uploadError.textContent = '最多只能上传5张图片';
             return;
         }
@@ -310,123 +311,44 @@ function initImageUpload() {
                 return;
             }
 
-            // 上传图片
-            uploadImage(file);
+            // 添加到选择的图片文件数组
+            selectedImageFiles.push(file);
+            
+            // 创建本地预览
+            createImagePreview(file);
         });
 
         // 清空文件输入框，允许重复选择同一文件
         fileInput.value = '';
     }
 
-    // 上传图片到服务器
-    async function uploadImage(file) {
-        try {
-            const token = localStorage.getItem('userToken');
-            if (!token) {
-                throw new Error('未登录');
-            }
-
-            // 创建唯一文件名，如果有订单号则添加为前缀
-            const timestamp = new Date().getTime();
-            const randomStr = Math.random().toString(36).substring(2, 8);
-            const fileExt = file.name.split('.').pop();
-            let fileName;
-            
-            // 创建FormData对象
-            const formData = new FormData();
-            formData.append('image', file);
-            formData.append('folder', 'Product-Reviews');
-            
-            // 添加订单号作为前缀
-            if (orderId) {
-                fileName = `${orderId}_review_${timestamp}_${randomStr}.${fileExt}`;
-                formData.append('orderNumber', orderId);
-                console.log('添加订单号作为图片前缀:', orderId);
-            } else {
-                fileName = `review_${timestamp}_${randomStr}.${fileExt}`;
-            }
-            
-            formData.append('fileName', fileName);
-
-            // 显示上传中的预览
-            const previewItem = document.createElement('div');
-            previewItem.className = 'preview-item loading';
-            previewItem.innerHTML = '<div class="loading-spinner"></div>';
-            imagePreview.appendChild(previewItem);
-
-            console.log('开始上传图片到:', `${API_BASE_URL}/api/upload-image`);
-            // 上传图片
-            const response = await fetch(`${API_BASE_URL}/api/upload-image`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                },
-                body: formData
-            });
-
-            let responseData;
-            try {
-                responseData = await response.json();
-                // 验证responseData是否为对象
-                if (typeof responseData !== 'object' || responseData === null) {
-                    console.error('服务器响应格式无效:', responseData);
-                    throw new Error('服务器响应格式错误');
-                }
-            } catch (parseError) {
-                console.error('解析响应失败:', parseError);
-                throw new Error('服务器响应格式错误');
-            }
-
-            if (!response.ok) {
-                console.error('图片上传服务器响应错误:', responseData);
-                throw new Error(responseData.error || '图片上传失败');
-            }
-
-            console.log('图片上传成功，响应:', responseData);
-
-            // 移除加载中的预览
-            imagePreview.removeChild(previewItem);
-
-            // 确保responseData.url存在
-            if (!responseData.url) {
-                console.error('服务器响应中缺少图片URL');
-                throw new Error('图片上传成功但未返回URL');
-            }
-            
-            // 添加到已上传图片数组
-            uploadedImages.push(responseData.url);
-
-            // 创建图片预览
-            createImagePreview(responseData.url);
-
-        } catch (error) {
-            console.error('上传图片失败:', error);
-            uploadError.textContent = '上传图片失败，请重试';
-            
-            // 移除所有加载中的预览
-            const loadingPreviews = imagePreview.querySelectorAll('.preview-item.loading');
-            loadingPreviews.forEach(item => imagePreview.removeChild(item));
-        }
-    }
-
     // 创建图片预览
-    function createImagePreview(imageUrl) {
+    function createImagePreview(file) {
         const previewItem = document.createElement('div');
         previewItem.className = 'preview-item';
         
         const img = document.createElement('img');
-        img.src = imageUrl;
+        const localUrl = URL.createObjectURL(file);
+        img.src = localUrl;
         img.alt = '评价图片';
+        
+        // 在预览项上保存文件引用，以便后续上传
+        previewItem.dataset.fileIndex = selectedImageFiles.indexOf(file);
         
         const removeBtn = document.createElement('div');
         removeBtn.className = 'remove-image';
         removeBtn.innerHTML = '<i class="fas fa-times"></i>';
         removeBtn.addEventListener('click', () => {
-            // 从数组和预览中移除
-            const index = uploadedImages.indexOf(imageUrl);
+            // 从数组中移除
+            const index = selectedImageFiles.indexOf(file);
             if (index !== -1) {
-                uploadedImages.splice(index, 1);
+                selectedImageFiles.splice(index, 1);
             }
+            
+            // 释放临时URL
+            URL.revokeObjectURL(localUrl);
+            
+            // 从预览中移除
             imagePreview.removeChild(previewItem);
         });
         
@@ -445,6 +367,10 @@ function initButtons() {
     // 提交评价
     submitBtn.addEventListener('click', async () => {
         try {
+            // 禁用按钮防止重复提交
+            submitBtn.disabled = true;
+            submitBtn.textContent = '提交中...';
+            
             const token = localStorage.getItem('userToken');
             if (!token) {
                 throw new Error('未登录');
@@ -460,18 +386,16 @@ function initButtons() {
                 throw new Error('请填写评价内容');
             }
 
-            // 准备评价数据 - 移除order_id字段和images字段
-            // images字段在product_reviews表中不存在，不应该包含在请求中
+            // 第一步：提交评价内容
             const reviewData = {
                 product_id: productId,
-                order_item_id: orderItemId || '',  // 确保有值，即使是空字符串
+                order_item_id: orderItemId || '',
                 rating: currentRating,
                 review_content: reviewContent.value.trim()
-                // 移除images字段，因为数据库表中不存在该字段
             };
             
             console.log('提交评价数据:', reviewData);
-
+            
             // 发送评价请求
             const response = await fetch(`${API_BASE_URL}/api/reviews`, {
                 method: 'POST',
@@ -482,25 +406,27 @@ function initButtons() {
                 body: JSON.stringify(reviewData)
             });
 
-            let responseData;
-            try {
-                responseData = await response.json();
-                // 验证responseData是否为对象
-                if (typeof responseData !== 'object' || responseData === null) {
-                    console.error('服务器响应格式无效:', responseData);
-                    throw new Error('服务器响应格式错误');
-                }
-            } catch (parseError) {
-                console.error('解析响应失败:', parseError);
-                throw new Error('服务器响应格式错误');
-            }
-
+            const responseData = await response.json();
+            
             if (!response.ok) {
                 console.error('评价提交服务器响应错误:', responseData);
                 throw new Error(responseData.error || '提交评价失败');
             }
 
             console.log('评价提交成功，响应:', responseData);
+            
+            // 获取评价ID
+            const reviewId = responseData.review_id;
+            if (!reviewId) {
+                console.error('未获取到评价ID');
+                throw new Error('提交评价成功但未获取到评价ID');
+            }
+            
+            // 第二步：上传图片（如果有）
+            if (selectedImageFiles.length > 0) {
+                submitBtn.textContent = `上传图片 (0/${selectedImageFiles.length})`;
+                await uploadAllImages(token, reviewId);
+            }
 
             // 显示成功消息
             showSuccessToast('评价提交成功！');
@@ -513,6 +439,10 @@ function initButtons() {
         } catch (error) {
             console.error('提交评价失败:', error);
             showErrorToast(error.message || '提交评价失败，请稍后重试');
+        } finally {
+            // 恢复按钮状态
+            submitBtn.disabled = false;
+            submitBtn.textContent = '提交评价';
         }
     });
 
@@ -520,6 +450,61 @@ function initButtons() {
     cancelBtn.addEventListener('click', () => {
         window.location.href = returnUrl;
     });
+    
+    // 上传所有图片
+    async function uploadAllImages(token, reviewId) {
+        const totalImages = selectedImageFiles.length;
+        let successCount = 0;
+        let failCount = 0;
+        
+        // 更新图片上传进度的辅助函数
+        const updateProgress = () => {
+            submitBtn.textContent = `上传图片 (${successCount}/${totalImages})`;
+        };
+        
+        // 一次上传一张图片，避免并发请求过多
+        for (let i = 0; i < selectedImageFiles.length; i++) {
+            try {
+                const file = selectedImageFiles[i];
+                
+                // 创建FormData对象
+                const formData = new FormData();
+                formData.append('image', file);
+                formData.append('review_id', reviewId);
+                formData.append('product_id', productId);
+                
+                // 上传图片
+                const response = await fetch(`${API_BASE_URL}/api/upload-image`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: formData
+                });
+                
+                const responseData = await response.json();
+                
+                if (!response.ok) {
+                    console.error('图片上传失败:', responseData);
+                    failCount++;
+                } else {
+                    console.log('图片上传成功:', responseData);
+                    successCount++;
+                }
+            } catch (error) {
+                console.error('图片上传出错:', error);
+                failCount++;
+            }
+            
+            // 更新进度
+            updateProgress();
+        }
+        
+        // 显示上传结果
+        if (failCount > 0) {
+            showErrorToast(`有${failCount}张图片上传失败，但评价已提交成功`);
+        }
+    }
 }
 
 // 显示成功消息
