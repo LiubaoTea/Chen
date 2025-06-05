@@ -3705,7 +3705,6 @@ const handleProductReviews = async (request, env) => {
                 // 根据订单号构建图片名称
                 // 实际R2存储中的图片名称格式：LB202505116968_review_1748255231266_ld5ckm.jpg
                 const reviewId = review.review_id;
-                const timestamp = review.created_at;
                 
                 try {
                     // 查找与该评价关联的订单
@@ -3717,6 +3716,11 @@ const handleProductReviews = async (request, env) => {
                     
                     // 设置默认图片数组
                     review.images = [];
+                    
+                    // 获取评价创建时间的毫秒级时间戳（13位）
+                    // 将Unix时间戳（秒）转换为毫秒级时间戳
+                    const timestamp = review.created_at * 1000;
+                    console.log('评价ID:', reviewId, '使用毫秒级时间戳:', timestamp);
                     
                     if (orderItem && orderItem.order_number) {
                         // 构建与R2存储中实际文件名匹配的图片名称
@@ -3740,6 +3744,7 @@ const handleProductReviews = async (request, env) => {
                     console.error('处理评价图片失败:', error);
                     // 使用通用格式作为后备，包含通配符和扩展名
                     // 确保使用LB前缀，与R2存储中的实际文件名格式匹配
+                    const timestamp = review.created_at * 1000; // 毫秒级时间戳
                     review.images = [`LB*_review_${timestamp}_*.jpg`];
                     console.log('为评价ID:', reviewId, '设置通用后备图片名称:', review.images[0]);
                 }
@@ -4104,6 +4109,13 @@ const handleImageUpload = async (request, env) => {
         }
 
         // 上传到R2存储
+        // 确保文件名以LB开头
+        if (!fileName.startsWith('LB') && orderNumber) {
+            fileName = `LB${fileName}`;
+        } else if (!fileName.startsWith('LB')) {
+            fileName = `LB${fileName}`;
+        }
+        
         const objectKey = `image/${folder}/${fileName}`;
         console.log('准备上传图片到R2存储路径:', objectKey);
         try {

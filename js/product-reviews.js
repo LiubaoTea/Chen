@@ -302,11 +302,16 @@ function renderReviewsList() {
         // 使用用户头像或默认头像
         avatarImg.src = review.avatar_url || config.defaultAvatar;
         avatarImg.alt = '用户头像';
+        // 添加样式确保图片正确显示
+        avatarImg.style.width = '100%';
+        avatarImg.style.height = '100%';
+        avatarImg.style.objectFit = 'cover';
         avatarImg.onerror = function() {
             // 头像加载失败时使用默认头像
             this.src = config.defaultAvatar;
             // 防止循环触发错误
             this.onerror = null;
+            console.log('头像加载失败，使用默认头像:', config.defaultAvatar);
         };
         
         avatarContainer.appendChild(avatarImg);
