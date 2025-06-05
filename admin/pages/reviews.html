@@ -61,6 +61,7 @@
                             <th>用户</th>
                             <th>评分</th>
                             <th>评价内容</th>
+                            <th>评价图片</th>
                             <th>评价时间</th>
                             <th>状态</th>
                             <th>操作</th>
@@ -69,7 +70,7 @@
                     <tbody id="reviewsList">
                         <!-- 评价数据将通过JS动态加载 -->
                         <tr>
-                            <td colspan="7" class="text-center">加载中...</td>
+                            <td colspan="8" class="text-center">加载中...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -117,7 +118,7 @@
 
 <!-- 回复评价模态框 -->
 <div class="modal fade" id="replyReviewModal" tabindex="-1" aria-labelledby="replyReviewModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="replyReviewModalLabel">回复评价</h5>
@@ -129,6 +130,23 @@
                     <div class="mb-3">
                         <label for="replyContent" class="form-label">回复内容</label>
                         <textarea class="form-control" id="replyContent" rows="4" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">上传图片(可选)</label>
+                        <div class="input-group mb-3">
+                            <input type="file" class="form-control" id="replyImages" accept="image/*" multiple>
+                            <button class="btn btn-outline-secondary" type="button" id="uploadReplyImagesBtn">
+                                <i class="bi bi-cloud-arrow-up me-1"></i>上传
+                            </button>
+                        </div>
+                        <div class="form-text">支持JPG、PNG、GIF格式，最多5张图片</div>
+                    </div>
+                    <!-- 图片预览区域 -->
+                    <div id="replyImagePreview" class="d-flex flex-wrap gap-2 my-3">
+                        <!-- 预览图片将在这里显示 -->
+                    </div>
+                    <div class="progress d-none mb-3" id="uploadProgressContainer">
+                        <div id="uploadProgress" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%"></div>
                     </div>
                 </form>
             </div>
@@ -147,25 +165,59 @@
         font-size: 1rem;
     }
     
-    .review-content {
-        max-width: 300px;
+    .review-content-preview {
+        max-width: 150px;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
     }
     
-    .review-images {
+    .review-image-container {
         display: flex;
-        gap: 5px;
-        margin-top: 5px;
+        align-items: center;
+        justify-content: center;
     }
     
     .review-image-thumbnail {
-        width: 40px;
-        height: 40px;
+        width: 60px;
+        height: 60px;
         object-fit: cover;
         border-radius: 4px;
         cursor: pointer;
+        transition: transform 0.2s;
+    }
+    
+    .review-image-thumbnail:hover {
+        transform: scale(1.1);
+    }
+    
+    .no-image {
+        color: #ccc;
+        font-size: 0.85rem;
+    }
+    
+    .review-images-gallery {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 10px;
+    }
+    
+    .review-image-item {
+        aspect-ratio: 1;
+        overflow: hidden;
+        border-radius: 4px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    .review-image-item img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.3s;
+    }
+    
+    .review-image-item:hover img {
+        transform: scale(1.05);
     }
     
     .status-pending {
@@ -181,5 +233,37 @@
     .status-rejected {
         background-color: #F9E4E4; /* 淡红色 */
         color: #8B0000; /* 暗红色 */
+    }
+    
+    /* 上传图片预览样式 */
+    #replyImagePreview .preview-item {
+        position: relative;
+        width: 100px;
+        height: 100px;
+        border-radius: 4px;
+        overflow: hidden;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    #replyImagePreview .preview-item img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    #replyImagePreview .preview-item .remove-image {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        width: 20px;
+        height: 20px;
+        background: rgba(255, 255, 255, 0.8);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 12px;
+        color: #dc3545;
     }
 </style>

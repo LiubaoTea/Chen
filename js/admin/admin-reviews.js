@@ -19,6 +19,9 @@ let reviewsPageSize = 10;
 let reviewsSelectedStatus = '';
 let reviewsSelectedRating = '';
 
+// 全局变量，用于存储要上传的图片
+let replyImagesData = [];
+
 // 导出为全局变量，供其他模块使用
 window.initReviewsPage = initReviewsPage;
 window.refreshReviewsData = loadReviews;
@@ -75,7 +78,7 @@ function updateReviewsList() {
     reviewsList.innerHTML = '';
     
     if (reviewsData.length === 0) {
-        reviewsList.innerHTML = '<tr><td colspan="7" class="text-center">暂无评价数据</td></tr>';
+        reviewsList.innerHTML = '<tr><td colspan="8" class="text-center">暂无评价数据</td></tr>';
         return;
     }
     
@@ -91,9 +94,16 @@ function updateReviewsList() {
         // 评价状态
         const statusBadge = getReviewStatusBadge(review.status);
         
-        // 评价图片
-        const imagesHtml = review.images && review.images.length > 0 ? 
-            `<div class="review-images">${review.images.map(img => `<img src="${img}" class="review-image-thumbnail" data-bs-toggle="modal" data-bs-target="#reviewDetailModal" data-review-id="${review.review_id}">`).join('')}</div>` : '';
+        // 评价内容限制为10个字，超出部分显示省略号
+        const contentPreview = review.content ? 
+            (review.content.length > 10 ? review.content.substring(0, 10) + '...' : review.content) : 
+            '无评价内容';
+        
+        // 评价图片 - 只显示第一张
+        const firstImage = review.images && review.images.length > 0 ? review.images[0] : '';
+        const imageHtml = firstImage ? 
+            `<img src="${firstImage}" class="review-image-thumbnail" alt="评价图片" data-bs-toggle="modal" data-bs-target="#reviewDetailModal" data-review-id="${review.review_id}">` : 
+            '<div class="no-image">无图片</div>';
         
         row.innerHTML = `
             <td>
@@ -104,10 +114,8 @@ function updateReviewsList() {
             </td>
             <td>${review.username}</td>
             <td><div class="review-stars">${stars}</div></td>
-            <td>
-                <div class="review-content">${review.content}</div>
-                ${imagesHtml}
-            </td>
+            <td><div class="review-content-preview">${contentPreview}</div></td>
+            <td><div class="review-image-container">${imageHtml}</div></td>
             <td>${reviewDate}</td>
             <td>${statusBadge}</td>
             <td>
@@ -275,6 +283,12 @@ function setupReviewsEventListeners() {
     
     // 提交回复按钮
     document.getElementById('submitReplyBtn').addEventListener('click', handleSubmitReply);
+    
+    // 上传回复图片按钮
+    document.getElementById('uploadReplyImagesBtn').addEventListener('click', handleUploadReplyImages);
+    
+    // 监听文件选择变化
+    document.getElementById('replyImages').addEventListener('change', handleReplyImagesSelected);
 }
 
 // 处理查看评价详情
@@ -318,21 +332,46 @@ async function handleViewReview(e) {
         // 评分星级
         const stars = getStarRating(review.rating);
         
-        // 评价图片
-        const imagesHtml = review.images && review.images.length > 0 ? 
-            `<div class="mt-3">
-                <h6>评价图片：</h6>
-                <div class="d-flex flex-wrap gap-2">
-                    ${review.images.map(img => `<img src="${img}" class="img-thumbnail" style="max-width: 150px; max-height: 150px;" alt="评价图片">`).join('')}
+        // 评价图片区域 - 改为单独区块
+        const imagesSection = review.images && review.images.length > 0 ? 
+            `<div class="card mt-3">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0"><i class="bi bi-images me-2"></i>评价图片 (${review.images.length}张)</h6>
+                </div>
+                <div class="card-body">
+                    <div class="review-images-gallery">
+                        ${review.images.map(img => `
+                            <div class="review-image-item">
+                                <img src="${img}" class="img-fluid rounded" alt="评价图片">
+                            </div>
+                        `).join('')}
+                    </div>
                 </div>
             </div>` : '';
         
         // 商家回复
         const replyHtml = review.reply ? 
-            `<div class="mt-3 p-3 bg-light rounded">
-                <h6 class="mb-2"><i class="bi bi-shop me-1"></i>商家回复：</h6>
-                <p class="mb-1">${review.reply.content}</p>
-                <small class="text-muted">回复时间：${new Date(review.reply.created_at * 1000).toLocaleString('zh-CN')}</small>
+            `<div class="card mt-3">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0"><i class="bi bi-shop me-2"></i>商家回复</h6>
+                </div>
+                <div class="card-body">
+                    <p class="mb-1">${review.reply.content}</p>
+                    ${review.reply.images && review.reply.images.length > 0 ? 
+                        `<div class="mt-3">
+                            <h6 class="text-muted mb-2">回复图片：</h6>
+                            <div class="d-flex flex-wrap gap-2">
+                                ${review.reply.images.map(img => `
+                                    <img src="${img}" class="img-thumbnail" style="max-width: 100px; max-height: 100px;" alt="回复图片">
+                                `).join('')}
+                            </div>
+                        </div>` : ''
+                    }
+                    <div class="mt-2 d-flex justify-content-between">
+                        <small class="text-muted">回复者：${review.reply.admin_username || '管理员'}</small>
+                        <small class="text-muted">回复时间：${new Date(review.reply.created_at * 1000).toLocaleString('zh-CN')}</small>
+                    </div>
+                </div>
             </div>` : '';
         
         // 更新评价详情内容
@@ -359,22 +398,38 @@ async function handleViewReview(e) {
                     </div>
                 </div>
             </div>
-            <div class="row mb-3">
-                <div class="col-12">
-                    <div class="card">
-                        <div class="card-header d-flex justify-content-between align-items-center">
-                            <h6 class="mb-0">评价内容</h6>
-                            <div class="review-stars">${stars}</div>
-                        </div>
-                        <div class="card-body">
-                            <p>${review.content}</p>
-                            ${imagesHtml}
-                        </div>
-                    </div>
+            
+            <div class="card">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="bi bi-chat-left-text me-2"></i>评价内容</h6>
+                    <div class="review-stars">${stars}</div>
+                </div>
+                <div class="card-body">
+                    <p>${review.content || '该用户未留下文字评价'}</p>
                 </div>
             </div>
+            
+            ${imagesSection}
             ${replyHtml}
+            
+            ${!review.reply ? `
+                <div class="mt-3">
+                    <button type="button" class="btn btn-primary btn-sm reply-from-detail" data-review-id="${reviewId}">
+                        <i class="bi bi-reply me-1"></i>回复此评价
+                    </button>
+                </div>
+            ` : ''}
         `;
+        
+        // 添加评价详情页面的回复按钮事件
+        const replyBtn = reviewDetailContent.querySelector('.reply-from-detail');
+        if (replyBtn) {
+            replyBtn.addEventListener('click', () => {
+                const reviewDetailModal = bootstrap.Modal.getInstance(document.getElementById('reviewDetailModal'));
+                reviewDetailModal.hide();
+                handleReplyReview({ currentTarget: { getAttribute: () => reviewId } });
+            });
+        }
         
         // 显示模态框
         const reviewDetailModal = new bootstrap.Modal(document.getElementById('reviewDetailModal'));
@@ -389,13 +444,133 @@ async function handleViewReview(e) {
 function handleReplyReview(e) {
     const reviewId = e.currentTarget.getAttribute('data-review-id');
     
-    // 设置回复表单的评价ID
+    // 重置表单和图片数据
+    document.getElementById('replyReviewForm').reset();
     document.getElementById('replyReviewId').value = reviewId;
     document.getElementById('replyContent').value = '';
+    document.getElementById('replyImagePreview').innerHTML = '';
+    replyImagesData = [];
+    
+    // 隐藏进度条
+    document.getElementById('uploadProgressContainer').classList.add('d-none');
     
     // 显示回复模态框
     const replyModal = new bootstrap.Modal(document.getElementById('replyReviewModal'));
     replyModal.show();
+}
+
+// 处理回复图片选择
+function handleReplyImagesSelected(e) {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    
+    // 限制最多上传5张图片
+    if (files.length > 5) {
+        showErrorToast('最多只能上传5张图片');
+        e.target.value = '';
+        return;
+    }
+    
+    // 清空之前的预览
+    document.getElementById('replyImagePreview').innerHTML = '';
+    replyImagesData = [];
+    
+    // 处理每个选中的图片
+    Array.from(files).forEach((file, index) => {
+        // 检查文件类型
+        if (!file.type.match('image.*')) {
+            showErrorToast(`文件 "${file.name}" 不是有效的图片格式`);
+            return;
+        }
+        
+        // 检查文件大小（最大2MB）
+        if (file.size > 2 * 1024 * 1024) {
+            showErrorToast(`文件 "${file.name}" 大小超过2MB限制`);
+            return;
+        }
+        
+        // 创建预览
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const previewItem = document.createElement('div');
+            previewItem.className = 'preview-item';
+            previewItem.innerHTML = `
+                <img src="${e.target.result}" alt="预览图片 ${index + 1}">
+                <div class="remove-image" data-index="${index}">
+                    <i class="bi bi-x"></i>
+                </div>
+            `;
+            document.getElementById('replyImagePreview').appendChild(previewItem);
+            
+            // 添加删除按钮事件
+            previewItem.querySelector('.remove-image').addEventListener('click', function() {
+                const imageIndex = parseInt(this.getAttribute('data-index'));
+                // 从预览和数据中删除
+                this.parentElement.remove();
+                replyImagesData = replyImagesData.filter((_, i) => i !== imageIndex);
+            });
+        };
+        
+        // 读取文件
+        reader.readAsDataURL(file);
+        
+        // 保存文件数据
+        replyImagesData.push({
+            file: file,
+            extension: file.name.split('.').pop().toLowerCase(),
+            file_name: file.name,
+            file_size: file.size,
+            mime_type: file.type
+        });
+    });
+}
+
+// 处理上传回复图片
+async function handleUploadReplyImages() {
+    const reviewId = document.getElementById('replyReviewId').value;
+    const fileInput = document.getElementById('replyImages');
+    const files = fileInput.files;
+    
+    if (!files || files.length === 0) {
+        showErrorToast('请先选择要上传的图片');
+        return;
+    }
+    
+    try {
+        // 显示上传进度
+        const progressContainer = document.getElementById('uploadProgressContainer');
+        const progressBar = document.getElementById('uploadProgress');
+        progressContainer.classList.remove('d-none');
+        progressBar.style.width = '0%';
+        progressBar.setAttribute('aria-valuenow', '0');
+        
+        // 模拟上传进度
+        let progress = 0;
+        const progressInterval = setInterval(() => {
+            progress += 5;
+            if (progress <= 90) {
+                progressBar.style.width = `${progress}%`;
+                progressBar.setAttribute('aria-valuenow', progress.toString());
+            }
+        }, 100);
+        
+        // 上传完成后，隐藏进度条并显示成功提示
+        setTimeout(() => {
+            clearInterval(progressInterval);
+            progressBar.style.width = '100%';
+            progressBar.setAttribute('aria-valuenow', '100');
+            
+            setTimeout(() => {
+                progressContainer.classList.add('d-none');
+                showSuccessToast('图片已准备就绪，请点击"提交回复"完成回复');
+            }, 500);
+        }, 2000);
+        
+    } catch (error) {
+        console.error('上传回复图片失败:', error);
+        showErrorToast('上传图片失败: ' + (error.message || '请稍后重试'));
+        document.getElementById('uploadProgressContainer').classList.add('d-none');
+    }
 }
 
 // 处理提交回复
@@ -416,11 +591,14 @@ async function handleSubmitReply() {
         submitBtn.disabled = true;
         
         // 提交回复
-        await adminAPI.replyReview(reviewId, content);
+        const replyData = await adminAPI.replyReview(reviewId, content, replyImagesData);
         
         // 关闭模态框
         const replyModal = bootstrap.Modal.getInstance(document.getElementById('replyReviewModal'));
         replyModal.hide();
+        
+        // 重置图片数据
+        replyImagesData = [];
         
         // 重新加载评价列表
         await loadReviews(reviewsCurrentPage, reviewsSelectedStatus, reviewsSelectedRating);
