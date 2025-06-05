@@ -320,9 +320,52 @@ CREATE INDEX "idx_review_image_product" ON product_review_images ("product_id");
 CREATE INDEX "idx_review_image_status" ON product_review_images ("status");
 
 
+15、admin_review_replies
+-- 创建商家回复评价表
+CREATE TABLE admin_review_replies (
+  "reply_id" INTEGER PRIMARY KEY AUTOINCREMENT,                       -- 回复ID（自增主键）
+  "review_id" INTEGER NOT NULL,                                       -- 关联的评价ID（必填）
+  "admin_id" INTEGER NOT NULL,                                        -- 回复的管理员ID（必填）
+  "reply_content" TEXT NOT NULL,                                      -- 回复内容
+  "status" TEXT NOT NULL DEFAULT 'published'                          -- 回复状态
+    CHECK (status IN ('draft', 'published', 'archived')),             -- 状态约束
+  "created_at" INTEGER DEFAULT (CAST(strftime('%s','now') AS INTEGER)), -- 创建时间
+  "updated_at" INTEGER,                                               -- 最后更新时间
+
+  -- 外键约束
+  FOREIGN KEY ("review_id") REFERENCES product_reviews("review_id") ON DELETE CASCADE,
+  FOREIGN KEY ("admin_id") REFERENCES admins("admin_id") ON DELETE CASCADE
+);
+
+-- 创建索引优化查询性能
+CREATE INDEX "idx_admin_reply_review" ON admin_review_replies ("review_id");
+CREATE INDEX "idx_admin_reply_admin" ON admin_review_replies ("admin_id");
+CREATE INDEX "idx_admin_reply_status" ON admin_review_replies ("status");
 
 
-15、product_category_mapping：（商品-分类映射表）
+16、admin_reply_images
+-- 创建商家回复图片表
+CREATE TABLE admin_reply_images (
+  "image_id" INTEGER PRIMARY KEY AUTOINCREMENT,                     -- 图片ID（自增主键）
+  "reply_id" INTEGER NOT NULL,                                      -- 关联的回复ID
+  "admin_id" INTEGER NOT NULL,                                      -- 上传的管理员ID
+  "object_key" TEXT NOT NULL UNIQUE,                                -- R2对象键（唯一）
+  "file_name" TEXT NOT NULL,                                        -- 原始文件名
+  "file_size" INTEGER NOT NULL,                                     -- 文件大小（字节）
+  "mime_type" TEXT NOT NULL,                                        -- 文件类型（MIME）
+  "created_at" INTEGER DEFAULT (CAST(strftime('%s','now') AS INTEGER)), -- 上传时间
+
+  -- 外键约束
+  FOREIGN KEY ("reply_id") REFERENCES admin_review_replies("reply_id") ON DELETE CASCADE,
+  FOREIGN KEY ("admin_id") REFERENCES admins("admin_id") ON DELETE CASCADE
+);
+
+-- 创建索引优化查询性能
+CREATE INDEX "idx_admin_reply_image_reply" ON admin_reply_images ("reply_id");
+CREATE INDEX "idx_admin_reply_image_admin" ON admin_reply_images ("admin_id");
+
+
+17、product_category_mapping：（商品-分类映射表）
 -- 创建商品-分类映射表
 CREATE TABLE product_category_mapping (
   product_id INTEGER NOT NULL,

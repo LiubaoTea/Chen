@@ -2810,7 +2810,13 @@ const handleAdminAPI = async (request, env) => {
             
             // 获取评价列表
             const reviewsQuery = `
-                SELECT r.*, p.name as product_name, u.username
+                SELECT 
+                    r.*,
+                    r.review_content as content,
+                    p.name as product_name, 
+                    p.image_url as product_image,
+                    u.username,
+                    (SELECT COUNT(*) FROM admin_review_replies WHERE review_id = r.review_id AND status = 'published') as has_reply
                 FROM product_reviews r
                 LEFT JOIN products p ON r.product_id = p.product_id
                 LEFT JOIN users u ON r.user_id = u.user_id
@@ -2822,6 +2828,37 @@ const handleAdminAPI = async (request, env) => {
             const { results: reviews } = await env.DB.prepare(reviewsQuery)
                 .bind(...params, limit, offset)
                 .all();
+            
+            // 获取每条评价的图片
+            if (reviews && reviews.length > 0) {
+                // 获取所有评价ID
+                const reviewIds = reviews.map(r => r.review_id);
+                // 生成占位符
+                const placeholders = reviewIds.map(() => '?').join(',');
+                
+                // 批量查询评价图片
+                const { results: imageResults } = await env.DB.prepare(`
+                    SELECT review_id, object_key 
+                    FROM product_review_images 
+                    WHERE review_id IN (${placeholders}) AND status = 'approved'
+                `).bind(...reviewIds).all();
+                
+                // 组织图片数据
+                const imagesByReviewId = {};
+                if (imageResults && imageResults.length > 0) {
+                    imageResults.forEach(img => {
+                        if (!imagesByReviewId[img.review_id]) {
+                            imagesByReviewId[img.review_id] = [];
+                        }
+                        imagesByReviewId[img.review_id].push(img.object_key);
+                    });
+                }
+                
+                // 将图片数据添加到评价中
+                reviews.forEach(review => {
+                    review.images = imagesByReviewId[review.review_id] || [];
+                });
+            }
             
             return new Response(JSON.stringify({
                 reviews,
@@ -2850,7 +2887,14 @@ const handleAdminAPI = async (request, env) => {
             
             // 获取评价详情
             const review = await env.DB.prepare(`
-                SELECT r.*, p.name as product_name, u.username, u.email
+                SELECT 
+                    r.*,
+                    r.review_content as content, 
+                    p.name as product_name, 
+                    p.product_id,
+                    p.image_url as product_image,
+                    u.username, 
+                    u.email
                 FROM product_reviews r
                 LEFT JOIN products p ON r.product_id = p.product_id
                 LEFT JOIN users u ON r.user_id = u.user_id
@@ -2862,6 +2906,50 @@ const handleAdminAPI = async (request, env) => {
                     status: 404,
                     headers: { ...corsHeaders, 'Content-Type': 'application/json' }
                 });
+            }
+            
+            // 查询评价图片
+            const { results: images } = await env.DB.prepare(`
+                SELECT object_key
+                FROM product_review_images
+                WHERE review_id = ? AND status = 'approved'
+            `).bind(reviewId).all();
+            
+            // 组合完整的图片URL
+            if (images && images.length > 0) {
+                review.images = images.map(img => img.object_key);
+            } else {
+                review.images = [];
+            }
+            
+            // 查询管理员回复
+            const reply = await env.DB.prepare(`
+                SELECT 
+                    r.*, 
+                    a.username as admin_username
+                FROM admin_review_replies r
+                LEFT JOIN admins a ON r.admin_id = a.admin_id
+                WHERE r.review_id = ? AND r.status = 'published'
+                ORDER BY r.created_at DESC
+                LIMIT 1
+            `).bind(reviewId).first();
+            
+            if (reply) {
+                // 查询回复的图片
+                const { results: replyImages } = await env.DB.prepare(`
+                    SELECT object_key
+                    FROM admin_reply_images
+                    WHERE reply_id = ?
+                `).bind(reply.reply_id).all();
+                
+                review.reply = {
+                    reply_id: reply.reply_id,
+                    content: reply.content,
+                    admin_username: reply.admin_username,
+                    created_at: reply.created_at,
+                    updated_at: reply.updated_at,
+                    images: replyImages ? replyImages.map(img => img.object_key) : []
+                };
             }
             
             return new Response(JSON.stringify(review), {
@@ -2876,22 +2964,21 @@ const handleAdminAPI = async (request, env) => {
         }
     }
     
-    // 更新评价状态（批准/拒绝）
-    if (path.match(/^\/api\/admin\/reviews\/\d+\/status$/) && request.method === 'PUT') {
+    // 回复评价API
+    if (path.match(/^\/api\/admin\/reviews\/\d+\/reply$/) && request.method === 'POST') {
         try {
             const reviewId = path.split('/')[4];
-            const { status, admin_reply } = await request.json();
+            const { content, images } = await request.json();
             
-            // 验证状态值
-            if (!['approved', 'rejected', 'pending'].includes(status)) {
-                return new Response(JSON.stringify({ error: '无效的状态值' }), {
+            if (!content || content.trim() === '') {
+                return new Response(JSON.stringify({ error: '回复内容不能为空' }), {
                     status: 400,
                     headers: { ...corsHeaders, 'Content-Type': 'application/json' }
                 });
             }
             
             // 检查评价是否存在
-            const existingReview = await env.DB.prepare('SELECT review_id FROM reviews WHERE review_id = ?')
+            const existingReview = await env.DB.prepare('SELECT review_id FROM product_reviews WHERE review_id = ?')
                 .bind(reviewId)
                 .first();
                 
@@ -2902,15 +2989,113 @@ const handleAdminAPI = async (request, env) => {
                 });
             }
             
-            // 更新评价状态和管理员回复
+            // 创建回复记录
+            const now = Math.floor(Date.now() / 1000);
+            const replyResult = await env.DB.prepare(`
+                INSERT INTO admin_review_replies 
+                (review_id, admin_id, content, status, created_at, updated_at) 
+                VALUES (?, ?, ?, 'published', ?, ?)
+            `).bind(
+                reviewId, 
+                adminInfo.adminId, 
+                content, 
+                now, 
+                now
+            ).run();
+            
+            const reply_id = replyResult.meta.last_row_id;
+            
+            // 处理图片
+            if (images && Array.isArray(images) && images.length > 0) {
+                const batch = [];
+                const timestamp = Math.floor(Date.now() / 1000);
+                
+                for (const image of images) {
+                    const random = Math.random().toString(36).substring(2, 12);
+                    const objectKey = `image/Admin-Replies/${reply_id}/${adminInfo.adminId}_${timestamp}_${random}.${image.extension || 'jpg'}`;
+                    
+                    batch.push(env.DB.prepare(`
+                        INSERT INTO admin_reply_images 
+                        (reply_id, admin_id, file_name, file_size, mime_type, object_key, created_at) 
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                    `).bind(
+                        reply_id,
+                        adminInfo.adminId,
+                        image.file_name || 'reply_image',
+                        image.file_size || 0,
+                        image.mime_type || 'image/jpeg',
+                        objectKey,
+                        timestamp
+                    ));
+                }
+                
+                if (batch.length > 0) {
+                    await env.DB.batch(batch);
+                }
+            }
+            
+            // 获取管理员用户名
+            const admin = await env.DB.prepare('SELECT username FROM admins WHERE admin_id = ?')
+                .bind(adminInfo.adminId)
+                .first();
+            
+            return new Response(JSON.stringify({
+                message: '回复评价成功',
+                reply: {
+                    reply_id,
+                    review_id: reviewId,
+                    content,
+                    admin_username: admin?.username || 'admin',
+                    created_at: now,
+                    status: 'published'
+                }
+            }), {
+                status: 200,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            console.error('回复评价失败:', error);
+            return new Response(JSON.stringify({ error: '回复评价失败', details: error.message }), {
+                status: 500,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        }
+    }
+    
+    // 更新评价状态（批准/拒绝）
+    if (path.match(/^\/api\/admin\/reviews\/\d+\/status$/) && request.method === 'PUT') {
+        try {
+            const reviewId = path.split('/')[4];
+            const { status } = await request.json();
+            
+            // 验证状态值
+            if (!['approved', 'rejected', 'pending'].includes(status)) {
+                return new Response(JSON.stringify({ error: '无效的状态值' }), {
+                    status: 400,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                });
+            }
+            
+            // 检查评价是否存在
+            const existingReview = await env.DB.prepare('SELECT review_id FROM product_reviews WHERE review_id = ?')
+                .bind(reviewId)
+                .first();
+                
+            if (!existingReview) {
+                return new Response(JSON.stringify({ error: '评价不存在' }), {
+                    status: 404,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                });
+            }
+            
+            // 更新评价状态
             await env.DB.prepare(`
-                UPDATE reviews 
+                UPDATE product_reviews 
                 SET status = ?, 
-                    admin_reply = ?, 
                     admin_id = ?,
                     updated_at = CURRENT_TIMESTAMP
                 WHERE review_id = ?
-            `).bind(status, admin_reply || null, adminInfo.adminId, reviewId).run();
+            `).bind(status, adminInfo.adminId, reviewId).run();
             
             return new Response(JSON.stringify({
                 message: '评价状态更新成功',
@@ -2928,6 +3113,90 @@ const handleAdminAPI = async (request, env) => {
         }
     }
     
+    // 批准评价
+    if (path.match(/^\/api\/admin\/reviews\/\d+\/approve$/) && request.method === 'PUT') {
+        try {
+            const reviewId = path.split('/')[4];
+            
+            // 检查评价是否存在
+            const existingReview = await env.DB.prepare('SELECT review_id FROM product_reviews WHERE review_id = ?')
+                .bind(reviewId)
+                .first();
+                
+            if (!existingReview) {
+                return new Response(JSON.stringify({ error: '评价不存在' }), {
+                    status: 404,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                });
+            }
+            
+            // 更新评价状态为已批准
+            await env.DB.prepare(`
+                UPDATE product_reviews 
+                SET status = 'approved', 
+                    admin_id = ?,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE review_id = ?
+            `).bind(adminInfo.adminId, reviewId).run();
+            
+            return new Response(JSON.stringify({
+                message: '评价已批准',
+                reviewId,
+                status: 'approved'
+            }), {
+                status: 200,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '批准评价失败', details: error.message }), {
+                status: 500,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        }
+    }
+    
+    // 拒绝评价
+    if (path.match(/^\/api\/admin\/reviews\/\d+\/reject$/) && request.method === 'PUT') {
+        try {
+            const reviewId = path.split('/')[4];
+            
+            // 检查评价是否存在
+            const existingReview = await env.DB.prepare('SELECT review_id FROM product_reviews WHERE review_id = ?')
+                .bind(reviewId)
+                .first();
+                
+            if (!existingReview) {
+                return new Response(JSON.stringify({ error: '评价不存在' }), {
+                    status: 404,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                });
+            }
+            
+            // 更新评价状态为已拒绝
+            await env.DB.prepare(`
+                UPDATE product_reviews 
+                SET status = 'rejected', 
+                    admin_id = ?,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE review_id = ?
+            `).bind(adminInfo.adminId, reviewId).run();
+            
+            return new Response(JSON.stringify({
+                message: '评价已拒绝',
+                reviewId,
+                status: 'rejected'
+            }), {
+                status: 200,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            return new Response(JSON.stringify({ error: '拒绝评价失败', details: error.message }), {
+                status: 500,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        }
+    }
+
     // 删除评价
     if (path.match(/^\/api\/admin\/reviews\/\d+$/) && request.method === 'DELETE') {
         try {
@@ -2942,7 +3211,7 @@ const handleAdminAPI = async (request, env) => {
             const reviewId = path.split('/').pop();
             
             // 检查评价是否存在
-            const existingReview = await env.DB.prepare('SELECT review_id FROM reviews WHERE review_id = ?')
+            const existingReview = await env.DB.prepare('SELECT review_id FROM product_reviews WHERE review_id = ?')
                 .bind(reviewId)
                 .first();
                 
@@ -2953,8 +3222,24 @@ const handleAdminAPI = async (request, env) => {
                 });
             }
             
+            // 删除评价相关的回复图片
+            await env.DB.prepare(`
+                DELETE FROM admin_reply_images 
+                WHERE reply_id IN (SELECT reply_id FROM admin_review_replies WHERE review_id = ?)
+            `).bind(reviewId).run();
+            
+            // 删除评价的回复
+            await env.DB.prepare('DELETE FROM admin_review_replies WHERE review_id = ?')
+                .bind(reviewId)
+                .run();
+                
+            // 删除评价的图片
+            await env.DB.prepare('DELETE FROM product_review_images WHERE review_id = ?')
+                .bind(reviewId)
+                .run();
+            
             // 删除评价
-            await env.DB.prepare('DELETE FROM reviews WHERE review_id = ?')
+            await env.DB.prepare('DELETE FROM product_reviews WHERE review_id = ?')
                 .bind(reviewId)
                 .run();
             
@@ -2973,6 +3258,169 @@ const handleAdminAPI = async (request, env) => {
         }
     }
     
+    // 上传评价回复图片
+    if (path === '/api/admin/reviews/reply/upload-image' && request.method === 'POST') {
+        try {
+            // 确保请求是以multipart/form-data格式发送的
+            const contentType = request.headers.get('Content-Type') || '';
+            if (!contentType.includes('multipart/form-data')) {
+                return new Response(JSON.stringify({ error: '请求格式不正确，需要multipart/form-data' }), {
+                    status: 400,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                });
+            }
+            
+            // 解析表单数据
+            const formData = await request.formData();
+            const file = formData.get('image');
+            const reply_id = formData.get('reply_id');
+            
+            // 验证必要参数
+            if (!file || !(file instanceof File)) {
+                return new Response(JSON.stringify({ error: '未提供图片文件' }), {
+                    status: 400,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                });
+            }
+            
+            if (!reply_id) {
+                return new Response(JSON.stringify({ error: '未提供回复ID' }), {
+                    status: 400,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                });
+            }
+            
+            // 检查回复是否存在
+            const existingReply = await env.DB.prepare('SELECT reply_id FROM admin_review_replies WHERE reply_id = ?')
+                .bind(reply_id)
+                .first();
+            
+            if (!existingReply) {
+                return new Response(JSON.stringify({ error: '回复不存在' }), {
+                    status: 404,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                });
+            }
+            
+            // 生成唯一文件名
+            const timestamp = Math.floor(Date.now() / 1000);
+            const random = Math.random().toString(36).substring(2, 12);
+            const fileExtension = file.name.split('.').pop() || 'jpg';
+            const objectKey = `image/Admin-Replies/${reply_id}/${adminInfo.adminId}_${timestamp}_${random}.${fileExtension}`;
+            
+            // 上传到R2
+            await env.R2_BUCKET.put(objectKey, file, {
+                httpMetadata: {
+                    contentType: file.type,
+                },
+            });
+            
+            // 获取R2自定义域名
+            const r2Domain = 'r2liubaotea.liubaotea.online';
+            const imageUrl = `https://${r2Domain}/${objectKey}`;
+            
+            // 保存到数据库
+            await env.DB.prepare(`
+                INSERT INTO admin_reply_images 
+                (reply_id, admin_id, file_name, file_size, mime_type, object_key, created_at) 
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            `).bind(
+                reply_id,
+                adminInfo.adminId,
+                file.name,
+                file.size,
+                file.type,
+                objectKey,
+                timestamp
+            ).run();
+            
+            // 返回上传成功的图片信息
+            return new Response(JSON.stringify({
+                message: '图片上传成功',
+                image: {
+                    object_key: objectKey,
+                    url: imageUrl,
+                    file_name: file.name,
+                    file_size: file.size,
+                    mime_type: file.type
+                }
+            }), {
+                status: 200,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            console.error('上传评价回复图片失败:', error);
+            return new Response(JSON.stringify({ error: '上传评价回复图片失败', details: error.message }), {
+                status: 500,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        }
+    }
+    
+    // 获取评价回复列表
+    if (path === '/api/admin/reviews/replies' && request.method === 'GET') {
+        try {
+            const reviewId = url.searchParams.get('review_id');
+            if (!reviewId) {
+                return new Response(JSON.stringify({ error: '未提供评价ID' }), {
+                    status: 400,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                });
+            }
+            
+            // 查询评价的所有回复
+            const { results: replies } = await env.DB.prepare(`
+                SELECT 
+                    r.*,
+                    a.username as admin_username
+                FROM admin_review_replies r
+                LEFT JOIN admins a ON r.admin_id = a.admin_id
+                WHERE r.review_id = ?
+                ORDER BY r.created_at DESC
+            `).bind(reviewId).all();
+            
+            // 获取每条回复的图片
+            if (replies && replies.length > 0) {
+                const replyIds = replies.map(r => r.reply_id);
+                const placeholders = replyIds.map(() => '?').join(',');
+                
+                // 批量查询回复图片
+                const { results: imageResults } = await env.DB.prepare(`
+                    SELECT reply_id, object_key 
+                    FROM admin_reply_images 
+                    WHERE reply_id IN (${placeholders})
+                `).bind(...replyIds).all();
+                
+                // 组织图片数据
+                const imagesByReplyId = {};
+                if (imageResults && imageResults.length > 0) {
+                    imageResults.forEach(img => {
+                        if (!imagesByReplyId[img.reply_id]) {
+                            imagesByReplyId[img.reply_id] = [];
+                        }
+                        imagesByReplyId[img.reply_id].push(img.object_key);
+                    });
+                }
+                
+                // 将图片数据添加到回复中
+                replies.forEach(reply => {
+                    reply.images = imagesByReplyId[reply.reply_id] || [];
+                });
+            }
+            
+            return new Response(JSON.stringify(replies), {
+                status: 200,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            console.error('获取评价回复列表失败:', error);
+            return new Response(JSON.stringify({ error: '获取评价回复列表失败', details: error.message }), {
+                status: 500,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        }
+    }
+
     //==========================================================================
     //                       数据统计API
     //==========================================================================
