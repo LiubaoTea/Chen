@@ -9,7 +9,7 @@ import { getProductReviews } from './api-extended.js';
 const config = {
     pageSize: 5,         // 每页显示评价数量
     imageBasePath: 'https://r2liubaotea.liubaotea.online/image/Product-Reviews/', // R2存储图片路径
-    defaultAvatar: './assets/avatars/test_avatars.png', // 默认用户头像，使用项目中的图片
+    defaultAvatar: '/assets/avatars/test_avatars.png', // 默认用户头像，使用绝对路径
     ratingTexts: ['很差', '较差', '一般', '不错', '很好'] // 评分对应文本
 };
 
@@ -770,7 +770,7 @@ function getImageUrl(imagePath) {
             
             if (orderId && orderId.startsWith('LB')) {
                 // 构建新格式的图片路径
-                const newImagePath = `${orderId}_review_${timestamp}_${generateRandomString(6)}.jpg`;
+                const newImagePath = `${orderId}_review_${timestamp}_*.jpg`;
                 const fullUrl = `${config.imageBasePath}${newImagePath}`;
                 console.log(`转换为新格式图片路径: ${fullUrl}`);
                 return fullUrl;
@@ -785,17 +785,10 @@ function getImageUrl(imagePath) {
         return fullUrl;
     }
     
-    // 检查是否已经包含文件扩展名
-    if (!imagePath.endsWith('.jpg') && !imagePath.endsWith('.jpeg') && !imagePath.endsWith('.png')) {
-        // 添加默认扩展名
-        const fullUrl = `${config.imageBasePath}${imagePath}.jpg`;
-        console.log(`添加默认扩展名: ${fullUrl}`);
-        return fullUrl;
-    }
-    
-    // 默认情况下，直接拼接R2路径
-    const fullUrl = `${config.imageBasePath}${imagePath}`;
-    console.log(`使用默认路径: ${fullUrl}`);
+    // 默认情况下，添加通配符和扩展名
+    // 这样可以匹配任何以imagePath为前缀的图片
+    const fullUrl = `${config.imageBasePath}*${imagePath}*.jpg`;
+    console.log(`使用通配符默认路径: ${fullUrl}`);
     return fullUrl;
 }
 
