@@ -9,7 +9,7 @@ import { getProductReviews } from './api-extended.js';
 const config = {
     pageSize: 5,         // 每页显示评价数量
     imageBasePath: 'https://r2liubaotea.liubaotea.online/image/Product-Reviews/', // R2存储图片路径
-    defaultAvatar: '/assets/avatars/test_avatars.png', // 默认用户头像，使用根路径
+    defaultAvatar: './assets/avatars/test_avatars.png', // 默认用户头像，使用相对路径
     ratingTexts: ['很差', '较差', '一般', '不错', '很好'] // 评分对应文本
 };
 
@@ -297,6 +297,12 @@ function renderReviewsList() {
         // 用户头像
         const avatarContainer = document.createElement('div');
         avatarContainer.className = 'reviewer-avatar';
+        // 设置头像容器样式
+        avatarContainer.style.width = '40px';
+        avatarContainer.style.height = '40px';
+        avatarContainer.style.borderRadius = '50%';
+        avatarContainer.style.overflow = 'hidden';
+        avatarContainer.style.marginRight = '10px';
         
         const avatarImg = document.createElement('img');
         // 检查是否有用户头像，如果没有直接使用默认头像
