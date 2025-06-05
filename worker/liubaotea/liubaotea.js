@@ -3703,7 +3703,7 @@ const handleProductReviews = async (request, env) => {
             // 处理评价图片 - 从R2对象存储中获取图片
             const reviewPromises = reviewsData.map(async review => {
                 // 根据订单号构建图片名称
-                // 示例：LB202505116968_review_1748255231266_ld5ckm.jpg
+                // 实际R2存储中的图片名称格式：LB202505116968_review_1748255231266_ld5ckm.jpg
                 const reviewId = review.review_id;
                 const timestamp = review.created_at;
                 
@@ -3719,27 +3719,27 @@ const handleProductReviews = async (request, env) => {
                     review.images = [];
                     
                     if (orderItem && orderItem.order_number) {
-                        // 构建基于订单号的图片名称
-                        // 格式：{orderNumber}_review_{timestamp}
-                        // 不包含随机字符串和文件扩展名，前端getImageUrl函数将负责处理
+                        // 构建与R2存储中实际文件名匹配的图片名称
+                        // 格式：{orderNumber}_review_{timestamp}_{randomString}.jpg
+                        // 由于随机字符串在上传时生成，这里使用通配符格式
                         const imagePattern = `${orderItem.order_number}_review_${timestamp}`;
                         
-                        // 返回不带文件扩展名和通配符的图片名称前缀
-                        // 前端将负责处理完整的图片路径构建
-                        review.images = [`${imagePattern}`];
-                        console.log('为评价ID:', reviewId, '设置基于订单号的图片名称前缀:', review.images[0]);
+                        // 返回完整的图片名称，包括通配符和扩展名
+                        review.images = [`${imagePattern}_*.jpg`];
+                        console.log('为评价ID:', reviewId, '设置基于订单号的图片名称:', review.images[0]);
                     } else {
                         // 如果没有找到订单号，使用通用格式
-                        // 格式：review_{review_id}_{timestamp}
-                        // 不包含文件扩展名，前端getImageUrl函数将负责处理
-                        review.images = [`review_${review.review_id}_${review.created_at}`];
-                        console.log('为评价ID:', reviewId, '设置通用图片名称前缀:', review.images[0]);
+                        // 格式：*_review_{timestamp}_*.jpg
+                        // 使用通配符匹配任何前缀和随机字符串
+                        // 不要使用 review_{reviewId}_{timestamp} 格式，这与R2存储中的实际文件名不匹配
+                        review.images = [`*_review_${timestamp}_*.jpg`];
+                        console.log('为评价ID:', reviewId, '设置通用图片名称:', review.images[0]);
                     }
                 } catch (error) {
                     console.error('处理评价图片失败:', error);
-                    // 使用通用格式作为后备，不包含文件扩展名
-                    review.images = [`review_${review.review_id}_${review.created_at}`];
-                    console.log('为评价ID:', reviewId, '设置通用后备图片名称前缀:', review.images[0]);
+                    // 使用通用格式作为后备，包含通配符和扩展名
+                    review.images = [`*_review_${timestamp}_*.jpg`];
+                    console.log('为评价ID:', reviewId, '设置通用后备图片名称:', review.images[0]);
                 }
                 
                 return review;

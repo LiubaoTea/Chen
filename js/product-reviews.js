@@ -727,40 +727,52 @@ function getRatingText(rating) {
 
 /**
  * 获取图片URL
- * @param {string} imagePath - 图片路径或前缀
+ * @param {string} imagePath - 图片路径或名称
  * @returns {string} 完整的图片URL
  */
 function getImageUrl(imagePath) {
+    if (!imagePath) return '';
+    
     // 如果已经是完整URL，直接返回
     if (imagePath.startsWith('http')) {
         return imagePath;
     }
     
-    // 如果是订单号开头的新格式（例如：LB202505116968_review_1748255231266）
+    // 如果已经包含文件扩展名和通配符，直接拼接基础路径
+    if (imagePath.includes('*') && (imagePath.endsWith('.jpg') || imagePath.endsWith('.png') || imagePath.endsWith('.jpeg'))) {
+        const fullUrl = `${config.imageBasePath}${imagePath}`;
+        console.log(`使用完整图片路径: ${fullUrl}`);
+        return fullUrl;
+    }
+    
+    // 处理订单号开头的图片名称（例如：LB202505116968_review_1748255231266_*.jpg）
     if (imagePath.startsWith('LB')) {
         // 检查是否已经包含文件扩展名
-        if (imagePath.endsWith('.jpg') || imagePath.endsWith('.jpeg') || 
-            imagePath.endsWith('.png') || imagePath.endsWith('.gif')) {
-            // 已有扩展名，直接使用
-            const fullUrl = `${config.imageBasePath}${imagePath}`;
-            console.log(`处理订单号开头的完整图片名: ${fullUrl}`);
-            return fullUrl;
+        if (imagePath.endsWith('.jpg') || imagePath.endsWith('.png') || imagePath.endsWith('.jpeg') || 
+            imagePath.endsWith('.gif')) {
+            return `${config.imageBasePath}${imagePath}`;
         } else {
-            // 没有扩展名，添加通配符和扩展名
-            // 这里的通配符会匹配随机字符串部分
+            // 添加通配符和扩展名（如果需要）
             const fullUrl = `${config.imageBasePath}${imagePath}_*.jpg`;
-            console.log(`处理订单号开头的图片名前缀: ${fullUrl}`);
+            console.log(`处理订单号开头的图片路径: ${fullUrl}`);
             return fullUrl;
         }
     }
     
-    // 处理旧格式图片名称前缀（例如：review_7_1748255247）
+    // 处理旧格式图片名称（例如：review_7_1748255247_*.jpg）
     const oldFormatMatch = imagePath.match(/review_(\d+)_(\d+)/);
     if (oldFormatMatch) {
         const reviewId = oldFormatMatch[1];
         const timestamp = oldFormatMatch[2];
         
-        console.log(`检测到旧格式图片前缀: ${imagePath}, reviewId: ${reviewId}, timestamp: ${timestamp}`);
+        console.log(`检测到旧格式图片名称: ${imagePath}, reviewId: ${reviewId}, timestamp: ${timestamp}`);
+        
+        // 如果已经包含通配符和扩展名，直接使用
+        if (imagePath.includes('*') && imagePath.endsWith('.jpg')) {
+            const fullUrl = `${config.imageBasePath}${imagePath}`;
+            console.log(`使用完整的旧格式图片路径: ${fullUrl}`);
+            return fullUrl;
+        }
         
         // 尝试找到匹配的评论
         const matchingReview = state.reviews.find(r => r.review_id && r.review_id.toString() === reviewId);
@@ -779,18 +791,24 @@ function getImageUrl(imagePath) {
         }
         
         // 如果找不到匹配的评论或没有订单号，尝试在R2中查找通配符匹配
-        // 例如：*_review_1748255247_*.jpg
         const wildcardPath = `*_review_${timestamp}_*.jpg`;
         const fullUrl = `${config.imageBasePath}${wildcardPath}`;
         console.log(`使用通配符路径: ${fullUrl}`);
         return fullUrl;
     }
     
-    // 默认情况下，添加通配符和扩展名
-    // 这样可以匹配任何以imagePath为前缀的图片
-    const fullUrl = `${config.imageBasePath}${imagePath}_*.jpg`;
-    console.log(`使用通配符默认路径: ${fullUrl}`);
-    return fullUrl;
+    // 默认情况下，直接使用提供的路径
+    // 如果后端已经提供了完整的图片名称（包括通配符和扩展名），则不需要再添加
+    if (imagePath.endsWith('.jpg') || imagePath.endsWith('.png') || imagePath.endsWith('.jpeg') || imagePath.endsWith('.gif')) {
+        const fullUrl = `${config.imageBasePath}${imagePath}`;
+        console.log(`使用默认图片路径: ${fullUrl}`);
+        return fullUrl;
+    } else {
+        // 如果没有扩展名，添加通配符和扩展名
+        const fullUrl = `${config.imageBasePath}${imagePath}_*.jpg`;
+        console.log(`使用通配符默认路径: ${fullUrl}`);
+        return fullUrl;
+    }
 }
 
 /**
