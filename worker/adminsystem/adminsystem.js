@@ -2963,14 +2963,81 @@ const handleAdminAPI = async (request, env) => {
     if (path.match(/^\/api\/admin\/reviews\/\d+\/reply$/) && request.method === 'POST') {
         try {
             const reviewId = path.split('/')[4];
-            const { content, images } = await request.json();
+            console.log('处理回复评价请求, reviewId:', reviewId);
             
+            let content = '';
+            let images = [];
+            
+            // 检查请求类型，区分处理FormData和JSON
+            const contentType = request.headers.get('Content-Type') || '';
+            console.log('请求Content-Type:', contentType);
+            
+            if (contentType.includes('multipart/form-data')) {
+                // 处理FormData格式的请求
+                try {
+                    console.log('解析FormData请求');
+                    const formData = await request.formData();
+                    content = formData.get('content') || '';
+                    
+                    // 尝试获取图片JSON数据
+                    const imagesJson = formData.get('images');
+                    if (imagesJson) {
+                        try {
+                            console.log('解析图片JSON数据:', imagesJson);
+                            images = JSON.parse(imagesJson);
+                            console.log('解析后的图片数据:', images);
+                        } catch (jsonError) {
+                            console.error('解析图片JSON数据失败:', jsonError);
+                            // 解析失败时设置为空数组
+                            images = [];
+                        }
+                    }
+                    
+                    // 获取上传的文件
+                    for (let i = 0; formData.has(`image_${i}`); i++) {
+                        const file = formData.get(`image_${i}`);
+                        console.log(`收到上传的文件 image_${i}:`, file ? file.name : 'undefined');
+                        // 处理实际文件...
+                    }
+                } catch (formDataError) {
+                    console.error('解析FormData失败:', formDataError);
+                    return new Response(JSON.stringify({ 
+                        error: '解析FormData请求失败', 
+                        details: formDataError.message 
+                    }), {
+                        status: 400,
+                        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                    });
+                }
+            } else {
+                // 处理JSON格式的请求
+                try {
+                    console.log('解析JSON请求');
+                    const jsonData = await request.json();
+                    content = jsonData.content || '';
+                    images = jsonData.images || [];
+                } catch (jsonError) {
+                    console.error('解析JSON请求失败:', jsonError);
+                    return new Response(JSON.stringify({ 
+                        error: '解析JSON请求失败', 
+                        details: jsonError.message 
+                    }), {
+                        status: 400,
+                        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                    });
+                }
+            }
+            
+            // 验证内容
             if (!content || content.trim() === '') {
                 return new Response(JSON.stringify({ error: '回复内容不能为空' }), {
                     status: 400,
                     headers: { ...corsHeaders, 'Content-Type': 'application/json' }
                 });
             }
+            
+            console.log('回复内容:', content);
+            console.log('图片数据:', images);
             
             // 检查评价是否存在
             const existingReview = await env.DB.prepare('SELECT review_id FROM product_reviews WHERE review_id = ?')
@@ -2984,11 +3051,11 @@ const handleAdminAPI = async (request, env) => {
                 });
             }
             
-            // 创建回复记录
+            // 创建回复记录，注意字段名称为reply_content
             const now = Math.floor(Date.now() / 1000);
             const replyResult = await env.DB.prepare(`
                 INSERT INTO admin_review_replies 
-                (review_id, admin_id, content, status, created_at, updated_at) 
+                (review_id, admin_id, reply_content, status, created_at, updated_at) 
                 VALUES (?, ?, ?, 'published', ?, ?)
             `).bind(
                 reviewId, 
@@ -2998,8 +3065,6 @@ const handleAdminAPI = async (request, env) => {
                 now
             ).run();
             
-            const reply_id = replyResult.meta.last_row_id;
-            
             // 处理图片
             if (images && Array.isArray(images) && images.length > 0) {
                 const batch = [];
@@ -3007,14 +3072,14 @@ const handleAdminAPI = async (request, env) => {
                 
                 for (const image of images) {
                     const random = Math.random().toString(36).substring(2, 12);
-                    const objectKey = `image/Admin-Replies/${reply_id}/${adminInfo.adminId}_${timestamp}_${random}.${image.extension || 'jpg'}`;
+                    const objectKey = `image/Admin-Replies/${replyResult.meta.last_row_id}/${adminInfo.adminId}_${timestamp}_${random}.${image.extension || 'jpg'}`;
                     
                     batch.push(env.DB.prepare(`
                         INSERT INTO admin_reply_images 
                         (reply_id, admin_id, file_name, file_size, mime_type, object_key, created_at) 
                         VALUES (?, ?, ?, ?, ?, ?, ?)
                     `).bind(
-                        reply_id,
+                        replyResult.meta.last_row_id,
                         adminInfo.adminId,
                         image.file_name || 'reply_image',
                         image.file_size || 0,
@@ -3037,7 +3102,7 @@ const handleAdminAPI = async (request, env) => {
             return new Response(JSON.stringify({
                 message: '回复评价成功',
                 reply: {
-                    reply_id,
+                    reply_id: replyResult.meta.last_row_id,
                     review_id: reviewId,
                     content,
                     admin_username: admin?.username || 'admin',
