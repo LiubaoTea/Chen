@@ -101,8 +101,17 @@ function updateReviewsList() {
         
         // 评价图片 - 只显示第一张
         const firstImage = review.images && review.images.length > 0 ? review.images[0] : '';
+        console.log('评价图片URL:', firstImage); // 添加日志跟踪图片URL
+        
+        // 添加R2域名前缀（如果图片路径不包含完整的URL）
+        let imageUrl = firstImage;
+        if (imageUrl && !imageUrl.startsWith('http')) {
+            imageUrl = `https://r2liubaotea.liubaotea.online/${imageUrl}`;
+            console.log('添加域名前缀后的图片URL:', imageUrl);
+        }
+        
         const imageHtml = firstImage ? 
-            `<img src="${firstImage}" class="review-image-thumbnail" alt="评价图片" data-bs-toggle="modal" data-bs-target="#reviewDetailModal" data-review-id="${review.review_id}">` : 
+            `<img src="${imageUrl}" class="review-image-thumbnail" alt="评价图片" data-bs-toggle="modal" data-bs-target="#reviewDetailModal" data-review-id="${review.review_id}" onerror="console.error('图片加载失败:', this.src); this.src='../image/liubaotea_logo.png'; this.classList.add('img-error');">` : 
             '<div class="no-image">无图片</div>';
         
         row.innerHTML = `
@@ -340,11 +349,21 @@ async function handleViewReview(e) {
                 </div>
                 <div class="card-body">
                     <div class="review-images-gallery">
-                        ${review.images.map(img => `
-                            <div class="review-image-item">
-                                <img src="${img}" class="img-fluid rounded" alt="评价图片">
-                            </div>
-                        `).join('')}
+                        ${review.images.map(img => {
+                            console.log('详情页评价图片URL:', img);
+                            // 添加R2域名前缀（如果图片路径不包含完整的URL）
+                            let imageUrl = img;
+                            if (imageUrl && !imageUrl.startsWith('http')) {
+                                imageUrl = `https://r2liubaotea.liubaotea.online/${imageUrl}`;
+                                console.log('详情页添加域名前缀后的图片URL:', imageUrl);
+                            }
+                            return `
+                                <div class="review-image-item">
+                                    <img src="${imageUrl}" class="img-fluid rounded" alt="评价图片" 
+                                        onerror="console.error('详情页图片加载失败:', this.src); this.src='../image/liubaotea_logo.png'; this.classList.add('img-error');">
+                                </div>
+                            `;
+                        }).join('')}
                     </div>
                 </div>
             </div>` : '';
@@ -361,9 +380,19 @@ async function handleViewReview(e) {
                         `<div class="mt-3">
                             <h6 class="text-muted mb-2">回复图片：</h6>
                             <div class="d-flex flex-wrap gap-2">
-                                ${review.reply.images.map(img => `
-                                    <img src="${img}" class="img-thumbnail" style="max-width: 100px; max-height: 100px;" alt="回复图片">
-                                `).join('')}
+                                ${review.reply.images.map(img => {
+                                    console.log('回复图片URL:', img);
+                                    // 添加R2域名前缀（如果图片路径不包含完整的URL）
+                                    let imageUrl = img;
+                                    if (imageUrl && !imageUrl.startsWith('http')) {
+                                        imageUrl = `https://r2liubaotea.liubaotea.online/${imageUrl}`;
+                                        console.log('回复图片添加域名前缀后的URL:', imageUrl);
+                                    }
+                                    return `
+                                        <img src="${imageUrl}" class="img-thumbnail" style="max-width: 100px; max-height: 100px;" alt="回复图片"
+                                            onerror="console.error('回复图片加载失败:', this.src); this.src='../image/liubaotea_logo.png'; this.classList.add('img-error');">
+                                    `;
+                                }).join('')}
                             </div>
                         </div>` : ''
                     }

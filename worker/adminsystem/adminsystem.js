@@ -2232,12 +2232,9 @@ const handleAdminAPI = async (request, env) => {
             const { status, notes } = await request.json();
             
             // 验证状态值
-            const validStatuses = ['pending', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded'];
+            const validStatuses = ['pending', 'paid', 'shipped', 'delivered', 'cancelled', 'refunded'];
             if (!validStatuses.includes(status)) {
-                return new Response(JSON.stringify({ 
-                    error: '无效的订单状态', 
-                    validStatuses 
-                }), {
+                return new Response(JSON.stringify({ error: '无效的状态值' }), {
                     status: 400,
                     headers: { ...corsHeaders, 'Content-Type': 'application/json' }
                 });

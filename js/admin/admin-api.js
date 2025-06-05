@@ -1123,28 +1123,44 @@ const adminAPIObject = {
     replyReview: async (reviewId, content, images = []) => {
         try {
             const url = `${ADMIN_API_BASE_URL}/api/admin/reviews/${reviewId}/reply`;
-            console.log('发送回复评价请求，URL:', url);
+            console.log('发送回复评价请求，URL:', url, '内容:', content, '图片数量:', images.length);
+            
+            // 检查内容是否为空
+            if (!content || content.trim() === '') {
+                console.error('回复内容不能为空');
+                throw new Error('回复内容不能为空');
+            }
+            
+            // 检查reviewId是否有效
+            if (!reviewId) {
+                console.error('无效的评价ID');
+                throw new Error('无效的评价ID');
+            }
             
             // 如果有图片，使用FormData
             if (images && images.length > 0) {
+                console.log('使用FormData提交带图片的回复');
                 const formData = new FormData();
                 formData.append('content', content);
                 
-                // 如果需要添加图片
-                if (images && images.length > 0) {
-                    // 添加图片数据为JSON字符串
-                    formData.append('images', JSON.stringify(images.map(img => ({
-                        extension: img.extension,
-                        file_name: img.file_name,
-                        file_size: img.file_size,
-                        mime_type: img.mime_type
-                    }))));
-                    
-                    // 添加实际文件
-                    images.forEach((img, index) => {
+                // 添加图片数据为JSON字符串
+                const imagesData = images.map(img => ({
+                    extension: img.extension || 'jpg',
+                    file_name: img.file_name || 'image.jpg',
+                    file_size: img.file_size || 0,
+                    mime_type: img.mime_type || 'image/jpeg'
+                }));
+                
+                console.log('图片元数据:', JSON.stringify(imagesData));
+                formData.append('images', JSON.stringify(imagesData));
+                
+                // 添加实际文件
+                images.forEach((img, index) => {
+                    if (img.file) {
+                        console.log(`添加图片${index}:`, img.file.name, img.file.type, img.file.size);
                         formData.append(`image_${index}`, img.file);
-                    });
-                }
+                    }
+                });
                 
                 const response = await fetch(url, {
                     method: 'POST',
@@ -1167,13 +1183,17 @@ const adminAPIObject = {
                 
             } else {
                 // 无图片时使用JSON
+                console.log('使用JSON提交纯文本回复');
+                const payload = { content };
+                console.log('请求数据:', JSON.stringify(payload));
+                
                 const response = await fetch(url, {
                     method: 'POST',
                     headers: {
                         ...adminAuth.getHeaders(),
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ content })
+                    body: JSON.stringify(payload)
                 });
                 
                 if (!response.ok) {
