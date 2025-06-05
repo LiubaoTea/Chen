@@ -49,7 +49,7 @@
 }
 
 .stars-container i {
-    color: #ffc107; /* 黄色星星 */
+    color: #FFD700; /* 金黄色星星 */
     font-size: 1.2rem;
     margin: 0 2px;
 }
@@ -92,7 +92,7 @@
 
 .progress-bar {
     height: 100%;
-    background-color: #ffc107;
+    background-color: #FFD700;
     border-radius: 4px;
 }
 
@@ -150,12 +150,14 @@
 .review-header {
     display: flex;
     justify-content: space-between;
+    align-items: center;
     margin-bottom: 10px;
 }
 
 .reviewer-info {
     display: flex;
     align-items: center;
+    flex-grow: 1;
 }
 
 .reviewer-avatar {
@@ -177,11 +179,27 @@
 .reviewer-name {
     font-weight: 500;
     color: #333;
+    margin-right: 10px;
 }
 
 .review-date {
     color: #9e9e9e;
     font-size: 0.85rem;
+    margin-left: 15px;
+    display: inline-flex;
+    align-items: center;
+}
+
+/* 添加一个小圆点分隔用户名和时间 */
+.reviewer-name::after {
+    content: '';
+    display: inline-block;
+    width: 3px;
+    height: 3px;
+    background-color: #9e9e9e;
+    border-radius: 50%;
+    margin-left: 10px;
+    vertical-align: middle;
 }
 
 .review-rating {
@@ -189,7 +207,7 @@
 }
 
 .review-rating i {
-    color: #ffc107; /* 黄色星星 */
+    color: #FFD700; /* 金黄色星星 */
     font-size: 1rem;
     margin-right: 2px;
 }

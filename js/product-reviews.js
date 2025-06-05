@@ -115,11 +115,15 @@ async function loadReviews() {
         showLoading(true);
         
         // 调用API获取评价数据
+        console.log(`正在获取商品(ID: ${state.productId})的评价数据...`);
         const response = await getProductReviews(state.productId);
+        console.log('获取到的评价数据:', response);
         
-        if (response && response.reviews) {
+        if (response && response.reviews && response.reviews.length > 0) {
             state.reviews = response.reviews;
             state.ratingStats.total = response.total || state.reviews.length;
+            
+            console.log(`获取到 ${state.reviews.length} 条评价数据`);
             
             // 计算评分统计
             calculateRatingStats();
@@ -130,6 +134,7 @@ async function loadReviews() {
             // 更新UI
             updateRatingSummary();
         } else {
+            console.log('没有找到评价数据或评价为空');
             // 处理无评价情况
             showNoReviews();
         }
@@ -153,31 +158,54 @@ function calculateRatingStats() {
     
     // 计算各评分数量
     state.reviews.forEach(review => {
-        const rating = review.rating;
+        // 确保rating是数字类型
+        const rating = parseInt(review.rating);
         if (rating >= 1 && rating <= 5) {
             state.ratingStats.distribution[rating]++;
         }
     });
     
     // 计算平均分
-    const totalScore = state.reviews.reduce((sum, review) => sum + review.rating, 0);
+    const totalScore = state.reviews.reduce((sum, review) => {
+        // 确保rating是数字类型
+        const rating = parseInt(review.rating);
+        return sum + (isNaN(rating) ? 0 : rating);
+    }, 0);
+    
     state.ratingStats.average = totalScore / state.reviews.length;
+    
+    // 确保总评价数更新
+    state.ratingStats.total = state.reviews.length;
+    
+    console.log('评分统计结果:', {
+        average: state.ratingStats.average,
+        total: state.ratingStats.total,
+        distribution: state.ratingStats.distribution
+    });
 }
 
 /**
  * 更新评分摘要UI
  */
 function updateRatingSummary() {
+    console.log('开始更新评分摘要，当前评分统计:', state.ratingStats);
+    
     // 更新平均分
     const ratingValueEl = document.querySelector('.rating-value');
     if (ratingValueEl) {
         ratingValueEl.textContent = state.ratingStats.average.toFixed(1);
+        console.log('更新平均分显示为:', state.ratingStats.average.toFixed(1));
+    } else {
+        console.warn('未找到rating-value元素');
     }
     
     // 更新评价数量
     const ratingCountEl = document.querySelector('.rating-count');
     if (ratingCountEl) {
         ratingCountEl.textContent = `(${state.ratingStats.total}条评价)`;
+        console.log('更新评价数量显示为:', state.ratingStats.total);
+    } else {
+        console.warn('未找到rating-count元素');
     }
     
     // 更新星级显示
@@ -188,14 +216,29 @@ function updateRatingSummary() {
     if (total > 0) {
         for (let i = 5; i >= 1; i--) {
             const count = state.ratingStats.distribution[i] || 0;
-            const percent = total > 0 ? Math.round((count / total) * 100) : 0;
+            const percent = Math.round((count / total) * 100);
             
             const progressBar = document.querySelector(`.rating-bar:nth-child(${6-i}) .progress-bar`);
             const percentText = document.querySelector(`.rating-bar:nth-child(${6-i}) .rating-percent`);
             
-            if (progressBar) progressBar.style.width = `${percent}%`;
-            if (percentText) percentText.textContent = `${percent}%`;
+            // 确保进度条宽度至少为5%，以便可见
+            const displayPercent = Math.max(5, percent);
+            
+            if (progressBar) {
+                progressBar.style.width = `${displayPercent}%`;
+                console.log(`${i}星评分占比: ${percent}%, 显示宽度: ${displayPercent}%`);
+            } else {
+                console.warn(`未找到${i}星评分进度条元素`);
+            }
+            
+            if (percentText) {
+                percentText.textContent = `${percent}%`;
+            } else {
+                console.warn(`未找到${i}星评分百分比文本元素`);
+            }
         }
+    } else {
+        console.warn('评价总数为0，不更新评分分布');
     }
 }
 
@@ -344,13 +387,19 @@ function renderReviewsList() {
         reviewerName.textContent = review.username || '匿名用户';
         reviewerInfo.appendChild(reviewerName);
         
-        reviewHeader.appendChild(reviewerInfo);
-        
-        // 评价日期
+        // 评价日期 - 现在添加到reviewerInfo中使其在同一行
         const reviewDate = document.createElement('div');
         reviewDate.className = 'review-date';
         reviewDate.textContent = formatDate(review.created_at);
-        reviewHeader.appendChild(reviewDate);
+        // 添加左边距
+        reviewDate.style.marginLeft = '15px';
+        reviewDate.style.fontSize = '0.85rem';
+        reviewDate.style.color = '#9e9e9e';
+        
+        reviewerInfo.appendChild(reviewDate);
+        
+        // 将整个用户信息区域添加到评价头部
+        reviewHeader.appendChild(reviewerInfo);
         
         reviewItem.appendChild(reviewHeader);
         
