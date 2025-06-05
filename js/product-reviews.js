@@ -9,7 +9,7 @@ import { getProductReviews } from './api-extended.js';
 const config = {
     pageSize: 5,         // 每页显示评价数量
     imageBasePath: 'https://r2liubaotea.liubaotea.online/image/Product-Reviews/', // R2存储图片路径
-    defaultAvatar: './assets/avatars/test_avatars.png', // 默认用户头像，使用相对路径
+    defaultAvatar: '/assets/avatars/test_avatars.png', // 默认用户头像，使用根路径
     ratingTexts: ['很差', '较差', '一般', '不错', '很好'] // 评分对应文本
 };
 
@@ -299,20 +299,35 @@ function renderReviewsList() {
         avatarContainer.className = 'reviewer-avatar';
         
         const avatarImg = document.createElement('img');
-        // 使用用户头像或默认头像
-        avatarImg.src = review.avatar_url || config.defaultAvatar;
+        // 检查是否有用户头像，如果没有直接使用默认头像
+        const hasCustomAvatar = review.avatar_url && review.avatar_url.trim() !== '';
+        
+        // 设置头像图片属性
         avatarImg.alt = '用户头像';
-        // 添加样式确保图片正确显示
         avatarImg.style.width = '100%';
         avatarImg.style.height = '100%';
         avatarImg.style.objectFit = 'cover';
+        
+        // 先设置默认头像的预加载，确保默认头像可用
+        const defaultImg = new Image();
+        defaultImg.src = config.defaultAvatar;
+        
+        // 设置头像加载错误处理
         avatarImg.onerror = function() {
-            // 头像加载失败时使用默认头像
+            console.log('头像加载失败，使用默认头像:', config.defaultAvatar);
             this.src = config.defaultAvatar;
             // 防止循环触发错误
             this.onerror = null;
-            console.log('头像加载失败，使用默认头像:', config.defaultAvatar);
         };
+        
+        // 设置头像源
+        if (hasCustomAvatar) {
+            avatarImg.src = review.avatar_url;
+            console.log('使用用户自定义头像:', review.avatar_url);
+        } else {
+            avatarImg.src = config.defaultAvatar;
+            console.log('使用默认头像:', config.defaultAvatar);
+        }
         
         avatarContainer.appendChild(avatarImg);
         reviewerInfo.appendChild(avatarContainer);

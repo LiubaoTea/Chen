@@ -3718,15 +3718,37 @@ const handleProductReviews = async (request, env) => {
                     review.images = [];
                     
                     // 获取评价创建时间的毫秒级时间戳（13位）
-                    // 将Unix时间戳（秒）转换为毫秒级时间戳
-                    const timestamp = review.created_at * 1000;
-                    console.log('评价ID:', reviewId, '使用毫秒级时间戳:', timestamp);
+                    // 注意：这里不再将秒级时间戳乘以1000，而是直接使用毫秒级时间戳
+                    // 查询数据库获取评价的实际创建时间（毫秒级）
+                    const reviewDetails = await env.DB.prepare(
+                        `SELECT created_at_ms FROM product_reviews WHERE review_id = ?`
+                    ).bind(reviewId).first();
+                    
+                    // 如果存在毫秒级时间戳，则使用它；否则尝试使用秒级时间戳乘以1000
+                    let timestamp;
+                    if (reviewDetails && reviewDetails.created_at_ms) {
+                        timestamp = reviewDetails.created_at_ms;
+                    } else {
+                        // 尝试多种可能的时间戳格式
+                        // 1. 使用秒级时间戳乘以1000（标准转换）
+                        const timestampFromSeconds = review.created_at * 1000;
+                        // 2. 尝试使用秒级时间戳的前10位和后3位组合（某些系统的特殊格式）
+                        const timestampSpecial = parseInt(`${review.created_at}000`);
+                        
+                        // 记录所有可能的时间戳格式，以便调试
+                        console.log('评价ID:', reviewId, '可能的时间戳格式:',
+                            { fromSeconds: timestampFromSeconds, special: timestampSpecial });
+                        
+                        // 默认使用标准转换
+                        timestamp = timestampFromSeconds;
+                    }
+                    
+                    console.log('评价ID:', reviewId, '最终使用的毫秒级时间戳:', timestamp);
                     
                     if (orderItem && orderItem.order_number) {
                         // 构建与R2存储中实际文件名匹配的图片名称
                         // 格式：LB{orderNumber}_review_{timestamp}_{randomString}.jpg
                         // 由于随机字符串在上传时生成，这里使用通配符格式
-                        // 实际R2存储中的图片名称格式：LB202505116968_review_1748255231266_ld5ckm.jpg
                         const imagePattern = `LB${orderItem.order_number}_review_${timestamp}`;
                         
                         // 返回完整的图片名称，包括通配符和扩展名
@@ -3736,7 +3758,6 @@ const handleProductReviews = async (request, env) => {
                         // 如果没有找到订单号，使用通用格式
                         // 格式：LB*_review_{timestamp}_*.jpg
                         // 使用通配符匹配任何前缀和随机字符串
-                        // 实际R2存储中的图片名称格式：LB202505116968_review_1748255231266_ld5ckm.jpg
                         review.images = [`LB*_review_${timestamp}_*.jpg`];
                         console.log('为评价ID:', reviewId, '设置通用图片名称:', review.images[0]);
                     }
@@ -4115,6 +4136,9 @@ const handleImageUpload = async (request, env) => {
         } else if (!fileName.startsWith('LB')) {
             fileName = `LB${fileName}`;
         }
+        
+        // 记录上传时间戳，用于后续评价图片匹配
+        console.log('图片上传时间戳:', new Date().getTime(), '文件名:', fileName);
         
         const objectKey = `image/${folder}/${fileName}`;
         console.log('准备上传图片到R2存储路径:', objectKey);
