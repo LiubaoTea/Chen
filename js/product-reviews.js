@@ -225,7 +225,22 @@ function updateRatingSummary() {
             const displayPercent = Math.max(5, percent);
             
             if (progressBar) {
+                // 设置渐变色和宽度
                 progressBar.style.width = `${displayPercent}%`;
+                
+                // 根据星级设置不同的渐变色
+                if (i === 5) {
+                    progressBar.style.background = 'linear-gradient(90deg, #FFD700 0%, #FFA500 100%)'; // 金黄到橙色
+                } else if (i === 4) {
+                    progressBar.style.background = 'linear-gradient(90deg, #FFA500 0%, #FF8C00 100%)'; // 橙色到深橙色
+                } else if (i === 3) {
+                    progressBar.style.background = 'linear-gradient(90deg, #FF8C00 0%, #FF6347 100%)'; // 深橙色到番茄红
+                } else if (i === 2) {
+                    progressBar.style.background = 'linear-gradient(90deg, #FF6347 0%, #FF4500 100%)'; // 番茄红到橙红色
+                } else {
+                    progressBar.style.background = 'linear-gradient(90deg, #FF4500 0%, #DC143C 100%)'; // 橙红色到猩红色
+                }
+                
                 console.log(`${i}星评分占比: ${percent}%, 显示宽度: ${displayPercent}%`);
             } else {
                 console.warn(`未找到${i}星评分进度条元素`);
@@ -239,6 +254,33 @@ function updateRatingSummary() {
         }
     } else {
         console.warn('评价总数为0，不更新评分分布');
+        
+        // 即使没有评价，也显示进度条
+        for (let i = 5; i >= 1; i--) {
+            const progressBar = document.querySelector(`.rating-bar:nth-child(${6-i}) .progress-bar`);
+            const percentText = document.querySelector(`.rating-bar:nth-child(${6-i}) .rating-percent`);
+            
+            if (progressBar) {
+                progressBar.style.width = '5%'; // 最小显示宽度
+                
+                // 根据星级设置不同的渐变色
+                if (i === 5) {
+                    progressBar.style.background = 'linear-gradient(90deg, #FFD700 0%, #FFA500 100%)';
+                } else if (i === 4) {
+                    progressBar.style.background = 'linear-gradient(90deg, #FFA500 0%, #FF8C00 100%)';
+                } else if (i === 3) {
+                    progressBar.style.background = 'linear-gradient(90deg, #FF8C00 0%, #FF6347 100%)';
+                } else if (i === 2) {
+                    progressBar.style.background = 'linear-gradient(90deg, #FF6347 0%, #FF4500 100%)';
+                } else {
+                    progressBar.style.background = 'linear-gradient(90deg, #FF4500 0%, #DC143C 100%)';
+                }
+            }
+            
+            if (percentText) {
+                percentText.textContent = '0%';
+            }
+        }
     }
 }
 
@@ -259,10 +301,13 @@ function updateStarsDisplay(container, rating) {
         
         if (index < fullStars) {
             star.className = 'fas fa-star'; // 实心星
+            star.style.color = '#FFD700'; // 强制设置金黄色
         } else if (index === fullStars && hasHalfStar) {
             star.className = 'fas fa-star-half-alt'; // 半星
+            star.style.color = '#FFD700'; // 强制设置金黄色
         } else {
             star.className = 'far fa-star'; // 空心星
+            star.style.color = '#FFD700'; // 强制设置金黄色
         }
     });
 }
@@ -387,12 +432,19 @@ function renderReviewsList() {
         reviewerName.textContent = review.username || '匿名用户';
         reviewerInfo.appendChild(reviewerName);
         
+        // 添加一个小圆点分隔符
+        const separator = document.createElement('div');
+        separator.textContent = '•';
+        separator.style.margin = '0 8px';
+        separator.style.color = '#9e9e9e';
+        separator.style.fontSize = '0.85rem';
+        reviewerInfo.appendChild(separator);
+        
         // 评价日期 - 现在添加到reviewerInfo中使其在同一行
         const reviewDate = document.createElement('div');
         reviewDate.className = 'review-date';
         reviewDate.textContent = formatDate(review.created_at);
-        // 添加左边距
-        reviewDate.style.marginLeft = '15px';
+        // 样式调整
         reviewDate.style.fontSize = '0.85rem';
         reviewDate.style.color = '#9e9e9e';
         
@@ -779,11 +831,11 @@ function generateStarsHTML(rating) {
     
     for (let i = 1; i <= 5; i++) {
         if (i <= rating) {
-            starsHTML += '<i class="fas fa-star"></i>'; // 实心星
+            starsHTML += '<i class="fas fa-star" style="color: #FFD700 !important;"></i>'; // 实心星
         } else if (i - 0.5 <= rating) {
-            starsHTML += '<i class="fas fa-star-half-alt"></i>'; // 半星
+            starsHTML += '<i class="fas fa-star-half-alt" style="color: #FFD700 !important;"></i>'; // 半星
         } else {
-            starsHTML += '<i class="far fa-star"></i>'; // 空心星
+            starsHTML += '<i class="far fa-star" style="color: #FFD700 !important;"></i>'; // 空心星
         }
     }
     
