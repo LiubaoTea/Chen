@@ -89,6 +89,7 @@
     margin: 0 10px;
     overflow: hidden;
     box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+    position: relative; /* 确保相对定位 */
 }
 
 .progress-bar {
@@ -199,6 +200,7 @@
     width: 100%;
     flex-direction: row;
     justify-content: flex-start;
+    gap: 8px; /* 增加间距 */
 }
 
 .reviewer-avatar {
@@ -220,18 +222,19 @@
 .reviewer-name {
     font-weight: 500;
     color: #333;
-    margin-right: 10px;
+    margin-right: 0;
 }
 
 .review-date {
     color: #9e9e9e;
     font-size: 0.85rem;
-    margin-left: 15px;
+    margin-left: 0;
     display: inline-flex;
     align-items: center;
 }
 
 /* 添加一个小圆点分隔用户名和时间 */
+/* 移除这个分隔符，因为我们已经在JS中添加了分隔符
 .reviewer-name::after {
     content: '';
     display: inline-block;
@@ -241,7 +244,7 @@
     border-radius: 50%;
     margin-left: 10px;
     vertical-align: middle;
-}
+}*/
 
 .review-rating {
     margin-bottom: 10px;

@@ -218,6 +218,7 @@ function updateRatingSummary() {
             const count = state.ratingStats.distribution[i] || 0;
             const percent = Math.round((count / total) * 100);
             
+            // 注意：评分条从上到下是5星到1星
             const progressBar = document.querySelector(`.rating-bar:nth-child(${6-i}) .progress-bar`);
             const percentText = document.querySelector(`.rating-bar:nth-child(${6-i}) .rating-percent`);
             
@@ -225,8 +226,10 @@ function updateRatingSummary() {
             const displayPercent = Math.max(5, percent);
             
             if (progressBar) {
-                // 设置渐变色和宽度
+                // 强制设置进度条宽度
                 progressBar.style.width = `${displayPercent}%`;
+                progressBar.style.display = 'block'; // 确保显示
+                progressBar.style.opacity = '1'; // 确保可见
                 
                 // 根据星级设置不同的渐变色
                 if (i === 5) {
@@ -240,6 +243,9 @@ function updateRatingSummary() {
                 } else {
                     progressBar.style.background = 'linear-gradient(90deg, #FF4500 0%, #DC143C 100%)'; // 橙红色到猩红色
                 }
+                
+                // 确保动画效果
+                progressBar.style.animation = 'move 2s linear infinite';
                 
                 console.log(`${i}星评分占比: ${percent}%, 显示宽度: ${displayPercent}%`);
             } else {

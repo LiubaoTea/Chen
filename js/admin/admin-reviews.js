@@ -93,7 +93,7 @@ function updateReviewsList() {
         
         // 评价图片
         const imagesHtml = review.images && review.images.length > 0 ? 
-            `<div class="review-images">${review.images.map(img => `<img src="${img}" class="review-image-thumbnail" data-bs-toggle="modal" data-bs-target="#reviewDetailModal" data-review-id="${review.id}">`).join('')}</div>` : '';
+            `<div class="review-images">${review.images.map(img => `<img src="${img}" class="review-image-thumbnail" data-bs-toggle="modal" data-bs-target="#reviewDetailModal" data-review-id="${review.review_id}">`).join('')}</div>` : '';
         
         row.innerHTML = `
             <td>
@@ -112,10 +112,10 @@ function updateReviewsList() {
             <td>${statusBadge}</td>
             <td>
                 <div class="action-buttons">
-                    <button type="button" class="btn btn-sm btn-outline-primary view-review" data-review-id="${review.id}">
+                    <button type="button" class="btn btn-sm btn-outline-primary view-review" data-review-id="${review.review_id}">
                         <i class="bi bi-eye"></i>
                     </button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary reply-review" data-review-id="${review.id}">
+                    <button type="button" class="btn btn-sm btn-outline-secondary reply-review" data-review-id="${review.review_id}">
                         <i class="bi bi-reply"></i>
                     </button>
                     <div class="btn-group">
@@ -123,8 +123,8 @@ function updateReviewsList() {
                             <i class="bi bi-three-dots"></i>
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item approve-review" href="#" data-review-id="${review.id}">通过评价</a></li>
-                            <li><a class="dropdown-item reject-review" href="#" data-review-id="${review.id}">拒绝评价</a></li>
+                            <li><a class="dropdown-item approve-review" href="#" data-review-id="${review.review_id}">通过评价</a></li>
+                            <li><a class="dropdown-item reject-review" href="#" data-review-id="${review.review_id}">拒绝评价</a></li>
                         </ul>
                     </div>
                 </div>
