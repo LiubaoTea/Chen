@@ -177,7 +177,7 @@ function appendReplyReviewModal() {
             <div class="modal-dialog modal-lg">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="replyReviewModalLabel">回复评价</h5>
+                        <h5 class="modal-title" id="replyReviewModalLabel">回复用户评价</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="关闭"></button>
                     </div>
                     <div class="modal-body">
@@ -185,35 +185,47 @@ function appendReplyReviewModal() {
                             <input type="hidden" id="replyReviewId">
                             <div class="mb-3">
                                 <label for="replyContent" class="form-label">回复内容</label>
-                                <textarea class="form-control" id="replyContent" rows="5" placeholder="请输入回复内容..."></textarea>
+                                <textarea class="form-control" id="replyContent" rows="4" placeholder="请输入您的回复内容..."></textarea>
                             </div>
                             <div class="mb-3">
-                                <label class="form-label">上传图片（最多5张，每张不超过2MB）</label>
-                                <div class="input-group">
-                                    <input type="file" class="form-control" id="replyImages" accept="image/*" multiple>
-                                    <button class="btn btn-outline-secondary" type="button" id="uploadReplyImagesBtn">
-                                        <i class="bi bi-cloud-arrow-up me-1"></i>准备图片
-                                    </button>
+                                <label for="replyImages" class="form-label">上传图片（可选，最多5张）</label>
+                                <input class="form-control" type="file" id="replyImages" accept="image/jpeg,image/png" multiple>
+                                <div class="form-text">支持JPG/PNG格式，每张图片大小不超过2MB</div>
+                                <button type="button" class="btn btn-outline-secondary btn-sm mt-2" id="uploadReplyImagesBtn">
+                                    <i class="bi bi-cloud-upload me-1"></i>添加图片
+                                </button>
+                            </div>
+                            <div id="uploadProgressContainer" class="progress mt-3 d-none">
+                                <div id="uploadProgress" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%">0%</div>
+                            </div>
+                            <div id="replyImagePreview" class="d-flex flex-wrap gap-2 mt-3"></div>
+                            
+                            <!-- 步骤状态容器 -->
+                            <div id="replyStepsContainer" class="d-none mt-4 border rounded p-3 bg-light">
+                                <h6 class="mb-3">提交进度</h6>
+                                <div class="d-flex flex-column">
+                                    <div id="prepareDataStep" class="d-flex align-items-center mb-2">
+                                        <div class="step-indicator me-2"></div>
+                                        <div>准备数据</div>
+                                    </div>
+                                    <div id="submitDataStep" class="d-flex align-items-center mb-2">
+                                        <div class="step-indicator me-2"></div>
+                                        <div>提交到服务器</div>
+                                    </div>
                                 </div>
-                                <div class="form-text">支持JPG、PNG格式</div>
                             </div>
-                            <div id="replyImagePreview" class="mt-3"></div>
-                            <div id="uploadProgressContainer" class="d-none">
-                                <label class="form-label">上传进度</label>
-                                <div class="progress">
-                                    <div id="uploadProgress" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
-                                </div>
-                            </div>
-                            <div id="replySubmitStatus" class="alert alert-info mt-3 d-none">
-                                提交中，请稍候...
-                            </div>
+                            
+                            <!-- 提交状态显示 -->
+                            <div id="replySubmitStatus" class="alert alert-info mt-3 d-none"></div>
                         </form>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                        <button type="button" class="btn btn-danger d-none" id="retrySubmitButton">
+                            <i class="bi bi-arrow-repeat me-1"></i>重试
+                        </button>
                         <button type="button" class="btn btn-primary" id="submitReplyBtn">
-                            <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-                            <span class="btn-text">提交回复</span>
+                            <i class="bi bi-send me-1"></i>提交回复
                         </button>
                     </div>
                 </div>
@@ -1335,86 +1347,123 @@ async function handleSubmitReply() {
         // 更新步骤状态：发送请求
         updateStepStatus('submitDataStep', 'processing');
         
-        // 发送请求
+        // 发送请求 - 使用直接的URL路径，确保请求能够准确命中路由
         console.log('开始发送API请求...');
-        console.log('请求URL:', `${ADMIN_API_BASE_URL}/api/admin/reviews/reply`);
+        const apiUrl = `${ADMIN_API_BASE_URL}/api/admin/reviews/${reviewId}/reply`;
+        console.log('请求URL:', apiUrl);
         console.log('请求方法: POST');
         console.log('请求头:', JSON.stringify({
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${adminToken}`
         }, null, 2));
         
-        // 使用API基地址，确保请求正确路由
-        const apiUrl = `${ADMIN_API_BASE_URL}/api/admin/reviews/reply`;
+        // 开始显示网络活动指示器
+        const networkIndicator = document.getElementById('networkActivityIndicator');
+        if (networkIndicator) {
+            networkIndicator.classList.remove('d-none');
+        }
         
-        const response = await fetch(apiUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${adminToken}`
-            },
-            body: JSON.stringify(requestData)
-        });
-        
-        console.log('API响应状态码:', response.status);
-        console.log('API响应状态文本:', response.statusText);
-        
-        // 尝试获取响应头信息
-        console.log('API响应头:');
-        response.headers.forEach((value, name) => {
-            console.log(`${name}: ${value}`);
-        });
-        
-        // 解析响应
-        let responseData;
-        const responseText = await response.text();
-        console.log('API响应原始文本:', responseText);
+        // 设置超时，确保请求不会无限期挂起
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30秒超时
         
         try {
-            if (responseText) {
-                responseData = JSON.parse(responseText);
-                console.log('API响应解析后的JSON数据:', responseData);
-            } else {
-                console.warn('API返回了空响应');
-                responseData = { message: '服务器返回了空响应' };
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${adminToken}`
+                },
+                body: JSON.stringify(requestData),
+                signal: controller.signal
+            });
+            
+            // 清除超时
+            clearTimeout(timeoutId);
+            
+            console.log('API响应状态码:', response.status);
+            console.log('API响应状态文本:', response.statusText);
+            
+            // 尝试获取响应头信息
+            console.log('API响应头:');
+            response.headers.forEach((value, name) => {
+                console.log(`${name}: ${value}`);
+            });
+            
+            // 解析响应
+            let responseData;
+            const responseText = await response.text();
+            console.log('API响应原始文本:', responseText);
+            
+            try {
+                if (responseText) {
+                    responseData = JSON.parse(responseText);
+                    console.log('API响应解析后的JSON数据:', responseData);
+                } else {
+                    console.warn('API返回了空响应');
+                    responseData = { message: '服务器返回了空响应' };
+                }
+            } catch (parseError) {
+                console.error('解析API响应JSON失败:', parseError);
+                console.log('非JSON响应内容:', responseText);
+                throw new Error('服务器返回了无效的数据格式');
             }
-        } catch (parseError) {
-            console.error('解析API响应JSON失败:', parseError);
-            console.log('非JSON响应内容:', responseText);
-            throw new Error('服务器返回了无效的数据格式');
-        }
-        
-        if (!response.ok) {
-            const errorMessage = responseData?.error || responseData?.message || `提交回复失败，HTTP状态码: ${response.status}`;
-            throw new Error(errorMessage);
-        }
-        
-        // 更新步骤状态：发送请求成功
-        updateStepStatus('submitDataStep', 'success');
-        
-        // 成功处理
-        console.log('回复提交成功:', responseData);
-        
-        // 延迟关闭模态框，让用户看到成功状态
-        setTimeout(() => {
-            // 关闭模态框
-            const modal = bootstrap.Modal.getInstance(document.getElementById('replyReviewModal'));
-            if (modal) {
-                modal.hide();
-            } else {
-                console.warn('未找到模态框实例，无法自动关闭');
+            
+            if (!response.ok) {
+                const errorMessage = responseData?.error || responseData?.message || `提交回复失败，HTTP状态码: ${response.status}`;
+                throw new Error(errorMessage);
             }
             
-            // 隐藏进度指示器
-            hideReplyProgressIndicator(true);
+            // 更新步骤状态：发送请求成功
+            updateStepStatus('submitDataStep', 'success');
             
-            // 显示成功提示
-            showSuccessToast('回复提交成功');
+            // 成功处理
+            console.log('回复提交成功:', responseData);
             
-            // 刷新评价列表
-            console.log('正在刷新评价列表...');
-            loadReviews(reviewsCurrentPage, reviewsSelectedStatus, reviewsSelectedRating);
-        }, 1000);
+            // 延迟关闭模态框，让用户看到成功状态
+            setTimeout(() => {
+                // 关闭模态框
+                const modal = bootstrap.Modal.getInstance(document.getElementById('replyReviewModal'));
+                if (modal) {
+                    modal.hide();
+                } else {
+                    console.warn('未找到模态框实例，无法自动关闭');
+                }
+                
+                // 隐藏进度指示器
+                hideReplyProgressIndicator(true);
+                
+                // 隐藏网络活动指示器
+                if (networkIndicator) {
+                    networkIndicator.classList.add('d-none');
+                }
+                
+                // 显示成功提示
+                showSuccessToast('回复提交成功');
+                
+                // 刷新评价列表
+                console.log('正在刷新评价列表...');
+                loadReviews(reviewsCurrentPage, reviewsSelectedStatus, reviewsSelectedRating);
+            }, 1000);
+            
+        } catch (fetchError) {
+            // 清除超时
+            clearTimeout(timeoutId);
+            
+            // 处理网络错误
+            if (fetchError.name === 'AbortError') {
+                console.error('请求超时:', fetchError);
+                throw new Error('请求超时，请检查网络连接后重试');
+            } else {
+                console.error('网络请求失败:', fetchError);
+                throw fetchError;
+            }
+        } finally {
+            // 隐藏网络活动指示器
+            if (networkIndicator) {
+                networkIndicator.classList.add('d-none');
+            }
+        }
         
     } catch (error) {
         console.error('提交回复时发生错误:', error);
@@ -1432,6 +1481,13 @@ async function handleSubmitReply() {
         
         // 显示错误提示
         showErrorToast(`提交回复失败: ${error.message}`);
+        
+        // 添加重试按钮
+        const retryButton = document.getElementById('retrySubmitButton');
+        if (retryButton) {
+            retryButton.classList.remove('d-none');
+            retryButton.onclick = handleSubmitReply;
+        }
     }
 }
 
@@ -1874,3 +1930,30 @@ function hideReplyProgressIndicator(success = true) {
         });
     }
 }
+
+// 在页面加载时添加网络活动指示器
+function appendNetworkActivityIndicator() {
+    if (!document.getElementById('networkActivityIndicator')) {
+        const indicator = document.createElement('div');
+        indicator.id = 'networkActivityIndicator';
+        indicator.className = 'd-none position-fixed top-0 start-0 end-0 p-2 bg-primary text-white text-center';
+        indicator.style.zIndex = '9999';
+        indicator.innerHTML = '<div class="d-flex justify-content-center align-items-center"><div class="spinner-border spinner-border-sm me-2" role="status"></div><span>正在与服务器通信...</span></div>';
+        document.body.appendChild(indicator);
+    }
+}
+
+// 在初始化页面时调用
+function initPageElements() {
+    // 添加网络活动指示器
+    appendNetworkActivityIndicator();
+    
+    // 添加模态框和其他元素
+    appendReviewsModals();
+    appendReplyStepsUI();
+}
+
+// 在页面加载完成后初始化
+document.addEventListener('DOMContentLoaded', function() {
+    initPageElements();
+});
