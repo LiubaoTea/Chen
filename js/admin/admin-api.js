@@ -1117,8 +1117,13 @@ const adminAPIObject = {
     // 回复评价
     replyReview: async (reviewId, content, images = []) => {
         try {
+            console.log('===== 回复评价API函数开始 =====');
+            console.log('reviewId:', reviewId);
+            console.log('回复内容:', content);
+            console.log('图片数量:', images.length);
+            
             const url = `${ADMIN_API_BASE_URL}/api/admin/reviews/${reviewId}/reply`;
-            console.log('发送回复评价请求，URL:', url, '内容:', content, '图片数量:', images.length);
+            console.log('请求URL:', url);
             
             // 检查内容是否为空
             if (!content || content.trim() === '') {
@@ -1138,12 +1143,17 @@ const adminAPIObject = {
                 console.error('未获取到管理员ID');
                 throw new Error('管理员身份验证失败');
             }
+            console.log('当前管理员ID:', adminId);
             
             // 如果有图片，使用FormData
             if (images && images.length > 0) {
                 console.log('使用FormData提交带图片的回复');
                 const formData = new FormData();
-                formData.append('content', content);
+                
+                // 使用reply_content字段名而不是content，以匹配后端API
+                formData.append('reply_content', content);
+                formData.append('content', content); // 同时保留content字段以兼容
+                
                 formData.append('admin_id', adminId);
                 formData.append('status', 'published'); // 默认状态为已发布
                 
@@ -1174,6 +1184,12 @@ const adminAPIObject = {
                     }
                 });
                 
+                console.log('准备发送FormData请求，包含图片和文本内容');
+                // 打印FormData的所有字段（调试用）
+                for (let pair of formData.entries()) {
+                    console.log('FormData字段:', pair[0], typeof pair[1] === 'string' ? pair[1] : '[文件对象]');
+                }
+                
                 const response = await fetch(url, {
                     method: 'POST',
                     headers: {
@@ -1183,6 +1199,8 @@ const adminAPIObject = {
                     body: formData
                 });
                 
+                console.log('响应状态码:', response.status);
+                
                 if (!response.ok) {
                     const errorText = await response.text();
                     console.error('回复评价API响应错误:', response.status, errorText);
@@ -1190,14 +1208,17 @@ const adminAPIObject = {
                 }
                 
                 const data = await response.json();
-                console.log('成功回复评价:', data);
+                console.log('成功回复评价,响应数据:', data);
+                console.log('===== 回复评价API函数结束 =====');
                 return data;
                 
             } else {
                 // 无图片时使用JSON
                 console.log('使用JSON提交纯文本回复');
                 const payload = { 
-                    content,
+                    // 使用reply_content字段名而不是content，以匹配后端API
+                    reply_content: content,
+                    content: content, // 同时保留content字段以兼容
                     admin_id: adminId,
                     status: 'published' // 默认状态为已发布
                 };
@@ -1212,6 +1233,8 @@ const adminAPIObject = {
                     body: JSON.stringify(payload)
                 });
                 
+                console.log('响应状态码:', response.status);
+                
                 if (!response.ok) {
                     const errorText = await response.text();
                     console.error('回复评价API响应错误:', response.status, errorText);
@@ -1219,11 +1242,13 @@ const adminAPIObject = {
                 }
                 
                 const data = await response.json();
-                console.log('成功回复评价:', data);
+                console.log('成功回复评价,响应数据:', data);
+                console.log('===== 回复评价API函数结束 =====');
                 return data;
             }
         } catch (error) {
             console.error('回复评价出错:', error);
+            console.log('===== 回复评价API函数异常结束 =====');
             throw error;
         }
     },

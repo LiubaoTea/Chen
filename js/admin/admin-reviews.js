@@ -27,6 +27,82 @@ window.initReviewsPage = initReviewsPage;
 window.refreshReviewsData = loadReviews;
 window.adminReviews = { init: initReviewsPage, refresh: loadReviews };
 
+// 添加加载遮罩层样式
+function addLoadingOverlayStyles() {
+    // 检查样式是否已存在
+    if (document.getElementById('loadingOverlayStyles')) {
+        return;
+    }
+    
+    const styleElement = document.createElement('style');
+    styleElement.id = 'loadingOverlayStyles';
+    styleElement.textContent = `
+        .spinner-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            display: none;
+        }
+        .spinner-container {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+        }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top-color: #007bff;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        .spinner-message {
+            margin-top: 15px;
+            font-weight: 500;
+        }
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+        .preview-item {
+            display: inline-block;
+            position: relative;
+            margin: 10px;
+        }
+        .preview-item img {
+            max-width: 100px;
+            max-height: 100px;
+            border-radius: 4px;
+        }
+        .remove-image {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background-color: #dc3545;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            text-align: center;
+            line-height: 20px;
+            cursor: pointer;
+        }
+    `;
+    document.head.appendChild(styleElement);
+    console.log('已添加加载遮罩层样式');
+}
+
 // 初始化评价管理页面
 async function initReviewsPage() {
     // 检查是否已登录
@@ -34,6 +110,9 @@ async function initReviewsPage() {
     
     try {
         console.log('正在初始化评价管理页面...');
+        
+        // 添加加载遮罩层样式
+        addLoadingOverlayStyles();
         
         // 确保模态框存在
         appendReviewsModals();
@@ -49,6 +128,20 @@ async function initReviewsPage() {
         console.error('初始化评价管理页面失败:', error);
         showErrorToast('初始化评价管理页面失败，请稍后重试');
     }
+}
+
+// 辅助函数：检查DOM元素是否存在
+function elementExists(id) {
+    return document.getElementById(id) !== null;
+}
+
+// 辅助函数：获取DOM元素，如果不存在则打印警告
+function getElement(id) {
+    const element = document.getElementById(id);
+    if (!element) {
+        console.warn(`未找到元素: #${id}`);
+    }
+    return element;
 }
 
 // 确保模态框和必要的DOM元素存在
@@ -111,11 +204,17 @@ function appendReplyReviewModal() {
                                     <div id="uploadProgress" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
                                 </div>
                             </div>
+                            <div id="replySubmitStatus" class="alert alert-info mt-3 d-none">
+                                提交中，请稍候...
+                            </div>
                         </form>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                        <button type="button" class="btn btn-primary" id="submitReplyBtn">提交回复</button>
+                        <button type="button" class="btn btn-primary" id="submitReplyBtn">
+                            <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                            <span class="btn-text">提交回复</span>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -894,6 +993,8 @@ async function handleUploadReplyImages() {
         return;
     }
     
+    console.log('开始处理回复图片，图片数量:', files.length);
+    
     try {
         // 获取管理员ID
         const adminId = adminAuth.getAdminId();
@@ -901,43 +1002,45 @@ async function handleUploadReplyImages() {
             showErrorToast('未获取到管理员ID，请重新登录');
             return;
         }
+        console.log('当前管理员ID:', adminId);
         
         // 显示上传进度
         const progressContainer = document.getElementById('uploadProgressContainer');
         const progressBar = document.getElementById('uploadProgress');
-        progressContainer.classList.remove('d-none');
-        progressBar.style.width = '0%';
-        progressBar.setAttribute('aria-valuenow', '0');
+        if (progressContainer && progressBar) {
+            progressContainer.classList.remove('d-none');
+            progressBar.style.width = '0%';
+            progressBar.setAttribute('aria-valuenow', '0');
+            progressBar.textContent = '0%';
+        }
         
-        // 生成上传图片所需的元数据
+        // 为每个图片生成上传所需的元数据
         const timestamp = Math.floor(Date.now() / 1000);
+        
+        // 重置之前的图片数据
+        replyImagesData = [];
+        
+        // 为每个图片生成元数据
         Array.from(files).forEach((file, index) => {
-            // 检查是否已经在replyImagesData中有此文件
-            const existingIndex = replyImagesData.findIndex(img => 
-                img.file && img.file.name === file.name && img.file.size === file.size
-            );
+            // 生成随机字符串作为文件名的一部分
+            const randomStr = Math.random().toString(36).substring(2, 10);
+            const extension = file.name.split('.').pop().toLowerCase();
             
-            // 如果不在数组中，添加图片
-            if (existingIndex === -1) {
-                const randomStr = Math.random().toString(36).substring(2, 10);
-                const extension = file.name.split('.').pop().toLowerCase();
-                
-                // 构建R2存储路径
-                const objectKey = `image/Admin-Replies/${reviewId}/${adminId}_${timestamp}_${randomStr}.${extension}`;
-                
-                // 更新图片数据
-                replyImagesData[index] = {
-                    file: file,
-                    extension: extension,
-                    file_name: file.name,
-                    file_size: file.size,
-                    mime_type: file.type,
-                    object_key: objectKey,
-                    admin_id: adminId
-                };
-                
-                console.log(`图片${index}元数据已更新:`, replyImagesData[index]);
-            }
+            // 构建R2存储路径
+            const objectKey = `image/Admin-Replies/${reviewId}/${adminId}_${timestamp}_${randomStr}.${extension}`;
+            
+            // 保存图片数据
+            replyImagesData.push({
+                file: file,
+                extension: extension,
+                file_name: file.name,
+                file_size: file.size,
+                mime_type: file.type,
+                object_key: objectKey,
+                admin_id: adminId
+            });
+            
+            console.log(`图片${index}元数据:`, replyImagesData[index]);
         });
         
         // 模拟上传进度
@@ -945,109 +1048,141 @@ async function handleUploadReplyImages() {
         const progressInterval = setInterval(() => {
             progress += 5;
             if (progress <= 90) {
-                progressBar.style.width = `${progress}%`;
-                progressBar.setAttribute('aria-valuenow', progress.toString());
+                if (progressBar) {
+                    progressBar.style.width = `${progress}%`;
+                    progressBar.setAttribute('aria-valuenow', progress.toString());
+                    progressBar.textContent = `${progress}%`;
+                }
             }
         }, 100);
         
-        // 模拟网络请求时间，生产环境应改为实际上传
+        // 模拟网络请求时间（实际环境中这里会进行图片上传）
         setTimeout(() => {
             clearInterval(progressInterval);
-            progressBar.style.width = '100%';
-            progressBar.setAttribute('aria-valuenow', '100');
+            if (progressBar) {
+                progressBar.style.width = '100%';
+                progressBar.setAttribute('aria-valuenow', '100');
+                progressBar.textContent = '100%';
+            }
             
             setTimeout(() => {
-                progressContainer.classList.add('d-none');
+                if (progressContainer) {
+                    progressContainer.classList.add('d-none');
+                }
                 showSuccessToast('图片已准备就绪，请点击"提交回复"完成回复');
             }, 500);
         }, 2000);
         
+        console.log('图片元数据准备完成，总共:', replyImagesData.length, '个图片');
     } catch (error) {
         console.error('处理回复图片失败:', error);
         showErrorToast('处理图片失败: ' + (error.message || '请稍后重试'));
-        document.getElementById('uploadProgressContainer').classList.add('d-none');
+        
+        const progressContainer = document.getElementById('uploadProgressContainer');
+        if (progressContainer) {
+            progressContainer.classList.add('d-none');
+        }
     }
 }
 
 // 处理提交回复
 async function handleSubmitReply() {
-    const reviewId = document.getElementById('replyReviewId').value;
-    const content = document.getElementById('replyContent').value.trim();
+    const reviewId = getElement('replyReviewId')?.value;
+    const content = getElement('replyContent')?.value?.trim();
     
     if (!content) {
         showErrorToast('请输入回复内容');
         return;
     }
     
-    const submitBtn = document.getElementById('submitReplyBtn');
-    const btnText = submitBtn.querySelector('.btn-text');
+    console.log(`开始处理评价回复提交，评价ID: ${reviewId}, 内容长度: ${content.length}字符`);
+    
+    // 获取提交按钮和按钮内的元素
+    const submitBtn = getElement('submitReplyBtn');
+    if (!submitBtn) {
+        showErrorToast('提交按钮未找到，请刷新页面重试');
+        return;
+    }
+    
     const btnSpinner = submitBtn.querySelector('.spinner-border');
-    const submitStatus = document.getElementById('replySubmitStatus');
+    const btnText = submitBtn.querySelector('.btn-text');
+    const submitStatus = getElement('replySubmitStatus');
     
     try {
-        // 显示加载遮罩和提交状态
+        // 显示加载状态
         showLoadingOverlay('正在提交回复...');
-        submitStatus.classList.remove('d-none');
         
-        // 显示按钮加载状态
-        btnText.textContent = '提交中...';
-        btnSpinner.classList.remove('d-none');
-        submitBtn.disabled = true;
-        
-        // 更新上传进度为100%（如果之前没有完成）
-        const progressContainer = document.getElementById('uploadProgressContainer');
-        const progressBar = document.getElementById('uploadProgress');
-        if (!progressContainer.classList.contains('d-none')) {
-            progressBar.style.width = '100%';
-            progressBar.setAttribute('aria-valuenow', '100');
-            // 2秒后隐藏进度条，给用户视觉反馈
-            setTimeout(() => {
-                progressContainer.classList.add('d-none');
-            }, 2000);
+        // 显示状态信息
+        if (submitStatus) {
+            submitStatus.classList.remove('d-none');
         }
         
-        console.log('提交回复, 评价ID:', reviewId, '内容:', content, '图片数量:', replyImagesData.length);
+        // 禁用提交按钮并显示加载状态
+        submitBtn.disabled = true;
+        if (btnSpinner) btnSpinner.classList.remove('d-none');
+        if (btnText) btnText.textContent = '提交中...';
         
-        // 提交回复
-        const replyData = await adminAPI.replyReview(reviewId, content, replyImagesData);
+        console.log('准备图片数据:', replyImagesData?.length || 0, '个图片');
         
-        // 延迟关闭模态框，让用户感知到操作已完成
+        // 检查管理员ID
+        const adminId = adminAuth.getAdminId();
+        if (!adminId) {
+            console.error('未获取到管理员ID');
+            throw new Error('管理员身份验证失败，请重新登录');
+        }
+        console.log('当前管理员ID:', adminId);
+        
+        // 记录replyImagesData对象的实际内容
+        console.log('图片数据详情:', JSON.stringify(replyImagesData || []));
+        
+        // 提交回复时确保使用reply_content字段
+        console.log(`发送回复API请求，reviewId: ${reviewId}, content: ${content}`);
+        const replyData = await adminAPI.replyReview(reviewId, content, replyImagesData || []);
+        console.log('回复API响应结果:', replyData);
+        
+        // 显示成功提示
+        showSuccessToast('回复提交成功');
+        
+        // 关闭模态框
         setTimeout(() => {
-            // 关闭模态框
             const replyModal = bootstrap.Modal.getInstance(document.getElementById('replyReviewModal'));
             if (replyModal) {
                 replyModal.hide();
+                console.log('回复模态框已关闭');
             }
             
             // 重置表单
-            document.getElementById('replyReviewForm').reset();
-            const replyImagePreview = document.getElementById('replyImagePreview');
-            if (replyImagePreview) {
-                replyImagePreview.innerHTML = '';
-            }
+            const replyForm = getElement('replyReviewForm');
+            if (replyForm) replyForm.reset();
             
-            // 重置图片数据
+            const replyImagePreview = getElement('replyImagePreview');
+            if (replyImagePreview) replyImagePreview.innerHTML = '';
+            
+            // 清空已选择的图片数据
             replyImagesData = [];
             
             // 重新加载评价列表
+            console.log('重新加载评价列表');
             loadReviews(reviewsCurrentPage, reviewsSelectedStatus, reviewsSelectedRating);
-            
-            // 显示成功提示
-            showSuccessToast('回复提交成功');
-        }, 1000); // 延迟1秒，让用户感知到操作已完成
+        }, 1000);
     } catch (error) {
         console.error('提交回复失败:', error);
-        submitStatus.classList.add('d-none');
         showErrorToast('提交回复失败: ' + (error.message || '请稍后重试'));
     } finally {
-        // 隐藏加载遮罩
+        // 隐藏加载状态
         hideLoadingOverlay();
-        submitStatus.classList.add('d-none');
+        
+        // 隐藏状态信息
+        if (submitStatus) {
+            submitStatus.classList.add('d-none');
+        }
         
         // 恢复按钮状态
-        btnText.textContent = '提交回复';
-        btnSpinner.classList.add('d-none');
-        submitBtn.disabled = false;
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            if (btnSpinner) btnSpinner.classList.add('d-none');
+            if (btnText) btnText.textContent = '提交回复';
+        }
     }
 }
 
@@ -1182,9 +1317,13 @@ function getReviewStatusBadge(status) {
 
 // 显示加载遮罩
 function showLoadingOverlay(message = '处理中...') {
-    let overlay = document.getElementById('loadingOverlay');
+    // 确保加载遮罩层样式已添加
+    addLoadingOverlayStyles();
+    
+    let overlay = getElement('loadingOverlay');
     
     if (!overlay) {
+        console.log('创建加载遮罩元素');
         overlay = document.createElement('div');
         overlay.id = 'loadingOverlay';
         overlay.className = 'spinner-overlay';
@@ -1203,14 +1342,18 @@ function showLoadingOverlay(message = '处理中...') {
         }
     }
     
+    console.log('显示加载遮罩:', message);
     overlay.style.display = 'flex';
 }
 
 // 隐藏加载遮罩
 function hideLoadingOverlay() {
-    const overlay = document.getElementById('loadingOverlay');
+    const overlay = getElement('loadingOverlay');
     if (overlay) {
+        console.log('隐藏加载遮罩');
         overlay.style.display = 'none';
+    } else {
+        console.warn('尝试隐藏加载遮罩，但元素不存在');
     }
 }
 
