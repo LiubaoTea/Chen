@@ -8,6 +8,52 @@ import config, { API_BASE_URL } from '../config.js';
 import adminConfig, { ADMIN_API_BASE_URL } from './admin-config.js';
 import { adminAuth } from './admin-auth.js';
 
+// 增强adminAuth对象，添加getAuthToken方法
+if (!adminAuth.getAuthToken) {
+    adminAuth.getAuthToken = function() {
+        try {
+            const token = localStorage.getItem('admin_token');
+            console.log('从localStorage获取admin_token:', token ? '成功' : '失败');
+            return token || '';
+        } catch (error) {
+            console.error('获取admin_token时出错:', error);
+            return '';
+        }
+    };
+}
+
+// 确保getHeaders方法能正确处理令牌
+if (adminAuth.getHeaders) {
+    const originalGetHeaders = adminAuth.getHeaders;
+    adminAuth.getHeaders = function() {
+        try {
+            const headers = originalGetHeaders.call(adminAuth);
+            
+            // 确保Authorization头存在
+            if (!headers.Authorization || headers.Authorization === 'Bearer undefined' || headers.Authorization === 'Bearer null') {
+                const token = adminAuth.getAuthToken();
+                if (token) {
+                    headers.Authorization = `Bearer ${token}`;
+                    console.log('重新设置Authorization头');
+                } else {
+                    console.warn('未找到有效的认证令牌');
+                }
+            }
+            
+            return headers;
+        } catch (error) {
+            console.error('获取请求头时出错:', error);
+            
+            // 回退到最基本的头信息
+            const token = adminAuth.getAuthToken();
+            return {
+                'Authorization': token ? `Bearer ${token}` : '',
+                'Content-Type': 'application/json'
+            };
+        }
+    };
+}
+
 // 确保在控制台可以看到导入的配置
 console.log('admin-api.js已加载，使用ES6模块方式');
 
@@ -24,6 +70,21 @@ const adminAPIObject = {
     // 导出辅助函数
     generateSalesTrendFromOrders: null, // 先声明，后面会定义
     generateProductSalesDistribution: null, // 先声明，后面会定义
+    // 获取认证令牌
+    getAuthToken: function() {
+        try {
+            console.log('获取管理员认证令牌');
+            const token = localStorage.getItem('admin_token');
+            if (!token) {
+                console.warn('本地存储中未找到admin_token');
+                return '';
+            }
+            return token;
+        } catch (error) {
+            console.error('获取管理员认证令牌出错:', error);
+            return '';
+        }
+    },
     // 获取商品列表
     getProducts: async (page = 1, pageSize = 10, categoryId = '', searchQuery = '') => {
         try {
@@ -1332,6 +1393,7 @@ const adminAPIObject = {
             console.log('reviewId:', reviewId);
             console.log('adminId:', adminId);
             console.log('回复内容长度:', content.length);
+            console.log('回复内容前20个字符:', content.substring(0, 20));
             
             const url = `${ADMIN_API_BASE_URL}/api/admin/reviews/reply/create`;
             console.log('请求URL:', url);
@@ -1342,40 +1404,85 @@ const adminAPIObject = {
                 throw new Error('回复内容不能为空');
             }
             
+            // 检查ID格式
+            if (isNaN(parseInt(reviewId, 10)) || parseInt(reviewId, 10) <= 0) {
+                console.error('无效的评价ID:', reviewId);
+                throw new Error('无效的评价ID');
+            }
+            
+            if (isNaN(parseInt(adminId, 10)) || parseInt(adminId, 10) <= 0) {
+                console.error('无效的管理员ID:', adminId);
+                throw new Error('无效的管理员ID');
+            }
+            
             // 构建请求数据
             const requestData = {
-                review_id: reviewId,
-                admin_id: adminId,
+                review_id: parseInt(reviewId, 10),
+                admin_id: parseInt(adminId, 10),
                 reply_content: content,
                 status: 'published'  // 默认发布状态
             };
             
-            console.log('请求数据:', JSON.stringify(requestData));
+            console.log('请求数据:', JSON.stringify(requestData, null, 2));
+            
+            // 获取认证令牌
+            const token = adminAuth.getAuthToken();
+            if (!token) {
+                console.error('未获取到有效的认证令牌');
+                throw new Error('认证失败，请重新登录');
+            }
             
             // 发送请求
+            console.log('发送创建回复请求...');
             const response = await fetch(url, {
                 method: 'POST',
                 headers: {
-                    ...adminAuth.getHeaders(),
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify(requestData)
             });
             
             console.log('响应状态码:', response.status);
+            console.log('响应状态文本:', response.statusText);
             
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('创建评价回复API响应错误:', response.status, errorText);
-                throw new Error(`创建评价回复失败，HTTP状态码: ${response.status}`);
+            // 记录响应头
+            console.log('响应头:');
+            response.headers.forEach((value, name) => {
+                console.log(`${name}: ${value}`);
+            });
+            
+            // 获取响应文本
+            const responseText = await response.text();
+            console.log('响应原始文本:', responseText);
+            
+            // 尝试解析JSON
+            let data;
+            try {
+                if (responseText) {
+                    data = JSON.parse(responseText);
+                } else {
+                    console.warn('响应内容为空');
+                    data = { message: '服务器返回了空响应' };
+                }
+            } catch (parseError) {
+                console.error('解析响应JSON失败:', parseError);
+                console.log('非JSON响应内容:', responseText);
+                throw new Error('服务器返回了无效的数据格式');
             }
             
-            const data = await response.json();
+            if (!response.ok) {
+                const errorText = data?.error || data?.message || `HTTP状态码: ${response.status}`;
+                console.error('创建评价回复API响应错误:', errorText);
+                throw new Error(`创建评价回复失败: ${errorText}`);
+            }
+            
             console.log('成功创建评价回复,响应数据:', data);
             console.log('===== 创建评价回复内容结束 =====');
             return data;
         } catch (error) {
             console.error('创建评价回复出错:', error);
+            console.error('错误堆栈:', error.stack);
             console.log('===== 创建评价回复内容异常结束 =====');
             throw error;
         }

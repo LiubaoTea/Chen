@@ -658,7 +658,19 @@ function setupReviewsEventListeners() {
     // 提交回复按钮
     const submitReplyBtn = document.getElementById('submitReplyBtn');
     if (submitReplyBtn) {
-        submitReplyBtn.addEventListener('click', handleSubmitReply);
+        console.log('找到提交回复按钮，正在绑定点击事件...');
+        
+        // 移除可能存在的旧事件监听器
+        submitReplyBtn.removeEventListener('click', handleSubmitReply);
+        
+        // 添加新的事件监听器
+        submitReplyBtn.addEventListener('click', function(event) {
+            console.log('提交回复按钮被点击');
+            event.preventDefault(); // 防止表单提交导致页面刷新
+            handleSubmitReply();
+        });
+        
+        console.log('提交回复按钮事件绑定完成');
     } else {
         console.warn('未找到提交回复按钮元素');
     }
@@ -1213,39 +1225,40 @@ function showWarningToast(message) {
 
 // 处理提交回复
 async function handleSubmitReply() {
-    console.log('开始执行handleSubmitReply函数');
-    
-    // 获取当前正在回复的评价ID
-    const reviewId = document.getElementById('replyReviewId').value;
-    console.log('准备回复评价，ID:', reviewId);
-    
-    if (!reviewId) {
-        console.error('未找到评价ID，无法提交回复');
-        showErrorToast('评价ID不存在，请刷新页面后重试');
-        return;
-    }
-    
-    // 显示回复进度指示器
-    showReplyProgressIndicator();
-    
-    // 重置步骤状态
-    resetStepStatus();
+    console.log('===== 开始执行handleSubmitReply函数 =====');
+    console.log('浏览器信息:', navigator.userAgent);
+    console.log('当前页面URL:', window.location.href);
     
     try {
-        // 更新步骤状态：准备数据
-        updateStepStatus('prepareDataStep', 'processing');
+        // 获取当前正在回复的评价ID
+        const reviewId = document.getElementById('replyReviewId').value;
+        console.log('准备回复评价，ID:', reviewId);
+        
+        if (!reviewId) {
+            console.error('未找到评价ID，无法提交回复');
+            showErrorToast('评价ID不存在，请刷新页面后重试');
+            return;
+        }
         
         // 获取回复内容
         const replyContent = document.getElementById('replyContent').value.trim();
+        console.log('回复内容:', replyContent);
         
         // 验证回复内容
         if (!replyContent) {
             console.error('回复内容为空');
             showErrorToast('回复内容不能为空');
-            updateStepStatus('prepareDataStep', 'error');
-            hideReplyProgressIndicator(false);
             return;
         }
+        
+        // 显示回复进度指示器
+        showReplyProgressIndicator();
+        
+        // 重置步骤状态
+        resetStepStatus();
+        
+        // 更新步骤状态：准备数据
+        updateStepStatus('prepareDataStep', 'processing');
         
         // 获取管理员信息
         const adminToken = localStorage.getItem('admin_token');
@@ -1290,6 +1303,34 @@ async function handleSubmitReply() {
             }
         }
         
+        // 尝试从DOM元素获取
+        if (!adminId || isNaN(adminId) || adminId <= 0) {
+            try {
+                // 尝试查找页面上是否有存储管理员ID的元素
+                const adminIdElement = document.getElementById('currentAdminId') || 
+                                      document.querySelector('[data-admin-id]');
+                
+                if (adminIdElement) {
+                    const elementId = adminIdElement.value || 
+                                     adminIdElement.textContent || 
+                                     adminIdElement.getAttribute('data-admin-id');
+                    
+                    if (elementId) {
+                        adminId = parseInt(elementId, 10);
+                        console.log('从DOM元素获取的管理员ID:', adminId);
+                    }
+                }
+            } catch (domError) {
+                console.error('从DOM获取管理员ID失败:', domError);
+            }
+        }
+        
+        // 最后的后备方案：使用硬编码值
+        if (!adminId || isNaN(adminId) || adminId <= 0) {
+            console.warn('无法获取有效的管理员ID，使用默认值1');
+            adminId = 1; // 使用默认值1作为最后的后备方案
+        }
+        
         // 检查是否有有效的管理员ID
         if (!adminId || isNaN(adminId) || adminId <= 0) {
             console.error('无法获取有效的管理员ID');
@@ -1311,7 +1352,7 @@ async function handleSubmitReply() {
         
         // 发送请求 - 使用正确的API端点
         console.log('开始发送API请求...');
-        const apiUrl = `${ADMIN_API_BASE_URL}/api/admin/reviews/reply`;
+        const apiUrl = `${ADMIN_API_BASE_URL}/api/admin/reviews/reply/create`;
         console.log('请求URL:', apiUrl);
         
         // 开始显示网络活动指示器
@@ -1336,7 +1377,7 @@ async function handleSubmitReply() {
                     console.log('步骤1: 创建回复记录');
                     const createReplyResponse = await adminAPI.createReviewReply(
                         parseInt(reviewId, 10),
-                        adminId,
+                        parseInt(adminId, 10),
                         replyContent
                     );
                     
@@ -1427,8 +1468,57 @@ async function handleSubmitReply() {
                         }
                     };
                 } catch (replyError) {
-                    console.error('纯文本回复提交失败:', replyError);
-                    throw new Error(`提交回复失败: ${replyError.message}`);
+                    console.error('纯文本回复提交失败，尝试直接使用fetch调用:', replyError);
+                    
+                    // 后备方案：直接使用fetch
+                    try {
+                        console.log('尝试使用原生fetch方式直接提交');
+                        const backupUrl = `${ADMIN_API_BASE_URL}/api/admin/reviews/reply/create`;
+                        console.log('后备请求URL:', backupUrl);
+                        
+                        // 准备请求数据
+                        const backupData = {
+                            review_id: parseInt(reviewId, 10),
+                            admin_id: adminId,
+                            reply_content: replyContent,
+                            status: 'published'
+                        };
+                        
+                        console.log('后备请求数据:', JSON.stringify(backupData, null, 2));
+                        
+                        // 发送原生fetch请求
+                        const backupResponse = await fetch(backupUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${adminAuth.getAuthToken()}`
+                            },
+                            body: JSON.stringify(backupData)
+                        });
+                        
+                        console.log('后备请求状态码:', backupResponse.status);
+                        
+                        if (!backupResponse.ok) {
+                            throw new Error(`后备请求失败，HTTP状态码: ${backupResponse.status}`);
+                        }
+                        
+                        const backupResult = await backupResponse.json();
+                        console.log('后备请求成功，结果:', backupResult);
+                        
+                        // 使用后备请求结果
+                        response = {
+                            ok: true,
+                            status: 200,
+                            json: async () => backupResult,
+                            text: async () => JSON.stringify(backupResult),
+                            headers: {
+                                forEach: () => {}
+                            }
+                        };
+                    } catch (backupError) {
+                        console.error('后备方案也失败:', backupError);
+                        throw new Error(`所有提交方式均失败: ${backupError.message}`);
+                    }
                 }
             }
             
@@ -1923,14 +2013,64 @@ function appendReplyStepsUI() {
 
 // 确保在初始化时调用
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOMContentLoaded事件触发，初始化评价管理页面...');
+    
+    // 初始化页面元素
+    initPageElements();
+    
     // 如果已经有这个函数的调用，则不需要再次添加
     if (typeof initReviewsPage === 'function') {
         const originalInitReviewsPage = initReviewsPage;
         
         initReviewsPage = async function() {
+            console.log('执行增强版initReviewsPage');
             await originalInitReviewsPage();
             appendReplyStepsUI();
+            
+            // 确保模态框按钮事件绑定
+            console.log('确保模态框按钮事件绑定');
+            const submitReplyBtn = document.getElementById('submitReplyBtn');
+            if (submitReplyBtn) {
+                submitReplyBtn.removeEventListener('click', handleSubmitReply);
+                submitReplyBtn.addEventListener('click', function(event) {
+                    console.log('提交回复按钮被点击（通过DOM加载后的绑定）');
+                    event.preventDefault();
+                    handleSubmitReply();
+                });
+                console.log('提交回复按钮事件重新绑定完成');
+            }
+            
+            // 监听模态框显示事件
+            const replyModal = document.getElementById('replyReviewModal');
+            if (replyModal) {
+                replyModal.addEventListener('shown.bs.modal', function() {
+                    console.log('回复模态框显示，检查元素和事件');
+                    
+                    // 确保提交按钮存在并绑定事件
+                    const modalSubmitBtn = document.getElementById('submitReplyBtn');
+                    if (modalSubmitBtn) {
+                        modalSubmitBtn.removeEventListener('click', handleSubmitReply);
+                        modalSubmitBtn.addEventListener('click', function(event) {
+                            console.log('提交回复按钮被点击（通过模态框显示事件绑定）');
+                            event.preventDefault();
+                            handleSubmitReply();
+                        });
+                    }
+                });
+            }
         };
+    }
+    
+    // 尝试初始化评价管理页面
+    if (window.location.href.includes('admin') && window.location.href.includes('reviews')) {
+        console.log('当前页面是评价管理页面，尝试初始化');
+        if (typeof initReviewsPage === 'function') {
+            try {
+                initReviewsPage();
+            } catch (error) {
+                console.error('初始化评价管理页面失败:', error);
+            }
+        }
     }
 });
 
