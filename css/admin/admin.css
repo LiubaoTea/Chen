@@ -197,31 +197,48 @@ body {
     }
 }
 
-/* 加载动画 */
+/* 加载遮罩 */
 .spinner-overlay {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(255, 248, 225, 0.8); /* 淡雅的象牙白，半透明 */
+    background-color: rgba(0, 0, 0, 0.5);
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 9999;
+    z-index: 2000;
+}
+
+.spinner-container {
+    text-align: center;
+    background-color: rgba(255, 255, 255, 0.9);
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+}
+
+.spinner-message {
+    color: #333;
+    font-size: 16px;
+    margin-top: 15px;
+    font-weight: 500;
 }
 
 .spinner {
     width: 50px;
     height: 50px;
-    border: 5px solid #F5F5DC; /* 米黄色 */
+    border: 5px solid #f3f3f3;
+    border-top: 5px solid #3498db;
     border-radius: 50%;
-    border-top-color: #8B4513; /* 褐色 */
     animation: spin 1s linear infinite;
+    margin: 0 auto;
 }
 
 @keyframes spin {
-    to { transform: rotate(360deg); }
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 
 /* 表单样式 */
@@ -367,4 +384,164 @@ body {
     pointer-events: none;
     background-color: #F5F5DC; /* 米黄色 */
     border-color: #D2B48C; /* 棕褐色边框 */
+}
+
+/* Toast容器 */
+.toast-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1050;
+}
+
+/* 评价查看模态框 */
+.review-images-gallery {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.review-image-item {
+    width: calc(33.333% - 10px);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.review-image-item img {
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+}
+
+/* 状态标签样式 */
+.status-badge {
+    padding: 4px 8px;
+    border-radius: 15px;
+    font-size: 12px;
+    font-weight: 500;
+    display: inline-block;
+}
+
+.status-pending {
+    background-color: #ffeeba;
+    color: #856404;
+}
+
+.status-approved {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status-rejected {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+/* 回复图片预览区域 */
+#replyImagePreview {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.preview-item {
+    position: relative;
+    width: calc(20% - 8px);
+    height: 100px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.preview-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.remove-image {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    font-size: 14px;
+    color: #dc3545;
+}
+
+.remove-image:hover {
+    background-color: #fff;
+    color: #bd2130;
+}
+
+/* 进度条容器 */
+#uploadProgressContainer {
+    margin-top: 15px;
+}
+
+/* 图片缩略图 */
+.review-image-thumbnail {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.review-image-thumbnail:hover {
+    transform: scale(1.05);
+}
+
+/* 商品缩略图 */
+.product-thumbnail {
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
+    border-radius: 4px;
+}
+
+/* 星级评分 */
+.review-stars {
+    color: #ffc107;
+}
+
+/* 评价内容预览 */
+.review-content-preview {
+    max-width: 150px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* 暂无图片占位符 */
+.no-image {
+    width: 60px;
+    height: 60px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    color: #6c757d;
+    font-size: 12px;
+}
+
+/* 操作按钮组 */
+.action-buttons {
+    display: flex;
+    gap: 5px;
+}
+
+/* 图片错误状态 */
+.img-error {
+    opacity: 0.7;
+    filter: grayscale(0.5);
 }

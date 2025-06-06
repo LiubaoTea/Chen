@@ -33,6 +33,9 @@ async function initReviewsPage() {
     if (!adminAuth.check()) return;
     
     try {
+        // 添加回复评价的模态框
+        appendReplyReviewModal();
+        
         // 加载评价列表
         await loadReviews(1);
         
@@ -44,6 +47,82 @@ async function initReviewsPage() {
     }
 }
 
+// 添加回复评价的模态框
+function appendReplyReviewModal() {
+    // 检查是否已存在模态框
+    if (document.getElementById('replyReviewModal')) return;
+    
+    // 创建模态框HTML
+    const modalHTML = `
+        <div class="modal fade" id="replyReviewModal" tabindex="-1" aria-labelledby="replyReviewModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="replyReviewModalLabel">回复评价</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="关闭"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="replyReviewForm">
+                            <input type="hidden" id="replyReviewId">
+                            <div class="mb-3">
+                                <label for="replyContent" class="form-label">回复内容</label>
+                                <textarea class="form-control" id="replyContent" rows="5" placeholder="请输入回复内容..."></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">上传图片（最多5张，每张不超过2MB）</label>
+                                <div class="input-group">
+                                    <input type="file" class="form-control" id="replyImages" accept="image/*" multiple>
+                                    <button class="btn btn-outline-secondary" type="button" id="uploadReplyImagesBtn">
+                                        <i class="bi bi-cloud-arrow-up me-1"></i>准备图片
+                                    </button>
+                                </div>
+                                <div class="form-text">支持JPG、PNG格式</div>
+                            </div>
+                            <div id="replyImagePreview" class="mt-3"></div>
+                            <div id="uploadProgressContainer" class="d-none">
+                                <label class="form-label">上传进度</label>
+                                <div class="progress">
+                                    <div id="uploadProgress" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                        <button type="button" class="btn btn-primary" id="submitReplyBtn">提交回复</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="modal fade" id="reviewDetailModal" tabindex="-1" aria-labelledby="reviewDetailModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="reviewDetailModalLabel">评价详情</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="关闭"></button>
+                    </div>
+                    <div class="modal-body" id="reviewDetailContent">
+                        <!-- 评价详情内容将通过JS动态加载 -->
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-success" id="approveReviewBtn">
+                            <i class="bi bi-check-circle me-1"></i>通过评价
+                        </button>
+                        <button type="button" class="btn btn-danger" id="rejectReviewBtn">
+                            <i class="bi bi-x-circle me-1"></i>拒绝评价
+                        </button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // 将模态框添加到页面
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+}
+
 // 加载评价列表
 async function loadReviews(page, status = '', rating = '', searchQuery = '') {
     try {
@@ -51,9 +130,14 @@ async function loadReviews(page, status = '', rating = '', searchQuery = '') {
         reviewsSelectedStatus = status;
         reviewsSelectedRating = rating;
         
+        // 检查评价管理页面是否已加载
+        if (!document.getElementById('reviewsTable')) {
+            loadReviewsPageStructure();
+        }
+        
         // 显示加载状态
         const reviewsList = document.getElementById('reviewsList');
-        reviewsList.innerHTML = '<tr><td colspan="7" class="text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">加载中...</span></div></td></tr>';
+        reviewsList.innerHTML = '<tr><td colspan="8" class="text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">加载中...</span></div></td></tr>';
         
         // 获取评价数据
         const result = await adminAPI.getReviews(page, reviewsPageSize, status, rating, searchQuery);
@@ -68,8 +152,97 @@ async function loadReviews(page, status = '', rating = '', searchQuery = '') {
     } catch (error) {
         console.error('加载评价列表失败:', error);
         const reviewsList = document.getElementById('reviewsList');
-        reviewsList.innerHTML = '<tr><td colspan="7" class="text-center text-danger">加载评价列表失败，请稍后重试</td></tr>';
+        reviewsList.innerHTML = '<tr><td colspan="8" class="text-center text-danger">加载评价列表失败，请稍后重试</td></tr>';
     }
+}
+
+// 加载评价管理页面结构
+function loadReviewsPageStructure() {
+    const reviewsSection = document.getElementById('reviews');
+    
+    // 确保容器存在
+    if (!reviewsSection) {
+        console.error('评价管理容器不存在');
+        return;
+    }
+    
+    // 添加评价管理页面HTML
+    reviewsSection.innerHTML = `
+        <div class="container-fluid px-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="fs-4 my-3">评价管理</h2>
+                <div class="d-flex">
+                    <button id="refreshReviewsBtn" class="btn btn-sm btn-outline-secondary me-2">
+                        <i class="bi bi-arrow-clockwise"></i> 刷新
+                    </button>
+                    <button id="exportReviewsBtn" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-download"></i> 导出
+                    </button>
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <div class="row align-items-center">
+                        <div class="col-md-3 mb-2 mb-md-0">
+                            <select id="reviewStatusFilter" class="form-select form-select-sm">
+                                <option value="">全部状态</option>
+                                <option value="pending">待审核</option>
+                                <option value="approved">已通过</option>
+                                <option value="rejected">已拒绝</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 mb-2 mb-md-0">
+                            <select id="reviewRatingFilter" class="form-select form-select-sm">
+                                <option value="">全部评分</option>
+                                <option value="5">5星</option>
+                                <option value="4">4星</option>
+                                <option value="3">3星</option>
+                                <option value="2">2星</option>
+                                <option value="1">1星</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <form id="reviewSearchForm" class="d-flex">
+                                <input type="text" id="reviewSearchInput" class="form-control form-control-sm me-2" placeholder="搜索评价内容、商品名称或用户名...">
+                                <button type="submit" class="btn btn-sm btn-primary">
+                                    <i class="bi bi-search"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0" id="reviewsTable">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th>商品</th>
+                                    <th>用户</th>
+                                    <th>评分</th>
+                                    <th>评价内容</th>
+                                    <th>图片</th>
+                                    <th>评价时间</th>
+                                    <th>状态</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reviewsList">
+                                <!-- 评价数据将通过JS动态加载 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <nav aria-label="评价分页">
+                        <ul id="reviewsPagination" class="pagination pagination-sm justify-content-center mb-0">
+                            <!-- 分页控件将通过JS动态加载 -->
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    `;
 }
 
 // 更新评价列表
@@ -566,12 +739,50 @@ async function handleUploadReplyImages() {
     }
     
     try {
+        // 获取管理员ID
+        const adminId = adminAuth.getAdminId();
+        if (!adminId) {
+            showErrorToast('未获取到管理员ID，请重新登录');
+            return;
+        }
+        
         // 显示上传进度
         const progressContainer = document.getElementById('uploadProgressContainer');
         const progressBar = document.getElementById('uploadProgress');
         progressContainer.classList.remove('d-none');
         progressBar.style.width = '0%';
         progressBar.setAttribute('aria-valuenow', '0');
+        
+        // 生成上传图片所需的元数据
+        const timestamp = Math.floor(Date.now() / 1000);
+        Array.from(files).forEach((file, index) => {
+            // 检查是否已经在replyImagesData中有此文件
+            const existingIndex = replyImagesData.findIndex(img => 
+                img.file && img.file.name === file.name && img.file.size === file.size
+            );
+            
+            // 如果不在数组中，添加图片
+            if (existingIndex === -1) {
+                const randomStr = Math.random().toString(36).substring(2, 10);
+                const extension = file.name.split('.').pop().toLowerCase();
+                
+                // 构建R2存储路径
+                const objectKey = `image/Admin-Replies/${reviewId}/${adminId}_${timestamp}_${randomStr}.${extension}`;
+                
+                // 更新图片数据
+                replyImagesData[index] = {
+                    file: file,
+                    extension: extension,
+                    file_name: file.name,
+                    file_size: file.size,
+                    mime_type: file.type,
+                    object_key: objectKey,
+                    admin_id: adminId
+                };
+                
+                console.log(`图片${index}元数据已更新:`, replyImagesData[index]);
+            }
+        });
         
         // 模拟上传进度
         let progress = 0;
@@ -583,7 +794,7 @@ async function handleUploadReplyImages() {
             }
         }, 100);
         
-        // 上传完成后，隐藏进度条并显示成功提示
+        // 模拟网络请求时间，生产环境应改为实际上传
         setTimeout(() => {
             clearInterval(progressInterval);
             progressBar.style.width = '100%';
@@ -596,8 +807,8 @@ async function handleUploadReplyImages() {
         }, 2000);
         
     } catch (error) {
-        console.error('上传回复图片失败:', error);
-        showErrorToast('上传图片失败: ' + (error.message || '请稍后重试'));
+        console.error('处理回复图片失败:', error);
+        showErrorToast('处理图片失败: ' + (error.message || '请稍后重试'));
         document.getElementById('uploadProgressContainer').classList.add('d-none');
     }
 }
@@ -615,9 +826,22 @@ async function handleSubmitReply() {
     const submitBtn = document.getElementById('submitReplyBtn');
     
     try {
-        // 显示加载状态
+        // 显示加载遮罩
+        showLoadingOverlay('正在提交回复...');
+        
+        // 显示按钮加载状态
         submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 提交中...';
         submitBtn.disabled = true;
+        
+        // 更新上传进度为100%（如果之前没有完成）
+        const progressContainer = document.getElementById('uploadProgressContainer');
+        const progressBar = document.getElementById('uploadProgress');
+        if (!progressContainer.classList.contains('d-none')) {
+            progressBar.style.width = '100%';
+            progressBar.setAttribute('aria-valuenow', '100');
+        }
+        
+        console.log('提交回复, 评价ID:', reviewId, '内容:', content, '图片数量:', replyImagesData.length);
         
         // 提交回复
         const replyData = await adminAPI.replyReview(reviewId, content, replyImagesData);
@@ -638,6 +862,9 @@ async function handleSubmitReply() {
         console.error('提交回复失败:', error);
         showErrorToast('提交回复失败: ' + (error.message || '请稍后重试'));
     } finally {
+        // 隐藏加载遮罩
+        hideLoadingOverlay();
+        
         // 恢复按钮状态
         submitBtn.innerHTML = '提交回复';
         submitBtn.disabled = false;
@@ -770,15 +997,26 @@ function getReviewStatusBadge(status) {
 }
 
 // 显示加载遮罩
-function showLoadingOverlay() {
+function showLoadingOverlay(message = '处理中...') {
     let overlay = document.getElementById('loadingOverlay');
     
     if (!overlay) {
         overlay = document.createElement('div');
         overlay.id = 'loadingOverlay';
         overlay.className = 'spinner-overlay';
-        overlay.innerHTML = '<div class="spinner"></div>';
+        overlay.innerHTML = `
+            <div class="spinner-container">
+                <div class="spinner"></div>
+                <div class="spinner-message mt-3">${message}</div>
+            </div>
+        `;
         document.body.appendChild(overlay);
+    } else {
+        // 如果遮罩已存在，更新消息
+        const messageEl = overlay.querySelector('.spinner-message');
+        if (messageEl) {
+            messageEl.textContent = message;
+        }
     }
     
     overlay.style.display = 'flex';

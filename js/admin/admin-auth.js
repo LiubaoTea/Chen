@@ -48,20 +48,33 @@ console.log('admin-auth.js中的配置:', {
 let adminAuthState = {
     isLoggedIn: false,
     adminToken: null,
-    adminInfo: null
+    adminInfo: null,
+    expiresAt: null,
+    username: null,
+    adminId: null
 };
 
 // 初始化认证状态
 function initAdminAuth() {
     // 从本地存储中获取管理员令牌
-    const storedToken = localStorage.getItem('adminToken');
-    const storedAdminInfo = localStorage.getItem('adminInfo');
+    const storedToken = localStorage.getItem('admin_token');
+    const storedExpiresAt = localStorage.getItem('admin_expires_at');
+    const storedUsername = localStorage.getItem('admin_username');
+    const storedAdminId = localStorage.getItem('admin_id');
     
-    if (storedToken && storedAdminInfo) {
+    if (storedToken && storedExpiresAt && storedUsername) {
         try {
             adminAuthState.adminToken = storedToken;
-            adminAuthState.adminInfo = JSON.parse(storedAdminInfo);
+            adminAuthState.expiresAt = storedExpiresAt;
+            adminAuthState.username = storedUsername;
+            adminAuthState.adminId = storedAdminId;
             adminAuthState.isLoggedIn = true;
+            
+            // 检查token是否过期
+            if (new Date().getTime() > parseInt(storedExpiresAt)) {
+                console.warn('管理员token已过期，执行自动登出');
+                clearAdminAuth();
+            }
             
             // 更新UI显示管理员信息
             updateAdminUI();
@@ -85,6 +98,11 @@ function getAdminInfo() {
     return adminAuthState.adminInfo;
 }
 
+// 获取管理员ID
+function getAdminId() {
+    return adminAuthState.adminId;
+}
+
 // 创建adminAuth对象
 const adminAuthObj = {
     init: initAdminAuth,
@@ -94,6 +112,7 @@ const adminAuthObj = {
     getHeaders: getAdminAuthHeaders,
     getToken: getAdminToken,
     getAdminInfo: getAdminInfo,
+    getAdminId: getAdminId,
     isLoggedIn: isAdminLoggedIn
 };
 
@@ -179,11 +198,18 @@ async function adminLogin(username, password) {
             id: data.admin_id || 0,
             permissions: data.permissions || []
         };
+        adminAuthState.expiresAt = data.expiresAt || null;
+        adminAuthState.username = data.username || username;
+        adminAuthState.adminId = data.admin_id || null;
         adminAuthState.isLoggedIn = true;
         
         // 存储到本地存储
-        localStorage.setItem('adminToken', data.token);
-        localStorage.setItem('adminInfo', JSON.stringify(adminAuthState.adminInfo));
+        localStorage.setItem('admin_token', data.token);
+        localStorage.setItem('admin_expires_at', data.expiresAt ? data.expiresAt.toString() : null);
+        localStorage.setItem('admin_username', data.username || username);
+        if (data.admin_id) {
+            localStorage.setItem('admin_id', data.admin_id.toString());
+        }
         
         console.log('认证信息已保存到本地存储');
         
@@ -209,9 +235,14 @@ function clearAdminAuth() {
     adminAuthState.isLoggedIn = false;
     adminAuthState.adminToken = null;
     adminAuthState.adminInfo = null;
+    adminAuthState.expiresAt = null;
+    adminAuthState.username = null;
+    adminAuthState.adminId = null;
     
-    localStorage.removeItem('adminToken');
-    localStorage.removeItem('adminInfo');
+    localStorage.removeItem('admin_token');
+    localStorage.removeItem('admin_expires_at');
+    localStorage.removeItem('admin_username');
+    localStorage.removeItem('admin_id');
 }
 
 // 获取管理员认证头信息
@@ -231,6 +262,14 @@ function checkAdminAuth() {
         showLoginModal();
         return false;
     }
+    
+    // 检查token是否过期
+    if (new Date().getTime() > parseInt(adminAuthState.expiresAt)) {
+        console.warn('管理员token已过期，执行自动登出');
+        clearAdminAuth();
+        return false;
+    }
+    
     return true;
 }
 
@@ -253,7 +292,11 @@ function updateAdminUI() {
 
 // 检查是否已登录
 function isAdminLoggedIn() {
-    return adminAuthState.isLoggedIn;
+    const isValid = checkAdminAuth();
+    if (!isValid && window.location.pathname !== '/admin/login.html') {
+        window.location.href = '/admin/login.html';
+    }
+    return isValid;
 }
 
 // 这部分已经在上面导出，不需要重复

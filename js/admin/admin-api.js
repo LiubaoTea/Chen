@@ -1136,20 +1136,37 @@ const adminAPIObject = {
                 console.error('无效的评价ID');
                 throw new Error('无效的评价ID');
             }
+
+            // 获取当前管理员ID
+            const adminId = adminAuth.getAdminId();
+            if (!adminId) {
+                console.error('未获取到管理员ID');
+                throw new Error('管理员身份验证失败');
+            }
             
             // 如果有图片，使用FormData
             if (images && images.length > 0) {
                 console.log('使用FormData提交带图片的回复');
                 const formData = new FormData();
                 formData.append('content', content);
+                formData.append('admin_id', adminId);
+                formData.append('status', 'published'); // 默认状态为已发布
                 
                 // 添加图片数据为JSON字符串
-                const imagesData = images.map(img => ({
-                    extension: img.extension || 'jpg',
-                    file_name: img.file_name || 'image.jpg',
-                    file_size: img.file_size || 0,
-                    mime_type: img.mime_type || 'image/jpeg'
-                }));
+                const timestamp = Math.floor(Date.now() / 1000);
+                const imagesData = images.map((img, index) => {
+                    const randomStr = Math.random().toString(36).substring(2, 10);
+                    const extension = img.extension || 'jpg';
+                    const objectKey = `image/Admin-Replies/${reviewId}/${adminId}_${timestamp}_${randomStr}.${extension}`;
+                    
+                    return {
+                        object_key: objectKey,
+                        file_name: img.file_name || 'image.jpg',
+                        file_size: img.file_size || 0,
+                        mime_type: img.mime_type || 'image/jpeg',
+                        admin_id: adminId
+                    };
+                });
                 
                 console.log('图片元数据:', JSON.stringify(imagesData));
                 formData.append('images', JSON.stringify(imagesData));
@@ -1184,7 +1201,11 @@ const adminAPIObject = {
             } else {
                 // 无图片时使用JSON
                 console.log('使用JSON提交纯文本回复');
-                const payload = { content };
+                const payload = { 
+                    content,
+                    admin_id: adminId,
+                    status: 'published' // 默认状态为已发布
+                };
                 console.log('请求数据:', JSON.stringify(payload));
                 
                 const response = await fetch(url, {
