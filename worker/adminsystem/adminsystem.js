@@ -424,7 +424,16 @@ const handleAdminAPI = async (request, env) => {
             } else if (contentType.includes('multipart/form-data')) {
                 // 处理FormData格式请求
                 const formData = await request.formData();
-                console.log('收到的评价回复FormData数据');
+                console.log('收到的评价回复FormData数据:');
+                
+                // 记录FormData中的所有字段
+                for (const [key, value] of formData.entries()) {
+                    if (key === 'images') {
+                        console.log(`${key}: [复杂数据，长度=${value.length}]`);
+                    } else {
+                        console.log(`${key}: ${value}`);
+                    }
+                }
                 
                 // 从URL或表单中获取reviewId
                 if (path.match(/^\/api\/admin\/reviews\/\d+\/reply$/)) {
@@ -441,6 +450,7 @@ const handleAdminAPI = async (request, env) => {
                     try {
                         console.log('解析图片JSON数据:', imagesJson);
                         images = JSON.parse(imagesJson);
+                        console.log('解析后的图片数据:', JSON.stringify(images));
                     } catch (e) {
                         console.error('解析图片JSON数据失败:', e);
                         images = [];
@@ -492,97 +502,122 @@ const handleAdminAPI = async (request, env) => {
             
             // 创建回复记录
             const now = Math.floor(Date.now() / 1000);
-            console.log('准备插入回复记录');
+            console.log('准备插入回复记录，参数:', {
+                reviewId, 
+                adminId: adminInfo.adminId, 
+                replyContent: replyContent.substring(0, 20) + '...',
+                timestamp: now
+            });
             
             // 获取管理员ID
             const adminId = adminInfo.adminId;
             console.log('管理员ID:', adminId);
             
-            const replyResult = await env.DB.prepare(`
-                INSERT INTO admin_review_replies 
-                (review_id, admin_id, reply_content, status, created_at, updated_at) 
-                VALUES (?, ?, ?, 'published', ?, ?)
-            `).bind(
-                reviewId, 
-                adminId, 
-                replyContent, 
-                now, 
-                now
-            ).run();
-            
-            console.log('回复记录插入结果:', JSON.stringify(replyResult));
-            const replyId = replyResult.meta.last_row_id;
-            console.log('新回复ID:', replyId);
-            
-            // 处理图片
-            const imageResults = [];
-            if (images && images.length > 0) {
-                console.log(`处理 ${images.length} 张回复图片`);
+            // 开始插入数据库
+            try {
+                const replyResult = await env.DB.prepare(`
+                    INSERT INTO admin_review_replies 
+                    (review_id, admin_id, reply_content, status, created_at, updated_at) 
+                    VALUES (?, ?, ?, 'published', ?, ?)
+                `).bind(
+                    reviewId, 
+                    adminId, 
+                    replyContent, 
+                    now, 
+                    now
+                ).run();
                 
-                for (const image of images) {
-                    try {
-                        const objectKey = image.object_key || `image/Admin-Replies/${replyId}/${adminId}_${now}_${Math.random().toString(36).substring(2, 12)}.${image.extension || 'jpg'}`;
-                        
-                        await env.DB.prepare(`
-                            INSERT INTO admin_reply_images 
-                            (reply_id, admin_id, object_key, file_name, file_size, mime_type, created_at) 
-                            VALUES (?, ?, ?, ?, ?, ?, ?)
-                        `).bind(
-                            replyId,
-                            adminId,
-                            objectKey,
-                            image.file_name || 'reply_image',
-                            image.file_size || 0,
-                            image.mime_type || 'image/jpeg',
-                            now
-                        ).run();
-                        
-                        imageResults.push({
-                            success: true,
-                            object_key: objectKey,
-                            url: `https://r2liubaotea.liubaotea.online/${objectKey}`
-                        });
-                        
-                        console.log(`图片记录已插入: ${objectKey}`);
-                    } catch (imgError) {
-                        console.error('插入图片记录失败:', imgError);
-                        imageResults.push({
-                            success: false,
-                            error: imgError.message
-                        });
+                console.log('回复记录插入结果:', JSON.stringify(replyResult));
+                const replyId = replyResult.meta.last_row_id;
+                console.log('新回复ID:', replyId);
+                
+                // 处理图片
+                const imageResults = [];
+                if (images && images.length > 0) {
+                    console.log(`处理 ${images.length} 张回复图片`);
+                    
+                    for (const image of images) {
+                        try {
+                            console.log('处理图片:', JSON.stringify(image));
+                            
+                            const objectKey = image.object_key || `image/Admin-Replies/${replyId}/${adminId}_${now}_${Math.random().toString(36).substring(2, 12)}.${image.extension || 'jpg'}`;
+                            
+                            console.log('生成的objectKey:', objectKey);
+                            
+                            const imageInsertResult = await env.DB.prepare(`
+                                INSERT INTO admin_reply_images 
+                                (reply_id, admin_id, object_key, file_name, file_size, mime_type, created_at) 
+                                VALUES (?, ?, ?, ?, ?, ?, ?)
+                            `).bind(
+                                replyId,
+                                adminId,
+                                objectKey,
+                                image.file_name || 'reply_image',
+                                image.file_size || 0,
+                                image.mime_type || 'image/jpeg',
+                                now
+                            ).run();
+                            
+                            console.log('图片插入结果:', JSON.stringify(imageInsertResult));
+                            
+                            imageResults.push({
+                                success: true,
+                                object_key: objectKey,
+                                url: `https://r2liubaotea.liubaotea.online/${objectKey}`
+                            });
+                            
+                            console.log(`图片记录已插入: ${objectKey}`);
+                        } catch (imgError) {
+                            console.error('插入图片记录失败:', imgError);
+                            imageResults.push({
+                                success: false,
+                                error: imgError.message
+                            });
+                        }
                     }
                 }
+                
+                // 获取管理员用户名
+                const admin = await env.DB.prepare('SELECT username FROM admins WHERE admin_id = ?')
+                    .bind(adminId)
+                    .first();
+                
+                console.log('回复评价处理完成，准备返回成功响应');
+                return new Response(JSON.stringify({
+                    success: true,
+                    message: '回复评价成功',
+                    reply: {
+                        reply_id: replyId,
+                        review_id: reviewId,
+                        content: replyContent,
+                        admin_username: admin?.username || 'admin',
+                        admin_id: adminId,
+                        created_at: now,
+                        status: 'published',
+                        images: imageResults
+                    }
+                }), {
+                    status: 200,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                });
+            } catch (dbError) {
+                console.error('数据库操作失败:', dbError);
+                return new Response(JSON.stringify({ 
+                    error: '数据库操作失败', 
+                    message: dbError.message,
+                    stack: dbError.stack
+                }), {
+                    status: 500,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                });
             }
-            
-            // 获取管理员用户名
-            const admin = await env.DB.prepare('SELECT username FROM admins WHERE admin_id = ?')
-                .bind(adminId)
-                .first();
-            
-            console.log('回复评价处理完成，准备返回成功响应');
-            return new Response(JSON.stringify({
-                success: true,
-                message: '回复评价成功',
-                reply: {
-                    reply_id: replyId,
-                    review_id: reviewId,
-                    content: replyContent,
-                    admin_username: admin?.username || 'admin',
-                    admin_id: adminId,
-                    created_at: now,
-                    status: 'published',
-                    images: imageResults
-                }
-            }), {
-                status: 200,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
-            
         } catch (error) {
             console.error('处理评价回复时出错:', error);
+            console.error('错误堆栈:', error.stack);
             return new Response(JSON.stringify({ 
                 error: '处理评价回复失败', 
-                message: error.message 
+                message: error.message,
+                stack: error.stack
             }), {
                 status: 500,
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' }
