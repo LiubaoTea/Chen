@@ -1352,7 +1352,7 @@ async function handleSubmitReply() {
         
         // 发送请求 - 使用正确的API端点
         console.log('开始发送API请求...');
-        const apiUrl = `${ADMIN_API_BASE_URL}/api/admin/reviews/reply/create`;
+        const apiUrl = `${ADMIN_API_BASE_URL}/api/admin/reviews/reply`;
         console.log('请求URL:', apiUrl);
         
         // 开始显示网络活动指示器
@@ -1484,7 +1484,7 @@ async function handleSubmitReply() {
                     // 后备方案：直接使用fetch
                     try {
                         console.log('尝试使用原生fetch方式直接提交');
-                        const backupUrl = `${ADMIN_API_BASE_URL}/api/admin/reviews/reply/create`;
+                        const backupUrl = `${ADMIN_API_BASE_URL}/api/admin/reviews/reply`;
                         console.log('后备请求URL:', backupUrl);
                         
                         // 准备请求数据

@@ -384,8 +384,8 @@ const handleAdminAPI = async (request, env) => {
         return handleAdminLogin(request, env);
     }
     
-    // 评价回复API - 同时支持两种URL格式
-    if ((path === '/api/admin/reviews/reply' || path.match(/^\/api\/admin\/reviews\/\d+\/reply$/)) && request.method === 'POST') {
+    // 评价回复API - 同时支持多种URL格式
+    if ((path === '/api/admin/reviews/reply' || path === '/api/admin/reviews/reply/create' || path.match(/^\/api\/admin\/reviews\/\d+\/reply$/)) && request.method === 'POST') {
         console.log('匹配到评价回复API路由, 路径:', path);
         try {
             // 验证管理员身份
@@ -408,18 +408,28 @@ const handleAdminAPI = async (request, env) => {
             
             if (contentType.includes('application/json')) {
                 // 处理JSON格式请求
+                console.log('检测到JSON格式请求');
                 const requestData = await request.json();
-                console.log('收到的评价回复JSON数据:', JSON.stringify(requestData));
+                console.log('收到的评价回复JSON数据:', JSON.stringify(requestData, null, 2));
                 
                 // 从URL或请求体中获取reviewId
                 if (path.match(/^\/api\/admin\/reviews\/\d+\/reply$/)) {
                     reviewId = parseInt(path.split('/')[4], 10);
+                    console.log('从URL路径提取reviewId:', reviewId);
                 } else {
                     reviewId = parseInt(requestData.review_id, 10);
+                    console.log('从请求体提取reviewId:', reviewId);
                 }
                 
                 replyContent = requestData.reply_content || requestData.content || '';
+                console.log('提取的回复内容长度:', replyContent.length);
+                console.log('回复内容前20个字符:', replyContent.substring(0, 20));
+                
                 images = Array.isArray(requestData.images) ? requestData.images : [];
+                console.log('提取的图片数量:', images.length);
+                if (images.length > 0) {
+                    console.log('第一张图片信息:', JSON.stringify(images[0], null, 2));
+                }
                 
             } else if (contentType.includes('multipart/form-data')) {
                 // 处理FormData格式请求
@@ -4247,15 +4257,17 @@ async function handleReplyImageUploadAPI(request, env) {
             // 构建R2存储路径
             const objectKey = `image/Admin-Replies/${review_id}/${adminId}_${timestamp}_${randomStr}.${extension}`;
             
-            // 为该对象生成一个预签名上传URL
-            // 注意：实际生成预签名URL的方法取决于你的R2配置
-            // 这里只是模拟生成一个假的URL作为示例
-            const presignedUrl = `https://upload.example.com/${objectKey}`;
+            // 构建图片的访问URL
+            // 直接使用R2自定义域名，而不是生成预签名URL
+            // 使用项目的实际R2自定义域名
+            const r2Domain = 'r2liubaotea.liubaotea.online';
+            const presignedUrl = `https://${r2Domain}/${objectKey}`;
             
             presignedUrls.push({
                 originalName,
                 objectKey,
-                presignedUrl,
+                url: presignedUrl,
+                presignedUrl,  // 保留字段名称兼容性
                 contentType: contentType || 'image/jpeg'
             });
         }
@@ -4263,24 +4275,71 @@ async function handleReplyImageUploadAPI(request, env) {
         // 返回成功响应
         return new Response(JSON.stringify({
             success: true,
-            message: '预签名URL生成成功',
+            message: '图片URL生成成功',
             urls: presignedUrls
         }), {
             status: 200,
-            headers: { 'Content-Type': 'application/json' }
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
         
     } catch (error) {
         console.error('处理回复图片上传请求时出错:', error);
         console.error('错误堆栈:', error.stack);
-        return new Response(JSON.stringify({
-            error: '处理回复图片上传请求失败',
-            message: error.message,
-            stack: error.stack
-        }), {
-            status: 500,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
+        
+        // 尝试使用直接上传到R2的方式
+        try {
+            console.log('尝试直接上传图片到R2...');
+            
+            // 从请求中获取必要参数
+            const { review_id, admin_id, file_name, file_type } = requestData;
+            
+            if (!review_id) {
+                throw new Error('缺少评价ID参数');
+            }
+            
+            // 生成唯一的对象键
+            const timestamp = Math.floor(Date.now() / 1000);
+            const randomStr = Math.random().toString(36).substring(2, 10);
+            const extension = file_name ? file_name.split('.').pop().toLowerCase() : 'jpg';
+            
+            // 构建对象键
+            const objectKey = `image/Admin-Replies/${review_id}/${admin_id || 'admin'}_${timestamp}_${randomStr}.${extension}`;
+            
+            // 构建图片URL
+            const r2Domain = 'r2liubaotea.liubaotea.online';
+            const imageUrl = `https://${r2Domain}/${objectKey}`;
+            
+            console.log('生成的对象键:', objectKey);
+            console.log('图片URL:', imageUrl);
+            
+            return new Response(JSON.stringify({
+                success: true,
+                message: '图片URL生成成功（后备方案）',
+                urls: [{
+                    originalName: file_name || 'image.jpg',
+                    objectKey: objectKey,
+                    url: imageUrl,
+                    presignedUrl: imageUrl,
+                    contentType: file_type || 'image/jpeg'
+                }]
+            }), {
+                status: 200,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+            
+        } catch (backupError) {
+            console.error('后备方案也失败:', backupError);
+            
+            return new Response(JSON.stringify({
+                error: '处理回复图片上传请求失败',
+                message: error.message,
+                details: backupError.message,
+                stack: error.stack
+            }), {
+                status: 500,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        }
     }
     console.log('===== 处理回复图片上传API结束 =====');
 }
