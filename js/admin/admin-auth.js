@@ -278,12 +278,24 @@ function getAdminAuthHeaders() {
 
 // 检查是否已登录，未登录则显示登录模态框
 function checkAdminAuth() {
-    // 如果当前页面是登录页面，则只验证登录状态，不显示模态框
-    const isLoginPage = window.location.pathname.includes('login.html');
+    // 检查是否为登录页面
+    const isLoginPage = window.isLoginPage === true || 
+                      window.location.pathname.includes('login.html') || 
+                      window.location.pathname.endsWith('/admin/');
     
+    console.log('checkAdminAuth 检查登录状态:', 
+                '是否登录页:', isLoginPage, 
+                '当前路径:', window.location.pathname, 
+                '登录状态:', adminAuthState.isLoggedIn);
+    
+    // 如果未登录
     if (!adminAuthState.isLoggedIn) {
+        // 在登录页不做处理，其他页面重定向到登录页
         if (!isLoginPage) {
-            showLoginModal();
+            console.log('非登录页面，未登录状态，重定向到登录页');
+            redirectToLogin();
+        } else {
+            console.log('已在登录页面，不进行重定向');
         }
         return false;
     }
@@ -293,7 +305,7 @@ function checkAdminAuth() {
         console.warn('管理员token已过期，执行自动登出');
         clearAdminAuth();
         if (!isLoginPage) {
-            showLoginModal();
+            redirectToLogin();
         }
         return false;
     }
@@ -301,29 +313,34 @@ function checkAdminAuth() {
     return true;
 }
 
-// 显示登录模态框
+// 重定向到登录页面函数
+function redirectToLogin() {
+    // 防止在登录页面调用
+    if (window.isLoginPage === true || 
+        window.location.pathname.includes('login.html') || 
+        window.location.pathname.endsWith('/admin/')) {
+        console.warn('已在登录页面，取消重定向');
+        return;
+    }
+    
+    console.log('执行重定向到登录页面');
+    
+    // 使用替换方式重定向，不留下历史记录，减少循环可能性
+    window.location.replace('/admin/login.html');
+}
+
+// 显示登录模态框 - 改为直接重定向
 function showLoginModal() {
-    // 如果当前页面是登录页面，则不显示登录模态框
-    if (window.location.pathname.includes('login.html')) {
+    // 如果在登录页面或已标记为登录页面，则不重定向
+    if (window.isLoginPage === true || 
+        window.location.pathname.includes('login.html') || 
+        window.location.pathname.endsWith('/admin/')) {
+        console.log('已在登录页面，不进行重定向');
         return;
     }
     
-    const loginModalElement = document.getElementById('loginModal');
-    // 检查登录模态框是否存在
-    if (!loginModalElement) {
-        console.warn('登录模态框不存在，重定向到登录页面');
-        window.location.href = '/admin/login.html';
-        return;
-    }
-    
-    try {
-        const loginModal = new bootstrap.Modal(loginModalElement);
-        loginModal.show();
-    } catch (error) {
-        console.error('显示登录模态框失败:', error);
-        // 回退方案：重定向到登录页面
-        window.location.href = '/admin/login.html';
-    }
+    // 直接调用重定向函数
+    redirectToLogin();
 }
 
 // 更新UI显示管理员信息
@@ -362,15 +379,23 @@ function updateAdminUI() {
 
 // 检查是否已登录
 function isAdminLoggedIn() {
-    // 如果当前页面是登录页面，不需要进行重定向
-    if (window.location.pathname.includes('login.html')) {
+    // 检查是否为登录页面
+    const isLoginPage = window.isLoginPage === true || 
+                      window.location.pathname.includes('login.html') || 
+                      window.location.pathname.endsWith('/admin/');
+    
+    console.log('isAdminLoggedIn 检查登录状态:', 
+                '是否登录页:', isLoginPage, 
+                '当前路径:', window.location.pathname, 
+                '登录状态:', adminAuthState.isLoggedIn);
+    
+    // 如果是登录页面，只返回登录状态不做重定向
+    if (isLoginPage) {
         return adminAuthState.isLoggedIn;
     }
     
+    // 非登录页面，检查登录状态
     const isValid = checkAdminAuth();
-    if (!isValid) {
-        window.location.href = '/admin/login.html';
-    }
     return isValid;
 }
 
