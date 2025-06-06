@@ -1323,6 +1323,184 @@ const adminAPIObject = {
             console.error('保存系统设置出错:', error);
             throw error;
         }
+    },
+
+    // 创建商家评价回复（存储到admin_review_replies表）
+    createReviewReply: async (reviewId, adminId, content) => {
+        try {
+            console.log('===== 创建评价回复内容开始 =====');
+            console.log('reviewId:', reviewId);
+            console.log('adminId:', adminId);
+            console.log('回复内容长度:', content.length);
+            
+            const url = `${ADMIN_API_BASE_URL}/api/admin/reviews/reply/create`;
+            console.log('请求URL:', url);
+            
+            // 检查内容是否为空
+            if (!content || content.trim() === '') {
+                console.error('回复内容不能为空');
+                throw new Error('回复内容不能为空');
+            }
+            
+            // 构建请求数据
+            const requestData = {
+                review_id: reviewId,
+                admin_id: adminId,
+                reply_content: content,
+                status: 'published'  // 默认发布状态
+            };
+            
+            console.log('请求数据:', JSON.stringify(requestData));
+            
+            // 发送请求
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    ...adminAuth.getHeaders(),
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestData)
+            });
+            
+            console.log('响应状态码:', response.status);
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('创建评价回复API响应错误:', response.status, errorText);
+                throw new Error(`创建评价回复失败，HTTP状态码: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            console.log('成功创建评价回复,响应数据:', data);
+            console.log('===== 创建评价回复内容结束 =====');
+            return data;
+        } catch (error) {
+            console.error('创建评价回复出错:', error);
+            console.log('===== 创建评价回复内容异常结束 =====');
+            throw error;
+        }
+    },
+    
+    // 上传回复图片到R2存储
+    uploadReplyImage: async (file, objectKey) => {
+        try {
+            console.log('===== 上传回复图片开始 =====');
+            console.log('文件名:', file.name);
+            console.log('文件大小:', file.size);
+            console.log('对象键:', objectKey);
+            
+            const url = `${ADMIN_API_BASE_URL}/api/admin/upload/reply-image`;
+            console.log('请求URL:', url);
+            
+            // 创建FormData
+            const formData = new FormData();
+            formData.append('image', file);
+            formData.append('objectKey', objectKey);
+            
+            // 发送请求
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    ...adminAuth.getHeaders()
+                    // 不要设置Content-Type，让浏览器自动设置
+                },
+                body: formData
+            });
+            
+            console.log('响应状态码:', response.status);
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('上传图片API响应错误:', response.status, errorText);
+                throw new Error(`上传图片失败，HTTP状态码: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            console.log('成功上传图片,响应数据:', data);
+            console.log('===== 上传回复图片结束 =====');
+            return data;
+        } catch (error) {
+            console.error('上传回复图片出错:', error);
+            console.log('===== 上传回复图片异常结束 =====');
+            throw error;
+        }
+    },
+    
+    // 保存图片元数据到admin_reply_images表
+    saveReplyImageMetadata: async (imageData) => {
+        try {
+            console.log('===== 保存图片元数据开始 =====');
+            console.log('图片数据:', imageData);
+            
+            const url = `${ADMIN_API_BASE_URL}/api/admin/reviews/reply/image`;
+            console.log('请求URL:', url);
+            
+            // 检查必要字段
+            if (!imageData.reply_id || !imageData.admin_id || !imageData.object_key) {
+                console.error('缺少必要的图片元数据字段');
+                throw new Error('缺少必要的图片元数据字段');
+            }
+            
+            // 发送请求
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    ...adminAuth.getHeaders(),
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(imageData)
+            });
+            
+            console.log('响应状态码:', response.status);
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('保存图片元数据API响应错误:', response.status, errorText);
+                throw new Error(`保存图片元数据失败，HTTP状态码: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            console.log('成功保存图片元数据,响应数据:', data);
+            console.log('===== 保存图片元数据结束 =====');
+            return data;
+        } catch (error) {
+            console.error('保存图片元数据出错:', error);
+            console.log('===== 保存图片元数据异常结束 =====');
+            throw error;
+        }
+    },
+    
+    // 导出评价
+    exportReviews: async (status = '', rating = '') => {
+        try {
+            let url = `${ADMIN_API_BASE_URL}/api/admin/reviews/export`;
+            const params = [];
+            if (status) params.push(`status=${status}`);
+            if (rating) params.push(`rating=${rating}`);
+            if (params.length > 0) url += `?${params.join('&')}`;
+            
+            console.log('发送导出评价请求，URL:', url);
+            
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    ...adminAuth.getHeaders()
+                }
+            });
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('导出评价API响应错误:', response.status, errorText);
+                throw new Error(`导出评价失败，HTTP状态码: ${response.status}`);
+            }
+            
+            const data = await response.blob();
+            console.log('成功导出评价数据');
+            return { data };
+        } catch (error) {
+            console.error('导出评价出错:', error);
+            throw error;
+        }
     }
 };
 

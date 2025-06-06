@@ -134,12 +134,12 @@
                     <div class="mb-3">
                         <label class="form-label">上传图片(可选)</label>
                         <div class="input-group mb-3">
-                            <input type="file" class="form-control" id="replyImages" accept="image/*" multiple>
+                            <input type="file" class="form-control" id="replyImages" accept="image/jpeg,image/png" multiple>
                             <button class="btn btn-outline-secondary" type="button" id="uploadReplyImagesBtn">
-                                <i class="bi bi-cloud-arrow-up me-1"></i>上传
+                                <i class="bi bi-folder2-open me-1"></i>浏览
                             </button>
                         </div>
-                        <div class="form-text">支持JPG、PNG、GIF格式，最多5张图片</div>
+                        <div class="form-text">支持JPG、PNG格式，最多5张图片，每张不超过2MB</div>
                     </div>
                     <!-- 图片预览区域 -->
                     <div id="replyImagePreview" class="d-flex flex-wrap gap-2 my-3">
@@ -148,7 +148,28 @@
                     <div class="progress mb-3 d-none" id="uploadProgressContainer">
                         <div id="uploadProgress" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%"></div>
                     </div>
-                    <!-- 添加提交状态指示器 -->
+                    
+                    <!-- 分步骤的提交流程指示器 -->
+                    <ul class="submit-steps d-none" id="replySubmitSteps">
+                        <li class="submit-step" id="step1">
+                            <span class="step-name">步骤1：保存回复内容</span>
+                            <span class="step-description">将回复内容保存到数据库</span>
+                        </li>
+                        <li class="submit-step" id="step2">
+                            <span class="step-name">步骤2：上传图片</span>
+                            <span class="step-description">将图片上传到云存储</span>
+                        </li>
+                        <li class="submit-step" id="step3">
+                            <span class="step-name">步骤3：保存图片元数据</span>
+                            <span class="step-description">将图片信息保存到数据库</span>
+                        </li>
+                        <li class="submit-step" id="step4">
+                            <span class="step-name">步骤4：完成</span>
+                            <span class="step-description">回复发布完成</span>
+                        </li>
+                    </ul>
+                    
+                    <!-- 添加更详细的提交状态指示器 -->
                     <div class="alert alert-info d-none" id="replySubmitStatus">
                         <div class="d-flex align-items-center">
                             <div class="spinner-border spinner-border-sm me-2" role="status"></div>
@@ -332,5 +353,66 @@
     /* 改进提交状态显示 */
     #replySubmitStatus {
         transition: all 0.3s ease;
+        margin-top: 15px;
+    }
+    
+    /* 添加分步骤的提交流程指示器 */
+    .submit-steps {
+        counter-reset: step;
+        margin: 15px 0;
+        padding: 0;
+    }
+    
+    .submit-step {
+        list-style-type: none;
+        position: relative;
+        padding-bottom: 15px;
+        padding-left: 50px;
+        opacity: 0.4;
+    }
+    
+    .submit-step.active {
+        opacity: 1;
+        font-weight: 500;
+    }
+    
+    .submit-step.completed {
+        opacity: 0.7;
+    }
+    
+    .submit-step::before {
+        content: counter(step);
+        counter-increment: step;
+        width: 30px;
+        height: 30px;
+        line-height: 30px;
+        display: block;
+        text-align: center;
+        background-color: #f0f0f0;
+        border-radius: 50%;
+        position: absolute;
+        left: 0;
+    }
+    
+    .submit-step.active::before {
+        background-color: #007bff;
+        color: white;
+    }
+    
+    .submit-step.completed::before {
+        content: "✓";
+        background-color: #28a745;
+        color: white;
+    }
+    
+    .submit-step .step-name {
+        display: block;
+        font-weight: 500;
+    }
+    
+    .submit-step .step-description {
+        display: block;
+        font-size: 0.85rem;
+        color: #6c757d;
     }
 </style>

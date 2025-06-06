@@ -654,7 +654,13 @@ function setupReviewsEventListeners() {
     // 上传回复图片按钮
     const uploadImagesBtn = document.getElementById('uploadReplyImagesBtn');
     if (uploadImagesBtn) {
-        uploadImagesBtn.addEventListener('click', handleUploadReplyImages);
+        uploadImagesBtn.addEventListener('click', () => {
+            // 触发文件选择
+            const fileInput = document.getElementById('replyImages');
+            if (fileInput) {
+                fileInput.click();
+            }
+        });
     } else {
         console.warn('未找到上传图片按钮元素');
     }
@@ -662,7 +668,7 @@ function setupReviewsEventListeners() {
     // 监听文件选择变化
     const replyImagesInput = document.getElementById('replyImages');
     if (replyImagesInput) {
-        replyImagesInput.addEventListener('change', handleReplyImagesSelected);
+        replyImagesInput.addEventListener('change', handleUploadReplyImages);
     } else {
         console.warn('未找到图片上传输入框元素');
     }
@@ -916,72 +922,6 @@ function handleReplyReview(e) {
     }
 }
 
-// 处理回复图片选择
-function handleReplyImagesSelected(e) {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-    
-    // 限制最多上传5张图片
-    if (files.length > 5) {
-        showErrorToast('最多只能上传5张图片');
-        e.target.value = '';
-        return;
-    }
-    
-    // 清空之前的预览
-    document.getElementById('replyImagePreview').innerHTML = '';
-    replyImagesData = [];
-    
-    // 处理每个选中的图片
-    Array.from(files).forEach((file, index) => {
-        // 检查文件类型
-        if (!file.type.match('image.*')) {
-            showErrorToast(`文件 "${file.name}" 不是有效的图片格式`);
-            return;
-        }
-        
-        // 检查文件大小（最大2MB）
-        if (file.size > 2 * 1024 * 1024) {
-            showErrorToast(`文件 "${file.name}" 大小超过2MB限制`);
-            return;
-        }
-        
-        // 创建预览
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const previewItem = document.createElement('div');
-            previewItem.className = 'preview-item';
-            previewItem.innerHTML = `
-                <img src="${e.target.result}" alt="预览图片 ${index + 1}">
-                <div class="remove-image" data-index="${index}">
-                    <i class="bi bi-x"></i>
-                </div>
-            `;
-            document.getElementById('replyImagePreview').appendChild(previewItem);
-            
-            // 添加删除按钮事件
-            previewItem.querySelector('.remove-image').addEventListener('click', function() {
-                const imageIndex = parseInt(this.getAttribute('data-index'));
-                // 从预览和数据中删除
-                this.parentElement.remove();
-                replyImagesData = replyImagesData.filter((_, i) => i !== imageIndex);
-            });
-        };
-        
-        // 读取文件
-        reader.readAsDataURL(file);
-        
-        // 保存文件数据
-        replyImagesData.push({
-            file: file,
-            extension: file.name.split('.').pop().toLowerCase(),
-            file_name: file.name,
-            file_size: file.size,
-            mime_type: file.type
-        });
-    });
-}
-
 // 处理上传回复图片
 async function handleUploadReplyImages() {
     const reviewId = document.getElementById('replyReviewId').value;
@@ -994,6 +934,12 @@ async function handleUploadReplyImages() {
     }
     
     console.log('开始处理回复图片，图片数量:', files.length);
+    
+    // 检查文件数量限制
+    if (files.length > 5) {
+        showErrorToast('最多只能上传5张图片');
+        return;
+    }
     
     try {
         // 获取管理员ID
@@ -1014,32 +960,76 @@ async function handleUploadReplyImages() {
             progressBar.textContent = '0%';
         }
         
-        // 为每个图片生成上传所需的元数据
-        const timestamp = Math.floor(Date.now() / 1000);
+        // 清空预览区域
+        const previewContainer = document.getElementById('replyImagePreview');
+        if (previewContainer) {
+            previewContainer.innerHTML = '';
+        }
         
-        // 重置之前的图片数据
+        // 重置图片数据
         replyImagesData = [];
         
-        // 为每个图片生成元数据
-        Array.from(files).forEach((file, index) => {
-            // 验证文件类型
-            if (!file.type.match('image.*')) {
-                console.error(`文件 "${file.name}" 不是有效的图片格式`);
-                return;
+        // 显示状态信息
+        const submitStatus = getElement('replySubmitStatus');
+        if (submitStatus) {
+            submitStatus.classList.remove('d-none');
+            submitStatus.innerHTML = '<div class="d-flex align-items-center"><div class="spinner-border spinner-border-sm me-2" role="status"></div><div>正在处理图片...</div></div>';
+        }
+        
+        // 检查每个文件
+        let validFiles = [];
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            
+            // 检查文件类型
+            if (!file.type.match('image/jpeg') && !file.type.match('image/png')) {
+                console.warn(`文件 "${file.name}" 不是有效的图片格式 (JPG/PNG)，已跳过`);
+                continue;
             }
             
-            // 验证文件大小（最大2MB）
+            // 检查文件大小（最大2MB）
             if (file.size > 2 * 1024 * 1024) {
-                console.error(`文件 "${file.name}" 大小超过2MB限制`);
-                return;
+                console.warn(`文件 "${file.name}" 大小超过2MB限制，已跳过`);
+                continue;
             }
+            
+            validFiles.push(file);
+        }
+        
+        if (validFiles.length === 0) {
+            showErrorToast('没有有效的图片文件，请重新选择');
+            return;
+        }
+        
+        if (validFiles.length < files.length) {
+            showWarningToast(`已过滤掉 ${files.length - validFiles.length} 个无效图片`);
+        }
+        
+        // 自动更新进度
+        let progress = 0;
+        const progressInterval = setInterval(() => {
+            progress += 10;
+            if (progress <= 90) {
+                if (progressBar) {
+                    progressBar.style.width = `${progress}%`;
+                    progressBar.setAttribute('aria-valuenow', progress.toString());
+                    progressBar.textContent = `${progress}%`;
+                }
+            }
+        }, 100);
+        
+        // 为每个有效的图片创建预览和保存数据
+        for (let i = 0; i < validFiles.length; i++) {
+            const file = validFiles[i];
             
             // 生成随机字符串作为文件名的一部分
+            const timestamp = Math.floor(Date.now() / 1000);
             const randomStr = Math.random().toString(36).substring(2, 10);
             const extension = file.name.split('.').pop().toLowerCase();
             
-            // 构建R2存储路径 - 确保包含必要的路径信息
-            const objectKey = `image/Admin-Replies/${reviewId}/${adminId}_${timestamp}_${randomStr}.${extension}`;
+            // 构建对象键 - 注意此时还没有reply_id，会在提交时更新
+            // 暂时使用"temp"作为占位符
+            const objectKey = `image/Admin-Replies/temp/${adminId}_${timestamp}_${randomStr}.${extension}`;
             
             // 保存图片数据
             replyImagesData.push({
@@ -1052,57 +1042,108 @@ async function handleUploadReplyImages() {
                 admin_id: adminId
             });
             
-            console.log(`图片${index+1}元数据:`, {
+            console.log(`图片${i+1}元数据准备完成:`, {
                 file_name: file.name,
                 file_size: file.size,
                 mime_type: file.type,
                 object_key: objectKey
             });
-        });
-        
-        // 模拟上传进度
-        let progress = 0;
-        const progressInterval = setInterval(() => {
-            progress += 5;
-            if (progress <= 90) {
-                if (progressBar) {
-                    progressBar.style.width = `${progress}%`;
-                    progressBar.setAttribute('aria-valuenow', progress.toString());
-                    progressBar.textContent = `${progress}%`;
-                }
-            }
-        }, 100);
-        
-        console.log('准备上传的图片数据:', replyImagesData);
-        console.log(`共有 ${replyImagesData.length} 个图片已准备就绪`);
-        
-        // 模拟网络请求时间（实际环境中这里会进行图片上传）
-        setTimeout(() => {
-            clearInterval(progressInterval);
-            if (progressBar) {
-                progressBar.style.width = '100%';
-                progressBar.setAttribute('aria-valuenow', '100');
-                progressBar.textContent = '100%';
-            }
             
-            setTimeout(() => {
-                if (progressContainer) {
-                    progressContainer.classList.add('d-none');
-                }
-                showSuccessToast('图片已准备就绪，请点击"提交回复"完成回复');
-            }, 500);
-        }, 2000);
+            // 创建预览
+            createImagePreview(file, i, previewContainer);
+        }
         
-        console.log('图片元数据准备完成，总共:', replyImagesData.length, '个图片');
+        // 停止进度条动画
+        clearInterval(progressInterval);
+        if (progressBar) {
+            progressBar.style.width = '100%';
+            progressBar.setAttribute('aria-valuenow', '100');
+            progressBar.textContent = '100%';
+        }
+        
+        // 更新状态信息
+        if (submitStatus) {
+            submitStatus.innerHTML = `
+                <div class="alert alert-success">
+                    <i class="bi bi-check-circle me-2"></i>
+                    ${replyImagesData.length} 张图片已准备就绪，点击"提交回复"完成回复
+                </div>
+            `;
+            
+            // 3秒后自动隐藏状态信息
+            setTimeout(() => {
+                submitStatus.classList.add('d-none');
+            }, 3000);
+        }
+        
+        console.log(`图片准备完成，总共 ${replyImagesData.length} 张图片已就绪`);
+        showSuccessToast(`已成功准备 ${replyImagesData.length} 张图片，点击"提交回复"按钮完成回复`);
     } catch (error) {
         console.error('处理回复图片失败:', error);
-        showErrorToast('处理图片失败: ' + (error.message || '请稍后重试'));
+        showErrorToast('处理图片失败: ' + (error.message || '未知错误'));
         
+        // 重置进度条
         const progressContainer = document.getElementById('uploadProgressContainer');
         if (progressContainer) {
             progressContainer.classList.add('d-none');
         }
     }
+}
+
+// 创建图片预览
+function createImagePreview(file, index, container) {
+    if (!container) return;
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const previewItem = document.createElement('div');
+        previewItem.className = 'preview-item';
+        previewItem.innerHTML = `
+            <img src="${e.target.result}" alt="预览图片 ${index + 1}">
+            <div class="remove-image" data-index="${index}">
+                <i class="bi bi-x"></i>
+            </div>
+        `;
+        container.appendChild(previewItem);
+        
+        // 添加删除按钮事件
+        previewItem.querySelector('.remove-image').addEventListener('click', function() {
+            const imageIndex = parseInt(this.getAttribute('data-index'));
+            // 从预览和数据中删除
+            this.parentElement.remove();
+            replyImagesData = replyImagesData.filter((_, i) => i !== imageIndex);
+            console.log(`已删除图片${imageIndex+1}，剩余 ${replyImagesData.length} 张图片`);
+        });
+    };
+    
+    reader.readAsDataURL(file);
+}
+
+// 显示警告提示
+function showWarningToast(message) {
+    const toastContainer = document.getElementById('toastContainer') || createToastContainer();
+    const toastId = 'toast-' + Date.now();
+    
+    const toastHtml = `
+        <div id="${toastId}" class="toast align-items-center text-white bg-warning border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body">
+                    <i class="bi bi-exclamation-triangle me-2"></i>${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="关闭"></button>
+            </div>
+        </div>
+    `;
+    
+    toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+    const toastElement = document.getElementById(toastId);
+    const toast = new bootstrap.Toast(toastElement, { delay: 4000 });
+    toast.show();
+    
+    // 自动移除
+    toastElement.addEventListener('hidden.bs.toast', () => {
+        toastElement.remove();
+    });
 }
 
 // 处理提交回复
@@ -1116,6 +1157,7 @@ async function handleSubmitReply() {
     }
     
     console.log(`开始处理评价回复提交，评价ID: ${reviewId}, 内容长度: ${content.length}字符`);
+    console.log(`图片数量: ${replyImagesData.length}张`);
     
     // 获取提交按钮和按钮内的元素
     const submitBtn = getElement('submitReplyBtn');
@@ -1127,36 +1169,26 @@ async function handleSubmitReply() {
     const btnSpinner = submitBtn.querySelector('.spinner-border');
     const btnText = submitBtn.querySelector('.btn-text');
     const submitStatus = getElement('replySubmitStatus');
+    const submitSteps = getElement('replySubmitSteps');
     
     try {
         // 显示加载状态
         showLoadingOverlay('正在提交回复...');
         
-        // 显示状态信息
+        // 显示状态信息和步骤指示器
         if (submitStatus) {
             submitStatus.classList.remove('d-none');
-            submitStatus.textContent = '正在提交回复，请稍候...';
+            submitStatus.innerHTML = '<div class="d-flex align-items-center"><div class="spinner-border spinner-border-sm me-2" role="status"></div><div>正在初始化提交流程...</div></div>';
+        }
+        
+        if (submitSteps) {
+            submitSteps.classList.remove('d-none');
         }
         
         // 禁用提交按钮并显示加载状态
         submitBtn.disabled = true;
         if (btnSpinner) btnSpinner.classList.remove('d-none');
         if (btnText) btnText.textContent = '提交中...';
-        
-        // 详细记录图片数据
-        console.log('准备图片数据详情:');
-        if (replyImagesData && replyImagesData.length > 0) {
-            console.log(`共有 ${replyImagesData.length} 个图片需要处理`);
-            replyImagesData.forEach((img, index) => {
-                console.log(`图片 ${index + 1} 详情:`);
-                console.log(`  - 文件名: ${img.file_name || '未知'}`);
-                console.log(`  - 文件大小: ${img.file_size || 0} 字节`);
-                console.log(`  - MIME类型: ${img.mime_type || '未知'}`);
-                console.log(`  - 对象KEY: ${img.object_key || '未设置'}`);
-            });
-        } else {
-            console.log('没有图片需要处理');
-        }
         
         // 检查管理员ID
         const adminId = adminAuth.getAdminId();
@@ -1166,27 +1198,119 @@ async function handleSubmitReply() {
         }
         console.log('当前管理员ID:', adminId);
         
-        // 记录replyImagesData对象的实际内容
-        console.log('图片数据整体JSON:', JSON.stringify(replyImagesData || []));
+        // 步骤1：先提交回复内容到admin_review_replies表
+        // 激活步骤1
+        updateStepStatus('step1', 'active');
         
-        // 提交回复时确保使用reply_content字段
-        console.log(`发送回复API请求，reviewId: ${reviewId}, content: ${content}`);
+        console.log(`正在提交回复内容到D1数据库，reviewId: ${reviewId}, adminId: ${adminId}`);
         if (submitStatus) {
-            submitStatus.textContent = '正在与服务器通信...';
+            submitStatus.innerHTML = '<div class="d-flex align-items-center"><div class="spinner-border spinner-border-sm me-2" role="status"></div><div>正在保存回复内容...</div></div>';
         }
         
-        const replyData = await adminAPI.replyReview(reviewId, content, replyImagesData || []);
-        console.log('回复API响应结果:', replyData);
+        // 调用API保存回复内容
+        const replyData = await adminAPI.createReviewReply(reviewId, adminId, content);
+        console.log('回复内容API响应结果:', replyData);
+        
+        // 完成步骤1
+        updateStepStatus('step1', 'completed');
+        
+        // 检查API返回结果
+        if (!replyData || !replyData.reply_id) {
+            throw new Error('回复内容保存失败，未获取到reply_id');
+        }
+        
+        const replyId = replyData.reply_id;
+        console.log(`回复内容保存成功，获取到reply_id: ${replyId}`);
+        
+        // 步骤2和3：如果有图片，上传图片到R2并记录到admin_reply_images表
+        if (replyImagesData.length > 0) {
+            // 激活步骤2
+            updateStepStatus('step2', 'active');
+            
+            console.log(`开始上传回复图片，共${replyImagesData.length}张`);
+            if (submitStatus) {
+                submitStatus.innerHTML = '<div class="d-flex align-items-center"><div class="spinner-border spinner-border-sm me-2" role="status"></div><div>正在上传图片...</div></div>';
+            }
+            
+            // 更新图片对象键，包含正确的reply_id
+            replyImagesData = replyImagesData.map(img => {
+                // 生成新的对象键，确保包含正确的reply_id
+                const timestamp = Math.floor(Date.now() / 1000);
+                const randomStr = Math.random().toString(36).substring(2, 10);
+                const extension = img.file_name.split('.').pop().toLowerCase();
+                
+                const newObjectKey = `image/Admin-Replies/${replyId}/${adminId}_${timestamp}_${randomStr}.${extension}`;
+                console.log(`更新图片对象键: ${newObjectKey}`);
+                
+                return {
+                    ...img,
+                    object_key: newObjectKey,
+                    reply_id: replyId,
+                    admin_id: adminId
+                };
+            });
+            
+            // 完成步骤2
+            updateStepStatus('step2', 'completed');
+            
+            // 激活步骤3
+            updateStepStatus('step3', 'active');
+            
+            // 为每张图片调用上传API
+            for (let i = 0; i < replyImagesData.length; i++) {
+                const img = replyImagesData[i];
+                console.log(`正在上传第${i+1}张图片: ${img.file_name}`);
+                
+                // 更新进度显示
+                if (submitStatus) {
+                    submitStatus.innerHTML = `<div class="d-flex align-items-center"><div class="spinner-border spinner-border-sm me-2" role="status"></div><div>正在上传图片 ${i+1}/${replyImagesData.length}...</div></div>`;
+                }
+                
+                try {
+                    // 调用上传图片API
+                    const uploadResult = await adminAPI.uploadReplyImage(img.file, img.object_key);
+                    console.log(`第${i+1}张图片上传成功:`, uploadResult);
+                    
+                    // 保存图片元数据到admin_reply_images表
+                    const imageData = await adminAPI.saveReplyImageMetadata({
+                        reply_id: replyId,
+                        admin_id: adminId,
+                        object_key: img.object_key,
+                        file_name: img.file_name,
+                        file_size: img.file_size,
+                        mime_type: img.mime_type
+                    });
+                    
+                    console.log(`第${i+1}张图片元数据保存成功:`, imageData);
+                } catch (uploadError) {
+                    console.error(`第${i+1}张图片上传失败:`, uploadError);
+                    // 继续上传其他图片，不中断整个流程
+                }
+            }
+            
+            // 完成步骤3
+            updateStepStatus('step3', 'completed');
+        } else {
+            // 如果没有图片，步骤2和3也标记为完成
+            updateStepStatus('step2', 'completed');
+            updateStepStatus('step3', 'completed');
+        }
+        
+        // 激活并完成步骤4
+        updateStepStatus('step4', 'active');
+        setTimeout(() => updateStepStatus('step4', 'completed'), 500);
+        
+        // 全部处理完成
+        console.log('回复及图片上传全部完成');
+        if (submitStatus) {
+            submitStatus.innerHTML = '<div class="alert alert-success">回复提交成功!</div>';
+        }
         
         // 显示成功提示
-        showSuccessToast('回复提交成功');
+        showSuccessToast('评价回复提交成功');
         
         // 关闭模态框
         setTimeout(() => {
-            if (submitStatus) {
-                submitStatus.textContent = '回复已成功提交，正在刷新数据...';
-            }
-            
             const replyModal = bootstrap.Modal.getInstance(document.getElementById('replyReviewModal'));
             if (replyModal) {
                 replyModal.hide();
@@ -1206,13 +1330,9 @@ async function handleSubmitReply() {
             // 重新加载评价列表
             console.log('重新加载评价列表');
             loadReviews(reviewsCurrentPage, reviewsSelectedStatus, reviewsSelectedRating);
-        }, 1000);
+        }, 1500);
     } catch (error) {
         console.error('提交回复失败:', error);
-        showErrorToast('提交回复失败: ' + (error.message || '请稍后重试'));
-        
-        // 记录详细错误信息
-        console.error('提交回复时出现异常:');
         console.error('- 错误类型:', error.name);
         console.error('- 错误消息:', error.message);
         console.error('- 错误堆栈:', error.stack);
@@ -1221,14 +1341,19 @@ async function handleSubmitReply() {
             contentLength: content?.length,
             imagesCount: replyImagesData?.length || 0
         });
+        
+        // 显示具体错误信息
+        showErrorToast('提交回复失败: ' + (error.message || '服务器错误，请稍后重试'));
+        
+        if (submitStatus) {
+            submitStatus.innerHTML = `<div class="alert alert-danger">
+                提交失败: ${error.message || '服务器错误，请稍后重试'}
+                <br><small>详细错误信息已记录到控制台</small>
+            </div>`;
+        }
     } finally {
         // 隐藏加载状态
         hideLoadingOverlay();
-        
-        // 隐藏状态信息
-        if (submitStatus) {
-            submitStatus.classList.add('d-none');
-        }
         
         // 恢复按钮状态
         if (submitBtn) {
@@ -1236,7 +1361,41 @@ async function handleSubmitReply() {
             if (btnSpinner) btnSpinner.classList.add('d-none');
             if (btnText) btnText.textContent = '提交回复';
         }
+        
+        // 5秒后自动隐藏状态信息
+        setTimeout(() => {
+            if (submitStatus) {
+                submitStatus.classList.add('d-none');
+            }
+            
+            if (submitSteps) {
+                submitSteps.classList.add('d-none');
+                
+                // 重置所有步骤状态
+                resetStepStatus();
+            }
+        }, 5000);
     }
+}
+
+// 更新步骤状态
+function updateStepStatus(stepId, status) {
+    const step = document.getElementById(stepId);
+    if (!step) return;
+    
+    // 移除所有状态类
+    step.classList.remove('active', 'completed');
+    
+    // 添加新状态
+    step.classList.add(status);
+}
+
+// 重置所有步骤状态
+function resetStepStatus() {
+    const steps = document.querySelectorAll('.submit-step');
+    steps.forEach(step => {
+        step.classList.remove('active', 'completed');
+    });
 }
 
 // 处理通过评价

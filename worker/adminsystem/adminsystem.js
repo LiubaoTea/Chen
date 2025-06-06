@@ -951,7 +951,7 @@ const handleAdminAPI = async (request, env) => {
             const { results: userData } = await env.DB.prepare(
                 `SELECT 
                     strftime('${timeFormat}', created_at) as time_period,
-                    COUNT(*) as user_count
+                    COUNT(*) as new_users
                 FROM users
                 WHERE 1=1 ${dateCondition}
                 GROUP BY time_period
@@ -974,7 +974,7 @@ const handleAdminAPI = async (request, env) => {
             // 转换数据格式以适应前端图表
             const formattedData = {
                 labels: userData.map(item => item.time_period),
-                values: userData.map(item => item.user_count)
+                values: userData.map(item => item.new_users)
             };
             
             return new Response(JSON.stringify(formattedData), {
@@ -4266,6 +4266,94 @@ async function handleReplyImageUploadAPI(request, env) {
         }), {
             status: 500,
             headers: { 'Content-Type': 'application/json' }
+        });
+    }
+}
+
+//==========================================================================
+//                   管理员登录处理函数
+//==========================================================================
+/**
+ * 处理管理员登录请求
+ * @param {Request} request - 请求对象
+ * @param {Object} env - 环境变量
+ * @returns {Promise<Response>} - 响应对象
+ */
+async function handleAdminLogin(request, env) {
+    console.log('处理管理员登录请求');
+    
+    try {
+        // 解析请求数据
+        const { username, password } = await request.json();
+        
+        if (!username || !password) {
+            return new Response(JSON.stringify({ error: '用户名和密码不能为空' }), { 
+                status: 400, 
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        }
+        
+        // 查询管理员账户
+        const admin = await env.DB.prepare(
+            'SELECT * FROM admins WHERE username = ?'
+        ).bind(username).first();
+        
+        if (!admin) {
+            console.error('管理员登录失败: 用户不存在:', username);
+            return new Response(JSON.stringify({ error: '用户名或密码不正确' }), { 
+                status: 401, 
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        }
+        
+        // 验证密码
+        const passwordMatch = await hashCompare(password, admin.password_hash);
+        if (!passwordMatch) {
+            console.error('管理员登录失败: 密码不匹配:', username);
+            return new Response(JSON.stringify({ error: '用户名或密码不正确' }), { 
+                status: 401, 
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        }
+        
+        // 更新最后登录时间
+        const now = Math.floor(Date.now() / 1000);
+        await env.DB.prepare(
+            'UPDATE admins SET last_login = ? WHERE admin_id = ?'
+        ).bind(now, admin.admin_id).run();
+        
+        // 生成管理员令牌
+        const token = btoa(JSON.stringify({
+            adminId: admin.admin_id,
+            username: admin.username,
+            role: admin.role || 'admin',
+            exp: now + 24 * 60 * 60 // 24小时过期
+        }));
+        
+        // 返回登录成功响应
+        return new Response(JSON.stringify({
+            success: true,
+            token: token,
+            admin: {
+                admin_id: admin.admin_id,
+                username: admin.username,
+                role: admin.role || 'admin',
+                avatar: admin.avatar || null,
+                last_login: admin.last_login
+            }
+        }), {
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+        
+    } catch (error) {
+        console.error('管理员登录处理失败:', error);
+        return new Response(JSON.stringify({ 
+            error: '登录处理失败', 
+            message: error.message 
+        }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
     }
 }
