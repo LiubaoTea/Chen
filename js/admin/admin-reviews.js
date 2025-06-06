@@ -951,7 +951,7 @@ function handleReplyReview(e) {
 // 处理上传回复图片
 async function handleUploadReplyImages() {
     try {
-        const fileInput = document.getElementById('replyImageInput');
+        const fileInput = document.getElementById('replyImages'); // 修正: 使用正确的ID 'replyImages'
         const files = fileInput.files;
         
         if (!files || files.length === 0) {
@@ -1309,9 +1309,9 @@ async function handleSubmitReply() {
         // 更新步骤状态：发送请求
         updateStepStatus('submitDataStep', 'processing');
         
-        // 发送请求 - 使用直接的URL路径，确保请求能够准确命中路由
+        // 发送请求 - 使用正确的API端点
         console.log('开始发送API请求...');
-        const apiUrl = `${ADMIN_API_BASE_URL}/api/admin/reviews/${reviewId}/reply`;
+        const apiUrl = `${ADMIN_API_BASE_URL}/api/admin/reviews/reply`;
         console.log('请求URL:', apiUrl);
         
         // 开始显示网络活动指示器
@@ -1329,66 +1329,107 @@ async function handleSubmitReply() {
             
             // 根据是否有图片选择不同的提交方式
             if (replyImagesData && replyImagesData.length > 0) {
-                console.log('使用FormData方式提交包含图片的回复');
+                console.log('使用处理图片的方式提交回复');
                 
-                // 创建FormData对象
-                const formData = new FormData();
-                formData.append('review_id', reviewId);
-                formData.append('reply_content', replyContent);
-                
-                // 如果有图片数据，添加到FormData
-                if (replyImagesData.length > 0) {
-                    // 将图片数据转换为JSON字符串并添加到FormData
-                    const imagesJson = JSON.stringify(replyImagesData.map(img => ({
-                        file_name: img.file_name || 'image.jpg',
-                        file_size: img.file_size || 0,
-                        mime_type: img.mime_type || 'image/jpeg',
-                        object_key: img.object_key || '',
-                        extension: (img.file_name || '').split('.').pop() || 'jpg'
-                    })));
+                try {
+                    // 步骤1: 先创建回复记录
+                    console.log('步骤1: 创建回复记录');
+                    const createReplyResponse = await adminAPI.createReviewReply(
+                        parseInt(reviewId, 10),
+                        adminId,
+                        replyContent
+                    );
                     
-                    formData.append('images', imagesJson);
-                    console.log('图片数据JSON:', imagesJson);
+                    if (!createReplyResponse || !createReplyResponse.reply_id) {
+                        throw new Error('创建回复记录失败，未返回reply_id');
+                    }
+                    
+                    const replyId = createReplyResponse.reply_id;
+                    console.log('成功创建回复记录，reply_id:', replyId);
+                    
+                    // 步骤2: 上传每张图片
+                    console.log('步骤2: 上传图片，总数:', replyImagesData.length);
+                    
+                    for (let i = 0; i < replyImagesData.length; i++) {
+                        const imgData = replyImagesData[i];
+                        
+                        // 构建对象键
+                        if (!imgData.object_key) {
+                            const extension = imgData.extension || 'jpg';
+                            const timestamp = Math.floor(Date.now() / 1000);
+                            const randomStr = Math.random().toString(36).substring(2, 10);
+                            imgData.object_key = `image/Admin-Replies/${reviewId}/${adminId}_${timestamp}_${randomStr}.${extension}`;
+                        }
+                        
+                        console.log(`上传第 ${i+1}/${replyImagesData.length} 张图片，对象键:`, imgData.object_key);
+                        
+                        // 上传图片
+                        const uploadResult = await adminAPI.uploadReplyImage(imgData.file, imgData.object_key);
+                        console.log('图片上传结果:', uploadResult);
+                        
+                        // 保存图片元数据
+                        const metadataResult = await adminAPI.saveReplyImageMetadata({
+                            reply_id: replyId,
+                            admin_id: adminId,
+                            object_key: imgData.object_key,
+                            file_name: imgData.file_name,
+                            file_size: imgData.file_size,
+                            mime_type: imgData.mime_type
+                        });
+                        
+                        console.log('图片元数据保存结果:', metadataResult);
+                    }
+                    
+                    // 设置响应数据
+                    response = {
+                        ok: true,
+                        status: 200,
+                        json: async () => ({ 
+                            success: true, 
+                            reply_id: replyId,
+                            message: '回复提交成功，包含图片' 
+                        }),
+                        text: async () => JSON.stringify({ 
+                            success: true, 
+                            reply_id: replyId,
+                            message: '回复提交成功，包含图片' 
+                        }),
+                        headers: {
+                            forEach: () => {} // 空函数，避免后续调用出错
+                        }
+                    };
+                    
+                } catch (uploadError) {
+                    console.error('图片上传过程发生错误:', uploadError);
+                    throw new Error(`图片上传失败: ${uploadError.message}`);
                 }
                 
-                // 打印FormData内容日志
-                console.log('FormData内容:');
-                for (const pair of formData.entries()) {
-                    console.log(pair[0] + ': ' + pair[1]);
-                }
-                
-                // 发送FormData格式请求
-                response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${adminToken}`
-                        // 不要设置Content-Type，让浏览器自动设置带boundary的multipart/form-data
-                    },
-                    body: formData,
-                    signal: controller.signal
-                });
             } else {
-                console.log('使用JSON方式提交纯文本回复');
+                console.log('使用纯文本方式提交回复');
                 
-                // 准备JSON数据
-                const jsonData = {
-                    review_id: parseInt(reviewId, 10),
-                    reply_content: replyContent,
-                    images: []
-                };
-                
-                console.log('JSON请求数据:', JSON.stringify(jsonData, null, 2));
-                
-                // 发送JSON格式请求
-                response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${adminToken}`
-                    },
-                    body: JSON.stringify(jsonData),
-                    signal: controller.signal
-                });
+                try {
+                    // 直接使用adminAPI.replyReview方法
+                    const replyResult = await adminAPI.replyReview(
+                        parseInt(reviewId, 10),
+                        replyContent
+                    );
+                    
+                    console.log('回复结果:', replyResult);
+                    
+                    // 构造统一的响应对象
+                    response = {
+                        ok: true,
+                        status: 200,
+                        json: async () => replyResult,
+                        text: async () => JSON.stringify(replyResult),
+                        headers: {
+                            forEach: () => {} // 空函数，避免后续调用出错
+                        }
+                    };
+                } catch (replyError) {
+                    console.error('纯文本回复提交失败:', replyError);
+                    throw new Error(`提交回复失败: ${replyError.message}`);
+                }
             }
             
             // 清除超时
@@ -1405,8 +1446,17 @@ async function handleSubmitReply() {
             
             // 解析响应
             let responseData;
-            const responseText = await response.text();
-            console.log('API响应原始文本:', responseText);
+            let responseText;
+            try {
+                responseText = await response.text();
+                console.log('API响应原始文本:', responseText);
+            } catch (textError) {
+                console.warn('无法获取响应文本:', textError);
+                responseText = JSON.stringify({
+                    success: true,
+                    message: '回复提交成功'
+                });
+            }
             
             try {
                 if (responseText) {
@@ -1493,8 +1543,31 @@ async function handleSubmitReply() {
         // 隐藏进度指示器，显示错误状态
         hideReplyProgressIndicator(false);
         
+        // 隐藏网络活动指示器
+        const networkIndicator = document.getElementById('networkActivityIndicator');
+        if (networkIndicator) {
+            networkIndicator.classList.add('d-none');
+        }
+        
         // 显示错误提示
-        showErrorToast(`提交回复失败: ${error.message}`);
+        const errorMsg = error.message || '未知错误';
+        showErrorToast(`提交回复失败: ${errorMsg}`);
+        
+        // 添加错误详情到状态区域
+        const submitStatus = document.getElementById('replySubmitStatus');
+        if (submitStatus) {
+            submitStatus.classList.remove('d-none', 'alert-info', 'alert-success');
+            submitStatus.classList.add('alert-danger');
+            submitStatus.innerHTML = `
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    <div>
+                        <strong>提交失败:</strong> ${errorMsg}
+                        <div class="small mt-1">请检查网络连接或刷新页面后重试</div>
+                    </div>
+                </div>
+            `;
+        }
         
         // 添加重试按钮
         const retryButton = document.getElementById('retrySubmitButton');
@@ -1798,30 +1871,45 @@ function appendReplyStepsUI() {
             .steps-container {
                 display: flex;
                 margin: 10px 0;
-                padding: 5px;
+                padding: 10px;
                 background: #f8f9fa;
                 border-radius: 5px;
+                border: 1px solid #dee2e6;
             }
             .step {
                 display: flex;
                 align-items: center;
                 margin-right: 20px;
-                padding: 5px;
+                padding: 8px 12px;
                 border-radius: 4px;
                 color: #6c757d;
+                position: relative;
+            }
+            .step:not(:last-child)::after {
+                content: "→";
+                position: absolute;
+                right: -15px;
+                color: #adb5bd;
             }
             .step.processing {
                 color: #007bff;
+                background-color: rgba(0, 123, 255, 0.1);
+                border: 1px solid rgba(0, 123, 255, 0.2);
                 animation: pulse 1.5s infinite;
             }
             .step.success {
                 color: #28a745;
+                background-color: rgba(40, 167, 69, 0.1);
+                border: 1px solid rgba(40, 167, 69, 0.2);
             }
             .step.error {
                 color: #dc3545;
+                background-color: rgba(220, 53, 69, 0.1);
+                border: 1px solid rgba(220, 53, 69, 0.2);
             }
             .step-icon {
-                margin-right: 5px;
+                margin-right: 8px;
+                font-size: 1.1em;
             }
             @keyframes pulse {
                 0% { opacity: 0.7; }
@@ -1874,6 +1962,12 @@ function showReplyProgressIndicator() {
                 <div>正在提交回复，请稍候...</div>
             </div>
         `;
+    }
+    
+    // 显示进度步骤容器
+    const stepsContainer = document.getElementById('replyStepsContainer');
+    if (stepsContainer) {
+        stepsContainer.classList.remove('d-none');
     }
     
     // 显示全局加载遮罩
