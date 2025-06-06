@@ -3040,8 +3040,19 @@ const handleAdminAPI = async (request, env) => {
                 });
             }
             
-            // 创建回复记录，注意字段名称为reply_content
+            // 创建回复记录，使用reply_content字段名
             const now = Math.floor(Date.now() / 1000);
+            
+            // 从请求体中获取内容，兼容不同字段名
+            const replyContent = content || request.body.reply_content;
+            
+            if (!replyContent || replyContent.trim() === '') {
+                return new Response(JSON.stringify({ error: '回复内容不能为空' }), {
+                    status: 400,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                });
+            }
+            
             const replyResult = await env.DB.prepare(`
                 INSERT INTO admin_review_replies 
                 (review_id, admin_id, reply_content, status, created_at, updated_at) 
@@ -3049,7 +3060,7 @@ const handleAdminAPI = async (request, env) => {
             `).bind(
                 reviewId, 
                 adminInfo.adminId, 
-                content, 
+                replyContent, 
                 now, 
                 now
             ).run();
@@ -3140,8 +3151,7 @@ const handleAdminAPI = async (request, env) => {
             // 更新评价状态
             await env.DB.prepare(`
                 UPDATE product_reviews 
-                SET status = ?, 
-                    updated_at = CURRENT_TIMESTAMP
+                SET status = ?
                 WHERE review_id = ?
             `).bind(status, reviewId).run();
             
@@ -3181,8 +3191,7 @@ const handleAdminAPI = async (request, env) => {
             // 更新评价状态为已批准
             await env.DB.prepare(`
                 UPDATE product_reviews 
-                SET status = 'approved', 
-                    updated_at = CURRENT_TIMESTAMP
+                SET status = 'approved'
                 WHERE review_id = ?
             `).bind(reviewId).run();
             
@@ -3222,8 +3231,7 @@ const handleAdminAPI = async (request, env) => {
             // 更新评价状态为已拒绝
             await env.DB.prepare(`
                 UPDATE product_reviews 
-                SET status = 'rejected', 
-                    updated_at = CURRENT_TIMESTAMP
+                SET status = 'rejected'
                 WHERE review_id = ?
             `).bind(reviewId).run();
             

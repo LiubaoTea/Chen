@@ -980,13 +980,18 @@ async function handleSubmitReply() {
     }
     
     const submitBtn = document.getElementById('submitReplyBtn');
+    const btnText = submitBtn.querySelector('.btn-text');
+    const btnSpinner = submitBtn.querySelector('.spinner-border');
+    const submitStatus = document.getElementById('replySubmitStatus');
     
     try {
-        // 显示加载遮罩
+        // 显示加载遮罩和提交状态
         showLoadingOverlay('正在提交回复...');
+        submitStatus.classList.remove('d-none');
         
         // 显示按钮加载状态
-        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 提交中...';
+        btnText.textContent = '提交中...';
+        btnSpinner.classList.remove('d-none');
         submitBtn.disabled = true;
         
         // 更新上传进度为100%（如果之前没有完成）
@@ -995,6 +1000,10 @@ async function handleSubmitReply() {
         if (!progressContainer.classList.contains('d-none')) {
             progressBar.style.width = '100%';
             progressBar.setAttribute('aria-valuenow', '100');
+            // 2秒后隐藏进度条，给用户视觉反馈
+            setTimeout(() => {
+                progressContainer.classList.add('d-none');
+            }, 2000);
         }
         
         console.log('提交回复, 评价ID:', reviewId, '内容:', content, '图片数量:', replyImagesData.length);
@@ -1002,27 +1011,42 @@ async function handleSubmitReply() {
         // 提交回复
         const replyData = await adminAPI.replyReview(reviewId, content, replyImagesData);
         
-        // 关闭模态框
-        const replyModal = bootstrap.Modal.getInstance(document.getElementById('replyReviewModal'));
-        replyModal.hide();
-        
-        // 重置图片数据
-        replyImagesData = [];
-        
-        // 重新加载评价列表
-        await loadReviews(reviewsCurrentPage, reviewsSelectedStatus, reviewsSelectedRating);
-        
-        // 显示成功提示
-        showSuccessToast('回复提交成功');
+        // 延迟关闭模态框，让用户感知到操作已完成
+        setTimeout(() => {
+            // 关闭模态框
+            const replyModal = bootstrap.Modal.getInstance(document.getElementById('replyReviewModal'));
+            if (replyModal) {
+                replyModal.hide();
+            }
+            
+            // 重置表单
+            document.getElementById('replyReviewForm').reset();
+            const replyImagePreview = document.getElementById('replyImagePreview');
+            if (replyImagePreview) {
+                replyImagePreview.innerHTML = '';
+            }
+            
+            // 重置图片数据
+            replyImagesData = [];
+            
+            // 重新加载评价列表
+            loadReviews(reviewsCurrentPage, reviewsSelectedStatus, reviewsSelectedRating);
+            
+            // 显示成功提示
+            showSuccessToast('回复提交成功');
+        }, 1000); // 延迟1秒，让用户感知到操作已完成
     } catch (error) {
         console.error('提交回复失败:', error);
+        submitStatus.classList.add('d-none');
         showErrorToast('提交回复失败: ' + (error.message || '请稍后重试'));
     } finally {
         // 隐藏加载遮罩
         hideLoadingOverlay();
+        submitStatus.classList.add('d-none');
         
         // 恢复按钮状态
-        submitBtn.innerHTML = '提交回复';
+        btnText.textContent = '提交回复';
+        btnSpinner.classList.add('d-none');
         submitBtn.disabled = false;
     }
 }
