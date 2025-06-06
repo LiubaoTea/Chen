@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>陳記六堡茶 - 商家管理后台</title>
+    <!-- 标识当前页面为管理后台页面，用于JS判断 -->
+    <meta name="page-type" content="admin-page">
     <!-- 优先使用本地Bootstrap CSS资源，CDN作为备份 -->
     <link rel="stylesheet" href="../src/Bootstrap 5.3.0 CSS/css/bootstrap.min.css" onerror="this.onerror=null;this.href='https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/5.3.0/css/bootstrap.min.css';">
     <!-- 优先使用本地Bootstrap Icons资源，CDN作为备份 -->
@@ -33,14 +35,34 @@
         import config from '../js/config.js';
         import { adminAuth } from '../js/admin/admin-auth.js';
         
+        // 标记当前页面为管理后台页面
+        window.isAdminPage = true;
+        
         document.addEventListener('DOMContentLoaded', function() {
-            // 初始化认证状态并检查是否已登录
-            adminAuth.init();
-            if (!adminAuth.isLoggedIn()) {
-                // 未登录，重定向到登录页面
-                window.location.href = 'login.html';
+            console.log('管理后台页面DOM已加载，开始初始化');
+            
+            // 一次性获取本地存储的token信息
+            const token = localStorage.getItem('admin_token');
+            const expiresAt = localStorage.getItem('admin_expires_at');
+            const username = localStorage.getItem('admin_username');
+            
+            console.log('检查本地存储中的登录信息:', {
+                token: token ? '存在' : '不存在', 
+                expiresAt: expiresAt,
+                username: username || '未设置'
+            });
+            
+            // 手动检查登录状态，避免触发重定向逻辑
+            if (!token || !expiresAt || parseInt(expiresAt) <= Date.now()) {
+                console.log('本地存储中没有有效的登录信息，重定向到登录页');
+                window.location.replace('login.html');
                 return;
             }
+            
+            console.log('本地存储中有有效的登录信息，继续初始化管理后台');
+            
+            // 初始化认证状态 - 更新内存中的状态，但不执行重定向
+            adminAuth.init();
         });
     </script>
     <!-- 引入管理后台API模块（必须在其他模块之前加载） -->

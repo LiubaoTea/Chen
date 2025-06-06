@@ -54,57 +54,71 @@ let adminAuthState = {
     adminId: null
 };
 
-// 初始化认证状态
+// 初始化管理员认证状态
 function initAdminAuth() {
-    // 从本地存储中获取管理员令牌
-    const storedToken = localStorage.getItem('admin_token');
-    const storedExpiresAt = localStorage.getItem('admin_expires_at');
-    const storedUsername = localStorage.getItem('admin_username');
-    const storedAdminId = localStorage.getItem('admin_id');
+    console.log('初始化管理员认证状态');
     
-    if (storedToken && storedExpiresAt && storedUsername) {
-        try {
-            // 检查token是否过期
-            if (storedExpiresAt && new Date().getTime() > parseInt(storedExpiresAt)) {
-                console.warn('管理员token已过期，执行自动登出');
+    // 检查本地存储中的认证信息
+    const token = localStorage.getItem('admin_token');
+    const expiresAt = localStorage.getItem('admin_expires_at');
+    const username = localStorage.getItem('admin_username');
+    const adminId = localStorage.getItem('admin_id');
+    
+    console.log('本地存储认证信息:', {
+        token: token ? '存在' : '不存在',
+        expiresAt: expiresAt ? expiresAt : '不存在',
+        username: username || '未设置'
+    });
+    
+    // 恢复会话状态
+    if (token) {
+        adminAuthState.adminToken = token;
+        adminAuthState.username = username || '';
+        adminAuthState.adminId = adminId || null;
+        
+        // 检查token是否过期
+        if (expiresAt) {
+            const expiresAtMs = Number(expiresAt);
+            const now = Date.now();
+            const isValid = !isNaN(expiresAtMs) && expiresAtMs > now;
+            
+            console.log('检查token有效性:', {
+                expiresAtMs: expiresAtMs,
+                now: now,
+                有效期剩余: isValid ? Math.floor((expiresAtMs - now) / 1000) + '秒' : '已过期',
+                isValid: isValid
+            });
+            
+            // 如果token有效，设置登录状态
+            if (isValid) {
+                adminAuthState.isLoggedIn = true;
+                adminAuthState.expiresAt = expiresAtMs;
+                console.log('从本地存储恢复登录状态成功');
+                
+                // 更新UI以显示管理员信息
+                updateAdminUI();
+                return true;
+            } else {
+                console.warn('存储的token已过期');
+                // 清除认证信息
                 clearAdminAuth();
                 return false;
             }
-            
-            adminAuthState.adminToken = storedToken;
-            adminAuthState.expiresAt = storedExpiresAt;
-            adminAuthState.username = storedUsername;
-            adminAuthState.adminId = storedAdminId;
+        } else {
+            console.warn('存储的token没有过期时间');
+            // 设置默认过期时间为1小时后
+            const defaultExpiresAt = Date.now() + 60 * 60 * 1000;
+            adminAuthState.expiresAt = defaultExpiresAt;
+            localStorage.setItem('admin_expires_at', defaultExpiresAt.toString());
             adminAuthState.isLoggedIn = true;
             
-            // 构建adminInfo对象
-            adminAuthState.adminInfo = {
-                username: storedUsername,
-                id: storedAdminId,
-                role: 'admin', // 默认角色，可以根据需要从后端获取
-                permissions: []
-            };
-            
-            console.log('成功恢复管理员会话:', {
-                username: storedUsername,
-                expiresAt: new Date(parseInt(storedExpiresAt)).toLocaleString()
-            });
-            
-            // 更新UI显示管理员信息
-            // 确保DOM已加载
-            if (document.readyState === 'complete' || document.readyState === 'interactive') {
-                updateAdminUI();
-            } else {
-                document.addEventListener('DOMContentLoaded', updateAdminUI);
-            }
-            
+            // 更新UI以显示管理员信息
+            updateAdminUI();
             return true;
-        } catch (error) {
-            console.error('解析管理员信息失败:', error);
-            clearAdminAuth();
         }
     }
     
+    console.log('本地存储中没有认证信息');
     return false;
 }
 
@@ -210,6 +224,25 @@ async function adminLogin(username, password) {
             throw new Error('登录响应缺少必要信息');
         }
         
+        // 处理过期时间
+        let expiresAtMs;
+        if (data.expiresAt) {
+            // 检查expiresAt是否为秒级时间戳（通常10位）
+            if (typeof data.expiresAt === 'number' && data.expiresAt < 10000000000) {
+                // 秒级转为毫秒级
+                expiresAtMs = data.expiresAt * 1000;
+                console.log('转换秒级时间戳到毫秒级:', data.expiresAt, '->', expiresAtMs);
+            } else {
+                // 已经是毫秒级，或者字符串类型
+                expiresAtMs = Number(data.expiresAt);
+                console.log('使用原始时间戳:', expiresAtMs);
+            }
+        } else {
+            // 默认为当前时间后24小时
+            expiresAtMs = Date.now() + 24 * 60 * 60 * 1000; 
+            console.log('设置默认过期时间为24小时后:', expiresAtMs);
+        }
+        
         // 保存认证信息
         adminAuthState.adminToken = data.token;
         adminAuthState.adminInfo = {
@@ -218,20 +251,25 @@ async function adminLogin(username, password) {
             id: data.admin_id || 0,
             permissions: data.permissions || []
         };
-        adminAuthState.expiresAt = data.expiresAt || null;
+        adminAuthState.expiresAt = expiresAtMs;
         adminAuthState.username = data.username || username;
         adminAuthState.adminId = data.admin_id || null;
         adminAuthState.isLoggedIn = true;
         
         // 存储到本地存储
         localStorage.setItem('admin_token', data.token);
-        localStorage.setItem('admin_expires_at', data.expiresAt ? data.expiresAt.toString() : null);
+        localStorage.setItem('admin_expires_at', expiresAtMs.toString());
         localStorage.setItem('admin_username', data.username || username);
         if (data.admin_id) {
             localStorage.setItem('admin_id', data.admin_id.toString());
         }
         
-        console.log('认证信息已保存到本地存储');
+        console.log('认证信息已保存到本地存储:', {
+            token: data.token ? '已设置' : '未设置',
+            expiresAt: expiresAtMs,
+            username: data.username || username,
+            admin_id: data.admin_id
+        });
         
         // 更新UI
         updateAdminUI();
@@ -279,7 +317,8 @@ function getAdminAuthHeaders() {
 // 检查是否已登录，未登录则显示登录模态框
 function checkAdminAuth() {
     // 检查是否为登录页面
-    const isLoginPage = window.isLoginPage === true || 
+    const isLoginPage = document.querySelector('meta[name="page-type"][content="login-page"]') !== null || 
+                      window.isLoginPage === true || 
                       window.location.pathname.includes('login.html') || 
                       window.location.pathname.endsWith('/admin/');
     
@@ -290,6 +329,41 @@ function checkAdminAuth() {
     
     // 如果未登录
     if (!adminAuthState.isLoggedIn) {
+        // 尝试从本地存储恢复登录状态
+        const token = localStorage.getItem('admin_token');
+        const expiresAtStr = localStorage.getItem('admin_expires_at');
+        
+        console.log('检查本地存储中的登录信息:', {
+            token: token ? '存在' : '不存在', 
+            expiresAt: expiresAtStr
+        });
+        
+        // 如果有token，尝试恢复登录状态
+        if (token && expiresAtStr) {
+            const expiresAtMs = Number(expiresAtStr);
+            const now = Date.now();
+            const isValid = !isNaN(expiresAtMs) && expiresAtMs > now;
+            
+            console.log('本地存储token有效性检查:', {
+                expiresAtMs: expiresAtMs,
+                now: now,
+                有效期剩余: Math.floor((expiresAtMs - now) / 1000) + '秒',
+                isValid: isValid
+            });
+            
+            if (isValid) {
+                // 恢复登录状态
+                adminAuthState.isLoggedIn = true;
+                adminAuthState.adminToken = token;
+                adminAuthState.expiresAt = expiresAtMs;
+                adminAuthState.username = localStorage.getItem('admin_username');
+                adminAuthState.adminId = localStorage.getItem('admin_id');
+                
+                console.log('从本地存储恢复登录状态成功');
+                return true;
+            }
+        }
+        
         // 在登录页不做处理，其他页面重定向到登录页
         if (!isLoginPage) {
             console.log('非登录页面，未登录状态，重定向到登录页');
@@ -301,13 +375,24 @@ function checkAdminAuth() {
     }
     
     // 检查token是否过期
-    if (adminAuthState.expiresAt && new Date().getTime() > parseInt(adminAuthState.expiresAt)) {
-        console.warn('管理员token已过期，执行自动登出');
-        clearAdminAuth();
-        if (!isLoginPage) {
-            redirectToLogin();
+    if (adminAuthState.expiresAt) {
+        const expiresAtMs = Number(adminAuthState.expiresAt);
+        const now = Date.now();
+        console.log('检查token过期状态:', {
+            expiresAtMs: expiresAtMs,
+            now: now,
+            有效期剩余: Math.floor((expiresAtMs - now) / 1000) + '秒',
+            isExpired: now > expiresAtMs
+        });
+        
+        if (now > expiresAtMs) {
+            console.warn('管理员token已过期，执行自动登出');
+            clearAdminAuth();
+            if (!isLoginPage) {
+                redirectToLogin();
+            }
+            return false;
         }
-        return false;
     }
     
     return true;
@@ -396,25 +481,72 @@ function isAdminLoggedIn() {
     
     // 如果是登录页面，只返回登录状态不做重定向
     if (isLoginPage) {
+        // 尝试从本地存储恢复登录状态
+        if (!adminAuthState.isLoggedIn) {
+            const token = localStorage.getItem('admin_token');
+            const expiresAtStr = localStorage.getItem('admin_expires_at');
+            
+            if (token && expiresAtStr) {
+                const expiresAtMs = Number(expiresAtStr);
+                const isValid = !isNaN(expiresAtMs) && expiresAtMs > Date.now();
+                
+                if (isValid) {
+                    console.log('登录页中恢复登录状态成功');
+                    // 恢复登录状态
+                    adminAuthState.isLoggedIn = true;
+                    adminAuthState.adminToken = token;
+                    adminAuthState.expiresAt = expiresAtMs;
+                    adminAuthState.username = localStorage.getItem('admin_username');
+                    adminAuthState.adminId = localStorage.getItem('admin_id');
+                }
+            }
+        }
         return adminAuthState.isLoggedIn;
     }
     
     // 读取本地存储的token，手动检查而不依赖adminAuthState
     const token = localStorage.getItem('admin_token');
-    const expiresAt = localStorage.getItem('admin_expires_at');
-    const tokenValid = token && expiresAt && parseInt(expiresAt) > Date.now();
+    const expiresAtStr = localStorage.getItem('admin_expires_at');
     
-    // 如果token有效，更新内存中的登录状态
-    if (tokenValid && !adminAuthState.isLoggedIn) {
-        adminAuthState.isLoggedIn = true;
-        adminAuthState.adminToken = token;
-        adminAuthState.expiresAt = expiresAt;
-        adminAuthState.username = localStorage.getItem('admin_username');
-        adminAuthState.adminId = localStorage.getItem('admin_id');
+    console.log('非登录页检查本地存储中的登录信息:', {
+        token: token ? '存在' : '不存在', 
+        expiresAtStr: expiresAtStr
+    });
+    
+    if (token && expiresAtStr) {
+        const expiresAtMs = Number(expiresAtStr);
+        const now = Date.now();
+        const tokenValid = !isNaN(expiresAtMs) && expiresAtMs > now;
+        
+        console.log('本地存储token有效性检查:', {
+            expiresAtMs: expiresAtMs,
+            now: now,
+            有效期剩余: Math.floor((expiresAtMs - now) / 1000) + '秒',
+            tokenValid: tokenValid
+        });
+        
+        // 如果token有效，更新内存中的登录状态
+        if (tokenValid && !adminAuthState.isLoggedIn) {
+            adminAuthState.isLoggedIn = true;
+            adminAuthState.adminToken = token;
+            adminAuthState.expiresAt = expiresAtMs;
+            adminAuthState.username = localStorage.getItem('admin_username');
+            adminAuthState.adminId = localStorage.getItem('admin_id');
+            console.log('从本地存储恢复登录状态成功');
+        }
+        
+        // 如果内存中的状态显示登录了，但token实际已过期，清除状态
+        if (!tokenValid && adminAuthState.isLoggedIn) {
+            console.warn('检测到过期token，清除登录状态');
+            clearAdminAuth();
+        }
+        
+        return tokenValid;
     }
     
-    // 非登录页面，检查登录状态
-    if (!tokenValid && !isLoginPage) {
+    // 如果没有token或已过期，且不在登录页，重定向到登录页
+    if (!isLoginPage) {
+        console.log('无有效token，需要重定向到登录页');
         redirectToLogin();
         return false;
     }
