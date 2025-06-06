@@ -1022,11 +1022,23 @@ async function handleUploadReplyImages() {
         
         // 为每个图片生成元数据
         Array.from(files).forEach((file, index) => {
+            // 验证文件类型
+            if (!file.type.match('image.*')) {
+                console.error(`文件 "${file.name}" 不是有效的图片格式`);
+                return;
+            }
+            
+            // 验证文件大小（最大2MB）
+            if (file.size > 2 * 1024 * 1024) {
+                console.error(`文件 "${file.name}" 大小超过2MB限制`);
+                return;
+            }
+            
             // 生成随机字符串作为文件名的一部分
             const randomStr = Math.random().toString(36).substring(2, 10);
             const extension = file.name.split('.').pop().toLowerCase();
             
-            // 构建R2存储路径
+            // 构建R2存储路径 - 确保包含必要的路径信息
             const objectKey = `image/Admin-Replies/${reviewId}/${adminId}_${timestamp}_${randomStr}.${extension}`;
             
             // 保存图片数据
@@ -1040,7 +1052,12 @@ async function handleUploadReplyImages() {
                 admin_id: adminId
             });
             
-            console.log(`图片${index}元数据:`, replyImagesData[index]);
+            console.log(`图片${index+1}元数据:`, {
+                file_name: file.name,
+                file_size: file.size,
+                mime_type: file.type,
+                object_key: objectKey
+            });
         });
         
         // 模拟上传进度
@@ -1055,6 +1072,9 @@ async function handleUploadReplyImages() {
                 }
             }
         }, 100);
+        
+        console.log('准备上传的图片数据:', replyImagesData);
+        console.log(`共有 ${replyImagesData.length} 个图片已准备就绪`);
         
         // 模拟网络请求时间（实际环境中这里会进行图片上传）
         setTimeout(() => {
@@ -1115,6 +1135,7 @@ async function handleSubmitReply() {
         // 显示状态信息
         if (submitStatus) {
             submitStatus.classList.remove('d-none');
+            submitStatus.textContent = '正在提交回复，请稍候...';
         }
         
         // 禁用提交按钮并显示加载状态
@@ -1122,7 +1143,20 @@ async function handleSubmitReply() {
         if (btnSpinner) btnSpinner.classList.remove('d-none');
         if (btnText) btnText.textContent = '提交中...';
         
-        console.log('准备图片数据:', replyImagesData?.length || 0, '个图片');
+        // 详细记录图片数据
+        console.log('准备图片数据详情:');
+        if (replyImagesData && replyImagesData.length > 0) {
+            console.log(`共有 ${replyImagesData.length} 个图片需要处理`);
+            replyImagesData.forEach((img, index) => {
+                console.log(`图片 ${index + 1} 详情:`);
+                console.log(`  - 文件名: ${img.file_name || '未知'}`);
+                console.log(`  - 文件大小: ${img.file_size || 0} 字节`);
+                console.log(`  - MIME类型: ${img.mime_type || '未知'}`);
+                console.log(`  - 对象KEY: ${img.object_key || '未设置'}`);
+            });
+        } else {
+            console.log('没有图片需要处理');
+        }
         
         // 检查管理员ID
         const adminId = adminAuth.getAdminId();
@@ -1133,10 +1167,14 @@ async function handleSubmitReply() {
         console.log('当前管理员ID:', adminId);
         
         // 记录replyImagesData对象的实际内容
-        console.log('图片数据详情:', JSON.stringify(replyImagesData || []));
+        console.log('图片数据整体JSON:', JSON.stringify(replyImagesData || []));
         
         // 提交回复时确保使用reply_content字段
         console.log(`发送回复API请求，reviewId: ${reviewId}, content: ${content}`);
+        if (submitStatus) {
+            submitStatus.textContent = '正在与服务器通信...';
+        }
+        
         const replyData = await adminAPI.replyReview(reviewId, content, replyImagesData || []);
         console.log('回复API响应结果:', replyData);
         
@@ -1145,6 +1183,10 @@ async function handleSubmitReply() {
         
         // 关闭模态框
         setTimeout(() => {
+            if (submitStatus) {
+                submitStatus.textContent = '回复已成功提交，正在刷新数据...';
+            }
+            
             const replyModal = bootstrap.Modal.getInstance(document.getElementById('replyReviewModal'));
             if (replyModal) {
                 replyModal.hide();
@@ -1168,6 +1210,17 @@ async function handleSubmitReply() {
     } catch (error) {
         console.error('提交回复失败:', error);
         showErrorToast('提交回复失败: ' + (error.message || '请稍后重试'));
+        
+        // 记录详细错误信息
+        console.error('提交回复时出现异常:');
+        console.error('- 错误类型:', error.name);
+        console.error('- 错误消息:', error.message);
+        console.error('- 错误堆栈:', error.stack);
+        console.error('- 请求参数:', {
+            reviewId,
+            contentLength: content?.length,
+            imagesCount: replyImagesData?.length || 0
+        });
     } finally {
         // 隐藏加载状态
         hideLoadingOverlay();

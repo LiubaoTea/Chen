@@ -1115,18 +1115,19 @@ const adminAPIObject = {
     },
     
     // 回复评价
-    replyReview: async (reviewId, content, images = []) => {
+    replyReview: async (reviewId, reply_content, images = []) => {
         try {
             console.log('===== 回复评价API函数开始 =====');
             console.log('reviewId:', reviewId);
-            console.log('回复内容:', content);
+            console.log('回复内容:', reply_content);
             console.log('图片数量:', images.length);
             
-            const url = `${ADMIN_API_BASE_URL}/api/admin/reviews/${reviewId}/reply`;
+            // 修改为使用新的API端点
+            const url = `${ADMIN_API_BASE_URL}/api/admin/reviews/reply`;
             console.log('请求URL:', url);
             
             // 检查内容是否为空
-            if (!content || content.trim() === '') {
+            if (!reply_content || reply_content.trim() === '') {
                 console.error('回复内容不能为空');
                 throw new Error('回复内容不能为空');
             }
@@ -1145,107 +1146,38 @@ const adminAPIObject = {
             }
             console.log('当前管理员ID:', adminId);
             
-            // 如果有图片，使用FormData
-            if (images && images.length > 0) {
-                console.log('使用FormData提交带图片的回复');
-                const formData = new FormData();
-                
-                // 使用reply_content字段名而不是content，以匹配后端API
-                formData.append('reply_content', content);
-                formData.append('content', content); // 同时保留content字段以兼容
-                
-                formData.append('admin_id', adminId);
-                formData.append('status', 'published'); // 默认状态为已发布
-                
-                // 添加图片数据为JSON字符串
-                const timestamp = Math.floor(Date.now() / 1000);
-                const imagesData = images.map((img, index) => {
-                    const randomStr = Math.random().toString(36).substring(2, 10);
-                    const extension = img.extension || 'jpg';
-                    const objectKey = `image/Admin-Replies/${reviewId}/${adminId}_${timestamp}_${randomStr}.${extension}`;
-                    
-                    return {
-                        object_key: objectKey,
-                        file_name: img.file_name || 'image.jpg',
-                        file_size: img.file_size || 0,
-                        mime_type: img.mime_type || 'image/jpeg',
-                        admin_id: adminId
-                    };
-                });
-                
-                console.log('图片元数据:', JSON.stringify(imagesData));
-                formData.append('images', JSON.stringify(imagesData));
-                
-                // 添加实际文件
-                images.forEach((img, index) => {
-                    if (img.file) {
-                        console.log(`添加图片${index}:`, img.file.name, img.file.type, img.file.size);
-                        formData.append(`image_${index}`, img.file);
-                    }
-                });
-                
-                console.log('准备发送FormData请求，包含图片和文本内容');
-                // 打印FormData的所有字段（调试用）
-                for (let pair of formData.entries()) {
-                    console.log('FormData字段:', pair[0], typeof pair[1] === 'string' ? pair[1] : '[文件对象]');
-                }
-                
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: {
-                        ...adminAuth.getHeaders()
-                        // 不要设置Content-Type，让浏览器自动设置为multipart/form-data
-                    },
-                    body: formData
-                });
-                
-                console.log('响应状态码:', response.status);
-                
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error('回复评价API响应错误:', response.status, errorText);
-                    throw new Error(`回复评价失败，HTTP状态码: ${response.status}`);
-                }
-                
-                const data = await response.json();
-                console.log('成功回复评价,响应数据:', data);
-                console.log('===== 回复评价API函数结束 =====');
-                return data;
-                
-            } else {
-                // 无图片时使用JSON
-                console.log('使用JSON提交纯文本回复');
-                const payload = { 
-                    // 使用reply_content字段名而不是content，以匹配后端API
-                    reply_content: content,
-                    content: content, // 同时保留content字段以兼容
-                    admin_id: adminId,
-                    status: 'published' // 默认状态为已发布
-                };
-                console.log('请求数据:', JSON.stringify(payload));
-                
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: {
-                        ...adminAuth.getHeaders(),
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(payload)
-                });
-                
-                console.log('响应状态码:', response.status);
-                
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error('回复评价API响应错误:', response.status, errorText);
-                    throw new Error(`回复评价失败，HTTP状态码: ${response.status}`);
-                }
-                
-                const data = await response.json();
-                console.log('成功回复评价,响应数据:', data);
-                console.log('===== 回复评价API函数结束 =====');
-                return data;
+            // 构建请求数据，使用统一的JSON格式
+            const requestData = {
+                review_id: reviewId,
+                reply_content: reply_content,
+                admin_id: adminId,
+                images: images
+            };
+            
+            console.log('请求数据:', JSON.stringify(requestData));
+            
+            // 发送统一的JSON请求
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    ...adminAuth.getHeaders(),
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestData)
+            });
+            
+            console.log('响应状态码:', response.status);
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('回复评价API响应错误:', response.status, errorText);
+                throw new Error(`回复评价失败，HTTP状态码: ${response.status}`);
             }
+            
+            const data = await response.json();
+            console.log('成功回复评价,响应数据:', data);
+            console.log('===== 回复评价API函数结束 =====');
+            return data;
         } catch (error) {
             console.error('回复评价出错:', error);
             console.log('===== 回复评价API函数异常结束 =====');

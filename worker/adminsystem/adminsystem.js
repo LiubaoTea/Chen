@@ -369,75 +369,31 @@ const checkAdminPermission = (adminInfo, requiredRole = 'admin') => {
 //                       管理员API路由处理
 //==========================================================================
 const handleAdminAPI = async (request, env) => {
-    // 处理OPTIONS预检请求
+    // 获取API路径
+    const url = new URL(request.url);
+    const path = url.pathname;
+    console.log(`处理管理员API请求: ${path}, 方法: ${request.method}`);
+    
+    // 处理OPTIONS请求
     if (request.method === 'OPTIONS') {
         return handleOptions(request);
     }
     
-    const url = new URL(request.url);
-    const path = url.pathname;
-    
-    // 管理员登录接口
+    // 管理员登录不需要验证
     if (path === '/api/admin/login' && request.method === 'POST') {
-        try {
-            const { username, password } = await request.json();
-            
-            // 从数据库中获取管理员信息
-            const admin = await env.DB.prepare(
-                'SELECT admin_id, username, password_hash, role FROM admins WHERE username = ?'
-            ).bind(username).first();
-            
-            if (!admin) {
-                return new Response(JSON.stringify({ error: '用户名或密码错误' }), {
-                    status: 401,
-                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-                });
-            }
-            
-            console.log('正在验证管理员密码，用户名:', username);
-            console.log('数据库中的密码哈希:', admin.password_hash);
-            
-            // 验证密码
-            const isPasswordValid = await hashCompare(password, admin.password_hash);
-            console.log('密码验证结果:', isPasswordValid ? '成功' : '失败');
-            
-            if (isPasswordValid) {
-                // 更新最后登录时间
-                await env.DB.prepare(
-                    'UPDATE admins SET last_login = CURRENT_TIMESTAMP WHERE admin_id = ?'
-                ).bind(admin.admin_id).run();
-                
-                // 生成管理员token
-                const adminInfo = {
-                    username: admin.username,
-                    role: admin.role,
-                    adminId: admin.admin_id,
-                    timestamp: new Date().toISOString()
-                };
-                
-                const token = btoa(JSON.stringify(adminInfo));
-                
-                return new Response(JSON.stringify({
-                    token,
-                    username: admin.username,
-                    role: admin.role,
-                    adminId: admin.admin_id
-                }), {
-                    status: 200,
-                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-                });
-            }
-            
-            return new Response(JSON.stringify({ error: '用户名或密码错误' }), {
-                status: 401,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
-        } catch (error) {
-            return new Response(JSON.stringify({ error: '登录失败', details: error.message }), {
-                status: 500,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
-        }
+        return handleAdminLogin(request, env);
+    }
+    
+    // 评价回复API
+    if (path === '/api/admin/reviews/reply' && request.method === 'POST') {
+        console.log('匹配到评价回复API路由');
+        return handleReviewReplyAPI(request, env);
+    }
+    
+    // 评价回复图片上传API
+    if (path === '/api/admin/reviews/upload-image' && request.method === 'POST') {
+        console.log('匹配到评价回复图片上传API路由');
+        return handleReplyImageUploadAPI(request, env);
     }
     
     // 验证管理员身份
@@ -4053,3 +4009,263 @@ export default {
         }));
     }
 };
+
+//==========================================================================
+//                       评价管理API处理函数
+//==========================================================================
+
+// 处理评价回复API
+async function handleReviewReplyAPI(request, env) {
+    console.log('开始处理评价回复API请求');
+    
+    // 验证管理员身份
+    const adminInfo = await verifyAdmin(request);
+    if (!adminInfo) {
+        console.error('管理员身份验证失败');
+        return new Response(JSON.stringify({ error: '未授权访问' }), { 
+            status: 401, 
+            headers: { 'Content-Type': 'application/json' }
+        });
+    }
+    
+    // 检查是否为POST请求
+    if (request.method !== 'POST') {
+        console.error('无效的请求方法:', request.method);
+        return new Response(JSON.stringify({ error: '不支持的请求方法' }), {
+            status: 405,
+            headers: { 'Content-Type': 'application/json' }
+        });
+    }
+    
+    try {
+        // 解析请求数据
+        const requestData = await request.json();
+        console.log('收到的评价回复数据:', JSON.stringify(requestData));
+        
+        // 提取必要参数
+        const { review_id, reply_content, images = [] } = requestData;
+        
+        if (!review_id || !reply_content) {
+            console.error('缺少必要参数:', { review_id, contentLength: reply_content?.length });
+            return new Response(JSON.stringify({ error: '缺少必要参数' }), {
+                status: 400,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+        
+        // 获取管理员ID
+        const adminId = adminInfo.admin_id;
+        console.log(`处理管理员[${adminId}]对评价[${review_id}]的回复`);
+        
+        // 插入回复数据到D1数据库
+        const timestamp = Math.floor(Date.now() / 1000);
+        const replyResult = await env.LIUBAOTEA_DB.prepare(`
+            INSERT INTO admin_review_replies 
+            (review_id, admin_id, reply_content, status, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+        `).bind(review_id, adminId, reply_content, 'published', timestamp, timestamp).run();
+        
+        console.log('回复数据插入结果:', JSON.stringify(replyResult));
+        
+        if (!replyResult.success) {
+            throw new Error('插入回复数据失败');
+        }
+        
+        // 获取插入的回复ID
+        const replyIdResult = await env.LIUBAOTEA_DB.prepare(`
+            SELECT reply_id FROM admin_review_replies 
+            WHERE review_id = ? AND admin_id = ? 
+            ORDER BY created_at DESC LIMIT 1
+        `).bind(review_id, adminId).first();
+        
+        if (!replyIdResult || !replyIdResult.reply_id) {
+            throw new Error('无法获取新插入的回复ID');
+        }
+        
+        const reply_id = replyIdResult.reply_id;
+        console.log(`成功创建回复，ID: ${reply_id}`);
+        
+        // 处理图片上传(如果有)
+        const imageResults = [];
+        
+        if (images && images.length > 0) {
+            console.log(`准备处理${images.length}张回复图片`);
+            
+            for (const imageData of images) {
+                console.log(`处理图片: ${JSON.stringify(imageData)}`);
+                const { object_key, file_name, file_size, mime_type } = imageData;
+                
+                // 验证必要的图片元数据
+                if (!object_key || !file_name) {
+                    console.error('图片缺少必要元数据:', imageData);
+                    continue;
+                }
+                
+                try {
+                    // 插入图片元数据到D1数据库
+                    const imageResult = await env.LIUBAOTEA_DB.prepare(`
+                        INSERT INTO admin_reply_images 
+                        (reply_id, admin_id, object_key, file_name, file_size, mime_type, created_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                    `).bind(
+                        reply_id, 
+                        adminId, 
+                        object_key, 
+                        file_name, 
+                        file_size || 0, 
+                        mime_type || 'image/jpeg', 
+                        timestamp
+                    ).run();
+                    
+                    if (imageResult.success) {
+                        console.log(`图片元数据插入成功: ${object_key}`);
+                        imageResults.push({
+                            success: true,
+                            object_key: object_key,
+                            url: `https://r2liubaotea.liubaotea.online/${object_key}`
+                        });
+                    } else {
+                        console.error('图片元数据插入失败:', imageResult);
+                        imageResults.push({
+                            success: false,
+                            error: '图片元数据插入失败',
+                            object_key: object_key
+                        });
+                    }
+                } catch (imgError) {
+                    console.error(`插入图片元数据时出错:`, imgError);
+                    imageResults.push({
+                        success: false,
+                        error: imgError.message,
+                        object_key: object_key
+                    });
+                }
+            }
+        }
+        
+        // 更新评价的回复状态(假设product_reviews表有has_reply字段)
+        try {
+            await env.LIUBAOTEA_DB.prepare(`
+                UPDATE product_reviews 
+                SET updated_at = ? 
+                WHERE review_id = ?
+            `).bind(timestamp, review_id).run();
+            console.log('更新评价状态成功');
+        } catch (error) {
+            console.error('更新评价状态失败:', error);
+        }
+        
+        // 返回成功响应
+        return new Response(JSON.stringify({
+            success: true,
+            message: '回复已成功提交',
+            reply_id: reply_id,
+            images: imageResults
+        }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' }
+        });
+        
+    } catch (error) {
+        console.error('处理评价回复时出错:', error);
+        return new Response(JSON.stringify({
+            error: '处理评价回复失败',
+            message: error.message
+        }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json' }
+        });
+    }
+}
+
+// 处理评价回复图片上传预签名URL的请求
+async function handleReplyImageUploadAPI(request, env) {
+    console.log('处理回复图片上传预签名URL的请求');
+    
+    // 验证管理员身份
+    const adminInfo = await verifyAdmin(request);
+    if (!adminInfo) {
+        console.error('管理员身份验证失败');
+        return new Response(JSON.stringify({ error: '未授权访问' }), { 
+            status: 401, 
+            headers: { 'Content-Type': 'application/json' }
+        });
+    }
+    
+    // 检查是否为POST请求
+    if (request.method !== 'POST') {
+        console.error('无效的请求方法:', request.method);
+        return new Response(JSON.stringify({ error: '不支持的请求方法' }), {
+            status: 405,
+            headers: { 'Content-Type': 'application/json' }
+        });
+    }
+    
+    try {
+        // 解析请求数据
+        const requestData = await request.json();
+        console.log('收到的图片上传请求数据:', JSON.stringify(requestData));
+        
+        // 提取必要参数
+        const { review_id, files = [] } = requestData;
+        
+        if (!review_id || files.length === 0) {
+            console.error('缺少必要参数或文件列表为空');
+            return new Response(JSON.stringify({ error: '缺少必要参数或文件列表为空' }), {
+                status: 400,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+        
+        // 获取管理员ID
+        const adminId = adminInfo.admin_id;
+        
+        // 生成预签名URL
+        const timestamp = Math.floor(Date.now() / 1000);
+        const presignedUrls = [];
+        
+        for (const file of files) {
+            const { originalName, fileSize, contentType } = file;
+            if (!originalName) continue;
+            
+            // 生成随机字符串
+            const randomStr = Math.random().toString(36).substring(2, 10);
+            const extension = originalName.split('.').pop().toLowerCase();
+            
+            // 构建R2存储路径
+            const objectKey = `image/Admin-Replies/${review_id}/${adminId}_${timestamp}_${randomStr}.${extension}`;
+            
+            // 为该对象生成一个预签名上传URL
+            // 注意：实际生成预签名URL的方法取决于你的R2配置
+            // 这里只是模拟生成一个假的URL作为示例
+            const presignedUrl = `https://upload.example.com/${objectKey}`;
+            
+            presignedUrls.push({
+                originalName,
+                objectKey,
+                presignedUrl,
+                contentType: contentType || 'image/jpeg'
+            });
+        }
+        
+        // 返回成功响应
+        return new Response(JSON.stringify({
+            success: true,
+            message: '预签名URL生成成功',
+            urls: presignedUrls
+        }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' }
+        });
+        
+    } catch (error) {
+        console.error('生成预签名URL时出错:', error);
+        return new Response(JSON.stringify({
+            error: '生成预签名URL失败',
+            message: error.message
+        }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json' }
+        });
+    }
+}
