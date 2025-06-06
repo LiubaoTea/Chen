@@ -1556,10 +1556,10 @@ const handleAdminAPI = async (request, env) => {
             // 确保返回足够的数据点以便图表完整展示
             if (userData.length === 0) {
                 // 如果没有数据，返回一个空数据点以便前端能正确渲染图表
-                return new Response(JSON.stringify([{
-                    time_period: new Date().toISOString().split('T')[0],
-                    new_users: 0
-                }]), {
+                return new Response(JSON.stringify({
+                    labels: [new Date().toISOString().split('T')[0]],
+                    values: [0]
+                }), {
                     status: 200,
                     headers: { ...corsHeaders, 'Content-Type': 'application/json' }
                 });
@@ -4095,9 +4095,22 @@ async function handleReviewReplyAPI(request, env) {
     });
 }
 
-// 处理评价回复图片上传预签名URL的请求
+// 处理评价回复图片上传API
 async function handleReplyImageUploadAPI(request, env) {
-    console.log('处理回复图片上传预签名URL的请求');
+    console.log('===== 处理回复图片上传API开始 =====');
+    console.log('请求方法:', request.method);
+    console.log('请求URL:', request.url);
+    
+    const corsHeaders = {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization"
+    };
+    
+    // 处理OPTIONS请求
+    if (request.method === 'OPTIONS') {
+        return handleOptions(request);
+    }
     
     // 验证管理员身份
     const adminInfo = await verifyAdmin(request);
@@ -4105,21 +4118,103 @@ async function handleReplyImageUploadAPI(request, env) {
         console.error('管理员身份验证失败');
         return new Response(JSON.stringify({ error: '未授权访问' }), { 
             status: 401, 
-            headers: { 'Content-Type': 'application/json' }
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
     }
+    console.log('管理员验证成功，ID:', adminInfo.adminId);
     
     // 检查是否为POST请求
     if (request.method !== 'POST') {
         console.error('无效的请求方法:', request.method);
         return new Response(JSON.stringify({ error: '不支持的请求方法' }), {
             status: 405,
-            headers: { 'Content-Type': 'application/json' }
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
     }
     
     try {
-        // 解析请求数据
+        // 尝试解析请求内容
+        const contentType = request.headers.get('Content-Type') || '';
+        console.log('请求Content-Type:', contentType);
+        
+        // 处理表单数据上传
+        if (contentType.includes('multipart/form-data')) {
+            console.log('检测到multipart/form-data上传');
+            try {
+                const formData = await request.formData();
+                console.log('成功解析FormData');
+                
+                // 记录表单中的所有字段
+                const formFields = {};
+                for (const [key, value] of formData.entries()) {
+                    if (key === 'image') {
+                        formFields[key] = '[文件数据]';
+                    } else {
+                        formFields[key] = value;
+                    }
+                }
+                console.log('表单字段:', formFields);
+                
+                // 获取必要参数
+                const imageFile = formData.get('image');
+                const objectKey = formData.get('objectKey');
+                const reply_id = formData.get('reply_id');
+                
+                if (!imageFile || !objectKey) {
+                    console.error('缺少必要的图片文件或对象键');
+                    return new Response(JSON.stringify({ error: '缺少必要的图片文件或对象键' }), {
+                        status: 400,
+                        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                    });
+                }
+                
+                console.log('图片文件信息:', {
+                    name: imageFile.name,
+                    type: imageFile.type,
+                    size: imageFile.size,
+                    objectKey: objectKey
+                });
+                
+                // 上传到R2
+                console.log('开始上传图片到R2...');
+                await env.R2_BUCKET.put(objectKey, imageFile, {
+                    httpMetadata: {
+                        contentType: imageFile.type,
+                    },
+                });
+                console.log('图片上传到R2成功');
+                
+                // 获取R2自定义域名
+                const r2Domain = 'r2liubaotea.liubaotea.online';
+                const imageUrl = `https://${r2Domain}/${objectKey}`;
+                console.log('图片URL:', imageUrl);
+                
+                // 返回上传成功的图片信息
+                return new Response(JSON.stringify({
+                    success: true,
+                    message: '图片上传成功',
+                    image: {
+                        object_key: objectKey,
+                        url: imageUrl,
+                        file_name: imageFile.name,
+                        file_size: imageFile.size,
+                        mime_type: imageFile.type
+                    }
+                }), {
+                    status: 200,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                });
+            } catch (formError) {
+                console.error('处理FormData失败:', formError);
+                return new Response(JSON.stringify({ error: '处理表单数据失败', details: formError.message }), {
+                    status: 400,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                });
+            }
+        }
+        
+        // 处理JSON请求
+        console.log('尝试解析JSON请求...');
         const requestData = await request.json();
         console.log('收到的图片上传请求数据:', JSON.stringify(requestData));
         
@@ -4130,7 +4225,7 @@ async function handleReplyImageUploadAPI(request, env) {
             console.error('缺少必要参数或文件列表为空');
             return new Response(JSON.stringify({ error: '缺少必要参数或文件列表为空' }), {
                 status: 400,
-                headers: { 'Content-Type': 'application/json' }
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             });
         }
         
@@ -4176,15 +4271,18 @@ async function handleReplyImageUploadAPI(request, env) {
         });
         
     } catch (error) {
-        console.error('生成预签名URL时出错:', error);
+        console.error('处理回复图片上传请求时出错:', error);
+        console.error('错误堆栈:', error.stack);
         return new Response(JSON.stringify({
-            error: '生成预签名URL失败',
-            message: error.message
+            error: '处理回复图片上传请求失败',
+            message: error.message,
+            stack: error.stack
         }), {
             status: 500,
-            headers: { 'Content-Type': 'application/json' }
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
     }
+    console.log('===== 处理回复图片上传API结束 =====');
 }
 
 //==========================================================================

@@ -1367,6 +1367,7 @@ async function handleSubmitReply() {
         
         try {
             let response;
+            let responseData;
             
             // 根据是否有图片选择不同的提交方式
             if (replyImagesData && replyImagesData.length > 0) {
@@ -1440,6 +1441,13 @@ async function handleSubmitReply() {
                         }
                     };
                     
+                    // 设置响应数据
+                    responseData = {
+                        success: true,
+                        reply_id: replyId,
+                        message: '回复提交成功，包含图片'
+                    };
+                    
                 } catch (uploadError) {
                     console.error('图片上传过程发生错误:', uploadError);
                     throw new Error(`图片上传失败: ${uploadError.message}`);
@@ -1467,6 +1475,9 @@ async function handleSubmitReply() {
                             forEach: () => {} // 空函数，避免后续调用出错
                         }
                     };
+                    
+                    // 设置响应数据
+                    responseData = replyResult;
                 } catch (replyError) {
                     console.error('纯文本回复提交失败，尝试直接使用fetch调用:', replyError);
                     
@@ -1515,6 +1526,9 @@ async function handleSubmitReply() {
                                 forEach: () => {}
                             }
                         };
+                        
+                        // 设置响应数据
+                        responseData = backupResult;
                     } catch (backupError) {
                         console.error('后备方案也失败:', backupError);
                         throw new Error(`所有提交方式均失败: ${backupError.message}`);
@@ -1526,7 +1540,6 @@ async function handleSubmitReply() {
             clearTimeout(timeoutId);
             
             console.log('API响应状态码:', response.status);
-            console.log('API响应状态文本:', response.statusText);
             
             // 尝试获取响应头信息
             console.log('API响应头:');
@@ -1534,32 +1547,23 @@ async function handleSubmitReply() {
                 console.log(`${name}: ${value}`);
             });
             
-            // 解析响应
-            let responseData;
-            let responseText;
-            try {
-                responseText = await response.text();
-                console.log('API响应原始文本:', responseText);
-            } catch (textError) {
-                console.warn('无法获取响应文本:', textError);
-                responseText = JSON.stringify({
-                    success: true,
-                    message: '回复提交成功'
-                });
-            }
-            
-            try {
-                if (responseText) {
-                    responseData = JSON.parse(responseText);
-                    console.log('API响应解析后的JSON数据:', responseData);
-                } else {
-                    console.warn('API返回了空响应');
-                    responseData = { message: '服务器返回了空响应' };
+            // 如果还没有设置responseData，尝试从response中获取
+            if (!responseData) {
+                try {
+                    const responseText = await response.text();
+                    console.log('API响应原始文本:', responseText);
+                    
+                    if (responseText) {
+                        responseData = JSON.parse(responseText);
+                        console.log('API响应解析后的JSON数据:', responseData);
+                    } else {
+                        console.warn('API返回了空响应');
+                        responseData = { message: '服务器返回了空响应' };
+                    }
+                } catch (parseError) {
+                    console.error('解析API响应JSON失败:', parseError);
+                    throw new Error('服务器返回了无效的数据格式');
                 }
-            } catch (parseError) {
-                console.error('解析API响应JSON失败:', parseError);
-                console.log('非JSON响应内容:', responseText);
-                throw new Error('服务器返回了无效的数据格式');
             }
             
             if (!response.ok) {

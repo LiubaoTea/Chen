@@ -1431,6 +1431,7 @@ const adminAPIObject = {
                 console.error('未获取到有效的认证令牌');
                 throw new Error('认证失败，请重新登录');
             }
+            console.log('已获取认证令牌，长度:', token.length);
             
             // 发送请求
             console.log('发送创建回复请求...');
@@ -1461,6 +1462,14 @@ const adminAPIObject = {
             try {
                 if (responseText) {
                     data = JSON.parse(responseText);
+                    console.log('解析后的响应数据:', data);
+                    
+                    // 检查reply_id是否存在
+                    if (data && data.reply_id) {
+                        console.log('成功获取reply_id:', data.reply_id);
+                    } else {
+                        console.warn('响应中没有reply_id字段:', data);
+                    }
                 } else {
                     console.warn('响应内容为空');
                     data = { message: '服务器返回了空响应' };
@@ -1494,6 +1503,7 @@ const adminAPIObject = {
             console.log('===== 上传回复图片开始 =====');
             console.log('文件名:', file.name);
             console.log('文件大小:', file.size);
+            console.log('文件类型:', file.type);
             console.log('对象键:', objectKey);
             
             const url = `${ADMIN_API_BASE_URL}/api/admin/upload/reply-image`;
@@ -1504,30 +1514,69 @@ const adminAPIObject = {
             formData.append('image', file);
             formData.append('objectKey', objectKey);
             
+            // 添加更多跟踪日志
+            console.log('准备发送上传请求...');
+            console.log('FormData已创建，包含image和objectKey字段');
+            
+            // 获取认证令牌
+            const token = adminAuth.getAuthToken();
+            if (!token) {
+                console.error('未获取到有效的认证令牌');
+                throw new Error('认证失败，请重新登录');
+            }
+            console.log('已获取认证令牌，长度:', token.length);
+            
             // 发送请求
+            console.log('开始发送上传请求...');
             const response = await fetch(url, {
                 method: 'POST',
                 headers: {
-                    ...adminAuth.getHeaders()
+                    'Authorization': `Bearer ${token}`
                     // 不要设置Content-Type，让浏览器自动设置
                 },
                 body: formData
             });
             
             console.log('响应状态码:', response.status);
+            console.log('响应状态文本:', response.statusText);
+            
+            // 记录响应头
+            console.log('响应头:');
+            response.headers.forEach((value, name) => {
+                console.log(`${name}: ${value}`);
+            });
             
             if (!response.ok) {
                 const errorText = await response.text();
                 console.error('上传图片API响应错误:', response.status, errorText);
-                throw new Error(`上传图片失败，HTTP状态码: ${response.status}`);
+                throw new Error(`上传图片失败，HTTP状态码: ${response.status}, 错误信息: ${errorText}`);
             }
             
-            const data = await response.json();
+            // 获取响应文本
+            const responseText = await response.text();
+            console.log('响应原始文本:', responseText);
+            
+            // 尝试解析JSON
+            let data;
+            try {
+                if (responseText) {
+                    data = JSON.parse(responseText);
+                } else {
+                    console.warn('响应内容为空');
+                    data = { message: '服务器返回了空响应' };
+                }
+            } catch (parseError) {
+                console.error('解析响应JSON失败:', parseError);
+                console.log('非JSON响应内容:', responseText);
+                throw new Error('服务器返回了无效的数据格式');
+            }
+            
             console.log('成功上传图片,响应数据:', data);
             console.log('===== 上传回复图片结束 =====');
             return data;
         } catch (error) {
             console.error('上传回复图片出错:', error);
+            console.error('错误堆栈:', error.stack);
             console.log('===== 上传回复图片异常结束 =====');
             throw error;
         }
@@ -1537,7 +1586,7 @@ const adminAPIObject = {
     saveReplyImageMetadata: async (imageData) => {
         try {
             console.log('===== 保存图片元数据开始 =====');
-            console.log('图片数据:', imageData);
+            console.log('图片数据:', JSON.stringify(imageData, null, 2));
             
             const url = `${ADMIN_API_BASE_URL}/api/admin/reviews/reply/image`;
             console.log('请求URL:', url);
@@ -1545,33 +1594,71 @@ const adminAPIObject = {
             // 检查必要字段
             if (!imageData.reply_id || !imageData.admin_id || !imageData.object_key) {
                 console.error('缺少必要的图片元数据字段');
+                console.error('reply_id:', imageData.reply_id);
+                console.error('admin_id:', imageData.admin_id);
+                console.error('object_key:', imageData.object_key);
                 throw new Error('缺少必要的图片元数据字段');
             }
             
+            // 获取认证令牌
+            const token = adminAuth.getAuthToken();
+            if (!token) {
+                console.error('未获取到有效的认证令牌');
+                throw new Error('认证失败，请重新登录');
+            }
+            console.log('已获取认证令牌，长度:', token.length);
+            
             // 发送请求
+            console.log('开始发送保存元数据请求...');
             const response = await fetch(url, {
                 method: 'POST',
                 headers: {
-                    ...adminAuth.getHeaders(),
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify(imageData)
             });
             
             console.log('响应状态码:', response.status);
+            console.log('响应状态文本:', response.statusText);
+            
+            // 记录响应头
+            console.log('响应头:');
+            response.headers.forEach((value, name) => {
+                console.log(`${name}: ${value}`);
+            });
             
             if (!response.ok) {
                 const errorText = await response.text();
                 console.error('保存图片元数据API响应错误:', response.status, errorText);
-                throw new Error(`保存图片元数据失败，HTTP状态码: ${response.status}`);
+                throw new Error(`保存图片元数据失败，HTTP状态码: ${response.status}, 错误信息: ${errorText}`);
             }
             
-            const data = await response.json();
+            // 获取响应文本
+            const responseText = await response.text();
+            console.log('响应原始文本:', responseText);
+            
+            // 尝试解析JSON
+            let data;
+            try {
+                if (responseText) {
+                    data = JSON.parse(responseText);
+                } else {
+                    console.warn('响应内容为空');
+                    data = { message: '服务器返回了空响应' };
+                }
+            } catch (parseError) {
+                console.error('解析响应JSON失败:', parseError);
+                console.log('非JSON响应内容:', responseText);
+                throw new Error('服务器返回了无效的数据格式');
+            }
+            
             console.log('成功保存图片元数据,响应数据:', data);
             console.log('===== 保存图片元数据结束 =====');
             return data;
         } catch (error) {
             console.error('保存图片元数据出错:', error);
+            console.error('错误堆栈:', error.stack);
             console.log('===== 保存图片元数据异常结束 =====');
             throw error;
         }
