@@ -83,7 +83,7 @@
 <script src="../src/Bootstrap 5.3.0 CSS/css/bootstrap.bundle.min.js" onerror="this.onerror=null;this.src='https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/5.3.0/js/bootstrap.bundle.min.js';"></script>
     <script type="module">
         import config from '../js/config.js';
-        import adminAuth from '../js/admin/admin-auth.js';
+        import { adminAuth } from '../js/admin/admin-auth.js';
         
         console.log('登录页面导入的配置:', config);
         // 解构导入的配置
@@ -97,7 +97,7 @@
         // 等待DOM加载完成后执行
         document.addEventListener('DOMContentLoaded', function() {
             // 检查是否已登录，如果已登录则跳转到管理后台首页
-            if (adminAuth.isLoggedIn()) {
+            if (adminAuth.check()) {
                 window.location.href = 'admin-index.html';
                 return;
             }

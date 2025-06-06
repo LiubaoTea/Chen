@@ -64,20 +64,40 @@ function initAdminAuth() {
     
     if (storedToken && storedExpiresAt && storedUsername) {
         try {
+            // 检查token是否过期
+            if (storedExpiresAt && new Date().getTime() > parseInt(storedExpiresAt)) {
+                console.warn('管理员token已过期，执行自动登出');
+                clearAdminAuth();
+                return false;
+            }
+            
             adminAuthState.adminToken = storedToken;
             adminAuthState.expiresAt = storedExpiresAt;
             adminAuthState.username = storedUsername;
             adminAuthState.adminId = storedAdminId;
             adminAuthState.isLoggedIn = true;
             
-            // 检查token是否过期
-            if (new Date().getTime() > parseInt(storedExpiresAt)) {
-                console.warn('管理员token已过期，执行自动登出');
-                clearAdminAuth();
-            }
+            // 构建adminInfo对象
+            adminAuthState.adminInfo = {
+                username: storedUsername,
+                id: storedAdminId,
+                role: 'admin', // 默认角色，可以根据需要从后端获取
+                permissions: []
+            };
+            
+            console.log('成功恢复管理员会话:', {
+                username: storedUsername,
+                expiresAt: new Date(parseInt(storedExpiresAt)).toLocaleString()
+            });
             
             // 更新UI显示管理员信息
-            updateAdminUI();
+            // 确保DOM已加载
+            if (document.readyState === 'complete' || document.readyState === 'interactive') {
+                updateAdminUI();
+            } else {
+                document.addEventListener('DOMContentLoaded', updateAdminUI);
+            }
+            
             return true;
         } catch (error) {
             console.error('解析管理员信息失败:', error);
@@ -258,15 +278,23 @@ function getAdminAuthHeaders() {
 
 // 检查是否已登录，未登录则显示登录模态框
 function checkAdminAuth() {
+    // 如果当前页面是登录页面，则只验证登录状态，不显示模态框
+    const isLoginPage = window.location.pathname.includes('login.html');
+    
     if (!adminAuthState.isLoggedIn) {
-        showLoginModal();
+        if (!isLoginPage) {
+            showLoginModal();
+        }
         return false;
     }
     
     // 检查token是否过期
-    if (new Date().getTime() > parseInt(adminAuthState.expiresAt)) {
+    if (adminAuthState.expiresAt && new Date().getTime() > parseInt(adminAuthState.expiresAt)) {
         console.warn('管理员token已过期，执行自动登出');
         clearAdminAuth();
+        if (!isLoginPage) {
+            showLoginModal();
+        }
         return false;
     }
     
@@ -275,25 +303,72 @@ function checkAdminAuth() {
 
 // 显示登录模态框
 function showLoginModal() {
-    const loginModal = new bootstrap.Modal(document.getElementById('loginModal'));
-    loginModal.show();
+    // 如果当前页面是登录页面，则不显示登录模态框
+    if (window.location.pathname.includes('login.html')) {
+        return;
+    }
+    
+    const loginModalElement = document.getElementById('loginModal');
+    // 检查登录模态框是否存在
+    if (!loginModalElement) {
+        console.warn('登录模态框不存在，重定向到登录页面');
+        window.location.href = '/admin/login.html';
+        return;
+    }
+    
+    try {
+        const loginModal = new bootstrap.Modal(loginModalElement);
+        loginModal.show();
+    } catch (error) {
+        console.error('显示登录模态框失败:', error);
+        // 回退方案：重定向到登录页面
+        window.location.href = '/admin/login.html';
+    }
 }
 
 // 更新UI显示管理员信息
 function updateAdminUI() {
-    if (adminAuthState.isLoggedIn && adminAuthState.adminInfo) {
+    if (!adminAuthState.isLoggedIn || !adminAuthState.username) {
+        return;
+    }
+    
+    try {
         // 更新管理员名称显示
         const adminNameElement = document.getElementById('adminName');
         if (adminNameElement) {
-            adminNameElement.textContent = adminAuthState.adminInfo.username;
+            adminNameElement.textContent = adminAuthState.username;
         }
+        
+        // 更新导航栏管理员名称
+        const dropdownAdminName = document.getElementById('adminDropdown');
+        if (dropdownAdminName) {
+            const nameSpan = dropdownAdminName.querySelector('span');
+            if (nameSpan) {
+                nameSpan.textContent = adminAuthState.username;
+            } else {
+                // 如果span不存在，更新按钮文本
+                let iconHtml = '';
+                const icon = dropdownAdminName.querySelector('i');
+                if (icon) {
+                    iconHtml = icon.outerHTML + ' ';
+                }
+                dropdownAdminName.innerHTML = `${iconHtml}<span id="adminName">${adminAuthState.username}</span>`;
+            }
+        }
+    } catch (error) {
+        console.error('更新管理员UI失败:', error);
     }
 }
 
 // 检查是否已登录
 function isAdminLoggedIn() {
+    // 如果当前页面是登录页面，不需要进行重定向
+    if (window.location.pathname.includes('login.html')) {
+        return adminAuthState.isLoggedIn;
+    }
+    
     const isValid = checkAdminAuth();
-    if (!isValid && window.location.pathname !== '/admin/login.html') {
+    if (!isValid) {
         window.location.href = '/admin/login.html';
     }
     return isValid;
