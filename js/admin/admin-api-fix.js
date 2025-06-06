@@ -758,4 +758,150 @@ adminAPI.getUsers = async (page = 1, pageSize = 10, searchQuery = '') => {
     }
 };
 
+// 修复评价状态更新函数，解决admin_id不存在的错误
+adminAPI.updateReviewStatus = async (reviewId, status) => {
+    try {
+        // 验证状态参数
+        if (!['pending', 'approved', 'rejected'].includes(status)) {
+            throw new Error(`无效的评价状态: ${status}`);
+        }
+        
+        let url;
+        if (status === 'approved') {
+            url = `${ADMIN_API_BASE_URL}/api/admin/reviews/${reviewId}/approve`;
+        } else if (status === 'rejected') {
+            url = `${ADMIN_API_BASE_URL}/api/admin/reviews/${reviewId}/reject`;
+        } else {
+            url = `${ADMIN_API_BASE_URL}/api/admin/reviews/${reviewId}/update-status`;
+        }
+        
+        console.log(`发送更新评价状态请求，URL: ${url}, 状态: ${status}`);
+        
+        const response = await fetch(url, {
+            method: 'PUT',
+            headers: {
+                ...adminAuth.getHeaders(),
+                'Content-Type': 'application/json'
+            },
+            // 移除admin_id参数，只发送状态
+            body: JSON.stringify({ status })
+        });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('更新评价状态API响应错误:', response.status, errorText);
+            throw new Error(`更新评价状态失败，HTTP状态码: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log(`成功更新评价状态为 ${status}:`, data);
+        return data;
+    } catch (error) {
+        console.error(`更新评价状态为 ${status} 出错:`, error);
+        throw error;
+    }
+};
+
+// 修复回复评价函数，确保符合admin_review_replies和admin_reply_images表结构
+adminAPI.replyReview = async (reviewId, content, images = []) => {
+    try {
+        const url = `${ADMIN_API_BASE_URL}/api/admin/reviews/${reviewId}/reply`;
+        console.log('发送回复评价请求，URL:', url, '内容:', content, '图片数量:', images.length);
+        
+        // 检查内容是否为空
+        if (!content || content.trim() === '') {
+            console.error('回复内容不能为空');
+            throw new Error('回复内容不能为空');
+        }
+        
+        // 检查reviewId是否有效
+        if (!reviewId) {
+            console.error('无效的评价ID');
+            throw new Error('无效的评价ID');
+        }
+
+        // 获取当前管理员ID
+        const adminId = adminAuth.getAdminId();
+        if (!adminId) {
+            console.error('未获取到管理员ID');
+            throw new Error('管理员身份验证失败');
+        }
+        
+        // 准备提交的数据
+        const formData = new FormData();
+        formData.append('content', content);
+        formData.append('admin_id', adminId);
+        formData.append('status', 'published'); // 默认状态为已发布
+        
+        // 添加图片数据
+        if (images && images.length > 0) {
+            console.log('准备上传图片，数量:', images.length);
+            
+            // 添加图片元数据
+            images.forEach((image, index) => {
+                if (image.file) {
+                    formData.append(`images[${index}]`, image.file);
+                    
+                    // 添加图片元数据
+                    if (image.object_key) formData.append(`object_keys[${index}]`, image.object_key);
+                    if (image.file_name) formData.append(`file_names[${index}]`, image.file_name);
+                    if (image.file_size) formData.append(`file_sizes[${index}]`, image.file_size);
+                    if (image.mime_type) formData.append(`mime_types[${index}]`, image.mime_type);
+                }
+            });
+            
+            // 发送包含图片的FormData请求
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    ...adminAuth.getHeaders()
+                    // 不要设置Content-Type，让浏览器自动设置boundary
+                },
+                body: formData
+            });
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('回复评价API响应错误:', response.status, errorText);
+                throw new Error(`回复评价失败，HTTP状态码: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            console.log('成功回复评价:', data);
+            return data;
+        } else {
+            // 无图片时使用JSON
+            console.log('使用JSON提交纯文本回复');
+            const payload = { 
+                content,
+                admin_id: adminId,
+                status: 'published' // 默认状态为已发布
+            };
+            console.log('请求数据:', JSON.stringify(payload));
+            
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    ...adminAuth.getHeaders(),
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('回复评价API响应错误:', response.status, errorText);
+                throw new Error(`回复评价失败，HTTP状态码: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            console.log('成功回复评价:', data);
+            return data;
+        }
+    } catch (error) {
+        console.error('回复评价出错:', error);
+        throw error;
+    }
+};
+
 console.log('admin-api-fix.js已加载，API函数已修复');

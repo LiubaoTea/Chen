@@ -2228,6 +2228,7 @@ const handleAdminAPI = async (request, env) => {
     // 更新订单状态
     if (path.match(/^\/api\/admin\/orders\/\d+\/status$/) && request.method === 'PUT') {
         try {
+            // 从路径中提取订单ID
             const orderId = path.split('/')[4]; // 从路径中提取订单ID
             const { status, notes } = await request.json();
             
@@ -2240,33 +2241,21 @@ const handleAdminAPI = async (request, env) => {
                 });
             }
             
-            // 检查订单是否存在
-            const existingOrder = await env.DB.prepare('SELECT order_id, status FROM orders WHERE order_id = ?')
-                .bind(orderId)
-                .first();
-                
-            if (!existingOrder) {
-                return new Response(JSON.stringify({ error: '订单不存在' }), {
+            // 更新订单状态
+            const result = await env.DB.prepare(
+                `UPDATE orders
+                SET status = ?, updated_at = CAST(strftime('%s','now') AS INTEGER)
+                WHERE order_id = ?`
+            ).bind(status, orderId).run();
+            
+            if (result.changes === 0) {
+                return new Response(JSON.stringify({ error: '订单不存在或状态未更改' }), {
                     status: 404,
                     headers: { ...corsHeaders, 'Content-Type': 'application/json' }
                 });
             }
             
-            // 更新订单状态
-            await env.DB.prepare('UPDATE orders SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE order_id = ?')
-                .bind(status, orderId)
-                .run();
-            
-            // 添加订单状态变更记录
-            await env.DB.prepare(
-                'INSERT INTO order_status_history (order_id, status, notes, created_by) VALUES (?, ?, ?, ?)'
-            ).bind(orderId, status, notes || null, adminInfo.adminId).run();
-            
-            return new Response(JSON.stringify({
-                message: '订单状态更新成功',
-                orderId,
-                status
-            }), {
+            return new Response(JSON.stringify({ success: true, message: '订单状态已更新' }), {
                 status: 200,
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             });
@@ -3152,10 +3141,9 @@ const handleAdminAPI = async (request, env) => {
             await env.DB.prepare(`
                 UPDATE product_reviews 
                 SET status = ?, 
-                    admin_id = ?,
                     updated_at = CURRENT_TIMESTAMP
                 WHERE review_id = ?
-            `).bind(status, adminInfo.adminId, reviewId).run();
+            `).bind(status, reviewId).run();
             
             return new Response(JSON.stringify({
                 message: '评价状态更新成功',
@@ -3194,10 +3182,9 @@ const handleAdminAPI = async (request, env) => {
             await env.DB.prepare(`
                 UPDATE product_reviews 
                 SET status = 'approved', 
-                    admin_id = ?,
                     updated_at = CURRENT_TIMESTAMP
                 WHERE review_id = ?
-            `).bind(adminInfo.adminId, reviewId).run();
+            `).bind(reviewId).run();
             
             return new Response(JSON.stringify({
                 message: '评价已批准',
@@ -3236,10 +3223,9 @@ const handleAdminAPI = async (request, env) => {
             await env.DB.prepare(`
                 UPDATE product_reviews 
                 SET status = 'rejected', 
-                    admin_id = ?,
                     updated_at = CURRENT_TIMESTAMP
                 WHERE review_id = ?
-            `).bind(adminInfo.adminId, reviewId).run();
+            `).bind(reviewId).run();
             
             return new Response(JSON.stringify({
                 message: '评价已拒绝',

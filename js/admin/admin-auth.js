@@ -315,10 +315,14 @@ function checkAdminAuth() {
 
 // 重定向到登录页面函数
 function redirectToLogin() {
-    // 防止在登录页面调用
-    if (window.isLoginPage === true || 
+    // 检查当前是否为登录页面
+    const isLoginPage = document.querySelector('meta[name="page-type"][content="login-page"]') !== null || 
+        window.isLoginPage === true || 
         window.location.pathname.includes('login.html') || 
-        window.location.pathname.endsWith('/admin/')) {
+        window.location.pathname.endsWith('/admin/');
+    
+    // 防止在登录页面调用
+    if (isLoginPage) {
         console.warn('已在登录页面，取消重定向');
         return;
     }
@@ -326,7 +330,7 @@ function redirectToLogin() {
     console.log('执行重定向到登录页面');
     
     // 使用替换方式重定向，不留下历史记录，减少循环可能性
-    window.location.replace('/admin/login.html');
+    window.location.replace('./login.html');
 }
 
 // 显示登录模态框 - 改为直接重定向
@@ -380,7 +384,8 @@ function updateAdminUI() {
 // 检查是否已登录
 function isAdminLoggedIn() {
     // 检查是否为登录页面
-    const isLoginPage = window.isLoginPage === true || 
+    const isLoginPage = document.querySelector('meta[name="page-type"][content="login-page"]') !== null || 
+                      window.isLoginPage === true || 
                       window.location.pathname.includes('login.html') || 
                       window.location.pathname.endsWith('/admin/');
     
@@ -394,9 +399,27 @@ function isAdminLoggedIn() {
         return adminAuthState.isLoggedIn;
     }
     
+    // 读取本地存储的token，手动检查而不依赖adminAuthState
+    const token = localStorage.getItem('admin_token');
+    const expiresAt = localStorage.getItem('admin_expires_at');
+    const tokenValid = token && expiresAt && parseInt(expiresAt) > Date.now();
+    
+    // 如果token有效，更新内存中的登录状态
+    if (tokenValid && !adminAuthState.isLoggedIn) {
+        adminAuthState.isLoggedIn = true;
+        adminAuthState.adminToken = token;
+        adminAuthState.expiresAt = expiresAt;
+        adminAuthState.username = localStorage.getItem('admin_username');
+        adminAuthState.adminId = localStorage.getItem('admin_id');
+    }
+    
     // 非登录页面，检查登录状态
-    const isValid = checkAdminAuth();
-    return isValid;
+    if (!tokenValid && !isLoginPage) {
+        redirectToLogin();
+        return false;
+    }
+    
+    return adminAuthState.isLoggedIn;
 }
 
 // 这部分已经在上面导出，不需要重复
