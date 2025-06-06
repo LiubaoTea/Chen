@@ -4059,30 +4059,47 @@ async function handleReviewReplyAPI(request, env) {
         
         // 插入回复数据到D1数据库
         const timestamp = Math.floor(Date.now() / 1000);
-        const replyResult = await env.LIUBAOTEA_DB.prepare(`
-            INSERT INTO admin_review_replies 
-            (review_id, admin_id, reply_content, status, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?)
-        `).bind(review_id, adminId, reply_content, 'published', timestamp, timestamp).run();
+        console.log('准备执行SQL插入，时间戳:', timestamp);
         
-        console.log('回复数据插入结果:', JSON.stringify(replyResult));
-        
-        if (!replyResult.success) {
-            throw new Error('插入回复数据失败');
+        // 使用env.DB而不是env.LIUBAOTEA_DB
+        try {
+            const replyResult = await env.DB.prepare(`
+                INSERT INTO admin_review_replies 
+                (review_id, admin_id, reply_content, status, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?)
+            `).bind(review_id, adminId, reply_content, 'published', timestamp, timestamp).run();
+            
+            console.log('回复数据插入结果:', JSON.stringify(replyResult));
+            
+            // 检查插入是否成功
+            if (!replyResult.meta || !replyResult.meta.last_row_id) {
+                throw new Error('插入回复数据失败，未返回有效的last_row_id');
+            }
+            
+            // 直接从插入结果中获取ID，不再需要额外查询
+            const reply_id = replyResult.meta.last_row_id;
+            console.log('成功插入回复并获得ID:', reply_id);
+        } catch (dbError) {
+            console.error('数据库操作失败:', dbError);
+            throw new Error(`数据库操作失败: ${dbError.message}`);
         }
         
-        // 获取插入的回复ID
-        const replyIdResult = await env.LIUBAOTEA_DB.prepare(`
+        // 获取插入的回复ID（仅作为备用）
+        console.log('尝试查询回复ID（备用措施）');
+        const replyIdResult = await env.DB.prepare(`
             SELECT reply_id FROM admin_review_replies 
             WHERE review_id = ? AND admin_id = ? 
             ORDER BY created_at DESC LIMIT 1
         `).bind(review_id, adminId).first();
         
-        if (!replyIdResult || !replyIdResult.reply_id) {
+        // 使用之前直接从插入结果获得的ID，或者从查询中获取
+        const reply_id = replyIdResult?.reply_id;
+        console.log(`确认回复ID: ${reply_id}`);
+        
+        if (!reply_id) {
             throw new Error('无法获取新插入的回复ID');
         }
         
-        const reply_id = replyIdResult.reply_id;
         console.log(`成功创建回复，ID: ${reply_id}`);
         
         // 处理图片上传(如果有)
@@ -4102,8 +4119,9 @@ async function handleReviewReplyAPI(request, env) {
                 }
                 
                 try {
-                    // 插入图片元数据到D1数据库
-                    const imageResult = await env.LIUBAOTEA_DB.prepare(`
+                    // 插入图片元数据到D1数据库，使用env.DB
+                    console.log(`准备将图片元数据插入数据库, reply_id: ${reply_id}, object_key: ${object_key}`);
+                    const imageResult = await env.DB.prepare(`
                         INSERT INTO admin_reply_images 
                         (reply_id, admin_id, object_key, file_name, file_size, mime_type, created_at)
                         VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -4117,7 +4135,10 @@ async function handleReviewReplyAPI(request, env) {
                         timestamp
                     ).run();
                     
-                    if (imageResult.success) {
+                    console.log(`图片元数据插入结果:`, imageResult);
+                    
+                    // 检查插入是否成功 - D1返回值不同于LIUBAOTEA_DB
+                    if (imageResult && imageResult.meta) {
                         console.log(`图片元数据插入成功: ${object_key}`);
                         imageResults.push({
                             success: true,
@@ -4145,7 +4166,8 @@ async function handleReviewReplyAPI(request, env) {
         
         // 更新评价的回复状态(假设product_reviews表有has_reply字段)
         try {
-            await env.LIUBAOTEA_DB.prepare(`
+            console.log(`更新评价状态, review_id: ${review_id}, timestamp: ${timestamp}`);
+            await env.DB.prepare(`
                 UPDATE product_reviews 
                 SET updated_at = ? 
                 WHERE review_id = ?

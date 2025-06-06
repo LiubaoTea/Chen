@@ -887,12 +887,19 @@ function handleReplyReview(e) {
         appendReviewsModals();
     }
     
+    // 确保步骤状态UI存在
+    if (!document.getElementById('replyStepsContainer')) {
+        console.log('步骤状态UI不存在，正在添加...');
+        appendReplyStepsUI();
+    }
+    
     // 获取表单元素
     const replyForm = document.getElementById('replyReviewForm');
     const replyIdInput = document.getElementById('replyReviewId');
     const replyContent = document.getElementById('replyContent');
     const replyImagePreview = document.getElementById('replyImagePreview');
     const uploadProgressContainer = document.getElementById('uploadProgressContainer');
+    const stepsContainer = document.getElementById('replyStepsContainer');
     
     // 检查关键元素是否存在
     if (!replyForm || !replyIdInput || !replyContent || !replyImagePreview || !uploadProgressContainer) {
@@ -910,6 +917,13 @@ function handleReplyReview(e) {
     
     // 隐藏进度条
     uploadProgressContainer.classList.add('d-none');
+    
+    // 显示步骤容器
+    if (stepsContainer) {
+        stepsContainer.classList.remove('d-none');
+        // 重置步骤状态
+        resetStepStatus();
+    }
     
     // 显示回复模态框
     const replyModalEl = document.getElementById('replyReviewModal');
@@ -1148,233 +1162,131 @@ function showWarningToast(message) {
 
 // 处理提交回复
 async function handleSubmitReply() {
-    const reviewId = getElement('replyReviewId')?.value;
-    const content = getElement('replyContent')?.value?.trim();
+    console.log('开始执行handleSubmitReply函数');
     
-    if (!content) {
-        showErrorToast('请输入回复内容');
-        return;
-    }
+    // 获取当前正在回复的评价ID
+    const reviewId = document.getElementById('replyReviewModal').getAttribute('data-review-id');
+    console.log('准备回复评价，ID:', reviewId);
     
-    console.log(`开始处理评价回复提交，评价ID: ${reviewId}, 内容长度: ${content.length}字符`);
-    console.log(`图片数量: ${replyImagesData.length}张`);
+    // 禁用提交按钮，防止重复提交
+    const submitButton = document.getElementById('submitReplyBtn');
+    const originalButtonText = submitButton.innerHTML;
+    submitButton.disabled = true;
+    submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 处理中...';
     
-    // 获取提交按钮和按钮内的元素
-    const submitBtn = getElement('submitReplyBtn');
-    if (!submitBtn) {
-        showErrorToast('提交按钮未找到，请刷新页面重试');
-        return;
-    }
+    // 显示加载遮罩
+    showLoadingOverlay('正在提交回复...');
     
-    const btnSpinner = submitBtn.querySelector('.spinner-border');
-    const btnText = submitBtn.querySelector('.btn-text');
-    const submitStatus = getElement('replySubmitStatus');
-    const submitSteps = getElement('replySubmitSteps');
+    // 重置步骤状态
+    resetStepStatus();
     
     try {
-        // 显示加载状态
-        showLoadingOverlay('正在提交回复...');
+        // 更新步骤状态：准备数据
+        updateStepStatus('prepareDataStep', 'processing');
         
-        // 显示状态信息和步骤指示器
-        if (submitStatus) {
-            submitStatus.classList.remove('d-none');
-            submitStatus.innerHTML = '<div class="d-flex align-items-center"><div class="spinner-border spinner-border-sm me-2" role="status"></div><div>正在初始化提交流程...</div></div>';
+        // 获取回复内容
+        const replyContent = document.getElementById('replyContent').value.trim();
+        
+        // 验证回复内容
+        if (!replyContent) {
+            showErrorToast('回复内容不能为空');
+            updateStepStatus('prepareDataStep', 'error');
+            submitButton.disabled = false;
+            submitButton.innerHTML = originalButtonText;
+            hideLoadingOverlay();
+            return;
         }
         
-        if (submitSteps) {
-            submitSteps.classList.remove('d-none');
-        }
+        // 获取上传的图片
+        const imageFiles = Array.from(document.querySelectorAll('.reply-image-preview'))
+            .filter(preview => preview.hasAttribute('data-file-data'))
+            .map(preview => JSON.parse(preview.getAttribute('data-file-data')));
         
-        // 禁用提交按钮并显示加载状态
-        submitBtn.disabled = true;
-        if (btnSpinner) btnSpinner.classList.remove('d-none');
-        if (btnText) btnText.textContent = '提交中...';
+        console.log('回复内容:', replyContent);
+        console.log('上传的图片数量:', imageFiles.length);
         
-        // 检查管理员ID
-        const adminId = adminAuth.getAdminId();
-        if (!adminId) {
-            console.error('未获取到管理员ID');
-            throw new Error('管理员身份验证失败，请重新登录');
-        }
-        console.log('当前管理员ID:', adminId);
+        // 准备提交的数据
+        const requestData = {
+            review_id: reviewId,
+            reply_content: replyContent,  // 确保字段名为reply_content与后端一致
+            content: replyContent,        // 同时提供content字段以兼容可能的API变化
+            images: imageFiles.map(image => ({
+                file_name: image.name,
+                file_size: image.size,
+                mime_type: image.type,
+                object_key: image.object_key,
+                extension: image.name.split('.').pop()
+            }))
+        };
         
-        // 步骤1：先提交回复内容到admin_review_replies表
-        // 激活步骤1
-        updateStepStatus('step1', 'active');
+        // 记录完整的请求数据，方便调试
+        console.log('准备提交的数据:', JSON.stringify(requestData));
         
-        console.log(`正在提交回复内容到D1数据库，reviewId: ${reviewId}, adminId: ${adminId}`);
-        if (submitStatus) {
-            submitStatus.innerHTML = '<div class="d-flex align-items-center"><div class="spinner-border spinner-border-sm me-2" role="status"></div><div>正在保存回复内容...</div></div>';
-        }
+        // 更新步骤状态：准备数据完成
+        updateStepStatus('prepareDataStep', 'success');
         
-        // 调用API保存回复内容
-        const replyData = await adminAPI.createReviewReply(reviewId, adminId, content);
-        console.log('回复内容API响应结果:', replyData);
+        // 更新步骤状态：发送请求
+        updateStepStatus('submitDataStep', 'processing');
         
-        // 完成步骤1
-        updateStepStatus('step1', 'completed');
+        // 发送请求
+        console.log('开始发送API请求...');
         
-        // 检查API返回结果
-        if (!replyData || !replyData.reply_id) {
-            throw new Error('回复内容保存失败，未获取到reply_id');
-        }
-        
-        const replyId = replyData.reply_id;
-        console.log(`回复内容保存成功，获取到reply_id: ${replyId}`);
-        
-        // 步骤2和3：如果有图片，上传图片到R2并记录到admin_reply_images表
-        if (replyImagesData.length > 0) {
-            // 激活步骤2
-            updateStepStatus('step2', 'active');
-            
-            console.log(`开始上传回复图片，共${replyImagesData.length}张`);
-            if (submitStatus) {
-                submitStatus.innerHTML = '<div class="d-flex align-items-center"><div class="spinner-border spinner-border-sm me-2" role="status"></div><div>正在上传图片...</div></div>';
-            }
-            
-            // 更新图片对象键，包含正确的reply_id
-            replyImagesData = replyImagesData.map(img => {
-                // 生成新的对象键，确保包含正确的reply_id
-                const timestamp = Math.floor(Date.now() / 1000);
-                const randomStr = Math.random().toString(36).substring(2, 10);
-                const extension = img.file_name.split('.').pop().toLowerCase();
-                
-                const newObjectKey = `image/Admin-Replies/${replyId}/${adminId}_${timestamp}_${randomStr}.${extension}`;
-                console.log(`更新图片对象键: ${newObjectKey}`);
-                
-                return {
-                    ...img,
-                    object_key: newObjectKey,
-                    reply_id: replyId,
-                    admin_id: adminId
-                };
-            });
-            
-            // 完成步骤2
-            updateStepStatus('step2', 'completed');
-            
-            // 激活步骤3
-            updateStepStatus('step3', 'active');
-            
-            // 为每张图片调用上传API
-            for (let i = 0; i < replyImagesData.length; i++) {
-                const img = replyImagesData[i];
-                console.log(`正在上传第${i+1}张图片: ${img.file_name}`);
-                
-                // 更新进度显示
-                if (submitStatus) {
-                    submitStatus.innerHTML = `<div class="d-flex align-items-center"><div class="spinner-border spinner-border-sm me-2" role="status"></div><div>正在上传图片 ${i+1}/${replyImagesData.length}...</div></div>`;
-                }
-                
-                try {
-                    // 调用上传图片API
-                    const uploadResult = await adminAPI.uploadReplyImage(img.file, img.object_key);
-                    console.log(`第${i+1}张图片上传成功:`, uploadResult);
-                    
-                    // 保存图片元数据到admin_reply_images表
-                    const imageData = await adminAPI.saveReplyImageMetadata({
-                        reply_id: replyId,
-                        admin_id: adminId,
-                        object_key: img.object_key,
-                        file_name: img.file_name,
-                        file_size: img.file_size,
-                        mime_type: img.mime_type
-                    });
-                    
-                    console.log(`第${i+1}张图片元数据保存成功:`, imageData);
-                } catch (uploadError) {
-                    console.error(`第${i+1}张图片上传失败:`, uploadError);
-                    // 继续上传其他图片，不中断整个流程
-                }
-            }
-            
-            // 完成步骤3
-            updateStepStatus('step3', 'completed');
-        } else {
-            // 如果没有图片，步骤2和3也标记为完成
-            updateStepStatus('step2', 'completed');
-            updateStepStatus('step3', 'completed');
-        }
-        
-        // 激活并完成步骤4
-        updateStepStatus('step4', 'active');
-        setTimeout(() => updateStepStatus('step4', 'completed'), 500);
-        
-        // 全部处理完成
-        console.log('回复及图片上传全部完成');
-        if (submitStatus) {
-            submitStatus.innerHTML = '<div class="alert alert-success">回复提交成功!</div>';
-        }
-        
-        // 显示成功提示
-        showSuccessToast('评价回复提交成功');
-        
-        // 关闭模态框
-        setTimeout(() => {
-            const replyModal = bootstrap.Modal.getInstance(document.getElementById('replyReviewModal'));
-            if (replyModal) {
-                replyModal.hide();
-                console.log('回复模态框已关闭');
-            }
-            
-            // 重置表单
-            const replyForm = getElement('replyReviewForm');
-            if (replyForm) replyForm.reset();
-            
-            const replyImagePreview = getElement('replyImagePreview');
-            if (replyImagePreview) replyImagePreview.innerHTML = '';
-            
-            // 清空已选择的图片数据
-            replyImagesData = [];
-            
-            // 重新加载评价列表
-            console.log('重新加载评价列表');
-            loadReviews(reviewsCurrentPage, reviewsSelectedStatus, reviewsSelectedRating);
-        }, 1500);
-    } catch (error) {
-        console.error('提交回复失败:', error);
-        console.error('- 错误类型:', error.name);
-        console.error('- 错误消息:', error.message);
-        console.error('- 错误堆栈:', error.stack);
-        console.error('- 请求参数:', {
-            reviewId,
-            contentLength: content?.length,
-            imagesCount: replyImagesData?.length || 0
+        // 使用直接API路径，而不是通过adminAPI对象
+        // 确保请求与正确的路由匹配
+        const response = await fetch('/api/admin/reviews/reply', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
+            },
+            body: JSON.stringify(requestData)
         });
         
-        // 显示具体错误信息
-        showErrorToast('提交回复失败: ' + (error.message || '服务器错误，请稍后重试'));
+        console.log('API响应状态码:', response.status);
         
-        if (submitStatus) {
-            submitStatus.innerHTML = `<div class="alert alert-danger">
-                提交失败: ${error.message || '服务器错误，请稍后重试'}
-                <br><small>详细错误信息已记录到控制台</small>
-            </div>`;
+        // 解析响应
+        const responseData = await response.json();
+        console.log('API响应数据:', responseData);
+        
+        if (!response.ok) {
+            throw new Error(responseData.error || '提交回复失败');
         }
+        
+        // 更新步骤状态：发送请求成功
+        updateStepStatus('submitDataStep', 'success');
+        
+        // 关闭模态框
+        const modal = bootstrap.Modal.getInstance(document.getElementById('replyReviewModal'));
+        modal.hide();
+        
+        // 显示成功提示
+        showSuccessToast('回复提交成功');
+        
+        // 刷新评价列表
+        await loadReviews(reviewsCurrentPage, reviewsSelectedStatus, reviewsSelectedRating);
+        
+        console.log('回复提交完成，刷新列表成功');
+        
+    } catch (error) {
+        console.error('提交回复时发生错误:', error);
+        
+        // 更新步骤状态：发生错误
+        if (document.getElementById('submitDataStep').classList.contains('processing')) {
+            updateStepStatus('submitDataStep', 'error');
+        } else {
+            updateStepStatus('prepareDataStep', 'error');
+        }
+        
+        // 显示错误提示
+        showErrorToast(`提交回复失败: ${error.message}`);
+        
     } finally {
-        // 隐藏加载状态
+        // 恢复提交按钮状态
+        submitButton.disabled = false;
+        submitButton.innerHTML = originalButtonText;
+        
+        // 隐藏加载遮罩
         hideLoadingOverlay();
-        
-        // 恢复按钮状态
-        if (submitBtn) {
-            submitBtn.disabled = false;
-            if (btnSpinner) btnSpinner.classList.add('d-none');
-            if (btnText) btnText.textContent = '提交回复';
-        }
-        
-        // 5秒后自动隐藏状态信息
-        setTimeout(() => {
-            if (submitStatus) {
-                submitStatus.classList.add('d-none');
-            }
-            
-            if (submitSteps) {
-                submitSteps.classList.add('d-none');
-                
-                // 重置所有步骤状态
-                resetStepStatus();
-            }
-        }, 5000);
     }
 }
 
@@ -1635,3 +1547,86 @@ function createToastContainer() {
 
 // 设置全局函数，供admin-main.js调用
 window.refreshReviewsData = loadReviews;
+
+// 添加步骤状态显示功能
+function appendReplyStepsUI() {
+    const replyModalContent = document.querySelector('#replyReviewModal .modal-content');
+    if (!replyModalContent || document.getElementById('replyStepsContainer')) return;
+    
+    const stepsHTML = `
+    <div id="replyStepsContainer" class="d-none mb-3 mt-2">
+        <h6>提交进度:</h6>
+        <div class="steps-container">
+            <div id="prepareDataStep" class="step submit-step">
+                <span class="step-icon"><i class="bi bi-check-circle"></i></span>
+                <span class="step-text">准备数据</span>
+            </div>
+            <div id="submitDataStep" class="step submit-step">
+                <span class="step-icon"><i class="bi bi-check-circle"></i></span>
+                <span class="step-text">提交数据</span>
+            </div>
+        </div>
+    </div>
+    `;
+    
+    // 添加提交步骤UI
+    const modalBody = replyModalContent.querySelector('.modal-body');
+    if (modalBody) {
+        modalBody.insertAdjacentHTML('afterbegin', stepsHTML);
+    }
+    
+    // 添加必要的CSS样式
+    if (!document.getElementById('reply-steps-styles')) {
+        const styleElement = document.createElement('style');
+        styleElement.id = 'reply-steps-styles';
+        styleElement.textContent = `
+            .steps-container {
+                display: flex;
+                margin: 10px 0;
+                padding: 5px;
+                background: #f8f9fa;
+                border-radius: 5px;
+            }
+            .step {
+                display: flex;
+                align-items: center;
+                margin-right: 20px;
+                padding: 5px;
+                border-radius: 4px;
+                color: #6c757d;
+            }
+            .step.processing {
+                color: #007bff;
+                animation: pulse 1.5s infinite;
+            }
+            .step.success {
+                color: #28a745;
+            }
+            .step.error {
+                color: #dc3545;
+            }
+            .step-icon {
+                margin-right: 5px;
+            }
+            @keyframes pulse {
+                0% { opacity: 0.7; }
+                50% { opacity: 1; }
+                100% { opacity: 0.7; }
+            }
+        `;
+        document.head.appendChild(styleElement);
+    }
+}
+
+// 确保在初始化时调用
+document.addEventListener('DOMContentLoaded', () => {
+    // 如果已经有这个函数的调用，则不需要再次添加
+    if (typeof initReviewsPage === 'function') {
+        const originalInitReviewsPage = initReviewsPage;
+        
+        initReviewsPage = async function() {
+            await originalInitReviewsPage();
+            appendReplyStepsUI();
+        };
+    }
+});
