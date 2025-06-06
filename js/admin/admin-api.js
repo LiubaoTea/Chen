@@ -1061,62 +1061,57 @@ const adminAPIObject = {
         }
     },
     
-    // 审核通过评价
-    approveReview: async (reviewId) => {
+    // 更新评价状态（通用方法）
+    updateReviewStatus: async (reviewId, status) => {
         try {
-            const url = `${ADMIN_API_BASE_URL}/api/admin/reviews/${reviewId}/approve`;
-            console.log('发送审核通过评价请求，URL:', url);
+            // 验证状态参数
+            if (!['pending', 'approved', 'rejected'].includes(status)) {
+                throw new Error(`无效的评价状态: ${status}`);
+            }
+            
+            let url;
+            if (status === 'approved') {
+                url = `${ADMIN_API_BASE_URL}/api/admin/reviews/${reviewId}/approve`;
+            } else if (status === 'rejected') {
+                url = `${ADMIN_API_BASE_URL}/api/admin/reviews/${reviewId}/reject`;
+            } else {
+                url = `${ADMIN_API_BASE_URL}/api/admin/reviews/${reviewId}/update-status`;
+            }
+            
+            console.log(`发送更新评价状态请求，URL: ${url}, 状态: ${status}`);
             
             const response = await fetch(url, {
                 method: 'PUT',
                 headers: {
                     ...adminAuth.getHeaders(),
                     'Content-Type': 'application/json'
-                }
+                },
+                body: JSON.stringify({ status })
             });
             
             if (!response.ok) {
                 const errorText = await response.text();
-                console.error('审核通过评价API响应错误:', response.status, errorText);
-                throw new Error(`审核通过评价失败，HTTP状态码: ${response.status}`);
+                console.error('更新评价状态API响应错误:', response.status, errorText);
+                throw new Error(`更新评价状态失败，HTTP状态码: ${response.status}`);
             }
             
             const data = await response.json();
-            console.log('成功审核通过评价:', data);
+            console.log(`成功更新评价状态为 ${status}:`, data);
             return data;
         } catch (error) {
-            console.error('审核通过评价出错:', error);
+            console.error(`更新评价状态为 ${status} 出错:`, error);
             throw error;
         }
     },
     
+    // 审核通过评价
+    approveReview: async (reviewId) => {
+        return adminAPIObject.updateReviewStatus(reviewId, 'approved');
+    },
+    
     // 拒绝评价
     rejectReview: async (reviewId) => {
-        try {
-            const url = `${ADMIN_API_BASE_URL}/api/admin/reviews/${reviewId}/reject`;
-            console.log('发送拒绝评价请求，URL:', url);
-            
-            const response = await fetch(url, {
-                method: 'PUT',
-                headers: {
-                    ...adminAuth.getHeaders(),
-                    'Content-Type': 'application/json'
-                }
-            });
-            
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('拒绝评价API响应错误:', response.status, errorText);
-                throw new Error(`拒绝评价失败，HTTP状态码: ${response.status}`);
-            }
-            
-            const data = await response.json();
-            console.log('成功拒绝评价:', data);
-            return data;
-        } catch (error) {
-            console.error('拒绝评价出错:', error);
-            throw error;
-        }
+        return adminAPIObject.updateReviewStatus(reviewId, 'rejected');
     },
     
     // 回复评价

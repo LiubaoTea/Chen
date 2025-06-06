@@ -33,18 +33,44 @@ async function initReviewsPage() {
     if (!adminAuth.check()) return;
     
     try {
-        // 添加回复评价的模态框
-        appendReplyReviewModal();
+        console.log('正在初始化评价管理页面...');
+        
+        // 确保模态框存在
+        appendReviewsModals();
         
         // 加载评价列表
         await loadReviews(1);
         
         // 设置事件监听器
         setupReviewsEventListeners();
+        
+        console.log('评价管理页面初始化完成');
     } catch (error) {
         console.error('初始化评价管理页面失败:', error);
         showErrorToast('初始化评价管理页面失败，请稍后重试');
     }
+}
+
+// 确保模态框和必要的DOM元素存在
+function appendReviewsModals() {
+    // 检查是否已经添加了模态框
+    if (document.getElementById('reviewDetailModal') && document.getElementById('replyReviewModal')) {
+        console.log('评价模态框已存在，无需重复添加');
+        return;
+    }
+    
+    // 添加回复评价模态框
+    appendReplyReviewModal();
+    
+    // 检查页面结构是否已加载
+    const reviewsList = document.getElementById('reviewsList');
+    const reviewsPagination = document.getElementById('reviewsPagination');
+    
+    if (!reviewsList || !reviewsPagination) {
+        loadReviewsPageStructure();
+    }
+    
+    console.log('已检查并补充所需的DOM元素');
 }
 
 // 添加回复评价的模态框
@@ -248,6 +274,11 @@ function loadReviewsPageStructure() {
 // 更新评价列表
 function updateReviewsList() {
     const reviewsList = document.getElementById('reviewsList');
+    if (!reviewsList) {
+        console.error('未找到评价列表容器');
+        return;
+    }
+    
     reviewsList.innerHTML = '';
     
     if (reviewsData.length === 0) {
@@ -324,6 +355,14 @@ function updateReviewsList() {
         reviewsList.appendChild(row);
     });
     
+    // 绑定评价操作按钮事件
+    bindReviewActionEvents();
+}
+
+// 绑定评价操作按钮事件
+function bindReviewActionEvents() {
+    console.log('正在绑定评价操作按钮事件...');
+    
     // 添加查看按钮事件
     document.querySelectorAll('.view-review').forEach(button => {
         button.addEventListener('click', handleViewReview);
@@ -357,6 +396,8 @@ function updateReviewsList() {
             handleViewReview({ currentTarget: { getAttribute: () => reviewId } });
         });
     });
+    
+    console.log('评价操作按钮事件绑定完成');
 }
 
 // 更新分页控件
@@ -420,57 +461,114 @@ function updateReviewsPagination() {
 
 // 设置事件监听器
 function setupReviewsEventListeners() {
+    console.log('正在设置评价管理事件监听器...');
+
     // 状态筛选
-    document.getElementById('reviewStatusFilter').addEventListener('change', (e) => {
-        const status = e.target.value;
-        loadReviews(1, status, reviewsSelectedRating);
-    });
+    const statusFilter = document.getElementById('reviewStatusFilter');
+    if (statusFilter) {
+        statusFilter.addEventListener('change', (e) => {
+            const status = e.target.value;
+            loadReviews(1, status, reviewsSelectedRating);
+        });
+    } else {
+        console.warn('未找到状态筛选元素');
+    }
     
     // 评分筛选
-    document.getElementById('reviewRatingFilter').addEventListener('change', (e) => {
-        const rating = e.target.value;
-        loadReviews(1, reviewsSelectedStatus, rating);
-    });
+    const ratingFilter = document.getElementById('reviewRatingFilter');
+    if (ratingFilter) {
+        ratingFilter.addEventListener('change', (e) => {
+            const rating = e.target.value;
+            loadReviews(1, reviewsSelectedStatus, rating);
+        });
+    } else {
+        console.warn('未找到评分筛选元素');
+    }
     
     // 搜索表单
-    document.getElementById('reviewSearchForm').addEventListener('submit', (e) => {
-        e.preventDefault();
-        const searchQuery = document.getElementById('reviewSearchInput').value.trim();
-        loadReviews(1, reviewsSelectedStatus, reviewsSelectedRating, searchQuery);
-    });
+    const searchForm = document.getElementById('reviewSearchForm');
+    if (searchForm) {
+        searchForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const searchInput = document.getElementById('reviewSearchInput');
+            if (searchInput) {
+                const searchQuery = searchInput.value.trim();
+                loadReviews(1, reviewsSelectedStatus, reviewsSelectedRating, searchQuery);
+            }
+        });
+    } else {
+        console.warn('未找到搜索表单元素');
+    }
     
     // 刷新按钮
-    document.getElementById('refreshReviewsBtn').addEventListener('click', () => {
-        loadReviews(reviewsCurrentPage, reviewsSelectedStatus, reviewsSelectedRating);
-    });
+    const refreshBtn = document.getElementById('refreshReviewsBtn');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', () => {
+            loadReviews(reviewsCurrentPage, reviewsSelectedStatus, reviewsSelectedRating);
+        });
+    } else {
+        console.warn('未找到刷新按钮元素');
+    }
     
     // 导出按钮
-    document.getElementById('exportReviewsBtn').addEventListener('click', handleExportReviews);
+    const exportBtn = document.getElementById('exportReviewsBtn');
+    if (exportBtn) {
+        exportBtn.addEventListener('click', handleExportReviews);
+    } else {
+        console.warn('未找到导出按钮元素');
+    }
     
     // 模态框中的通过评价按钮
-    document.getElementById('approveReviewBtn').addEventListener('click', () => {
-        const reviewId = document.getElementById('approveReviewBtn').getAttribute('data-review-id');
-        if (reviewId) {
-            handleApproveReview(reviewId);
-        }
-    });
+    const approveBtn = document.getElementById('approveReviewBtn');
+    if (approveBtn) {
+        approveBtn.addEventListener('click', () => {
+            const reviewId = approveBtn.getAttribute('data-review-id');
+            if (reviewId) {
+                handleApproveReview(reviewId);
+            }
+        });
+    } else {
+        console.warn('未找到通过评价按钮元素');
+    }
     
     // 模态框中的拒绝评价按钮
-    document.getElementById('rejectReviewBtn').addEventListener('click', () => {
-        const reviewId = document.getElementById('rejectReviewBtn').getAttribute('data-review-id');
-        if (reviewId) {
-            handleRejectReview(reviewId);
-        }
-    });
+    const rejectBtn = document.getElementById('rejectReviewBtn');
+    if (rejectBtn) {
+        rejectBtn.addEventListener('click', () => {
+            const reviewId = rejectBtn.getAttribute('data-review-id');
+            if (reviewId) {
+                handleRejectReview(reviewId);
+            }
+        });
+    } else {
+        console.warn('未找到拒绝评价按钮元素');
+    }
     
     // 提交回复按钮
-    document.getElementById('submitReplyBtn').addEventListener('click', handleSubmitReply);
+    const submitReplyBtn = document.getElementById('submitReplyBtn');
+    if (submitReplyBtn) {
+        submitReplyBtn.addEventListener('click', handleSubmitReply);
+    } else {
+        console.warn('未找到提交回复按钮元素');
+    }
     
     // 上传回复图片按钮
-    document.getElementById('uploadReplyImagesBtn').addEventListener('click', handleUploadReplyImages);
+    const uploadImagesBtn = document.getElementById('uploadReplyImagesBtn');
+    if (uploadImagesBtn) {
+        uploadImagesBtn.addEventListener('click', handleUploadReplyImages);
+    } else {
+        console.warn('未找到上传图片按钮元素');
+    }
     
     // 监听文件选择变化
-    document.getElementById('replyImages').addEventListener('change', handleReplyImagesSelected);
+    const replyImagesInput = document.getElementById('replyImages');
+    if (replyImagesInput) {
+        replyImagesInput.addEventListener('change', handleReplyImagesSelected);
+    } else {
+        console.warn('未找到图片上传输入框元素');
+    }
+    
+    console.log('事件监听器设置完成');
 }
 
 // 处理查看评价详情
@@ -478,8 +576,23 @@ async function handleViewReview(e) {
     const reviewId = e.currentTarget.getAttribute('data-review-id');
     
     try {
-        // 显示加载状态
+        console.log(`正在获取评价详情，ID: ${reviewId}`);
+        
+        // 确保模态框存在
+        if (!document.getElementById('reviewDetailModal')) {
+            console.log('评价详情模态框不存在，正在添加...');
+            appendReviewsModals();
+        }
+        
+        // 获取详情内容容器
         const reviewDetailContent = document.getElementById('reviewDetailContent');
+        if (!reviewDetailContent) {
+            console.error('未找到评价详情内容容器');
+            showErrorToast('评价详情组件加载失败，请刷新页面后重试');
+            return;
+        }
+        
+        // 显示加载状态
         reviewDetailContent.innerHTML = `
             <div class="text-center p-5">
                 <div class="spinner-border text-primary" role="status">
@@ -493,19 +606,22 @@ async function handleViewReview(e) {
         const review = await adminAPI.getReviewById(reviewId);
         
         // 设置模态框按钮的数据属性
-        document.getElementById('approveReviewBtn').setAttribute('data-review-id', reviewId);
-        document.getElementById('rejectReviewBtn').setAttribute('data-review-id', reviewId);
+        const approveBtn = document.getElementById('approveReviewBtn');
+        const rejectBtn = document.getElementById('rejectReviewBtn');
+        
+        if (approveBtn) approveBtn.setAttribute('data-review-id', reviewId);
+        if (rejectBtn) rejectBtn.setAttribute('data-review-id', reviewId);
         
         // 根据评价状态显示/隐藏按钮
         if (review.status === 'approved') {
-            document.getElementById('approveReviewBtn').style.display = 'none';
-            document.getElementById('rejectReviewBtn').style.display = 'inline-block';
+            if (approveBtn) approveBtn.style.display = 'none';
+            if (rejectBtn) rejectBtn.style.display = 'inline-block';
         } else if (review.status === 'rejected') {
-            document.getElementById('approveReviewBtn').style.display = 'inline-block';
-            document.getElementById('rejectReviewBtn').style.display = 'none';
+            if (approveBtn) approveBtn.style.display = 'inline-block';
+            if (rejectBtn) rejectBtn.style.display = 'none';
         } else {
-            document.getElementById('approveReviewBtn').style.display = 'inline-block';
-            document.getElementById('rejectReviewBtn').style.display = 'inline-block';
+            if (approveBtn) approveBtn.style.display = 'inline-block';
+            if (rejectBtn) rejectBtn.style.display = 'inline-block';
         }
         
         // 格式化日期
@@ -628,14 +744,26 @@ async function handleViewReview(e) {
         if (replyBtn) {
             replyBtn.addEventListener('click', () => {
                 const reviewDetailModal = bootstrap.Modal.getInstance(document.getElementById('reviewDetailModal'));
-                reviewDetailModal.hide();
-                handleReplyReview({ currentTarget: { getAttribute: () => reviewId } });
+                if (reviewDetailModal) {
+                    reviewDetailModal.hide();
+                    setTimeout(() => {
+                        handleReplyReview({ currentTarget: { getAttribute: () => reviewId } });
+                    }, 500); // 延迟500毫秒，等待模态框完全关闭
+                } else {
+                    handleReplyReview({ currentTarget: { getAttribute: () => reviewId } });
+                }
             });
         }
         
         // 显示模态框
-        const reviewDetailModal = new bootstrap.Modal(document.getElementById('reviewDetailModal'));
-        reviewDetailModal.show();
+        const reviewDetailModalEl = document.getElementById('reviewDetailModal');
+        if (reviewDetailModalEl) {
+            const reviewDetailModal = new bootstrap.Modal(reviewDetailModalEl);
+            reviewDetailModal.show();
+        } else {
+            console.error('未找到评价详情模态框元素');
+            showErrorToast('无法显示评价详情，请刷新页面后重试');
+        }
     } catch (error) {
         console.error('获取评价详情失败:', error);
         showErrorToast('获取评价详情失败，请稍后重试');
@@ -646,19 +774,47 @@ async function handleViewReview(e) {
 function handleReplyReview(e) {
     const reviewId = e.currentTarget.getAttribute('data-review-id');
     
+    console.log(`准备回复评价，ID: ${reviewId}`);
+    
+    // 确保回复模态框存在
+    if (!document.getElementById('replyReviewModal')) {
+        console.log('回复评价模态框不存在，正在添加...');
+        appendReviewsModals();
+    }
+    
+    // 获取表单元素
+    const replyForm = document.getElementById('replyReviewForm');
+    const replyIdInput = document.getElementById('replyReviewId');
+    const replyContent = document.getElementById('replyContent');
+    const replyImagePreview = document.getElementById('replyImagePreview');
+    const uploadProgressContainer = document.getElementById('uploadProgressContainer');
+    
+    // 检查关键元素是否存在
+    if (!replyForm || !replyIdInput || !replyContent || !replyImagePreview || !uploadProgressContainer) {
+        console.error('回复评价表单元素不完整');
+        showErrorToast('回复评价功能加载失败，请刷新页面后重试');
+        return;
+    }
+    
     // 重置表单和图片数据
-    document.getElementById('replyReviewForm').reset();
-    document.getElementById('replyReviewId').value = reviewId;
-    document.getElementById('replyContent').value = '';
-    document.getElementById('replyImagePreview').innerHTML = '';
+    replyForm.reset();
+    replyIdInput.value = reviewId;
+    replyContent.value = '';
+    replyImagePreview.innerHTML = '';
     replyImagesData = [];
     
     // 隐藏进度条
-    document.getElementById('uploadProgressContainer').classList.add('d-none');
+    uploadProgressContainer.classList.add('d-none');
     
     // 显示回复模态框
-    const replyModal = new bootstrap.Modal(document.getElementById('replyReviewModal'));
-    replyModal.show();
+    const replyModalEl = document.getElementById('replyReviewModal');
+    if (replyModalEl) {
+        const replyModal = new bootstrap.Modal(replyModalEl);
+        replyModal.show();
+    } else {
+        console.error('未找到回复评价模态框元素');
+        showErrorToast('无法打开回复窗口，请刷新页面后重试');
+    }
 }
 
 // 处理回复图片选择
@@ -874,8 +1030,10 @@ async function handleSubmitReply() {
 // 处理通过评价
 async function handleApproveReview(reviewId) {
     try {
+        console.log('正在通过评价，ID:', reviewId);
+        
         // 显示加载状态
-        showLoadingOverlay();
+        showLoadingOverlay('正在通过评价...');
         
         // 调用API通过评价
         await adminAPI.updateReviewStatus(reviewId, 'approved');
@@ -903,8 +1061,10 @@ async function handleApproveReview(reviewId) {
 // 处理拒绝评价
 async function handleRejectReview(reviewId) {
     try {
+        console.log('正在拒绝评价，ID:', reviewId);
+        
         // 显示加载状态
-        showLoadingOverlay();
+        showLoadingOverlay('正在拒绝评价...');
         
         // 调用API拒绝评价
         await adminAPI.updateReviewStatus(reviewId, 'rejected');
