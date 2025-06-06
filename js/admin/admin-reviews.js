@@ -1266,43 +1266,63 @@ async function handleSubmitReply() {
         // 尝试解析token获取管理员ID
         let adminId;
         try {
+            // adminToken格式为Base64编码的JSON字符串
             const tokenData = JSON.parse(atob(adminToken));
-            adminId = tokenData.adminId;
+            adminId = parseInt(tokenData.adminId, 10);
             console.log('从令牌解析的管理员ID:', adminId);
+            
+            if (isNaN(adminId) || adminId <= 0) {
+                console.error('从令牌解析的管理员ID无效:', adminId);
+                throw new Error('令牌中管理员ID无效');
+            }
         } catch (tokenError) {
-            console.warn('解析管理员令牌失败:', tokenError);
-            // 继续使用其他方式获取管理员ID
+            console.error('解析管理员令牌失败:', tokenError);
+            
+            // 尝试从localStorage直接获取
+            const storedAdminId = localStorage.getItem('admin_id');
+            if (storedAdminId) {
+                adminId = parseInt(storedAdminId, 10);
+                console.log('从localStorage获取的管理员ID:', adminId);
+            }
         }
         
-        // 如果未能从令牌获取，尝试使用adminAuth获取
-        if (!adminId) {
-            adminId = adminAuth.getAdminId();
-            console.log('从adminAuth获取的管理员ID:', adminId);
+        // 如果上述方法都失败，尝试使用adminAuth获取
+        if (!adminId || isNaN(adminId) || adminId <= 0) {
+            try {
+                adminId = parseInt(adminAuth.getAdminId(), 10);
+                console.log('从adminAuth获取的管理员ID:', adminId);
+            } catch (authError) {
+                console.error('从adminAuth获取管理员ID失败:', authError);
+            }
         }
         
-        // 如果仍然没有adminId，创建一个默认值
-        if (!adminId) {
-            console.warn('无法获取管理员ID，使用默认值1');
-            adminId = 1; // 使用默认值确保请求可以继续
+        // 检查是否有有效的管理员ID
+        if (!adminId || isNaN(adminId) || adminId <= 0) {
+            console.error('无法获取有效的管理员ID');
+            showErrorToast('无法获取管理员ID，请重新登录后再试');
+            updateStepStatus('prepareDataStep', 'error');
+            hideReplyProgressIndicator(false);
+            return;
         }
         
+        console.log('最终使用的管理员ID:', adminId);
         console.log('回复内容:', replyContent);
         console.log('回复图片数量:', replyImagesData.length);
         
         // 确保图片数据格式正确
         const formattedImages = replyImagesData.map(image => ({
             file_name: image.file_name || 'unknown.jpg',
-            file_size: image.file_size || 0,
-            mime_type: image.mime_type || 'image/jpeg',
+            file_size: parseInt(image.file_size || 0, 10),
+            mime_type: String(image.mime_type || 'image/jpeg'),
             object_key: image.object_key || `image/Admin-Replies/${reviewId}/${adminId}_${Date.now()}_unknown.jpg`,
             extension: (image.file_name || '').split('.').pop() || 'jpg'
         }));
         
         // 准备提交的数据
         const requestData = {
-            review_id: parseInt(reviewId, 10),  // 确保ID是数字类型，使用基数10
-            reply_content: replyContent,        // 使用reply_content字段名与后端一致
-            admin_id: adminId,                  // 添加admin_id确保后端可以正确关联
+            review_id: parseInt(reviewId, 10),
+            reply_content: replyContent,
+            admin_id: adminId,
             images: formattedImages
         };
         
